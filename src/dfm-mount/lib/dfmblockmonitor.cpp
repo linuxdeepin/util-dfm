@@ -23,11 +23,15 @@
 
 #include "dfmblockmonitor.h"
 #include "private/dfmblockmonitor_p.h"
+#include "dfmblockdevice.h"
+
+#include <QDebug>
 
 DFM_MOUNT_USE_NS
 
 DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
-    :DFMAbstractMonitor (parent)
+    : DFMAbstractMonitor (parent),
+      d_ptr(new DFMBlockMonitorPrivate(this))
 {
 
 }
@@ -48,20 +52,94 @@ DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
 
 bool DFMBlockMonitorPrivate::startMonitor()
 {
-    return false;
+    if (client) {
+
+        return true;
+    }
+
+    GError *err = nullptr;
+    client = udisks_client_new_sync(nullptr, &err);
+    if (!client) {
+        if (err) {
+            const QString && errMsg = err->message;
+            qCritical() << "start monitor block error: " << errMsg;
+            g_error_free(err);
+        }
+        return false;
+    }
+
+    GDBusObjectManager *dbusMng = udisks_client_get_object_manager(client);
+    if (!dbusMng) {
+        g_object_unref(client);
+        client = nullptr;
+        qCritical() << "start monitor block failed: cannot get dbus monitor";
+        return false;
+    }
+
+    g_signal_connect(dbusMng, "object-added", G_CALLBACK(&DFMBlockMonitorPrivate::onObjectAdded), q_ptr);
+    g_signal_connect(dbusMng, "object_removed", G_CALLBACK(&DFMBlockMonitorPrivate::onObjectRemoved), q_ptr);
+    g_signal_connect(dbusMng, "interface-proxy-properties-changed", G_CALLBACK(&DFMBlockMonitorPrivate::onPropertyChanged), q_ptr);
+
+    curStatus = MonitorStatus::Monitoring;
+    return true;
 }
 
 bool DFMBlockMonitorPrivate::stopMonitor()
 {
-    return false;
+    if (client) {
+        g_object_unref(client);
+        client = nullptr;
+    }
+    curStatus = MonitorStatus::Idle;
+    return true;
 }
 
 MonitorStatus DFMBlockMonitorPrivate::status()
 {
-    return MonitorStatus::Idle;
+    return curStatus;
 }
 
 int DFMBlockMonitorPrivate::monitorObjectType()
 {
     return BlockDevice;
+}
+
+void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
+{
+    DFMBlockMonitor *monitor = static_cast<DFMBlockMonitor *>(userData);
+    if (!monitor)
+        return;
+
+    qDebug() << __FUNCTION__;
+    UDisksObject *udisksObj = UDISKS_OBJECT(obj);
+    if (!udisksObj)
+        return;
+    UDisksBlock *block = udisks_object_get_block(udisksObj);
+    if (block) {
+        qDebug() << "blockDeviceAdded...";
+        qDebug() << "\t\t\t" << udisks_block_get_device(block);
+        QString dev = udisks_block_get_device(block);
+        emit monitor->deviceAdded(new DFMBlockDevice(dev, monitor));
+        return;
+    }
+    UDisksDrive *drive = udisks_object_peek_drive(udisksObj);
+    if (drive) {
+        qDebug() << "driveAdded";
+        return;
+    }
+    UDisksPartition *partition = udisks_object_peek_partition(udisksObj);
+    if (partition) {
+        qDebug() << "partitionAdded";
+        return;
+    }
+}
+
+void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
+{
+    qDebug() << __FUNCTION__;
+}
+
+void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *objProxy, GDBusProxy *dbusProxy, GVariant *property, const gchar * const invalidProperty, gpointer *userData)
+{
+    qDebug() << __FUNCTION__;
 }

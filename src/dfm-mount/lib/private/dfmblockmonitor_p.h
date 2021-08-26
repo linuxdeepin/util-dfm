@@ -25,7 +25,14 @@
 
 #include "dfmblockmonitor.h"
 
+#include <QMap>
+
+extern "C" {
+#include <udisks/udisks.h>
+}
+
 DFM_MOUNT_BEGIN_NS
+class DFMBlockDevice;
 class DFMBlockMonitorPrivate {
 public:
     DFMBlockMonitorPrivate(DFMBlockMonitor *qq);
@@ -33,6 +40,18 @@ public:
     bool stopMonitor();
     MonitorStatus status();
     int monitorObjectType();
+
+private:
+    static void onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData);
+    static void onObjectRemoved(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData);
+    static void onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *objProxy, GDBusProxy *dbusProxy,
+                                  GVariant *property, const gchar *const invalidProperty, gpointer *userData);
+
+public:
+    UDisksClient *client = nullptr;
+    MonitorStatus curStatus = MonitorStatus::Idle;
+
+    QMap<QString, DFMBlockDevice *> devices;
 
     DFMBlockMonitor *q_ptr;
     Q_DECLARE_PUBLIC(DFMBlockMonitor)

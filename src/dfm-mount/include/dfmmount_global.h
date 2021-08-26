@@ -52,5 +52,13 @@ enum MonitorStatus {
     NotDefined  = 0xff,
 };
 
+enum Property {
+    // blocks property
+    BlockProperty = 0,
+
+    // protocol property
+    ProtoProperty = 200,
+};
+
 DFM_MOUNT_END_NS
 #endif // DFMMOUNT_GLOBAL_H

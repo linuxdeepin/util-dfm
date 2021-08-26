@@ -36,6 +36,8 @@ public:
     explicit DFMAbstractDevice(QObject *parent = nullptr);
 //    virtual ~DFMAbstractDevice();
 
+    QString path();
+
     QUrl mount(const QVariantMap &opts);
     void mountAsync(const QVariantMap &opts);
 
@@ -53,6 +55,7 @@ public:
     long sizeUsage();
 
     int deviceType();
+    QVariant getProperty(Property name);
 
 Q_SIGNALS:
     void mounted(const QUrl &mountPoint);

@@ -41,10 +41,12 @@ public:
     int monitorObjectType();
 
 Q_SIGNALS:
-    void deviceAdded(DFMAbstractDevice *);
-    void deviceRemoved(DFMAbstractDevice *);
-    void mountAdded();
-    void mountRemoved();
+    void driveAdded();
+    void driveRemoved();
+    void deviceAdded(DFMAbstractDevice *dev);
+    void deviceRemoved(DFMAbstractDevice *dev);
+    void mountAdded(const QString &mountPoint);
+    void mountRemoved(const QString &mountPoint);
     void propertiesChanged(const QVariantMap &);
 
 protected:

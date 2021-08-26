@@ -34,6 +34,7 @@ using namespace std;
 DFM_MOUNT_BEGIN_NS
 
 struct DfmDeviceInterface {
+    function<QString ()> path;
     function<QUrl (const QVariantMap &)> mount;
     function<void (const QVariantMap &)> mountAsync;
 
@@ -53,6 +54,8 @@ struct DfmDeviceInterface {
     function<long ()> sizeFree;
 
     function<int ()> deviceType;
+
+    function<QVariant (Property)> getProperty;
 };
 
 DFM_MOUNT_END_NS

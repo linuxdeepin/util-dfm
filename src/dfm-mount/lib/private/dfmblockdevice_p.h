@@ -24,12 +24,14 @@
 #define DFMBLOCKDEVICE_P_H
 
 #include "dfmblockdevice.h"
+#include "udisks/udisks-generated.h"
 
 DFM_MOUNT_BEGIN_NS
 class DFMBlockDevicePrivate {
 public:
     DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &dev);
 
+    QString path();
     QUrl mount(const QVariantMap &opts);
     void mountAsync(const QVariantMap &opts);
     bool unmount();
@@ -49,6 +51,8 @@ public:
 
 public:
     QString devDesc; // descriptor of device
+    UDisksBlock *blockHandler;
+    UDisksFilesystem *fsHandler;
 
 private:
     DFMBlockDevice* q_ptr;

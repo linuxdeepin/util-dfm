@@ -34,6 +34,14 @@ DFMAbstractDevice::DFMAbstractDevice(QObject *parent)
 
 }
 
+QString DFMAbstractDevice::path()
+{
+    if (iface.path)
+        return iface.path();
+    WARN_NO_INIT();
+    return QString();
+}
+
 QUrl DFMAbstractDevice::mount(const QVariantMap &opts)
 {
     if (iface.mount)
@@ -133,4 +141,12 @@ int DFMAbstractDevice::deviceType()
         return iface.deviceType();
     WARN_NO_INIT();
     return 0;
+}
+
+QVariant DFMAbstractDevice::getProperty(Property item)
+{
+    if (iface.getProperty)
+        return iface.getProperty(item);
+    WARN_NO_INIT();
+    return QVariant();
 }

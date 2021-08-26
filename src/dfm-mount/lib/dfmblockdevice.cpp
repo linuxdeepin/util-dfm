@@ -28,6 +28,9 @@
 #include <QFuture>
 
 #include <functional>
+extern "C" {
+#include <udisks/udisks.h>
+}
 
 DFM_MOUNT_USE_NS
 DFMBlockDevice::DFMBlockDevice(const QString &device, QObject *parent)
@@ -55,6 +58,7 @@ bool DFMBlockDevice::powerOff()
 DFMBlockDevicePrivate::DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &dev)
     : devDesc(dev), q_ptr(qq)
 {
+    q_ptr->iface.path = std::bind(&DFMBlockDevicePrivate::path, this);
     q_ptr->iface.mount = std::bind(&DFMBlockDevicePrivate::mount, this, std::placeholders::_1);
     q_ptr->iface.mountAsync = std::bind(&DFMBlockDevicePrivate::mountAsync, this, std::placeholders::_1);
     q_ptr->iface.unmount = std::bind(&DFMBlockDevicePrivate::unmount, this);
@@ -68,6 +72,11 @@ DFMBlockDevicePrivate::DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &
     q_ptr->iface.sizeUsage = std::bind(&DFMBlockDevicePrivate::sizeUsage, this);
     q_ptr->iface.sizeFree = std::bind(&DFMBlockDevicePrivate::sizeFree, this);
     q_ptr->iface.deviceType = std::bind(&DFMBlockDevicePrivate::deviceType, this);
+}
+
+QString DFMBlockDevicePrivate::path()
+{
+    return devDesc;
 }
 
 QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)

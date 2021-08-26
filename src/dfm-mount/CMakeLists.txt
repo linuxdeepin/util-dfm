@@ -5,13 +5,18 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt5 COMPONENTS Core REQUIRED)
+# signals and slots keyword is disable, use Q_SIGNALS and Q_SLOTS instead
+add_compile_definitions(QT_NO_SIGNALS_SLOTS_KEYWORDS)
+
+find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(DEPENDS REQUIRED udisks2 gio-2.0)
+pkg_check_modules(DEPENDS REQUIRED udisks2 glib-2.0 gio-unix-2.0)
 
 include_directories(include
-    /usr/include/udisks2)
+    /usr/include/udisks2
+    /usr/include/glib-2.0
+    /usr/include/gio-unix-2.0)
 
 include(GNUInstallDirs)
 
@@ -53,3 +58,4 @@ set(EXAMPLE_SRCS
     example/main.cpp)
 add_executable(${PROJECT_NAME}_example ${EXAMPLE_SRCS})
 target_link_libraries(${PROJECT_NAME}_example ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}_example Qt5::Widgets)
