@@ -50,11 +50,21 @@ public:
     qint64 write(const char *data, qint64 len);
     qint64 write(const char *data);
     qint64 write(const QByteArray &data);
-    bool seek(qint64 pos);
+    bool seek(qint64 pos, DFile::DFMSeekType type = DFile::DFMSeekType::BEGIN);
+    qint64 pos();
+    bool flush();
+    qint64 size();
+    bool exists();
+
+private:
+    GInputStream* inputStream();
+    GOutputStream* outputStream();
 
 public:
-    GInputStream *input_stream = nullptr;
-    GOutputStream *output_stream = nullptr;
+    GFileIOStream *ioStream = nullptr;
+    GInputStream *iStream = nullptr;
+    GOutputStream *oStream = nullptr;
+
 
     DLocalFile *q_ptr;
 };

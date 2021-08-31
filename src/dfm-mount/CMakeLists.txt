@@ -85,6 +85,7 @@ install(FILES ${LIB_HEADER} DESTINATION include/${PROJECT_NAME})
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/lib/dfm-mount.pc"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
+include(GNUInstallDirs)
 # Build example
 set(EXAMPLE_SRCS
     example/main.cpp)

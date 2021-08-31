@@ -87,7 +87,7 @@ DFM_VIRTUAL qint64 DFile::read(char *data, qint64 maxSize)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Read before open!";
+        qWarning() << "Need open file first!";
         return -1;
     }
 
@@ -102,7 +102,7 @@ QByteArray DFile::read(qint64 maxSize)
         return QByteArray();
 
     if (!d->isOpen) {
-        qWarning() << "Read before open!";
+        qWarning() << "Need open file first!";
         return QByteArray();
     }
 
@@ -117,7 +117,7 @@ QByteArray DFile::readAll()
         return QByteArray();
 
     if (!d->isOpen) {
-        qWarning() << "Read before open!";
+        qWarning() << "Need open file first!";
         return QByteArray();
     }
 
@@ -132,7 +132,7 @@ DFM_VIRTUAL qint64 DFile::write(const char *data, qint64 len)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Read before open!";
+        qWarning() << "Need open file first!";
         return -1;
     }
 
@@ -147,7 +147,7 @@ qint64 DFile::write(const char *data)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Read before open!";
+        qWarning() << "Need open file first!";
         return -1;
     }
 
@@ -162,14 +162,14 @@ qint64 DFile::write(const QByteArray &byteArray)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Read before open!";
+        qWarning() << "Need open file first!";
         return -1;
     }
 
     return d->writeQFunc(byteArray);
 }
 
-DFM_VIRTUAL bool DFile::seek(qint64 pos)
+DFM_VIRTUAL bool DFile::seek(qint64 pos, DFMSeekType type)
 {
     Q_D(DFile);
 
@@ -177,11 +177,71 @@ DFM_VIRTUAL bool DFile::seek(qint64 pos)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Read before open!";
+        qWarning() << "Need open file first!";
         return -1;
     }
 
-    return d->seekFunc(pos);
+    return d->seekFunc(pos, type);
+}
+
+DFM_VIRTUAL qint64 DFile::pos()
+{
+    Q_D(DFile);
+
+    if (!d->posFunc)
+        return -1;
+
+    if (!d->isOpen) {
+        qWarning() << "Need open file first!";
+        return -1;
+    }
+
+    return d->posFunc();
+}
+
+bool DFile::flush()
+{
+    Q_D(DFile);
+
+    if (!d->flushFunc)
+        return -1;
+
+    if (!d->isOpen) {
+        qWarning() << "Need open file first!";
+        return -1;
+    }
+
+    return d->flushFunc();
+}
+
+qint64 DFile::size()
+{
+    Q_D(DFile);
+
+    if (!d->sizeFunc)
+        return -1;
+
+    if (!d->isOpen) {
+        qWarning() << "Need open file first!";
+        return -1;
+    }
+
+    return d->sizeFunc();
+}
+
+bool DFile::exists()
+{
+    Q_D(DFile);
+
+    if (!d->existsFunc)
+        return -1;
+
+    if (!d->isOpen) {
+        qWarning() << "Need open file first!";
+        return -1;
+    }
+
+    return d->existsFunc();
 }
 
 void DFile::registerOpen(const OpenFunc &func)
@@ -236,6 +296,30 @@ void DFile::registerSeek(const SeekFunc &func)
 {
     Q_D(DFile);
     d->seekFunc = func;
+}
+
+void DFile::registerPos(const DFile::PosFunc &func)
+{
+    Q_D(DFile);
+    d->posFunc = func;
+}
+
+void DFile::registerFlush(const DFile::FlushFunc &func)
+{
+    Q_D(DFile);
+    d->flushFunc = func;
+}
+
+void DFile::registerSize(const DFile::SizeFunc &func)
+{
+    Q_D(DFile);
+    d->sizeFunc = func;
+}
+
+void DFile::registerExists(const DFile::ExistsFunc &func)
+{
+    Q_D(DFile);
+    d->existsFunc = func;
 }
 
 QUrl DFile::uri() const

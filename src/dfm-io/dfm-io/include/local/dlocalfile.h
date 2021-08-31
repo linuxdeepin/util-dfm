@@ -47,7 +47,11 @@ public:
     DFM_VIRTUAL qint64 write(const char *data, qint64 len);
     DFM_VIRTUAL qint64 write(const char *data);
     DFM_VIRTUAL qint64 write(const QByteArray &byteArray);
-    DFM_VIRTUAL bool seek(qint64 pos);
+    DFM_VIRTUAL bool seek(qint64 pos, DFile::DFMSeekType type = DFMSeekType::BEGIN);
+    DFM_VIRTUAL qint64 pos();
+    DFM_VIRTUAL bool flush();
+    DFM_VIRTUAL qint64 size();
+    DFM_VIRTUAL bool exists();
 
 private:
     QSharedPointer<DLocalFilePrivate> d_ptr;

@@ -68,10 +68,9 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME}
-PRIVATE
+PUBLIC
     ${GLIB_INCLUDE_DIRS}
     ${CMAKE_CURRENT_LIST_DIR}/private
-PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
@@ -80,35 +79,39 @@ qt5_use_modules(${PROJECT_NAME}
 )
 
 # Install
-FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL
-    "${CMAKE_CURRENT_LIST_DIR}/include/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/*.hpp"
+FILE (GLOB IO_INCLUDES_INSTALL
+    "include/*.h" "include/*.hpp"
 )
-FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL_CORE
-    "${CMAKE_CURRENT_LIST_DIR}/include/core/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/core/*.hpp"
+FILE (GLOB IO_INCLUDES_INSTALL_CORE
+    "include/core/*.h" "include/core/*.hpp"
+    "private/core/*.h" "private/core/*.hpp"
 )
-FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL_ERROR
-    "${CMAKE_CURRENT_LIST_DIR}/include/error/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/error/*.hpp"
+FILE (GLOB IO_INCLUDES_INSTALL_ERROR
+    "include/error/*.h" "include/error/*.hpp"
+    "private/error/*.h" "private/error/*.hpp"
 )
-FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL_FACTORY
-    "${CMAKE_CURRENT_LIST_DIR}/include/factory/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/factory/*.hpp"
+FILE (GLOB IO_INCLUDES_INSTALL_FACTORY
+    "include/factory/*.h" "include/factory/*.hpp"
+    "private/factory/*.h" "private/factory/*.hpp"
 )
-FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL_LOCAL
-    "${CMAKE_CURRENT_LIST_DIR}/include/local/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/local/*.hpp"
+FILE (GLOB IO_INCLUDES_INSTALL_LOCAL
+    "include/local/*.h" "include/local/*.hpp"
+    "private/local/*.h" "private/local/*.hpp"
 )
 
-install (FILES ${IO_PUBLIC_INCLUDES_INSTALL}
+install (FILES ${IO_INCLUDES_INSTALL}
     DESTINATION include/dfm-io
 )
-install (FILES ${IO_PUBLIC_INCLUDES_INSTALL_CORE}
+install (FILES ${IO_INCLUDES_INSTALL_CORE}
     DESTINATION include/dfm-io/core
 )
-install (FILES ${IO_PUBLIC_INCLUDES_INSTALL_ERROR}
+install (FILES ${IO_INCLUDES_INSTALL_ERROR}
     DESTINATION include/dfm-io/error
 )
-install (FILES ${IO_PUBLIC_INCLUDES_INSTALL_FACTORY}
+install (FILES ${IO_INCLUDES_INSTALL_FACTORY}
     DESTINATION include/dfm-io/factory
 )
-install (FILES ${IO_PUBLIC_INCLUDES_INSTALL_LOCAL}
+install (FILES ${IO_INCLUDES_INSTALL_LOCAL}
     DESTINATION include/dfm-io/local
 )
 

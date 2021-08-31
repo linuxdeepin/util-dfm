@@ -59,6 +59,10 @@ public:
     DFile::WriteAllFunc writeAllFunc = nullptr;
     DFile::WriteQFunc writeQFunc = nullptr;
     DFile::SeekFunc seekFunc = nullptr;
+    DFile::PosFunc posFunc = nullptr;
+    DFile::FlushFunc flushFunc = nullptr;
+    DFile::SizeFunc sizeFunc = nullptr;
+    DFile::ExistsFunc existsFunc = nullptr;
 };
 
 END_IO_NAMESPACE
