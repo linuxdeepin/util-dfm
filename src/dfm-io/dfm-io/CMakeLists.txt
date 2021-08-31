@@ -81,19 +81,19 @@ qt5_use_modules(${PROJECT_NAME}
 
 # Install
 FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL
-    "include/*.h" "include/*.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/include/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/*.hpp"
 )
 FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL_CORE
-    "include/core/*.h" "include/core/*.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/include/core/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/core/*.hpp"
 )
 FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL_ERROR
-    "include/error/*.h" "include/error/*.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/include/error/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/error/*.hpp"
 )
 FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL_FACTORY
-    "include/factory/*.h" "include/factory/*.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/include/factory/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/factory/*.hpp"
 )
 FILE (GLOB IO_PUBLIC_INCLUDES_INSTALL_LOCAL
-    "include/local/*.h" "include/local/*.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/include/local/*.h" "${CMAKE_CURRENT_LIST_DIR}/include/local/*.hpp"
 )
 
 install (FILES ${IO_PUBLIC_INCLUDES_INSTALL}

@@ -46,24 +46,24 @@ endforeach(PkgConfigModule)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(LIB_HEADER
-    include/dfmmount_global.h
-    include/dfmmountdefines.h
-    include/dfmdeviceinterface.h
-    include/dfmmonitorinterface.h
-    include/dfmabstractdevice.h
-    include/dfmblockdevice.h
-    include/dfmabstractmonitor.h
-    include/dfmblockmonitor.h)
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmmount_global.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmmountdefines.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmdeviceinterface.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmmonitorinterface.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmabstractdevice.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockdevice.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmabstractmonitor.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockmonitor.h)
 
 set(LIB_P_HEADER
-    lib/private/dfmblockdevice_p.h
-    lib/private/dfmblockmonitor_p.h)
+    ${CMAKE_CURRENT_LIST_DIR}/lib/private/dfmblockdevice_p.h
+    ${CMAKE_CURRENT_LIST_DIR}/lib/private/dfmblockmonitor_p.h)
 
 set(LIB_SRCS
-    lib/dfmabstractdevice.cpp
-    lib/dfmblockdevice.cpp
-    lib/dfmabstractmonitor.cpp
-    lib/dfmblockmonitor.cpp)
+    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmabstractdevice.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockdevice.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmabstractmonitor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockmonitor.cpp)
 
 # Build library
 add_library(${PROJECT_NAME} SHARED ${LIB_HEADER} ${LIB_P_HEADER} ${LIB_SRCS})
@@ -82,7 +82,7 @@ target_link_libraries(${PROJECT_NAME}
 # Install lib
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES ${LIB_HEADER} DESTINATION include/${PROJECT_NAME})
-install (FILES "${CMAKE_CURRENT_BINARY_DIR}/lib/dfm-mount.pc"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/lib/dfm-mount.pc"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 # Build example

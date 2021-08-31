@@ -9,7 +9,9 @@ Build-Depends:
  qtbase5-dev,
  qt5-qmake,
  libglibmm-2.4-dev,
- qttools5-dev-tools
+ qttools5-dev-tools,
+ libglib2.0-dev,
+ libudisks2-dev
 Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm
@@ -34,3 +36,24 @@ Depends:
  libdfm-io
 Description: A libaray about I/O dev.
  A libaray that provides I/O interface dev.
+
+Package: libdfm-mount
+Architecture: any
+Section: libdevel
+Multi-Arch: same
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends}
+Description: A libaray about mount and umount.
+ A libaray that provides mount and umount interface.
+
+Package: libdfm-mount-dev
+Architecture: any
+Section: libdevel
+Multi-Arch: same
+Depends:
+ ${shlibs:Depends}, 
+ ${misc:Depends},
+ libdfm-mount
+Description: A libaray about mount and umount dev.
+ A libaray that provides mount and umount interface dev.
