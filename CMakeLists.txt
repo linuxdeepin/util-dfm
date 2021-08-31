@@ -4,7 +4,7 @@ project(util-dfm)
 
 # Version
 if (NOT PROJECT_VERSION)
-    set(PROJECT_VERSION "0.0.1")
+    set(PROJECT_VERSION "1.0.0")
 endif()
 
 if (NOT PROJECT_VERSION_MAJOR)

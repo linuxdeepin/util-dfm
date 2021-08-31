@@ -119,7 +119,7 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
         qDebug() << "blockDeviceAdded...";
         qDebug() << "\t\t\t" << udisks_block_get_device(block);
         QString dev = udisks_block_get_device(block);
-        emit monitor->deviceAdded(new DFMBlockDevice(dev, monitor));
+        Q_EMIT monitor->deviceAdded(new DFMBlockDevice(dev, monitor));
         return;
     }
     UDisksDrive *drive = udisks_object_peek_drive(udisksObj);

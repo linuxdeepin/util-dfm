@@ -83,7 +83,7 @@ QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 {
     qDebug() << __FUNCTION__ << "is triggered";
     Q_Q(DFMBlockDevice);
-    emit q->mounted(QUrl());
+    Q_EMIT q->mounted(QUrl());
     return QUrl();
 }
 
@@ -92,7 +92,7 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts)
     Q_Q(DFMBlockDevice);
     QtConcurrent::run([&]{
         auto ret = mount(opts);
-        emit q->mounted(ret);
+        Q_EMIT q->mounted(ret);
     });
 }
 
@@ -107,7 +107,7 @@ void DFMBlockDevicePrivate::unmountAsync()
     QtConcurrent::run([&]{
         auto ret = unmount();
         if (ret)
-            emit q->unmounted();
+            Q_EMIT q->unmounted();
     });
 }
 
@@ -122,7 +122,7 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName)
     QtConcurrent::run([&]{
         auto ret = rename(newName);
         if (ret)
-            emit q->renamed(newName);
+            Q_EMIT q->renamed(newName);
     });
 }
 

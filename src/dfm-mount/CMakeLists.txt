@@ -1,26 +1,51 @@
 cmake_minimum_required(VERSION 3.0)
 project(dfm-mount)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
+configure_file("./lib/dfm-mount.pc.in" "./lib/dfm-mount.pc" @ONLY)
+
+# Version
+if (NOT PROJECT_VERSION)
+    set(PROJECT_VERSION "1.0.0")
+endif()
+
+if (NOT PROJECT_VERSION_MAJOR)
+    set(PROJECT_VERSION_MAJOR 0)
+endif()
 
 # signals and slots keyword is disable, use Q_SIGNALS and Q_SLOTS instead
 add_compile_definitions(QT_NO_SIGNALS_SLOTS_KEYWORDS)
 
-find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+# gio signals conflicts with qt signals
+add_definitions(-DQT_NO_KEYWORDS)
+
 find_package(PkgConfig REQUIRED)
 
+# Use Qt modules
+set(QtFindModules Core Gui Widgets Concurrent)
+foreach(QtModule ${QtFindModules})
+    find_package(Qt5 COMPONENTS ${QtModule} REQUIRED)
+
+    # include qt module private include directors
+    include_directories(${Qt5${QtModule}_PRIVATE_INCLUDE_DIRS})
+
+    # can use target_link_libraries(xxx ${QtUseModules})
+    list(APPEND QtUseModules "Qt5::${QtModule}")
+    message("QtModule found ${QtModule} OK!")
+endforeach()
+
+# Use PkgConfig modules
 pkg_check_modules(DEPENDS REQUIRED udisks2 glib-2.0 gio-unix-2.0)
+set(PkgConfigFindModules udisks2 glib-2.0 gio-unix-2.0)
+foreach(PkgConfigModule ${PkgConfigFindModules})
+    pkg_check_modules(PkgUseModuleVal REQUIRED ${PkgConfigModule})
+    #can use target_link_libraries(xxx ${PkgUseModule})
+    list(APPEND PkgUseModules ${PkgUseModuleVal_LDFLAGS})
+    include_directories(${PkgUseModuleVal_INCLUDE_DIRS})
+endforeach(PkgConfigModule)
 
-include_directories(include
-    /usr/include/udisks2
-    /usr/include/glib-2.0
-    /usr/include/gio-unix-2.0)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-include(GNUInstallDirs)
-
-set(LIB_HEADER 
+set(LIB_HEADER
     include/dfmmount_global.h
     include/dfmmountdefines.h
     include/dfmdeviceinterface.h
@@ -40,20 +65,27 @@ set(LIB_SRCS
     lib/dfmabstractmonitor.cpp
     lib/dfmblockmonitor.cpp)
 
-set(INSTALL_HEADERS
-    dfmmount_global.h)
-
-
+# Build library
 add_library(${PROJECT_NAME} SHARED ${LIB_HEADER} ${LIB_P_HEADER} ${LIB_SRCS})
+
+set_target_properties(
+    dfm-mount PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
 target_link_libraries(${PROJECT_NAME}
     Qt5::Core
-    ${DEPENDS_LIBRARIES})
+    ${PkgUseModules}
+    ${QtUseModules})
 
+# Install lib
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${INSTALL_HEADERS} DESTINATION include/${PROJECT_NAME})
-configure_file("./lib/dfm-mount.pc.in" "./lib/dfm-mount.pc" @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dfm-mount.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-
+install(FILES ${LIB_HEADER} DESTINATION include/${PROJECT_NAME})
+install (FILES "${CMAKE_CURRENT_BINARY_DIR}/lib/dfm-mount.pc"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+)
+# Build example
 set(EXAMPLE_SRCS
     example/main.cpp)
 add_executable(${PROJECT_NAME}_example ${EXAMPLE_SRCS})
