@@ -23,13 +23,13 @@
 #ifndef DFMBLOCKMONITOR_H
 #define DFMBLOCKMONITOR_H
 
-#include "dfmabstractmonitor.h"
+#include "base/dfmmonitor.h"
 
 #include <QObject>
 
 DFM_MOUNT_BEGIN_NS
 class DFMBlockMonitorPrivate;
-class DFMBlockMonitor: public DFMAbstractMonitor
+class DFMBlockMonitor: public DFMMonitor
 {
     Q_OBJECT
 public:

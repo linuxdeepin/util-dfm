@@ -20,47 +20,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <QDebug>
+#ifndef DFMPROTOCOLDEVICE_H
+#define DFMPROTOCOLDEVICE_H
 
-#include "dfmabstractmonitor.h"
-#include "dfmmountdefines.h"
+#include "base/dfmdevice.h"
 
-DFM_MOUNT_USE_NS
+#include <QObject>
 
-DFMAbstractMonitor::DFMAbstractMonitor(QObject *parent)
-    :QObject(parent)
+DFM_MOUNT_BEGIN_NS
+
+class DFMProtocolDevicePrivate;
+class DFMProtocolDevice : public DFMDevice
 {
+    Q_OBJECT
+public:
+    DFMProtocolDevice(const QString &device, QObject *parent = nullptr);
+    ~DFMProtocolDevice();
 
-}
+private:
+    QScopedPointer<DFMProtocolDevicePrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DFMProtocolDevice)
+};
 
-bool DFMAbstractMonitor::startMonitor()
-{
-    if (iface.startMonitor)
-        return iface.startMonitor();
-    WARN_NO_INIT();
-    return false;
-}
+DFM_MOUNT_END_NS
 
-bool DFMAbstractMonitor::stopMonitor()
-{
-    if (iface.stopMonitor)
-        return iface.stopMonitor();
-    WARN_NO_INIT();
-    return false;
-}
-
-MonitorStatus DFMAbstractMonitor::status()
-{
-    if (iface.status)
-        return iface.status();
-    WARN_NO_INIT();
-    return NotDefined;
-}
-
-int DFMAbstractMonitor::monitorObjectType()
-{
-    if (iface.monitorObjectType)
-        return iface.monitorObjectType();
-    WARN_NO_INIT();
-    return -1;
-}
+#endif // DFMPROTOCOLDEVICE_H

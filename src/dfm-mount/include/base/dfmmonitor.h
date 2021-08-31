@@ -20,38 +20,55 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMABSTRACTMONITOR_H
-#define DFMABSTRACTMONITOR_H
+#ifndef DFMMONITOR_H
+#define DFMMONITOR_H
 
 #include "dfmmount_global.h"
-#include "dfmmonitorinterface.h"
 
 #include <QObject>
+#include <QSharedPointer>
+
+#include <functional>
 
 DFM_MOUNT_BEGIN_NS
-class DFMAbstractDevice;
-class DFMAbstractMonitor: public QObject
+using namespace std;
+class DFMDevice;
+class DFMMonitorPrivate;
+class DFMMonitor: public QObject
 {
     Q_OBJECT
 public:
-    DFMAbstractMonitor(QObject *parent);
-    bool startMonitor();
-    bool stopMonitor();
-    MonitorStatus status();
-    int monitorObjectType();
+    DFMMonitor(QObject *parent);
+    virtual ~DFMMonitor(){}
+
+    DFM_MNT_VIRTUAL bool startMonitor();
+    DFM_MNT_VIRTUAL bool stopMonitor();
+    DFM_MNT_VIRTUAL MonitorStatus status();
+    DFM_MNT_VIRTUAL int monitorObjectType();
+
+    using StartMonitor = function<bool ()>;
+    using StopMonitor = function<bool ()>;
+    using Status = function<MonitorStatus ()>;
+    using MonitorObjectType = function<int ()>;
+
+    void registerStartMonitor(const StartMonitor &func);
+    void registerStopMonitor(const StopMonitor &func);
+    void registerStatus(const Status &func);
+    void registerMonitorObjectType(const MonitorObjectType &func);
 
 Q_SIGNALS:
     void driveAdded();
     void driveRemoved();
-    void deviceAdded(DFMAbstractDevice *dev);
-    void deviceRemoved(DFMAbstractDevice *dev);
+    void deviceAdded(DFMDevice *dev);
+    void deviceRemoved(DFMDevice *dev);
     void mountAdded(const QString &mountPoint);
     void mountRemoved(const QString &mountPoint);
     void propertiesChanged(const QVariantMap &);
 
 protected:
-    DfmMonitorInterface iface;
+    QSharedPointer<DFMMonitorPrivate> d_ptr = nullptr;
+    Q_DECLARE_PRIVATE(DFMMonitor)
 };
 DFM_MOUNT_END_NS
 
-#endif // DFMABSTRACTMONITOR_H
+#endif // DFMMONITOR_H

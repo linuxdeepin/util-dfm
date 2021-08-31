@@ -20,32 +20,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKDEVICE_H
-#define DFMBLOCKDEVICE_H
+#ifndef DFMDEVICEPRIVATE_H
+#define DFMDEVICEPRIVATE_H
 
+#include "base/dfmmount_global.h"
 #include "base/dfmdevice.h"
 
 #include <QObject>
+#include <QUrl>
 
+#include <functional>
+
+using namespace std;
 DFM_MOUNT_BEGIN_NS
 
-class DFMBlockDevicePrivate;
-class DFMBlockDevice : public DFMDevice
-{
-    Q_OBJECT
+class DFMDevicePrivate {
 public:
-    DFMBlockDevice(const QString &device, QObject *parent = nullptr);
-    ~DFMBlockDevice();
+    DFMDevicePrivate(DFMDevice *q);
+
+    DFMDevice::Path path = nullptr;
+    DFMDevice::Mount mount = nullptr;
+    DFMDevice::MountAsync mountAsync = nullptr;
+    DFMDevice::Unmount unmount = nullptr;
+    DFMDevice::UnmountAsync unmountAsync = nullptr;
+    DFMDevice::Rename rename = nullptr;
+    DFMDevice::RenameAsync renameAsync = nullptr;
+    DFMDevice::AccessPoint accessPoint = nullptr;
+    DFMDevice::MountPoint mountPoint = nullptr;
+    DFMDevice::FileSystem fileSystem = nullptr;
+    DFMDevice::SizeTotal sizeTotal = nullptr;
+    DFMDevice::SizeUsage sizeUsage = nullptr;
+    DFMDevice::SizeFree sizeFree = nullptr;
+    DFMDevice::DeviceType deviceType = nullptr;
+    DFMDevice::GetProperty getProperty = nullptr;
 
 public:
-    bool eject();
-    bool powerOff();
-
-private:
-    QScopedPointer<DFMBlockDevicePrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DFMBlockDevice)
+    DFMDevice *q_ptr = nullptr;
 };
 
 DFM_MOUNT_END_NS
 
-#endif // DFMBLOCKDEVICE_H
+#endif // DFMDEVICEPRIVATE_H

@@ -20,17 +20,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKDEVICE_P_H
-#define DFMBLOCKDEVICE_P_H
+#ifndef DFMPROTOCOLDEVICE_P_H
+#define DFMPROTOCOLDEVICE_P_H
 
-#include "dfmblockdevice.h"
+#include "dfmprotocoldevice.h"
 #include "udisks/udisks-generated.h"
 
 DFM_MOUNT_BEGIN_NS
-class DFMBlockDevicePrivate {
+class DFMProtocolDevicePrivate {
 public:
-    DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &dev);
-
+    DFMProtocolDevicePrivate(DFMProtocolDevice *qq, const QString &dev);
     QString path();
     QUrl mount(const QVariantMap &opts);
     void mountAsync(const QVariantMap &opts);
@@ -51,13 +50,11 @@ public:
 
 public:
     QString devDesc; // descriptor of device
-    UDisksBlock *blockHandler;
-    UDisksFilesystem *fsHandler;
 
 private:
-    DFMBlockDevice* q_ptr;
-    Q_DECLARE_PUBLIC(DFMBlockDevice)
+    DFMProtocolDevice* q_ptr;
+    Q_DECLARE_PUBLIC(DFMProtocolDevice)
 };
 DFM_MOUNT_END_NS
 
-#endif // DFMBLOCKDEVICE_P_H
+#endif // DFMPROTOCOLDEVICE_P_H

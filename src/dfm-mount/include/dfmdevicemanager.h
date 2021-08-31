@@ -18,4 +18,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef DFMDEVICEMANAGER_H
+#define DFMDEVICEMANAGER_H
 
+#include "base/dfmmount_global.h"
+#include "base/dfmmountdefines.h"
+
+#include <QObject>
+
+DFM_MOUNT_BEGIN_NS
+
+class DFMDeviceManagerPrivate;
+class DFMDeviceManager: public QObject {
+Q_OBJECT
+public:
+    DFMDeviceManager(QObject *parent = nullptr);
+    ~DFMDeviceManager();
+
+private:
+    QScopedPointer<DFMDeviceManagerPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DFMDeviceManager)
+};
+
+DFM_MOUNT_END_NS
+
+#endif // DFMDEVICEMANAGER_H

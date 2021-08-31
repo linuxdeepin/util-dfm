@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(dfm-mount)
 
+include(GNUInstallDirs)
 configure_file("./lib/dfm-mount.pc.in" "./lib/dfm-mount.pc" @ONLY)
-
 # Version
 if (NOT PROJECT_VERSION)
     set(PROJECT_VERSION "1.0.0")
@@ -46,24 +46,33 @@ endforeach(PkgConfigModule)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(LIB_HEADER
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmmount_global.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmmountdefines.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmdeviceinterface.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmmonitorinterface.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmabstractdevice.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmdevice.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmonitor.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmount_global.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmountdefines.h
     ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockdevice.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmabstractmonitor.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockmonitor.h)
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockmonitor.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmprotocoldevice.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmprotocolmonitor.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfmdevicemanager.h)
 
 set(LIB_P_HEADER
-    ${CMAKE_CURRENT_LIST_DIR}/lib/private/dfmblockdevice_p.h
-    ${CMAKE_CURRENT_LIST_DIR}/lib/private/dfmblockmonitor_p.h)
+    ${CMAKE_CURRENT_LIST_DIR}/private/dfmblockdevice_p.h
+    ${CMAKE_CURRENT_LIST_DIR}/private/dfmblockmonitor_p.h
+    ${CMAKE_CURRENT_LIST_DIR}/private/dfmprotocoldevice_p.h
+    ${CMAKE_CURRENT_LIST_DIR}/private/dfmprotocolmonitor_p.h
+    ${CMAKE_CURRENT_LIST_DIR}/private/dfmmonitor_p.h
+    ${CMAKE_CURRENT_LIST_DIR}/private/dfmdevice_p.h
+    ${CMAKE_CURRENT_LIST_DIR}/private/dfmdevicemanager_p.h)
 
 set(LIB_SRCS
-    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmabstractdevice.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/base/dfmdevice.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/base/dfmmonitor.cpp
     ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockdevice.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmabstractmonitor.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockmonitor.cpp)
+    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockmonitor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmprotocoldevice.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmprotocolmonitor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmdevicemanager.cpp)
 
 # Build library
 add_library(${PROJECT_NAME} SHARED ${LIB_HEADER} ${LIB_P_HEADER} ${LIB_SRCS})

@@ -30,7 +30,7 @@
 DFM_MOUNT_USE_NS
 
 DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
-    : DFMAbstractMonitor (parent),
+    : DFMMonitor (parent),
       d_ptr(new DFMBlockMonitorPrivate(this))
 {
 
@@ -44,10 +44,10 @@ DFMBlockMonitor::~DFMBlockMonitor()
 DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
     :q_ptr(qq)
 {
-    q_ptr->iface.startMonitor = std::bind(&DFMBlockMonitorPrivate::startMonitor, this);
-    q_ptr->iface.stopMonitor = std::bind(&DFMBlockMonitorPrivate::stopMonitor, this);
-    q_ptr->iface.status = std::bind(&DFMBlockMonitorPrivate::status, this);
-    q_ptr->iface.monitorObjectType = std::bind(&DFMBlockMonitorPrivate::monitorObjectType, this);
+    qq->registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, this));
+    qq->registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, this));
+    qq->registerStatus(std::bind(&DFMBlockMonitorPrivate::status, this));
+    qq->registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, this));
 }
 
 bool DFMBlockMonitorPrivate::startMonitor()

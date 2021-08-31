@@ -20,44 +20,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMDEVICEINTERFACE_H
-#define DFMDEVICEINTERFACE_H
+#ifndef DFMPROTOCOLMONITOR_P_H
+#define DFMPROTOCOLMONITOR_P_H
 
-#include "dfmmount_global.h"
+#include "dfmprotocolmonitor.h"
 
-#include <QObject>
-#include <QUrl>
+#include <QMap>
 
-#include <functional>
+extern "C" {
+#include <udisks/udisks.h>
+}
 
-using namespace std;
 DFM_MOUNT_BEGIN_NS
+class DFMProtocolDevice;
+class DFMProtocolMonitorPrivate {
+public:
+    DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq);
+    bool startMonitor();
+    bool stopMonitor();
+    MonitorStatus status();
+    int monitorObjectType();
 
-struct DfmDeviceInterface {
-    function<QString ()> path;
-    function<QUrl (const QVariantMap &)> mount;
-    function<void (const QVariantMap &)> mountAsync;
+private:
 
-    function<bool ()> unmount;
-    function<void ()> unmountAsync;
+public:
+    MonitorStatus curStatus = MonitorStatus::Idle;
 
-    function<bool (const QString &)> rename;
-    function<void (const QString &)> renameAsync;
+    QMap<QString, DFMProtocolDevice *> devices;
 
-    function<QUrl ()> accessPoint;
-    function<QUrl ()> mountPoint;
-
-    function<QString ()> fileSystem;
-
-    function<long ()> sizeTotal;
-    function<long ()> sizeUsage;
-    function<long ()> sizeFree;
-
-    function<int ()> deviceType;
-
-    function<QVariant (Property)> getProperty;
+    DFMProtocolMonitor *q_ptr;
+    Q_DECLARE_PUBLIC(DFMProtocolMonitor)
 };
 
 DFM_MOUNT_END_NS
 
-#endif // DFMDEVICEINTERFACE_H
+#endif // DFMProtocolMONITOR_P_H

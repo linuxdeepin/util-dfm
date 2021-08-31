@@ -36,6 +36,9 @@
 #define DFM_MOUNT_END_NS }
 #define DFM_MOUNT_USE_NS using namespace DFM_MOUNT_NAMESPACE;
 
+#define DFM_MNT_VIRTUAL
+#define DFM_MNT_OVERRIDE
+
 DFM_MOUNT_BEGIN_NS
 
 enum DeviceType {

@@ -20,32 +20,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKDEVICE_H
-#define DFMBLOCKDEVICE_H
+#ifndef DFMPROTOCOLMONITOR_H
+#define DFMPROTOCOLMONITOR_H
 
-#include "base/dfmdevice.h"
+#include "base/dfmmonitor.h"
 
 #include <QObject>
 
 DFM_MOUNT_BEGIN_NS
-
-class DFMBlockDevicePrivate;
-class DFMBlockDevice : public DFMDevice
+class DFMProtocolMonitorPrivate;
+class DFMProtocolMonitor: public DFMMonitor
 {
     Q_OBJECT
 public:
-    DFMBlockDevice(const QString &device, QObject *parent = nullptr);
-    ~DFMBlockDevice();
-
-public:
-    bool eject();
-    bool powerOff();
+    DFMProtocolMonitor(QObject *parent = nullptr);
+    ~DFMProtocolMonitor();
 
 private:
-    QScopedPointer<DFMBlockDevicePrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DFMBlockDevice)
+    QScopedPointer<DFMProtocolMonitorPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DFMProtocolMonitor)
 };
-
 DFM_MOUNT_END_NS
 
-#endif // DFMBLOCKDEVICE_H
+#endif // DFMBLOCKMONITOR_H

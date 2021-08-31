@@ -20,32 +20,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKDEVICE_H
-#define DFMBLOCKDEVICE_H
+#ifndef DFMBLOCKDEVICE_P_H
+#define DFMBLOCKDEVICE_P_H
 
-#include "base/dfmdevice.h"
-
-#include <QObject>
+#include "dfmblockdevice.h"
+#include "udisks/udisks-generated.h"
 
 DFM_MOUNT_BEGIN_NS
-
-class DFMBlockDevicePrivate;
-class DFMBlockDevice : public DFMDevice
-{
-    Q_OBJECT
+class DFMBlockDevicePrivate {
 public:
-    DFMBlockDevice(const QString &device, QObject *parent = nullptr);
-    ~DFMBlockDevice();
+    DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &dev);
+    QString path();
+    QUrl mount(const QVariantMap &opts);
+    void mountAsync(const QVariantMap &opts);
+    bool unmount();
+    void unmountAsync();
+    bool rename(const QString &newName);
+    void renameAsync(const QString &newName);
+    QUrl accessPoint();
+    QUrl mountPoint();
+    QString fileSystem();
+    long sizeTotal();
+    long sizeUsage();
+    long sizeFree();
+    int deviceType();
 
-public:
     bool eject();
     bool powerOff();
 
-private:
-    QScopedPointer<DFMBlockDevicePrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DFMBlockDevice)
-};
+public:
+    QString devDesc; // descriptor of device
+    UDisksBlock *blockHandler;
+    UDisksFilesystem *fsHandler;
 
+private:
+    DFMBlockDevice* q_ptr;
+    Q_DECLARE_PUBLIC(DFMBlockDevice)
+};
 DFM_MOUNT_END_NS
 
-#endif // DFMBLOCKDEVICE_H
+#endif // DFMBLOCKDEVICE_P_H

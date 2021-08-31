@@ -20,51 +20,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMABSTRACTDEVICE_H
-#define DFMABSTRACTDEVICE_H
+#ifndef DFMMONITORPRIVATE_H
+#define DFMMONITORPRIVATE_H
 
-#include "dfmmount_global.h"
-#include "dfmdeviceinterface.h"
+#include "base/dfmmount_global.h"
+#include "base/dfmmonitor.h"
 
-#include <QObject>
+#include <functional>
 
+using namespace std;
 DFM_MOUNT_BEGIN_NS
-class DFMAbstractDevice: public QObject
-{
-    Q_OBJECT
+
+class DFMMonitorPrivate {
 public:
-    explicit DFMAbstractDevice(QObject *parent = nullptr);
-//    virtual ~DFMAbstractDevice();
+    DFMMonitorPrivate(DFMMonitor *q);
 
-    QString path();
+    DFMMonitor::StartMonitor start = nullptr;
+    DFMMonitor::StopMonitor stop = nullptr;
+    DFMMonitor::Status status = nullptr;
+    DFMMonitor::MonitorObjectType mot = nullptr;
 
-    QUrl mount(const QVariantMap &opts);
-    void mountAsync(const QVariantMap &opts);
-
-    bool unmount();
-    void unmountAsync();
-
-    bool rename(const QString &newName);
-    void renameAsync(const QString &newName);
-
-    QUrl accessPoint();
-    QUrl mountPoint();
-    QString fileSystem();
-    long sizeTotal();
-    long sizeFree();
-    long sizeUsage();
-
-    int deviceType();
-    QVariant getProperty(Property name);
-
-Q_SIGNALS:
-    void mounted(const QUrl &mountPoint);
-    void unmounted();
-    void renamed(const QString &newName);
-
-protected:
-    DfmDeviceInterface iface;
+    DFMMonitor *q_ptr;
 };
+
 DFM_MOUNT_END_NS
 
-#endif // DFMABSTRACTDEVICE_H
+#endif // DFMMONITORPRIVATE_H

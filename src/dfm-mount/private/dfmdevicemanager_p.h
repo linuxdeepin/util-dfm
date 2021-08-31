@@ -1,11 +1,9 @@
 /*
- * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
+ * Copyright (C) 2019 ~ 2020 Deepin Technology Co., Ltd.
  *
- * Author:     xushitong<xushitong@uniontech.com>
+ * Author:     xushitong <xushitong@uniontech.com>
  *
- * Maintainer: max-lv<lvwujun@uniontech.com>
- *             lanxuesong<lanxuesong@uniontech.com>
- *             zhangsheng<zhangsheng@uniontech.com>
+ * Maintainer: xushitong <xushitong@uniontech.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,24 +17,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-#ifndef DFMMONITORINTERFACE_H
-#define DFMMONITORINTERFACE_H
+ */
 
-#include "dfmmount_global.h"
+#ifndef DFMDEVICEMANAGERPRIVATE_H
+#define DFMDEVICEMANAGERPRIVATE_H
 
-#include <functional>
+#include "dfmdevicemanager.h"
 
-using namespace std;
 DFM_MOUNT_BEGIN_NS
 
-struct DfmMonitorInterface {
-    std::function<bool ()> startMonitor;
-    std::function<bool ()> stopMonitor;
-    std::function<MonitorStatus ()> status;
-    std::function<int ()> monitorObjectType;
+class DFMDeviceManagerPrivate {
+public:
+    DFMDeviceManagerPrivate(DFMDeviceManager *q);
+
+    DFMDeviceManager *q_ptr;
 };
 
 DFM_MOUNT_END_NS
 
-#endif // DFMMONITORINTERFACE_H
+#endif // DFMDEVICEMANAGERPRIVATE_H
