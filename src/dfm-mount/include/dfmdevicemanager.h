@@ -29,14 +29,15 @@
 DFM_MOUNT_BEGIN_NS
 
 class DFMDeviceManagerPrivate;
-class DFMDeviceManager: public QObject {
-Q_OBJECT
+class DFMDeviceManager final : public QObject
+{
+    Q_OBJECT
 public:
     DFMDeviceManager(QObject *parent = nullptr);
     ~DFMDeviceManager();
 
 private:
-    QScopedPointer<DFMDeviceManagerPrivate> d_ptr;
+    QScopedPointer<DFMDeviceManagerPrivate> d_pointer;
     Q_DECLARE_PRIVATE(DFMDeviceManager)
 };
 

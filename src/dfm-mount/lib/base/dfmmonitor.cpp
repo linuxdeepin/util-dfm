@@ -28,8 +28,15 @@
 
 DFM_MOUNT_USE_NS
 
+DFM_MOUNT_NAMESPACE::DFMMonitorPrivate::DFMMonitorPrivate(DFMMonitor *q)
+    : q_ptr(q)
+{
+
+}
+
 DFMMonitor::DFMMonitor(QObject *parent)
-    : QObject(parent), d_ptr(new DFMMonitorPrivate(this))
+    : QObject(parent),
+      d_pointer(new DFMMonitorPrivate(this))
 {
 
 }
@@ -37,69 +44,64 @@ DFMMonitor::DFMMonitor(QObject *parent)
 bool DFMMonitor::startMonitor()
 {
     Q_D(DFMMonitor);
-    if (d->start)
-        return d->start();
-    WARN_NO_INIT();
-    return false;
+    Q_ASSERT_X(d->start, __PRETTY_FUNCTION__, "not register");
+
+    return d->start();
 }
 
 bool DFMMonitor::stopMonitor()
 {
     Q_D(DFMMonitor);
-    if (d->stop)
-        return d->stop();
-    WARN_NO_INIT();
-    return false;
+    Q_ASSERT_X(d->stop, __PRETTY_FUNCTION__, "not register");
+
+    return d->stop();
 }
 
-MonitorStatus DFMMonitor::status()
+MonitorStatus DFMMonitor::status() const
 {
-    Q_D(DFMMonitor);
-    if (d->status)
-        return d->status();
-    WARN_NO_INIT();
-    return NotDefined;
+    Q_D(const DFMMonitor);
+    Q_ASSERT_X(d->status, __PRETTY_FUNCTION__, "not register");
+
+    return d->status();
 }
 
-int DFMMonitor::monitorObjectType()
+DeviceType DFMMonitor::monitorObjectType() const
 {
-    Q_D(DFMMonitor);
-    if (d->mot)
-        return d->mot();
-    WARN_NO_INIT();
-    return -1;
+    Q_D(const DFMMonitor);
+    Q_ASSERT_X(d->mot, __PRETTY_FUNCTION__, "not register");
+
+    return d->mot();
 }
 
 void DFMMonitor::registerStartMonitor(const DFMMonitor::StartMonitor &func)
 {
     Q_D(DFMMonitor);
-    if (func)
-        d->start = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->start = func;
 }
 
 void DFMMonitor::registerStopMonitor(const DFMMonitor::StopMonitor &func)
 {
     Q_D(DFMMonitor);
-    if (func)
-        d->stop = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->stop = func;
 }
 
 void DFMMonitor::registerStatus(const DFMMonitor::Status &func)
 {
     Q_D(DFMMonitor);
-    if (func)
-        d->status = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->status = func;
 }
 
 void DFMMonitor::registerMonitorObjectType(const DFMMonitor::MonitorObjectType &func)
 {
     Q_D(DFMMonitor);
-    if (func)
-        d->mot = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->mot = func;
 }
 
-DFMMonitorPrivate::DFMMonitorPrivate(DFMMonitor *q)
-    : q_ptr(q)
-{
-
-}

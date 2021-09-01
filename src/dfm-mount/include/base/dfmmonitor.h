@@ -31,7 +31,7 @@
 #include <functional>
 
 DFM_MOUNT_BEGIN_NS
-using namespace std;
+
 class DFMDevice;
 class DFMMonitorPrivate;
 class DFMMonitor: public QObject
@@ -43,13 +43,14 @@ public:
 
     DFM_MNT_VIRTUAL bool startMonitor();
     DFM_MNT_VIRTUAL bool stopMonitor();
-    DFM_MNT_VIRTUAL MonitorStatus status();
-    DFM_MNT_VIRTUAL int monitorObjectType();
+    DFM_MNT_VIRTUAL MonitorStatus status() const;
+    DFM_MNT_VIRTUAL DeviceType monitorObjectType() const;
 
-    using StartMonitor = function<bool ()>;
-    using StopMonitor = function<bool ()>;
-    using Status = function<MonitorStatus ()>;
-    using MonitorObjectType = function<int ()>;
+public:
+    using StartMonitor      = std::function<bool ()>;
+    using StopMonitor       = std::function<bool ()>;
+    using Status            = std::function<MonitorStatus ()>;
+    using MonitorObjectType = std::function<DeviceType ()>;
 
     void registerStartMonitor(const StartMonitor &func);
     void registerStopMonitor(const StopMonitor &func);
@@ -65,8 +66,8 @@ Q_SIGNALS:
     void mountRemoved(const QString &mountPoint);
     void propertiesChanged(const QVariantMap &);
 
-protected:
-    QSharedPointer<DFMMonitorPrivate> d_ptr = nullptr;
+private:
+    QSharedPointer<DFMMonitorPrivate> d_pointer = nullptr;
     Q_DECLARE_PRIVATE(DFMMonitor)
 };
 DFM_MOUNT_END_NS

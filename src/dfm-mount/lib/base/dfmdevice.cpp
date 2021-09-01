@@ -29,251 +29,256 @@
 
 DFM_MOUNT_USE_NS
 
-DFMDevice::DFMDevice(QObject *parent)
-    : QObject (parent), d_ptr(new DFMDevicePrivate(this))
+DFM_MOUNT_NAMESPACE::DFMDevicePrivate::DFMDevicePrivate(DFMDevice *q)
+    : q_ptr(q)
 {
 
 }
 
-QString DFMDevice::path()
+DFMDevice::DFMDevice(QObject *parent)
+    : QObject (parent),
+      d_pointer(new DFMDevicePrivate(this))
 {
-    Q_D(DFMDevice);
-    if (d->path)
-        return d->path();
-    WARN_NO_INIT();
-    return QString();
+
+}
+
+QString DFMDevice::path() const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->path, __PRETTY_FUNCTION__, "not register");
+
+    return d->path();
 }
 
 QUrl DFMDevice::mount(const QVariantMap &opts)
 {
     Q_D(DFMDevice);
-    if (d->mount)
-        return d->mount(opts);
-    WARN_NO_INIT();
-    return QUrl();
+    Q_ASSERT_X(d->mount, __PRETTY_FUNCTION__, "not register");
+
+    return d->mount(opts);
 }
 
 void DFMDevice::mountAsync(const QVariantMap &opts)
 {
     Q_D(DFMDevice);
-    if (d->mountAsync)
-        return d->mountAsync(opts);
-    WARN_NO_INIT();
+    Q_ASSERT_X(d->mountAsync, __PRETTY_FUNCTION__, "not register");
+
+    return d->mountAsync(opts);
 }
 
 bool DFMDevice::unmount()
 {
     Q_D(DFMDevice);
-    if (d->unmount)
-        return d->unmount();
-    WARN_NO_INIT();
-    return false;
+    Q_ASSERT_X(d->unmount, __PRETTY_FUNCTION__, "not register");
+
+    return d->unmount();
 }
 
 void DFMDevice::unmountAsync()
 {
     Q_D(DFMDevice);
-    if (d->unmountAsync)
-        return d->unmountAsync();
-    WARN_NO_INIT();
+    Q_ASSERT_X(d->unmountAsync, __PRETTY_FUNCTION__, "not register");
+
+    return d->unmountAsync();
 }
 
 bool DFMDevice::rename(const QString &newName)
 {
     Q_D(DFMDevice);
-    if (d->rename)
-        return d->rename(newName);
-    WARN_NO_INIT();
-    return false;
+    Q_ASSERT_X(d->rename, __PRETTY_FUNCTION__, "not register");
+
+    return d->rename(newName);
 }
 
 void DFMDevice::renameAsync(const QString &newName)
 {
     Q_D(DFMDevice);
-    if (d->renameAsync)
-        return d->renameAsync(newName);
-    WARN_NO_INIT();
+    Q_ASSERT_X(d->renameAsync, __PRETTY_FUNCTION__, "not register");
+
+    return d->renameAsync(newName);
 }
 
-QUrl DFMDevice::accessPoint()
+QUrl DFMDevice::accessPoint() const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->accessPoint, __PRETTY_FUNCTION__, "not register");
+
+    return d->accessPoint();
+}
+
+QUrl DFMDevice::mountPoint() const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->mountPoint, __PRETTY_FUNCTION__, "not register");
+
+    return d->mountPoint();
+}
+
+QString DFMDevice::fileSystem() const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->fileSystem, __PRETTY_FUNCTION__, "not register");
+
+    return d->fileSystem();
+}
+
+long DFMDevice::sizeTotal() const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->sizeTotal, __PRETTY_FUNCTION__, "not register");
+
+    return d->sizeTotal();
+}
+
+long DFMDevice::sizeFree() const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->sizeFree, __PRETTY_FUNCTION__, "not register");
+
+    return d->sizeFree();
+}
+
+long DFMDevice::sizeUsage() const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->sizeUsage, __PRETTY_FUNCTION__, "not register");
+
+    return d->sizeUsage();
+}
+
+DeviceType DFMDevice::deviceType() const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->deviceType, __PRETTY_FUNCTION__, "not register");
+
+    return d->deviceType();
+}
+
+QVariant DFMDevice::getProperty(Property item) const
+{
+    Q_D(const DFMDevice);
+    Q_ASSERT_X(d->getProperty, __PRETTY_FUNCTION__, "not register");
+
+    return d->getProperty(item);
+}
+
+void DFMDevice::registerPath(const DFMDevice::PathFunc &func)
 {
     Q_D(DFMDevice);
-    if (d->accessPoint)
-        return d->accessPoint();
-    WARN_NO_INIT();
-    return QUrl();
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->path = func;
 }
 
-QUrl DFMDevice::mountPoint()
+void DFMDevice::registerMount(const DFMDevice::MountFunc &func)
 {
     Q_D(DFMDevice);
-    if (d->mountPoint)
-        return d->mountPoint();
-    WARN_NO_INIT();
-    return QUrl();
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->mount = func;
 }
 
-QString DFMDevice::fileSystem()
+void DFMDevice::registerMountAsync(const DFMDevice::MountAsyncFunc &func)
 {
     Q_D(DFMDevice);
-    if (d->fileSystem)
-        return d->fileSystem();
-    WARN_NO_INIT();
-    return QString();
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->mountAsync = func;
 }
 
-long DFMDevice::sizeTotal()
+void DFMDevice::registerUnmount(const DFMDevice::UnmountFunc &func)
 {
     Q_D(DFMDevice);
-    if (d->sizeTotal)
-        return d->sizeTotal();
-    WARN_NO_INIT();
-    return 0;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->unmount = func;
 }
 
-long DFMDevice::sizeFree()
+void DFMDevice::registerUnmountAsync(const DFMDevice::UnmountAsyncFunc &func)
 {
     Q_D(DFMDevice);
-    if (d->sizeFree)
-        return d->sizeFree();
-    WARN_NO_INIT();
-    return 0;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->unmountAsync = func;
 }
 
-long DFMDevice::sizeUsage()
+void DFMDevice::registerRename(const DFMDevice::RenameFunc &func)
 {
     Q_D(DFMDevice);
-    if (d->sizeUsage)
-        return d->sizeUsage();
-    WARN_NO_INIT();
-    return 0;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->rename = func;
 }
 
-int DFMDevice::deviceType()
+void DFMDevice::registerRenameAsync(const DFMDevice::RenameAsyncFunc &func)
 {
     Q_D(DFMDevice);
-    if (d->deviceType)
-        return d->deviceType();
-    WARN_NO_INIT();
-    return 0;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->renameAsync = func;
 }
 
-QVariant DFMDevice::getProperty(Property item)
+void DFMDevice::registerAccessPoint(const DFMDevice::AccessPointFunc &func)
 {
     Q_D(DFMDevice);
-    if (d->getProperty)
-        return d->getProperty(item);
-    WARN_NO_INIT();
-    return QVariant();
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->accessPoint = func;
 }
 
-void DFMDevice::registerPath(const DFMDevice::Path &func)
+void DFMDevice::registerMountPoint(const DFMDevice::MountPointFunc &func)
 {
     Q_D(DFMDevice);
-    if (func)
-        d->path = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->mountPoint = func;
 }
 
-void DFMDevice::registerMount(const DFMDevice::Mount &func)
+void DFMDevice::registerFileSystem(const DFMDevice::FileSystemFunc &func)
 {
     Q_D(DFMDevice);
-    if (func)
-        d->mount = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->fileSystem = func;
 }
 
-void DFMDevice::registerMountAsync(const DFMDevice::MountAsync &func)
+void DFMDevice::registerSizeTotal(const DFMDevice::SizeTotalFunc &func)
 {
     Q_D(DFMDevice);
-    if (func)
-        d->mountAsync = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->sizeTotal = func;
 }
 
-void DFMDevice::registerUnmount(const DFMDevice::Unmount &func)
+void DFMDevice::registerSizeUsage(const DFMDevice::SizeUsageFunc &func)
 {
     Q_D(DFMDevice);
-    if (func)
-        d->unmount = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->sizeUsage = func;
 }
 
-void DFMDevice::registerUnmountAsync(const DFMDevice::UnmountAsync &func)
+void DFMDevice::registerSizeFree(const DFMDevice::SizeFreeFunc &func)
 {
     Q_D(DFMDevice);
-    if (func)
-        d->unmountAsync = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->sizeFree = func;
 }
 
-void DFMDevice::registerRename(const DFMDevice::Rename &func)
+void DFMDevice::registerDeviceType(const DFMDevice::DeviceTypeFunc &func)
 {
     Q_D(DFMDevice);
-    if (func)
-        d->rename = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->deviceType = func;
 }
 
-void DFMDevice::registerRenameAsync(const DFMDevice::RenameAsync &func)
+void DFMDevice::registerGetProperty(const DFMDevice::GetPropertyFunc &func)
 {
     Q_D(DFMDevice);
-    if (func)
-        d->renameAsync = func;
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->getProperty = func;
 }
 
-void DFMDevice::registerAccessPoint(const DFMDevice::AccessPoint &func)
-{
-    Q_D(DFMDevice);
-    if (func)
-        d->accessPoint = func;
-}
-
-void DFMDevice::registerMountPoint(const DFMDevice::MountPoint &func)
-{
-    Q_D(DFMDevice);
-    if (func)
-        d->mountPoint = func;
-}
-
-void DFMDevice::registerFileSystem(const DFMDevice::FileSystem &func)
-{
-    Q_D(DFMDevice);
-    if (func)
-        d->fileSystem = func;
-}
-
-void DFMDevice::registerSizeTotal(const DFMDevice::SizeTotal &func)
-{
-    Q_D(DFMDevice);
-    if (func)
-        d->sizeTotal = func;
-}
-
-void DFMDevice::registerSizeUsage(const DFMDevice::SizeUsage &func)
-{
-    Q_D(DFMDevice);
-    if (func)
-        d->sizeUsage = func;
-}
-
-void DFMDevice::registerSizeFree(const DFMDevice::SizeFree &func)
-{
-    Q_D(DFMDevice);
-    if (func)
-        d->sizeFree = func;
-}
-
-void DFMDevice::registerDeviceType(const DFMDevice::DeviceType &func)
-{
-    Q_D(DFMDevice);
-    if (func)
-        d->deviceType = func;
-}
-
-void DFMDevice::registerGetProperty(const DFMDevice::GetProperty &func)
-{
-    Q_D(DFMDevice);
-    if (func)
-        d->getProperty = func;
-}
-
-dfm_mount::DFMDevicePrivate::DFMDevicePrivate(DFMDevice *q)
-    : q_ptr(q)
-{
-
-}

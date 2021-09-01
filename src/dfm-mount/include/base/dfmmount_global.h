@@ -41,21 +41,21 @@
 
 DFM_MOUNT_BEGIN_NS
 
-enum DeviceType {
+enum class DeviceType : uint16_t {
     AllDevice      = 0,
     BlockDevice    = 1,    // normal block devices, like removable disks
     ProtocolDevice = 2,    // protocol devices, like smb/mtp/ftp/ptp etc...
     NetDevice      = 3,
 };
 
-enum MonitorStatus {
+enum class MonitorStatus : uint16_t {
     Monitoring  = 0,
     Idle        = 1,
 
     NotDefined  = 0xff,
 };
 
-enum Property {
+enum class Property : uint16_t {
     // blocks property
     BlockProperty = 0,
 

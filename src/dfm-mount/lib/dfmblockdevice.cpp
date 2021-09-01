@@ -33,8 +33,10 @@ extern "C" {
 }
 
 DFM_MOUNT_USE_NS
+
 DFMBlockDevice::DFMBlockDevice(const QString &device, QObject *parent)
-    :DFMDevice(parent), d_ptr(new DFMBlockDevicePrivate(this, device))
+    : DFMDevice(parent),
+      d_pointer(new DFMBlockDevicePrivate(this, device))
 {
 }
 
@@ -46,17 +48,20 @@ DFMBlockDevice::~DFMBlockDevice()
 bool DFMBlockDevice::eject()
 {
     Q_D(DFMBlockDevice);
+
     return d->eject();
 }
 
 bool DFMBlockDevice::powerOff()
 {
     Q_D(DFMBlockDevice);
+
     return d->powerOff();
 }
 
 DFMBlockDevicePrivate::DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &dev)
-    : devDesc(dev), q_ptr(qq)
+    : devDesc(dev),
+      q_ptr(qq)
 {
     qq->registerPath(std::bind(&DFMBlockDevicePrivate::path, this));
     qq->registerMount(std::bind(&DFMBlockDevicePrivate::mount, this, std::placeholders::_1));
@@ -74,15 +79,16 @@ DFMBlockDevicePrivate::DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &
     qq->registerDeviceType(std::bind(&DFMBlockDevicePrivate::deviceType, this));
 }
 
-QString DFMBlockDevicePrivate::path()
+QString DFMBlockDevicePrivate::path() const
 {
     return devDesc;
 }
 
 QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 {
-    qDebug() << __FUNCTION__ << "is triggered";
+    qDebug() << __PRETTY_FUNCTION__ << "is triggered";
     Q_Q(DFMBlockDevice);
+
     Q_EMIT q->mounted(QUrl());
     return QUrl();
 }
@@ -90,6 +96,7 @@ QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts)
 {
     Q_Q(DFMBlockDevice);
+
     QtConcurrent::run([&]{
         auto ret = mount(opts);
         Q_EMIT q->mounted(ret);
@@ -104,6 +111,7 @@ bool DFMBlockDevicePrivate::unmount()
 void DFMBlockDevicePrivate::unmountAsync()
 {
     Q_Q(DFMBlockDevice);
+
     QtConcurrent::run([&]{
         auto ret = unmount();
         if (ret)
@@ -119,6 +127,7 @@ bool DFMBlockDevicePrivate::rename(const QString &newName)
 void DFMBlockDevicePrivate::renameAsync(const QString &newName)
 {
     Q_Q(DFMBlockDevice);
+
     QtConcurrent::run([&]{
         auto ret = rename(newName);
         if (ret)
@@ -126,39 +135,39 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName)
     });
 }
 
-QUrl DFMBlockDevicePrivate::accessPoint()
+QUrl DFMBlockDevicePrivate::accessPoint() const
 {
     return QUrl();
 }
 
-QUrl DFMBlockDevicePrivate::mountPoint()
+QUrl DFMBlockDevicePrivate::mountPoint() const
 {
     return QUrl();
 }
 
-QString DFMBlockDevicePrivate::fileSystem()
+QString DFMBlockDevicePrivate::fileSystem() const
 {
     return QString();
 }
 
-long DFMBlockDevicePrivate::sizeTotal()
+long DFMBlockDevicePrivate::sizeTotal() const
 {
     return 0;
 }
 
-long DFMBlockDevicePrivate::sizeUsage()
+long DFMBlockDevicePrivate::sizeUsage() const
 {
     return 0;
 }
 
-long DFMBlockDevicePrivate::sizeFree()
+long DFMBlockDevicePrivate::sizeFree() const
 {
     return 0;
 }
 
-int DFMBlockDevicePrivate::deviceType()
+DeviceType DFMBlockDevicePrivate::deviceType() const
 {
-    return BlockDevice;
+    return DeviceType::BlockDevice;
 }
 
 bool DFMBlockDevicePrivate::eject()

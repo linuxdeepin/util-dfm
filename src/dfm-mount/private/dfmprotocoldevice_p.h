@@ -27,23 +27,24 @@
 #include "udisks/udisks-generated.h"
 
 DFM_MOUNT_BEGIN_NS
-class DFMProtocolDevicePrivate {
+class DFMProtocolDevicePrivate final {
 public:
     DFMProtocolDevicePrivate(DFMProtocolDevice *qq, const QString &dev);
-    QString path();
+
+    QString path() const;
     QUrl mount(const QVariantMap &opts);
     void mountAsync(const QVariantMap &opts);
     bool unmount();
     void unmountAsync();
     bool rename(const QString &newName);
     void renameAsync(const QString &newName);
-    QUrl accessPoint();
-    QUrl mountPoint();
-    QString fileSystem();
-    long sizeTotal();
-    long sizeUsage();
-    long sizeFree();
-    int deviceType();
+    QUrl accessPoint() const;
+    QUrl mountPoint() const;
+    QString fileSystem() const;
+    long sizeTotal() const;
+    long sizeUsage() const;
+    long sizeFree() const;
+    DeviceType deviceType() const;
 
     bool eject();
     bool powerOff();

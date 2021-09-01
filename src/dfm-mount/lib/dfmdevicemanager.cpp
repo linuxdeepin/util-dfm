@@ -21,10 +21,18 @@
 
 #include "dfmdevicemanager.h"
 #include "private/dfmdevicemanager_p.h"
+
 DFM_MOUNT_USE_NS
 
+DFMDeviceManagerPrivate::DFMDeviceManagerPrivate(DFMDeviceManager *q)
+    : q_ptr(q)
+{
+
+}
+
 DFMDeviceManager::DFMDeviceManager(QObject *parent)
-    : QObject (parent), d_ptr(new DFMDeviceManagerPrivate(this))
+    : QObject (parent),
+      d_pointer(new DFMDeviceManagerPrivate(this))
 {
 
 }
@@ -34,8 +42,3 @@ DFMDeviceManager::~DFMDeviceManager()
 
 }
 
-DFMDeviceManagerPrivate::DFMDeviceManagerPrivate(DFMDeviceManager *q)
-    : q_ptr(q)
-{
-
-}

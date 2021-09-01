@@ -32,14 +32,16 @@ extern "C" {
 }
 
 DFM_MOUNT_BEGIN_NS
+
 class DFMProtocolDevice;
-class DFMProtocolMonitorPrivate {
+class DFMProtocolMonitorPrivate final
+{
 public:
     DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq);
     bool startMonitor();
     bool stopMonitor();
-    MonitorStatus status();
-    int monitorObjectType();
+    MonitorStatus status() const;
+    DeviceType monitorObjectType() const;
 
 private:
 

@@ -26,7 +26,8 @@
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMDeviceManagerPrivate {
+class DFMDeviceManagerPrivate final
+{
 public:
     DFMDeviceManagerPrivate(DFMDeviceManager *q);
 

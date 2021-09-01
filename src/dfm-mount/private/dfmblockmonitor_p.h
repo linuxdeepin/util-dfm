@@ -32,14 +32,17 @@ extern "C" {
 }
 
 DFM_MOUNT_BEGIN_NS
+
 class DFMBlockDevice;
-class DFMBlockMonitorPrivate {
+class DFMBlockMonitorPrivate final
+{
 public:
     DFMBlockMonitorPrivate(DFMBlockMonitor *qq);
-    bool startMonitor();
-    bool stopMonitor();
-    MonitorStatus status();
-    int monitorObjectType();
+
+    bool startMonitor() DFM_MNT_OVERRIDE;
+    bool stopMonitor() DFM_MNT_OVERRIDE;
+    MonitorStatus status() const DFM_MNT_OVERRIDE;
+    DeviceType monitorObjectType() const DFM_MNT_OVERRIDE;
 
 private:
     static void onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData);

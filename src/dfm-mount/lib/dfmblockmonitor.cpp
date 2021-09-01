@@ -29,20 +29,8 @@
 
 DFM_MOUNT_USE_NS
 
-DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
-    : DFMMonitor (parent),
-      d_ptr(new DFMBlockMonitorPrivate(this))
-{
-
-}
-
-DFMBlockMonitor::~DFMBlockMonitor()
-{
-
-}
-
 DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
-    :q_ptr(qq)
+    : q_ptr(qq)
 {
     qq->registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, this));
     qq->registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, this));
@@ -52,10 +40,8 @@ DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
 
 bool DFMBlockMonitorPrivate::startMonitor()
 {
-    if (client) {
-
+    if (client)
         return true;
-    }
 
     GError *err = nullptr;
     client = udisks_client_new_sync(nullptr, &err);
@@ -94,14 +80,14 @@ bool DFMBlockMonitorPrivate::stopMonitor()
     return true;
 }
 
-MonitorStatus DFMBlockMonitorPrivate::status()
+MonitorStatus DFMBlockMonitorPrivate::status() const
 {
     return curStatus;
 }
 
-int DFMBlockMonitorPrivate::monitorObjectType()
+DeviceType DFMBlockMonitorPrivate::monitorObjectType() const
 {
-    return BlockDevice;
+    return DeviceType::BlockDevice;
 }
 
 void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
@@ -110,7 +96,7 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
     if (!monitor)
         return;
 
-    qDebug() << __FUNCTION__;
+    qDebug() << __PRETTY_FUNCTION__;
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
     if (!udisksObj)
         return;
@@ -136,10 +122,22 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
 
 void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
 {
-    qDebug() << __FUNCTION__;
+    qDebug() << __PRETTY_FUNCTION__;
 }
 
 void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *objProxy, GDBusProxy *dbusProxy, GVariant *property, const gchar * const invalidProperty, gpointer *userData)
 {
-    qDebug() << __FUNCTION__;
+    qDebug() << __PRETTY_FUNCTION__;
+}
+
+DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
+    : DFMMonitor (parent),
+      d_pointer(new DFMBlockMonitorPrivate(this))
+{
+
+}
+
+DFMBlockMonitor::~DFMBlockMonitor()
+{
+
 }

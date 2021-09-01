@@ -27,23 +27,26 @@
 #include "udisks/udisks-generated.h"
 
 DFM_MOUNT_BEGIN_NS
-class DFMBlockDevicePrivate {
+
+class DFMBlockDevicePrivate final
+{
 public:
     DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &dev);
-    QString path();
-    QUrl mount(const QVariantMap &opts);
-    void mountAsync(const QVariantMap &opts);
-    bool unmount();
-    void unmountAsync();
-    bool rename(const QString &newName);
-    void renameAsync(const QString &newName);
-    QUrl accessPoint();
-    QUrl mountPoint();
-    QString fileSystem();
-    long sizeTotal();
-    long sizeUsage();
-    long sizeFree();
-    int deviceType();
+
+    QString path() const DFM_MNT_OVERRIDE;
+    QUrl mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
+    void mountAsync(const QVariantMap &opts) DFM_MNT_OVERRIDE;
+    bool unmount() DFM_MNT_OVERRIDE;
+    void unmountAsync() DFM_MNT_OVERRIDE;
+    bool rename(const QString &newName) DFM_MNT_OVERRIDE;
+    void renameAsync(const QString &newName) DFM_MNT_OVERRIDE;
+    QUrl accessPoint() const DFM_MNT_OVERRIDE;
+    QUrl mountPoint() const DFM_MNT_OVERRIDE;
+    QString fileSystem() const DFM_MNT_OVERRIDE;
+    long sizeTotal() const DFM_MNT_OVERRIDE;
+    long sizeUsage() const DFM_MNT_OVERRIDE;
+    long sizeFree() const DFM_MNT_OVERRIDE;
+    DeviceType deviceType() const DFM_MNT_OVERRIDE;
 
     bool eject();
     bool powerOff();

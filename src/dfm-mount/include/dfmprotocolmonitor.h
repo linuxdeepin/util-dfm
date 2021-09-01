@@ -37,7 +37,7 @@ public:
     ~DFMProtocolMonitor();
 
 private:
-    QScopedPointer<DFMProtocolMonitorPrivate> d_ptr;
+    QScopedPointer<DFMProtocolMonitorPrivate> d_pointer;
     Q_DECLARE_PRIVATE(DFMProtocolMonitor)
 };
 DFM_MOUNT_END_NS

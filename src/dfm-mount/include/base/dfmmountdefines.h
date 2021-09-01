@@ -23,6 +23,5 @@
 #ifndef DFMMOUNTDEFINES_H
 #define DFMMOUNTDEFINES_H
 
-#define WARN_NO_INIT()  (qWarning() << "function <" << __FUNCTION__ << "> is not registered")
 
 #endif // DFMMOUNTDEFINES_H

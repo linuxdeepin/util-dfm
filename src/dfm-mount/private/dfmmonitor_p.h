@@ -31,7 +31,8 @@
 using namespace std;
 DFM_MOUNT_BEGIN_NS
 
-class DFMMonitorPrivate {
+class DFMMonitorPrivate final
+{
 public:
     DFMMonitorPrivate(DFMMonitor *q);
 

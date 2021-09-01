@@ -32,16 +32,16 @@
 #include <functional>
 
 DFM_MOUNT_BEGIN_NS
-using namespace std;
+
 class DFMDevicePrivate;
 class DFMDevice: public QObject
 {
     Q_OBJECT
 public:
     explicit DFMDevice(QObject *parent = nullptr);
-    virtual ~DFMDevice(){}
+    virtual ~DFMDevice() {}
 
-    DFM_MNT_VIRTUAL QString path();
+    DFM_MNT_VIRTUAL QString path() const;
 
     DFM_MNT_VIRTUAL QUrl mount(const QVariantMap &opts);
     DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts);
@@ -52,50 +52,50 @@ public:
     DFM_MNT_VIRTUAL bool rename(const QString &newName);
     DFM_MNT_VIRTUAL void renameAsync(const QString &newName);
 
-    DFM_MNT_VIRTUAL QUrl accessPoint();
-    DFM_MNT_VIRTUAL QUrl mountPoint();
-    DFM_MNT_VIRTUAL QString fileSystem();
-    DFM_MNT_VIRTUAL long sizeTotal();
-    DFM_MNT_VIRTUAL long sizeFree();
-    DFM_MNT_VIRTUAL long sizeUsage();
+    DFM_MNT_VIRTUAL QUrl accessPoint() const;
+    DFM_MNT_VIRTUAL QUrl mountPoint() const;
+    DFM_MNT_VIRTUAL QString fileSystem() const;
+    DFM_MNT_VIRTUAL long sizeTotal() const;
+    DFM_MNT_VIRTUAL long sizeFree() const;
+    DFM_MNT_VIRTUAL long sizeUsage() const;
 
-    DFM_MNT_VIRTUAL int deviceType();
-    DFM_MNT_VIRTUAL QVariant getProperty(Property name);
+    DFM_MNT_VIRTUAL DeviceType deviceType() const;
+    DFM_MNT_VIRTUAL QVariant getProperty(Property name) const;
 
 public:
 
     // type definition
-    using Path = function<QString ()>;
-    using Mount = function<QUrl (const QVariantMap &)>;
-    using MountAsync = function<void (const QVariantMap &)>;
-    using Unmount = function<bool ()>;
-    using UnmountAsync = function<void ()>;
-    using Rename = function<bool (const QString &)>;
-    using RenameAsync = function<void (const QString &)>;
-    using AccessPoint = function<QUrl ()>;
-    using MountPoint = function<QUrl ()>;
-    using FileSystem = function<QString ()>;
-    using SizeTotal = function<long ()>;
-    using SizeUsage = function<long ()>;
-    using SizeFree = function<long ()>;
-    using DeviceType = function<int ()>;
-    using GetProperty = function<QVariant (Property)>;
+    using PathFunc         = std::function<QString ()>;
+    using MountFunc        = std::function<QUrl (const QVariantMap &)>;
+    using MountAsyncFunc   = std::function<void (const QVariantMap &)>;
+    using UnmountFunc      = std::function<bool ()>;
+    using UnmountAsyncFunc = std::function<void ()>;
+    using RenameFunc       = std::function<bool (const QString &)>;
+    using RenameAsyncFunc  = std::function<void (const QString &)>;
+    using AccessPointFunc  = std::function<QUrl ()>;
+    using MountPointFunc   = std::function<QUrl ()>;
+    using FileSystemFunc   = std::function<QString ()>;
+    using SizeTotalFunc    = std::function<long ()>;
+    using SizeUsageFunc    = std::function<long ()>;
+    using SizeFreeFunc     = std::function<long ()>;
+    using DeviceTypeFunc   = std::function<DeviceType ()>;
+    using GetPropertyFunc  = std::function<QVariant (Property)>;
 
-    void registerPath(const Path &func);
-    void registerMount(const Mount &func);
-    void registerMountAsync(const MountAsync &func);
-    void registerUnmount(const Unmount &func);
-    void registerUnmountAsync(const UnmountAsync &func);
-    void registerRename(const Rename &func);
-    void registerRenameAsync(const RenameAsync &func);
-    void registerAccessPoint(const AccessPoint &func);
-    void registerMountPoint(const MountPoint &func);
-    void registerFileSystem(const FileSystem &func);
-    void registerSizeTotal(const SizeTotal &func);
-    void registerSizeUsage(const SizeUsage &func);
-    void registerSizeFree(const SizeFree &func);
-    void registerDeviceType(const DeviceType &func);
-    void registerGetProperty(const GetProperty &func);
+    void registerPath(const PathFunc &func);
+    void registerMount(const MountFunc &func);
+    void registerMountAsync(const MountAsyncFunc &func);
+    void registerUnmount(const UnmountFunc &func);
+    void registerUnmountAsync(const UnmountAsyncFunc &func);
+    void registerRename(const RenameFunc &func);
+    void registerRenameAsync(const RenameAsyncFunc &func);
+    void registerAccessPoint(const AccessPointFunc &func);
+    void registerMountPoint(const MountPointFunc &func);
+    void registerFileSystem(const FileSystemFunc &func);
+    void registerSizeTotal(const SizeTotalFunc &func);
+    void registerSizeUsage(const SizeUsageFunc &func);
+    void registerSizeFree(const SizeFreeFunc &func);
+    void registerDeviceType(const DeviceTypeFunc &func);
+    void registerGetProperty(const GetPropertyFunc &func);
 
 
 Q_SIGNALS:
@@ -103,8 +103,8 @@ Q_SIGNALS:
     void unmounted();
     void renamed(const QString &newName);
 
-protected:
-    QSharedPointer<DFMDevicePrivate> d_ptr = nullptr;
+private:
+    QSharedPointer<DFMDevicePrivate> d_pointer = nullptr;
     Q_DECLARE_PRIVATE(DFMDevice)
 };
 DFM_MOUNT_END_NS

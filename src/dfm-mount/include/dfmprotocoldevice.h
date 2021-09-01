@@ -30,7 +30,7 @@
 DFM_MOUNT_BEGIN_NS
 
 class DFMProtocolDevicePrivate;
-class DFMProtocolDevice : public DFMDevice
+class DFMProtocolDevice final : public DFMDevice
 {
     Q_OBJECT
 public:
@@ -38,7 +38,7 @@ public:
     ~DFMProtocolDevice();
 
 private:
-    QScopedPointer<DFMProtocolDevicePrivate> d_ptr;
+    QScopedPointer<DFMProtocolDevicePrivate> d_pointer;
     Q_DECLARE_PRIVATE(DFMProtocolDevice)
 };
 

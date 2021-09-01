@@ -30,7 +30,7 @@
 DFM_MOUNT_BEGIN_NS
 
 class DFMBlockDevicePrivate;
-class DFMBlockDevice : public DFMDevice
+class DFMBlockDevice final : public DFMDevice
 {
     Q_OBJECT
 public:
@@ -42,7 +42,7 @@ public:
     bool powerOff();
 
 private:
-    QScopedPointer<DFMBlockDevicePrivate> d_ptr;
+    QScopedPointer<DFMBlockDevicePrivate> d_pointer;
     Q_DECLARE_PRIVATE(DFMBlockDevice)
 };
 

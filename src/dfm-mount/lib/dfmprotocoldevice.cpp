@@ -31,9 +31,12 @@
 
 
 DFM_MOUNT_USE_NS
+
 DFMProtocolDevice::DFMProtocolDevice(const QString &device, QObject *parent)
-    :DFMDevice(parent), d_ptr(new DFMProtocolDevicePrivate(this, device))
+    : DFMDevice(parent),
+      d_pointer(new DFMProtocolDevicePrivate(this, device))
 {
+
 }
 
 DFMProtocolDevice::~DFMProtocolDevice()
@@ -42,7 +45,8 @@ DFMProtocolDevice::~DFMProtocolDevice()
 }
 
 DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(DFMProtocolDevice *qq, const QString &dev)
-    : devDesc(dev), q_ptr(qq)
+    : devDesc(dev),
+      q_ptr(qq)
 {
     qq->registerPath(std::bind(&DFMProtocolDevicePrivate::path, this));
     qq->registerMount(std::bind(&DFMProtocolDevicePrivate::mount, this, std::placeholders::_1));
@@ -60,14 +64,14 @@ DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(DFMProtocolDevice *qq, const 
     qq->registerDeviceType(std::bind(&DFMProtocolDevicePrivate::deviceType, this));
 }
 
-QString DFMProtocolDevicePrivate::path()
+QString DFMProtocolDevicePrivate::path() const
 {
     return devDesc;
 }
 
 QUrl DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
 {
-    qDebug() << __FUNCTION__ << "is triggered";
+    qDebug() << __PRETTY_FUNCTION__ << "is triggered";
     Q_Q(DFMProtocolDevice);
     Q_EMIT q->mounted(QUrl());
     return QUrl();
@@ -112,39 +116,39 @@ void DFMProtocolDevicePrivate::renameAsync(const QString &newName)
     });
 }
 
-QUrl DFMProtocolDevicePrivate::accessPoint()
+QUrl DFMProtocolDevicePrivate::accessPoint() const
 {
     return QUrl();
 }
 
-QUrl DFMProtocolDevicePrivate::mountPoint()
+QUrl DFMProtocolDevicePrivate::mountPoint() const
 {
     return QUrl();
 }
 
-QString DFMProtocolDevicePrivate::fileSystem()
+QString DFMProtocolDevicePrivate::fileSystem() const
 {
     return QString();
 }
 
-long DFMProtocolDevicePrivate::sizeTotal()
+long DFMProtocolDevicePrivate::sizeTotal() const
 {
     return 0;
 }
 
-long DFMProtocolDevicePrivate::sizeUsage()
+long DFMProtocolDevicePrivate::sizeUsage() const
 {
     return 0;
 }
 
-long DFMProtocolDevicePrivate::sizeFree()
+long DFMProtocolDevicePrivate::sizeFree() const
 {
     return 0;
 }
 
-int DFMProtocolDevicePrivate::deviceType()
+DeviceType DFMProtocolDevicePrivate::deviceType() const
 {
-    return ProtocolDevice;
+    return DeviceType::ProtocolDevice;
 }
 
 bool DFMProtocolDevicePrivate::eject()

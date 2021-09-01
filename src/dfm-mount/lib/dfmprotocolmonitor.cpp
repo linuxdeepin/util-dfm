@@ -31,7 +31,7 @@ DFM_MOUNT_USE_NS
 
 DFMProtocolMonitor::DFMProtocolMonitor(QObject *parent)
     : DFMMonitor (parent),
-      d_ptr(new DFMProtocolMonitorPrivate(this))
+      d_pointer(new DFMProtocolMonitorPrivate(this))
 {
 
 }
@@ -62,13 +62,13 @@ bool DFMProtocolMonitorPrivate::stopMonitor()
     return true;
 }
 
-MonitorStatus DFMProtocolMonitorPrivate::status()
+MonitorStatus DFMProtocolMonitorPrivate::status() const
 {
     return curStatus;
 }
 
-int DFMProtocolMonitorPrivate::monitorObjectType()
+DeviceType DFMProtocolMonitorPrivate::monitorObjectType() const
 {
-    return ProtocolDevice;
+    return DeviceType::ProtocolDevice;
 }
 

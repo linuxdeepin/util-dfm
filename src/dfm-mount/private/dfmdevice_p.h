@@ -34,25 +34,26 @@
 using namespace std;
 DFM_MOUNT_BEGIN_NS
 
-class DFMDevicePrivate {
+class DFMDevicePrivate final
+{
 public:
     DFMDevicePrivate(DFMDevice *q);
 
-    DFMDevice::Path path = nullptr;
-    DFMDevice::Mount mount = nullptr;
-    DFMDevice::MountAsync mountAsync = nullptr;
-    DFMDevice::Unmount unmount = nullptr;
-    DFMDevice::UnmountAsync unmountAsync = nullptr;
-    DFMDevice::Rename rename = nullptr;
-    DFMDevice::RenameAsync renameAsync = nullptr;
-    DFMDevice::AccessPoint accessPoint = nullptr;
-    DFMDevice::MountPoint mountPoint = nullptr;
-    DFMDevice::FileSystem fileSystem = nullptr;
-    DFMDevice::SizeTotal sizeTotal = nullptr;
-    DFMDevice::SizeUsage sizeUsage = nullptr;
-    DFMDevice::SizeFree sizeFree = nullptr;
-    DFMDevice::DeviceType deviceType = nullptr;
-    DFMDevice::GetProperty getProperty = nullptr;
+    DFMDevice::PathFunc path = nullptr;
+    DFMDevice::MountFunc mount = nullptr;
+    DFMDevice::MountAsyncFunc mountAsync = nullptr;
+    DFMDevice::UnmountFunc unmount = nullptr;
+    DFMDevice::UnmountAsyncFunc unmountAsync = nullptr;
+    DFMDevice::RenameFunc rename = nullptr;
+    DFMDevice::RenameAsyncFunc renameAsync = nullptr;
+    DFMDevice::AccessPointFunc accessPoint = nullptr;
+    DFMDevice::MountPointFunc mountPoint = nullptr;
+    DFMDevice::FileSystemFunc fileSystem = nullptr;
+    DFMDevice::SizeTotalFunc sizeTotal = nullptr;
+    DFMDevice::SizeUsageFunc sizeUsage = nullptr;
+    DFMDevice::SizeFreeFunc sizeFree = nullptr;
+    DFMDevice::DeviceTypeFunc deviceType = nullptr;
+    DFMDevice::GetPropertyFunc getProperty = nullptr;
 
 public:
     DFMDevice *q_ptr = nullptr;

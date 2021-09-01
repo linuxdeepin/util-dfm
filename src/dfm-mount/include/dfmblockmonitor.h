@@ -28,8 +28,9 @@
 #include <QObject>
 
 DFM_MOUNT_BEGIN_NS
+
 class DFMBlockMonitorPrivate;
-class DFMBlockMonitor: public DFMMonitor
+class DFMBlockMonitor final : public DFMMonitor
 {
     Q_OBJECT
 public:
@@ -37,7 +38,7 @@ public:
     ~DFMBlockMonitor();
 
 private:
-    QScopedPointer<DFMBlockMonitorPrivate> d_ptr;
+    QScopedPointer<DFMBlockMonitorPrivate> d_pointer;
     Q_DECLARE_PRIVATE(DFMBlockMonitor)
 };
 DFM_MOUNT_END_NS
