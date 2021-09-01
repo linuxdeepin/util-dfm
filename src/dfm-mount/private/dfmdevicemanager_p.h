@@ -24,14 +24,15 @@
 
 #include "dfmdevicemanager.h"
 
+#include <private/qobject_p.h>
+
 DFM_MOUNT_BEGIN_NS
 
-class DFMDeviceManagerPrivate final
+class DFMDeviceManagerPrivate final: public QObjectPrivate
 {
+    Q_DECLARE_PUBLIC(DFMDeviceManager)
 public:
-    DFMDeviceManagerPrivate(DFMDeviceManager *q);
-
-    DFMDeviceManager *q_ptr;
+    DFMDeviceManagerPrivate();
 };
 
 DFM_MOUNT_END_NS

@@ -33,13 +33,11 @@ class DFMBlockMonitorPrivate;
 class DFMBlockMonitor final : public DFMMonitor
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(DFMBlockMonitor)
+
 public:
     DFMBlockMonitor(QObject *parent = nullptr);
     ~DFMBlockMonitor();
-
-private:
-    QScopedPointer<DFMBlockMonitorPrivate> d_pointer;
-    Q_DECLARE_PRIVATE(DFMBlockMonitor)
 };
 DFM_MOUNT_END_NS
 

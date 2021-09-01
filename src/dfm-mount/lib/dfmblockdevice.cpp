@@ -35,9 +35,23 @@ extern "C" {
 DFM_MOUNT_USE_NS
 
 DFMBlockDevice::DFMBlockDevice(const QString &device, QObject *parent)
-    : DFMDevice(parent),
-      d_pointer(new DFMBlockDevicePrivate(this, device))
+    : DFMDevice(* new DFMBlockDevicePrivate(device), parent)
 {
+    Q_D(DFMBlockDevice);
+    registerPath(std::bind(&DFMBlockDevicePrivate::path, d));
+    registerMount(std::bind(&DFMBlockDevicePrivate::mount, d, std::placeholders::_1));
+    registerMountAsync(std::bind(&DFMBlockDevicePrivate::mountAsync, d, std::placeholders::_1));
+    registerUnmount(std::bind(&DFMBlockDevicePrivate::unmount, d));
+    registerUnmountAsync(std::bind(&DFMBlockDevicePrivate::unmountAsync, d));
+    registerRename(std::bind(&DFMBlockDevicePrivate::rename, d, std::placeholders::_1));
+    registerRenameAsync(std::bind(&DFMBlockDevicePrivate::renameAsync, d, std::placeholders::_1));
+    registerAccessPoint(std::bind(&DFMBlockDevicePrivate::accessPoint, d));
+    registerMountPoint(std::bind(&DFMBlockDevicePrivate::mountPoint, d));
+    registerFileSystem(std::bind(&DFMBlockDevicePrivate::fileSystem, d));
+    registerSizeTotal(std::bind(&DFMBlockDevicePrivate::sizeTotal, d));
+    registerSizeUsage(std::bind(&DFMBlockDevicePrivate::sizeUsage, d));
+    registerSizeFree(std::bind(&DFMBlockDevicePrivate::sizeFree, d));
+    registerDeviceType(std::bind(&DFMBlockDevicePrivate::deviceType, d));
 }
 
 DFMBlockDevice::~DFMBlockDevice()
@@ -59,24 +73,10 @@ bool DFMBlockDevice::powerOff()
     return d->powerOff();
 }
 
-DFMBlockDevicePrivate::DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &dev)
-    : devDesc(dev),
-      q_ptr(qq)
+DFMBlockDevicePrivate::DFMBlockDevicePrivate(const QString &dev)
+    : devDesc(dev)
 {
-    qq->registerPath(std::bind(&DFMBlockDevicePrivate::path, this));
-    qq->registerMount(std::bind(&DFMBlockDevicePrivate::mount, this, std::placeholders::_1));
-    qq->registerMountAsync(std::bind(&DFMBlockDevicePrivate::mountAsync, this, std::placeholders::_1));
-    qq->registerUnmount(std::bind(&DFMBlockDevicePrivate::unmount, this));
-    qq->registerUnmountAsync(std::bind(&DFMBlockDevicePrivate::unmountAsync, this));
-    qq->registerRename(std::bind(&DFMBlockDevicePrivate::rename, this, std::placeholders::_1));
-    qq->registerRenameAsync(std::bind(&DFMBlockDevicePrivate::renameAsync, this, std::placeholders::_1));
-    qq->registerAccessPoint(std::bind(&DFMBlockDevicePrivate::accessPoint, this));
-    qq->registerMountPoint(std::bind(&DFMBlockDevicePrivate::mountPoint, this));
-    qq->registerFileSystem(std::bind(&DFMBlockDevicePrivate::fileSystem, this));
-    qq->registerSizeTotal(std::bind(&DFMBlockDevicePrivate::sizeTotal, this));
-    qq->registerSizeUsage(std::bind(&DFMBlockDevicePrivate::sizeUsage, this));
-    qq->registerSizeFree(std::bind(&DFMBlockDevicePrivate::sizeFree, this));
-    qq->registerDeviceType(std::bind(&DFMBlockDevicePrivate::deviceType, this));
+
 }
 
 QString DFMBlockDevicePrivate::path() const

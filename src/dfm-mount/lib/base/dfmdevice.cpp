@@ -29,15 +29,13 @@
 
 DFM_MOUNT_USE_NS
 
-DFM_MOUNT_NAMESPACE::DFMDevicePrivate::DFMDevicePrivate(DFMDevice *q)
-    : q_ptr(q)
+DFM_MOUNT_NAMESPACE::DFMDevicePrivate::DFMDevicePrivate()
 {
 
 }
 
 DFMDevice::DFMDevice(QObject *parent)
-    : QObject (parent),
-      d_pointer(new DFMDevicePrivate(this))
+    : QObject (* new DFMDevicePrivate, parent)
 {
 
 }
@@ -280,5 +278,11 @@ void DFMDevice::registerGetProperty(const DFMDevice::GetPropertyFunc &func)
     Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
 
     d->getProperty = func;
+}
+
+DFMDevice::DFMDevice(DFMDevicePrivate &dd, QObject *parent)
+    : QObject (dd, parent)
+{
+
 }
 

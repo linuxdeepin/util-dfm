@@ -28,15 +28,20 @@
 
 DFM_MOUNT_USE_NS
 
-DFM_MOUNT_NAMESPACE::DFMMonitorPrivate::DFMMonitorPrivate(DFMMonitor *q)
-    : q_ptr(q)
+DFM_MOUNT_NAMESPACE::DFMMonitorPrivate::DFMMonitorPrivate()
 {
 
 }
 
 DFMMonitor::DFMMonitor(QObject *parent)
-    : QObject(parent),
-      d_pointer(new DFMMonitorPrivate(this))
+    : QObject(* new DFMMonitorPrivate(), parent)
+{
+
+}
+
+
+DFMMonitor::DFMMonitor(DFMMonitorPrivate &dd, QObject *parent)
+    : QObject (dd, parent)
 {
 
 }

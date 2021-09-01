@@ -25,11 +25,15 @@
 
 #include "dfmprotocoldevice.h"
 #include "udisks/udisks-generated.h"
+#include "private/dfmdevice_p.h"
 
 DFM_MOUNT_BEGIN_NS
-class DFMProtocolDevicePrivate final {
+class DFMProtocolDevicePrivate final : public DFMDevicePrivate
+{
+    Q_DECLARE_PUBLIC(DFMProtocolDevice)
+
 public:
-    DFMProtocolDevicePrivate(DFMProtocolDevice *qq, const QString &dev);
+    DFMProtocolDevicePrivate(const QString &dev);
 
     QString path() const;
     QUrl mount(const QVariantMap &opts);
@@ -51,10 +55,6 @@ public:
 
 public:
     QString devDesc; // descriptor of device
-
-private:
-    DFMProtocolDevice* q_ptr;
-    Q_DECLARE_PUBLIC(DFMProtocolDevice)
 };
 DFM_MOUNT_END_NS
 

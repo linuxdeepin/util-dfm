@@ -43,7 +43,8 @@ foreach(PkgConfigModule ${PkgConfigFindModules})
     include_directories(${PkgUseModuleVal_INCLUDE_DIRS})
 endforeach(PkgConfigModule)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${Qt5Core_PRIVATE_INCLUDE_DIRS})
 
 set(LIB_HEADER
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmdevice.h

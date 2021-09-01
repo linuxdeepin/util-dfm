@@ -8,10 +8,6 @@
 DFM_MOUNT_USE_NS
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
-    DFMDevice dev(nullptr);
-    dev.mount(QVariantMap());
-    DFMBlockDevice dev2("path", nullptr);
-    dev2.mount(QVariantMap());
 
     DFMBlockMonitor monitor;
     qDebug() << monitor.startMonitor();

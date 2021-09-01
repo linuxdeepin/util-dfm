@@ -33,13 +33,12 @@ class DFMProtocolDevicePrivate;
 class DFMProtocolDevice final : public DFMDevice
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(DFMProtocolDevice)
+
 public:
     DFMProtocolDevice(const QString &device, QObject *parent = nullptr);
     ~DFMProtocolDevice();
 
-private:
-    QScopedPointer<DFMProtocolDevicePrivate> d_pointer;
-    Q_DECLARE_PRIVATE(DFMProtocolDevice)
 };
 
 DFM_MOUNT_END_NS

@@ -37,6 +37,8 @@ class DFMMonitorPrivate;
 class DFMMonitor: public QObject
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(DFMMonitor)
+
 public:
     DFMMonitor(QObject *parent);
     virtual ~DFMMonitor(){}
@@ -66,10 +68,10 @@ Q_SIGNALS:
     void mountRemoved(const QString &mountPoint);
     void propertiesChanged(const QVariantMap &);
 
-private:
-    QSharedPointer<DFMMonitorPrivate> d_pointer = nullptr;
-    Q_DECLARE_PRIVATE(DFMMonitor)
+protected:
+    DFMMonitor(DFMMonitorPrivate &dd, QObject *parent = nullptr);
 };
+
 DFM_MOUNT_END_NS
 
 #endif // DFMMONITOR_H

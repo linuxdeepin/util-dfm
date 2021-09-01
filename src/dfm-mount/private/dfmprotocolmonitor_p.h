@@ -24,6 +24,7 @@
 #define DFMPROTOCOLMONITOR_P_H
 
 #include "dfmprotocolmonitor.h"
+#include "private/dfmmonitor_p.h"
 
 #include <QMap>
 
@@ -34,10 +35,12 @@ extern "C" {
 DFM_MOUNT_BEGIN_NS
 
 class DFMProtocolDevice;
-class DFMProtocolMonitorPrivate final
+class DFMProtocolMonitorPrivate final: public DFMMonitorPrivate
 {
+    Q_DECLARE_PUBLIC(DFMProtocolMonitor)
+
 public:
-    DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq);
+    DFMProtocolMonitorPrivate();
     bool startMonitor();
     bool stopMonitor();
     MonitorStatus status() const;
@@ -49,9 +52,6 @@ public:
     MonitorStatus curStatus = MonitorStatus::Idle;
 
     QMap<QString, DFMProtocolDevice *> devices;
-
-    DFMProtocolMonitor *q_ptr;
-    Q_DECLARE_PUBLIC(DFMProtocolMonitor)
 };
 
 DFM_MOUNT_END_NS

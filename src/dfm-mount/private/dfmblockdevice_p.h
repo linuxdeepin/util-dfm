@@ -25,13 +25,16 @@
 
 #include "dfmblockdevice.h"
 #include "udisks/udisks-generated.h"
+#include "private/dfmdevice_p.h"
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMBlockDevicePrivate final
+class DFMBlockDevicePrivate final: public DFMDevicePrivate
 {
+    Q_DECLARE_PUBLIC(DFMBlockDevice)
+
 public:
-    DFMBlockDevicePrivate(DFMBlockDevice *qq, const QString &dev);
+    DFMBlockDevicePrivate(const QString &dev);
 
     QString path() const DFM_MNT_OVERRIDE;
     QUrl mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
@@ -55,10 +58,6 @@ public:
     QString devDesc; // descriptor of device
     UDisksBlock *blockHandler;
     UDisksFilesystem *fsHandler;
-
-private:
-    DFMBlockDevice* q_ptr;
-    Q_DECLARE_PUBLIC(DFMBlockDevice)
 };
 DFM_MOUNT_END_NS
 

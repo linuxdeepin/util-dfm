@@ -24,6 +24,7 @@
 #define DFMBLOCKMONITOR_P_H
 
 #include "dfmblockmonitor.h"
+#include "private/dfmmonitor_p.h"
 
 #include <QMap>
 
@@ -34,10 +35,12 @@ extern "C" {
 DFM_MOUNT_BEGIN_NS
 
 class DFMBlockDevice;
-class DFMBlockMonitorPrivate final
+class DFMBlockMonitorPrivate final: public DFMMonitorPrivate
 {
+    Q_DECLARE_PUBLIC(DFMBlockMonitor)
+
 public:
-    DFMBlockMonitorPrivate(DFMBlockMonitor *qq);
+    DFMBlockMonitorPrivate();
 
     bool startMonitor() DFM_MNT_OVERRIDE;
     bool stopMonitor() DFM_MNT_OVERRIDE;
@@ -55,9 +58,6 @@ public:
     MonitorStatus curStatus = MonitorStatus::Idle;
 
     QMap<QString, DFMBlockDevice *> devices;
-
-    DFMBlockMonitor *q_ptr;
-    Q_DECLARE_PUBLIC(DFMBlockMonitor)
 };
 
 DFM_MOUNT_END_NS

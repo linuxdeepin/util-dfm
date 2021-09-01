@@ -29,13 +29,9 @@
 
 DFM_MOUNT_USE_NS
 
-DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
-    : q_ptr(qq)
+DFMBlockMonitorPrivate::DFMBlockMonitorPrivate()
 {
-    qq->registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, this));
-    qq->registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, this));
-    qq->registerStatus(std::bind(&DFMBlockMonitorPrivate::status, this));
-    qq->registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, this));
+
 }
 
 bool DFMBlockMonitorPrivate::startMonitor()
@@ -131,10 +127,13 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
 }
 
 DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
-    : DFMMonitor (parent),
-      d_pointer(new DFMBlockMonitorPrivate(this))
+    : DFMMonitor (* new DFMBlockMonitorPrivate(), parent)
 {
-
+    Q_D(DFMBlockMonitor);
+    registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, d));
+    registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, d));
+    registerStatus(std::bind(&DFMBlockMonitorPrivate::status, d));
+    registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, d));
 }
 
 DFMBlockMonitor::~DFMBlockMonitor()

@@ -33,6 +33,8 @@ class DFMBlockDevicePrivate;
 class DFMBlockDevice final : public DFMDevice
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(DFMBlockDevice)
+
 public:
     DFMBlockDevice(const QString &device, QObject *parent = nullptr);
     ~DFMBlockDevice();
@@ -40,10 +42,6 @@ public:
 public:
     bool eject();
     bool powerOff();
-
-private:
-    QScopedPointer<DFMBlockDevicePrivate> d_pointer;
-    Q_DECLARE_PRIVATE(DFMBlockDevice)
 };
 
 DFM_MOUNT_END_NS

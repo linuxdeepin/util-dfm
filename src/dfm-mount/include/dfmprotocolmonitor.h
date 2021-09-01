@@ -32,13 +32,11 @@ class DFMProtocolMonitorPrivate;
 class DFMProtocolMonitor: public DFMMonitor
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(DFMProtocolMonitor)
+
 public:
     DFMProtocolMonitor(QObject *parent = nullptr);
     ~DFMProtocolMonitor();
-
-private:
-    QScopedPointer<DFMProtocolMonitorPrivate> d_pointer;
-    Q_DECLARE_PRIVATE(DFMProtocolMonitor)
 };
 DFM_MOUNT_END_NS
 

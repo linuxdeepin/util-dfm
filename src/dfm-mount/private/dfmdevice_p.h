@@ -29,15 +29,19 @@
 #include <QObject>
 #include <QUrl>
 
+#include <private/qobject_p.h>
+
 #include <functional>
 
 using namespace std;
 DFM_MOUNT_BEGIN_NS
 
-class DFMDevicePrivate final
+class DFMDevicePrivate : public QObjectPrivate
 {
+    Q_DECLARE_PUBLIC(DFMDevice)
+
 public:
-    DFMDevicePrivate(DFMDevice *q);
+    DFMDevicePrivate();
 
     DFMDevice::PathFunc path = nullptr;
     DFMDevice::MountFunc mount = nullptr;
@@ -54,9 +58,6 @@ public:
     DFMDevice::SizeFreeFunc sizeFree = nullptr;
     DFMDevice::DeviceTypeFunc deviceType = nullptr;
     DFMDevice::GetPropertyFunc getProperty = nullptr;
-
-public:
-    DFMDevice *q_ptr = nullptr;
 };
 
 DFM_MOUNT_END_NS

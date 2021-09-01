@@ -24,15 +24,13 @@
 
 DFM_MOUNT_USE_NS
 
-DFMDeviceManagerPrivate::DFMDeviceManagerPrivate(DFMDeviceManager *q)
-    : q_ptr(q)
+DFMDeviceManagerPrivate::DFMDeviceManagerPrivate()
 {
 
 }
 
 DFMDeviceManager::DFMDeviceManager(QObject *parent)
-    : QObject (parent),
-      d_pointer(new DFMDeviceManagerPrivate(this))
+    : QObject (* new DFMDeviceManagerPrivate(), parent)
 {
 
 }

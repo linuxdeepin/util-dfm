@@ -30,10 +30,13 @@
 DFM_MOUNT_USE_NS
 
 DFMProtocolMonitor::DFMProtocolMonitor(QObject *parent)
-    : DFMMonitor (parent),
-      d_pointer(new DFMProtocolMonitorPrivate(this))
+    : DFMMonitor (* new DFMProtocolMonitorPrivate(), parent)
 {
-
+    Q_D(DFMProtocolMonitor);
+    registerStartMonitor(std::bind(&DFMProtocolMonitorPrivate::startMonitor, d));
+    registerStopMonitor(std::bind(&DFMProtocolMonitorPrivate::stopMonitor, d));
+    registerStatus(std::bind(&DFMProtocolMonitorPrivate::status, d));
+    registerMonitorObjectType(std::bind(&DFMProtocolMonitorPrivate::monitorObjectType, d));
 }
 
 DFMProtocolMonitor::~DFMProtocolMonitor()
@@ -41,13 +44,9 @@ DFMProtocolMonitor::~DFMProtocolMonitor()
 
 }
 
-DFMProtocolMonitorPrivate::DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq)
-    :q_ptr(qq)
+DFMProtocolMonitorPrivate::DFMProtocolMonitorPrivate()
 {
-    qq->registerStartMonitor(std::bind(&DFMProtocolMonitorPrivate::startMonitor, this));
-    qq->registerStopMonitor(std::bind(&DFMProtocolMonitorPrivate::stopMonitor, this));
-    qq->registerStatus(std::bind(&DFMProtocolMonitorPrivate::status, this));
-    qq->registerMonitorObjectType(std::bind(&DFMProtocolMonitorPrivate::monitorObjectType, this));
+
 }
 
 bool DFMProtocolMonitorPrivate::startMonitor()
