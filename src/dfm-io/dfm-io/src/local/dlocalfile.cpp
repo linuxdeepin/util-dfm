@@ -48,7 +48,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
     GFile *gfile = g_file_new_for_uri(uri.toString().toStdString().c_str());
 
     GError *error = nullptr;
-    if (mode == DFile::OpenFlag::ReadOnly) {
+
+    switch (mode) {
+    case DFile::OpenFlag::ReadOnly: {
         if (!exists()) {
             g_object_unref(gfile);
             return false;
@@ -63,7 +65,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-    } else if (mode == DFile::OpenFlag::WriteOnly) {
+        break;
+    }
+    case DFile::OpenFlag::WriteOnly: {
         ioStream = g_file_replace_readwrite(gfile,
                                             nullptr,
                                             false,
@@ -79,7 +83,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-    } else if (mode == DFile::OpenFlag::ReadWrite) {
+        break;
+    }
+    case DFile::OpenFlag::ReadWrite: {
         ioStream = g_file_replace_readwrite(gfile,
                                             nullptr,
                                             false,
@@ -95,7 +101,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-    } else if (mode == DFile::OpenFlag::Append) {
+        break;
+    }
+    case DFile::OpenFlag::Append: {
         // 追加的方式打开
         oStream = (GOutputStream*)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &error);
         if (error) {
@@ -106,8 +114,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-
-    } else if (mode == DFile::OpenFlag::Truncate) {
+        break;
+    }
+    case DFile::OpenFlag::Truncate: {
         // 覆盖的方式打开
         ioStream = g_file_replace_readwrite(gfile,
                                             nullptr,
@@ -124,8 +133,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-
-    } else if (mode == DFile::OpenFlag::NewOnly) {
+        break;
+    }
+    case DFile::OpenFlag::NewOnly: {
         // 仅新建方式打开，已经存在会报错
         if (exists()) {
             g_object_unref(gfile);
@@ -146,8 +156,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-
-    } else if (mode == DFile::OpenFlag::ExistingOnly) {
+        break;
+    }
+    case DFile::OpenFlag::ExistingOnly: {
         // 仅已存在的方式打开，不存在会报错
         if (!exists()) {
             g_object_unref(gfile);
@@ -168,6 +179,27 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
+        break;
+    }
+
+    default: {
+        ioStream = g_file_replace_readwrite(gfile,
+                                            nullptr,
+                                            false,
+                                            G_FILE_CREATE_NONE,
+                                            nullptr,
+                                            &error);
+        if (error) {
+            qWarning() << error->message;
+            g_error_free(error);
+        }
+
+        if (!ioStream) {
+            g_object_unref(gfile);
+            return false;
+        }
+        break;
+    }
     }
 
     g_object_unref(gfile);
@@ -177,20 +209,23 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
 
 bool DLocalFilePrivate::close()
 {
-    if (ioStream) {
-        g_io_stream_close((GIOStream*)ioStream, nullptr, nullptr);
-        g_object_unref (ioStream);
-        ioStream = nullptr;
-    }
     if (iStream) {
-        g_input_stream_close(iStream, nullptr, nullptr);
+        if (!g_input_stream_is_closed(iStream))
+            g_input_stream_close(iStream, nullptr, nullptr);
         g_object_unref (iStream);
         iStream = nullptr;
     }
     if (oStream) {
-        g_output_stream_close(oStream, nullptr, nullptr);
+        if (!g_output_stream_is_closed(oStream))
+            g_output_stream_close(oStream, nullptr, nullptr);
         g_object_unref (oStream);
         oStream = nullptr;
+    }
+    if (ioStream) {
+        if (!g_io_stream_is_closed((GIOStream*)ioStream))
+            g_io_stream_close((GIOStream*)ioStream, nullptr, nullptr);
+        g_object_unref (ioStream);
+        ioStream = nullptr;
     }
     return true;
 }
@@ -229,12 +264,11 @@ QByteArray DLocalFilePrivate::read(qint64 maxSize)
 
     char data[maxSize];
     GError *error = nullptr;
-    gssize read = g_input_stream_read(inputStream,
-                                      data,
-                                      static_cast<gsize>(maxSize),
-                                      nullptr,
-                                      &error);
-    Q_UNUSED(read);
+    g_input_stream_read(inputStream,
+                        data,
+                        static_cast<gsize>(maxSize),
+                        nullptr,
+                        &error);
     if (error) {
         qWarning() << error->message;
         g_error_free(error);
@@ -512,7 +546,7 @@ DLocalFile::DLocalFile(const QUrl &uri) : DFile(uri)
 
 DLocalFile::~DLocalFile()
 {
-   close();
+   //close();
 }
 
 bool DLocalFile::open(DFile::OpenFlag mode)

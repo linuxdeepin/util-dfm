@@ -40,8 +40,8 @@ public:
     explicit DLocalWatcher(const QUrl &uri, QObject *parent = nullptr);
     ~DLocalWatcher() override;
 
-    bool start(int timeRate);
-    bool stop();
+    bool start(int timeRate) DFM_OVERRIDE;
+    bool stop() DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalWatcherPrivate> d_ptr;

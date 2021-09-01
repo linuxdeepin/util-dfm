@@ -39,19 +39,19 @@ public:
     explicit DLocalFile(const QUrl &uri);
     virtual ~DLocalFile();
 
-    DFM_VIRTUAL bool open(DFile::OpenFlag mode);
-    DFM_VIRTUAL bool close();
-    DFM_VIRTUAL qint64 read(char *data, qint64 maxSize);
-    DFM_VIRTUAL QByteArray read(qint64 maxSize);
-    DFM_VIRTUAL QByteArray readAll();
-    DFM_VIRTUAL qint64 write(const char *data, qint64 len);
-    DFM_VIRTUAL qint64 write(const char *data);
-    DFM_VIRTUAL qint64 write(const QByteArray &byteArray);
-    DFM_VIRTUAL bool seek(qint64 pos, DFile::DFMSeekType type = DFMSeekType::BEGIN);
-    DFM_VIRTUAL qint64 pos();
-    DFM_VIRTUAL bool flush();
-    DFM_VIRTUAL qint64 size();
-    DFM_VIRTUAL bool exists();
+    bool open(DFile::OpenFlag mode) DFM_OVERRIDE;
+    bool close() DFM_OVERRIDE;
+    qint64 read(char *data, qint64 maxSize) DFM_OVERRIDE;
+    QByteArray read(qint64 maxSize) DFM_OVERRIDE;
+    QByteArray readAll() DFM_OVERRIDE;
+    qint64 write(const char *data, qint64 len) DFM_OVERRIDE;
+    qint64 write(const char *data) DFM_OVERRIDE;
+    qint64 write(const QByteArray &byteArray) DFM_OVERRIDE;
+    bool seek(qint64 pos, DFile::DFMSeekType type = DFMSeekType::BEGIN) DFM_OVERRIDE;
+    qint64 pos() DFM_OVERRIDE;
+    bool flush() DFM_OVERRIDE;
+    qint64 size() DFM_OVERRIDE;
+    bool exists() DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalFilePrivate> d_ptr;

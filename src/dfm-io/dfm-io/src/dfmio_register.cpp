@@ -51,7 +51,7 @@
 
 USING_IO_NAMESPACE
 
-void dfmio::dfmio_init()
+bool dfmio::dfmio_init()
 {
     static std::once_flag flag;
 
@@ -80,4 +80,6 @@ void dfmio::dfmio_init()
         REGISTER_FACTORY1(DSmbbrowseIOFactory, "smbbrowse", QUrl);
         REGISTER_FACTORY1(DGoogleIOFactory, "google", QUrl);
     });
+
+    return true;
 }

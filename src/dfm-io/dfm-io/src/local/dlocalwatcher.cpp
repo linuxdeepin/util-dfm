@@ -55,22 +55,22 @@ bool DLocalWatcherPrivate::start(int timeRate)
     GError *error = nullptr;
     GFile *file = nullptr;
 
+    // stop first
     if (!stop()) {
         //
     }
 
     const QUrl &uri = q->uri();
-
     const QString &fname = uri.url();
+
     file = g_file_new_for_uri(fname.toLocal8Bit().data());
+
     monitor = g_file_monitor_directory(file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &error);
 
     if (!monitor)
         goto err;
 
     g_file_monitor_set_rate_limit(monitor, timeRate);
-
-    //monitor = gmonitor;
 
     g_signal_connect(monitor, "changed", G_CALLBACK(&DLocalWatcherPrivate::watchCallback), this);
     //g_object_unref(file);

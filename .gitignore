@@ -41,4 +41,13 @@ build*
 *.autosave
 .debhelper
 .vscode
+obj-x86_64-linux-gnu
+debian/tmp/*
+debian/libdfm-io/*
+debian/libdfm-io-dev/*
+debian/libdfm-mount/*
+debian/libdfm-mount-dev/*
+debian/*.log
+debian/*.substvars
+debian/files
 

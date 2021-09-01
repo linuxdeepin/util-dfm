@@ -39,18 +39,18 @@ public:
     explicit DLocalOperator(const QUrl &uri);
     ~DLocalOperator();
 
-    DFM_VIRTUAL bool renameFile(const QString &newName);
-    DFM_VIRTUAL bool copyFile(const QUrl &destUri, CopyFlag flag);
-    DFM_VIRTUAL bool moveFile(const QUrl &destUri, CopyFlag flag);
+    bool renameFile(const QString &newName) DFM_OVERRIDE;
+    bool copyFile(const QUrl &destUri, CopyFlag flag) DFM_OVERRIDE;
+    bool moveFile(const QUrl &destUri, CopyFlag flag) DFM_OVERRIDE;
 
-    DFM_VIRTUAL bool trashFile();
-    DFM_VIRTUAL bool deleteFile();
-    DFM_VIRTUAL bool restoreFile();
+    bool trashFile() DFM_OVERRIDE;
+    bool deleteFile() DFM_OVERRIDE;
+    bool restoreFile() DFM_OVERRIDE;
 
-    DFM_VIRTUAL bool touchFile();
-    DFM_VIRTUAL bool makeDirectory();
-    DFM_VIRTUAL bool createLink(const QUrl &link);
-    DFM_VIRTUAL bool setFileInfo(const DFileInfo &fileInfo);
+    bool touchFile() DFM_OVERRIDE;
+    bool makeDirectory() DFM_OVERRIDE;
+    bool createLink(const QUrl &link) DFM_OVERRIDE;
+    bool setFileInfo(const DFileInfo &fileInfo) DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalOperatorPrivate> d_ptr;

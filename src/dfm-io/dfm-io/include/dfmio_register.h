@@ -84,7 +84,7 @@ private:
     QMap<QString, std::function<DIOFactory*(U&&...)>> map;
 };
 
-void dfmio_init();
+bool dfmio_init();
 
 END_IO_NAMESPACE
 
