@@ -2,15 +2,6 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(util-dfm)
 
-# Version
-if (NOT PROJECT_VERSION)
-    set(PROJECT_VERSION "1.0.0")
-endif()
-
-if (NOT PROJECT_VERSION_MAJOR)
-    set(PROJECT_VERSION_MAJOR 0)
-endif()
-
 # Setup the environment
 SET(CMAKE_CXX_STANDARD 14)
 
@@ -24,8 +15,5 @@ set(QT_MINIMUM_VERSION "5.6.3")
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 
 # Install settings
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX /usr)
-endif ()
+set(CMAKE_INSTALL_PREFIX /usr)
 
-include(GNUInstallDirs)

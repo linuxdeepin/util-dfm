@@ -1,7 +1,5 @@
 project(dfm-io)
 
-configure_file ("dfm-io.pc.in" "dfm-io.pc" @ONLY)
-
 # Version
 if (NOT PROJECT_VERSION)
     set(PROJECT_VERSION "1.0.0")
@@ -10,8 +8,6 @@ endif()
 if (NOT PROJECT_VERSION_MAJOR)
     set(PROJECT_VERSION_MAJOR 0)
 endif()
-
-include(GNUInstallDirs)
 
 # Setup the environment
 find_package(Qt5Core REQUIRED)
@@ -97,6 +93,22 @@ FILE (GLOB IO_INCLUDES_INSTALL_LOCAL
     "include/local/*.h" "include/local/*.hpp"
 )
 
+# private
+#FILE (GLOB IO_INCLUDES_INSTALL_CORE
+#    "private/core/*.h" "private/core/*.hpp"
+#)
+#FILE (GLOB IO_INCLUDES_INSTALL_ERROR
+#    "private/error/*.h" "private/error/*.hpp"
+#)
+#FILE (GLOB IO_INCLUDES_INSTALL_FACTORY
+#    "private/factory/*.h" "private/factory/*.hpp"
+#)
+#FILE (GLOB IO_INCLUDES_INSTALL_LOCAL
+#    "private/local/*.h" "private/local/*.hpp"
+#)
+
+include(GNUInstallDirs)
+
 install (FILES ${IO_INCLUDES_INSTALL}
     DESTINATION include/dfm-io
 )
@@ -113,26 +125,14 @@ install (FILES ${IO_INCLUDES_INSTALL_LOCAL}
     DESTINATION include/dfm-io/local
 )
 
-# private
-FILE (GLOB IO_INCLUDES_INSTALL_CORE
-    "private/core/*.h" "private/core/*.hpp"
-)
-FILE (GLOB IO_INCLUDES_INSTALL_ERROR
-    "private/error/*.h" "private/error/*.hpp"
-)
-FILE (GLOB IO_INCLUDES_INSTALL_FACTORY
-    "private/factory/*.h" "private/factory/*.hpp"
-)
-FILE (GLOB IO_INCLUDES_INSTALL_LOCAL
-    "private/local/*.h" "private/local/*.hpp"
-)
+
 # todo install private
 
-#install (TARGETS dfm-io
-#    DESTINATION "/${CMAKE_INSTALL_LIBDIR}"
-#)
-install_targets ("/${CMAKE_INSTALL_LIBDIR}" dfm-io)
+install (TARGETS ${PROJECT_NAME}
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
-install (FILES "${CMAKE_CURRENT_BINARY_DIR}/dfm-io.pc"
+configure_file ("dfm-io.pc.in" "dfm-io.pc" @ONLY)
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/dfm-io.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )

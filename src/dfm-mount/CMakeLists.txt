@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(dfm-mount)
 
-include(GNUInstallDirs)
-configure_file("./lib/dfm-mount.pc.in" "./lib/dfm-mount.pc" @ONLY)
 # Version
 if (NOT PROJECT_VERSION)
     set(PROJECT_VERSION "1.0.0")
@@ -89,13 +87,16 @@ target_link_libraries(${PROJECT_NAME}
     ${PkgUseModules}
     ${QtUseModules})
 
+include(GNUInstallDirs)
+
 # Install lib
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES ${LIB_HEADER} DESTINATION include/${PROJECT_NAME})
+
+configure_file("./lib/dfm-mount.pc.in" "./lib/dfm-mount.pc" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/lib/dfm-mount.pc"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
-include(GNUInstallDirs)
 # Build example
 set(EXAMPLE_SRCS
     example/main.cpp)
