@@ -160,6 +160,13 @@ QVariant DFMDevice::getProperty(Property item) const
     return d->getProperty(item);
 }
 
+MountError DFMDevice::getLastError() const
+{
+    Q_D(const DFMDevice);
+
+    return d->lastError;
+}
+
 void DFMDevice::registerPath(const DFMDevice::PathFunc &func)
 {
     Q_D(DFMDevice);

@@ -36,12 +36,20 @@ class DFMBlockDevice final : public DFMDevice
     Q_DECLARE_PRIVATE(DFMBlockDevice)
 
 public:
-    DFMBlockDevice(const QString &device, QObject *parent = nullptr);
+    DFMBlockDevice() = delete;
+    DFMBlockDevice(const DFMBlockDevice &) = delete;
     ~DFMBlockDevice();
+
+    QString deviceDescriptor() const;
+
+private:
+    DFMBlockDevice(QObject *parent = nullptr);
 
 public:
     bool eject();
     bool powerOff();
+
+    friend class DFMBlockMonitorPrivate;
 };
 
 DFM_MOUNT_END_NS

@@ -58,6 +58,9 @@ public:
     DFMDevice::SizeFreeFunc sizeFree = nullptr;
     DFMDevice::DeviceTypeFunc deviceType = nullptr;
     DFMDevice::GetPropertyFunc getProperty = nullptr;
+
+protected:
+    MountError lastError;
 };
 
 DFM_MOUNT_END_NS

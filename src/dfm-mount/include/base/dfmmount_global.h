@@ -57,10 +57,89 @@ enum class MonitorStatus : uint16_t {
 
 enum class Property : uint16_t {
     // blocks property
-    BlockProperty = 0,
+    BlockProperty = 0,         // this is invalid but just a placeholder
+    BlockConfiguration,        // variant
+    BlockCryptoBackingDevice,  // str
+    BlockDevice,
+    BlockDrive,
+    BlockIDLabel,
+    BlockIDType,
+    BlockIDUsage,              // uint64
+    BlockIDUUID,               // str
+    BlockIDVersion,
+    BlockDeviceNumber,         // uint64
+    BlockPreferredDevice,      // str
+    BlockID,
+    BlockSize,                 // uint64
+    BlockReadOnly,             // bool
+    BlockSymlinks,             // strlist
+    BlockHintPartitionable,    // bool
+    BlockHintSystem,
+    BlockHintIgnore,
+    BlockHintAuto,
+    BlockHintName,             // str
+    BlockHintIconName,
+    BlockHintSymbolicIconName,
+    BlockMdRaid,
+    BlockMdRaidMember,
+    BlockPropertyEND,
+
+    DriveProperty = 30,
+    DriveConnectionBus,        // str
+    DriveRemovable,            // bool
+    DriveEjectable,
+    DriveSeat,                 // str
+    DriveMedia,
+    DriveMediaCompatibility,   // strlist
+    DriveMediaRemovable,       // bool
+    DriveMediaAvailable,
+    DriveMediaChangeDetected,
+    DriveTimeDetected,         // uint64
+    DriveTimeMediaDetected,
+    DriveSize,
+    DriveOptical,              // bool
+    DriveOpticalBlank,
+    DriveOpticalNumTracks,     // uint
+    DriveOpticalNumAudioTracks,
+    DriveOpticalNumDataTracks,
+    DriveOpticalNumSessions,
+    DriveModel,                // str
+    DriveRevision,
+    DriveRotationRate,         // int
+    DriveSerial,               // str
+    DriveVender,
+    DriveWWN,
+    DriveSortKey,
+    DriveConfiguration,        // variant
+    DriveID,                   // str
+    DriveCanPowerOff,
+    DriveSiblingID,
+    DrivePropertyEND,
+
+    FileSystemProperty,
+    FileSystemMountPoint,      // strlist
+    FileSystemPropertyEND,
+
+    PartitionProperty,
+    PartitionNumber,           // uint
+    PartitionType,             // str
+    PartitionOffset,           // uint64
+    PartitionSize,
+    PartitionFlags,
+    PartitionName,             // str
+    PartitionUUID,
+    PartitionTable,
+    PartitionIsContainer,      // bool
+    PartitionIsContained,
+    PartitionPropertyEND,
 
     // protocol property
-    ProtoProperty = 200,
+    ProtoProperty = 800,       // this is invalid but just a placeholder
+};
+
+enum class MountError : uint16_t {
+    ErrNotMountable = 0,    // which means there is no filesystem interface for block devices.
+    ErrAlreadyMounted,
 };
 
 DFM_MOUNT_END_NS

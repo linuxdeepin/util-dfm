@@ -24,8 +24,10 @@
 #include "dfmblockmonitor.h"
 #include "private/dfmblockmonitor_p.h"
 #include "dfmblockdevice.h"
+#include "private/dfmblockdevice_p.h"
 
 #include <QDebug>
+#include <QMapIterator>
 
 DFM_MOUNT_USE_NS
 
@@ -50,6 +52,8 @@ bool DFMBlockMonitorPrivate::startMonitor()
         return false;
     }
 
+    getDevicesOnInit();
+
     GDBusObjectManager *dbusMng = udisks_client_get_object_manager(client);
     if (!dbusMng) {
         g_object_unref(client);
@@ -58,11 +62,14 @@ bool DFMBlockMonitorPrivate::startMonitor()
         return false;
     }
 
-    g_signal_connect(dbusMng, "object-added", G_CALLBACK(&DFMBlockMonitorPrivate::onObjectAdded), q_ptr);
-    g_signal_connect(dbusMng, "object_removed", G_CALLBACK(&DFMBlockMonitorPrivate::onObjectRemoved), q_ptr);
-    g_signal_connect(dbusMng, "interface-proxy-properties-changed", G_CALLBACK(&DFMBlockMonitorPrivate::onPropertyChanged), q_ptr);
+    // there is no good way to solve these warnings... but it does not affect anything.
+    g_signal_connect(dbusMng, "object-added", G_CALLBACK(&DFMBlockMonitorPrivate::onObjectAdded), this);
+    g_signal_connect(dbusMng, "object_removed", G_CALLBACK(&DFMBlockMonitorPrivate::onObjectRemoved), this);
+    g_signal_connect(dbusMng, "interface-proxy-properties-changed", G_CALLBACK(&DFMBlockMonitorPrivate::onPropertyChanged), this);
 
     curStatus = MonitorStatus::Monitoring;
+
+    qDebug() << "monitor started...";
     return true;
 }
 
@@ -72,7 +79,26 @@ bool DFMBlockMonitorPrivate::stopMonitor()
         g_object_unref(client);
         client = nullptr;
     }
+
+    // clear the caches and release the mems.
+    QStringList keys = devices.keys();
+    for (int i = 0; i < keys.count(); i++) {
+        auto *dev = devices.take(keys.at(i));
+        delete dev;
+        dev = nullptr;
+    }
+    devices.clear();
+
+    // the values of drivers which we use *_PEEK_* to obtain them belong to UDisksClient, they are just refs, do not free/unref it.
+    // which is declared on the API page of UDisksObject:
+    // http://storaged.org/doc/udisks2-api/latest/UDisksObject.html#udisks-object-peek-drive
+    drives.clear();
+    // the values of devicesOfDrive are just a ref of DFMBlockDevice, which has been released above, so do not free it too.
+    devicesOfDrive.clear();
+
     curStatus = MonitorStatus::Idle;
+
+    qDebug() << "monitor stopped...";
     return true;
 }
 
@@ -86,44 +112,231 @@ DeviceType DFMBlockMonitorPrivate::monitorObjectType() const
     return DeviceType::BlockDevice;
 }
 
+QList<DFMDevice *> DFMBlockMonitorPrivate::getDevices() const
+{
+    QList<DFMDevice *> ret;
+    QMapIterator<QString, DFMBlockDevice *> iter(devices);
+    while (iter.hasNext()) {
+        iter.next();
+        ret.push_back(iter.value());
+    }
+    return ret;
+}
+
+void DFMBlockMonitorPrivate::getDevicesOnInit()
+{
+    Q_Q(DFMBlockMonitor);
+    Q_ASSERT_X(client, __FUNCTION__, "client must be valid to get all devices");
+    UDisksManager *mng = udisks_client_get_manager(client);
+    Q_ASSERT_X(mng, __FUNCTION__, "manager must be valid");
+
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+
+    char **blkObjs = nullptr;
+    GError *err = nullptr;
+    bool ok = udisks_manager_call_get_block_devices_sync(mng, gOpts, &blkObjs, nullptr, &err);
+    if (ok && blkObjs) {
+        int next = 0;
+        while (blkObjs && blkObjs[next]) {
+            UDisksObject *blockObject = udisks_client_peek_object(client, blkObjs[next]);
+            if (!blockObject)
+                continue;
+
+            // TODO: I will remove all the debugs before it released.
+            qDebug() << "********************start parsing block devices********************";
+            qDebug() << "*\t" << blkObjs[next];
+            UDisksBlock *block = udisks_object_peek_block(blockObject);
+            UDisksFilesystem *filesystem = udisks_object_peek_filesystem(blockObject);
+            UDisksPartition *partition = udisks_object_peek_partition(blockObject);
+
+            if (block) {
+                DFMBlockDevice *dev = new DFMBlockDevice(q);
+                dev->d_func()->blockHandler = block;
+                qDebug() << "*\t\tblock founded";
+
+                if (filesystem) {
+                    dev->d_func()->fileSystemHandler = filesystem;
+                    qDebug() << "*\t\tfilesystem founded";
+                }
+
+                if (partition) {
+                    dev->d_func()->partitionHandler = partition;
+                    qDebug() << "*\t\tpartition founded";
+                }
+
+                char *driveObjPath = udisks_block_dup_drive(block);
+                UDisksObject *driveObject = udisks_client_peek_object(client, driveObjPath);
+
+                if (driveObject) {
+                    UDisksDrive *drive = udisks_object_peek_drive(driveObject);
+                    if (drive) {
+                        dev->d_func()->driveHandler = drive;
+                        qDebug() << "*\t\tdrive founded";
+
+                        this->drives.insert(QString(driveObjPath), drive);
+                    }
+                }
+
+                this->devices.insert(blkObjs[next], dev);
+                g_free(driveObjPath);
+
+                qDebug() << "******************** end parsing block devices ********************\n";
+            }
+            next += 1;
+        }
+        g_strfreev(blkObjs);
+    }
+
+    if (err) {
+        // TODO: we need more error handle here
+        g_error_free(err);
+    }
+}
+
 void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
 {
-    DFMBlockMonitor *monitor = static_cast<DFMBlockMonitor *>(userData);
-    if (!monitor)
-        return;
+    Q_UNUSED(mng);
+    DFMBlockMonitorPrivate *d = static_cast<DFMBlockMonitorPrivate *>(userData);
+    Q_ASSERT_X(d, __FUNCTION__, "monitor is not valid");
 
-    qDebug() << __PRETTY_FUNCTION__;
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
     if (!udisksObj)
         return;
-    UDisksBlock *block = udisks_object_get_block(udisksObj);
-    if (block) {
-        qDebug() << "blockDeviceAdded...";
-        qDebug() << "\t\t\t" << udisks_block_get_device(block);
-        QString dev = udisks_block_get_device(block);
-        Q_EMIT monitor->deviceAdded(new DFMBlockDevice(dev, monitor));
+
+    // in past time, we never care about the UDisksJob, so we ignore it here.
+    UDisksJob *job = udisks_object_peek_job(udisksObj);
+    if (job)
         return;
-    }
+    qDebug() << "\t\t" << __FUNCTION__;
+
+    QString objKey = g_dbus_object_get_object_path(obj);
+    qDebug() << "\t" << objKey;
+
     UDisksDrive *drive = udisks_object_peek_drive(udisksObj);
     if (drive) {
         qDebug() << "driveAdded";
-        return;
+        d->drives.insert(objKey, drive);
+        // Q_EMIT monitor->driveAdded
     }
+
+    UDisksBlock *block = udisks_object_peek_block(udisksObj);
+    UDisksFilesystem *fileSystem = udisks_object_peek_filesystem(udisksObj);
     UDisksPartition *partition = udisks_object_peek_partition(udisksObj);
-    if (partition) {
-        qDebug() << "partitionAdded";
-        return;
+
+    DFMBlockDevice *blkDev = nullptr;
+    if (block) {
+        blkDev = new DFMBlockDevice(d->q_func());
+        blkDev->d_func()->blockHandler = block;
+        QString drive = blkDev->getProperty(Property::BlockDrive).toString();
+        if (d->drives.contains(drive)) {
+            blkDev->d_func()->driveHandler = d->drives.value(drive);
+        }
+
+        if (fileSystem) {
+            blkDev->d_func()->fileSystemHandler = fileSystem;
+            // Q_EMIT monitor->filesystemadded
+        }
+        if (partition) {
+            blkDev->d_func()->partitionHandler = partition;
+            // Q_EMIT monitor->partitionadded
+        }
+
+        Q_EMIT d->q_func()->deviceAdded(blkDev);
+        d->devices.insert(objKey, blkDev);
     }
 }
 
 void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
 {
-    qDebug() << __PRETTY_FUNCTION__;
+    Q_UNUSED(mng);
+
+    DFMBlockMonitorPrivate *d = static_cast<DFMBlockMonitorPrivate *>(userData);
+    Q_ASSERT_X(d, __FUNCTION__, "monitor is not valid");
+
+    UDisksObject *udisksObj = UDISKS_OBJECT(obj);
+    if (!udisksObj)
+        return;
+
+    // in past time, we never care about the UDisksJob, so we ignore it here.
+    UDisksJob *job = udisks_object_peek_job(udisksObj);
+    if (job)
+        return;
+
+    qDebug() << "\t\t" << __FUNCTION__;
+
+    QString objKey = g_dbus_object_get_object_path(obj);
+    qDebug() << "\t" << objKey;
+
+    UDisksDrive *drive = udisks_object_peek_drive(udisksObj);
+    if (drive) {
+        qDebug() << "driveRemoved";
+        d->drives.remove(objKey);
+        // Q_EMIT monitor->driveRemoved
+    }
+
+    UDisksBlock *block = udisks_object_get_block(udisksObj);
+//    UDisksFilesystem *fileSystem = udisks_object_peek_filesystem(udisksObj);
+//    UDisksPartition *partition = udisks_object_peek_partition(udisksObj);
+    if (block) {
+        // we get the handler by *_GET_* funcs, so there is no need to release it by ourselves.
+        auto *dev = d->devices.take(objKey);
+        delete dev;
+        // Q_EMIT monitor->deviceRemoved;
+    }
 }
 
-void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *objProxy, GDBusProxy *dbusProxy, GVariant *property, const gchar * const invalidProperty, gpointer *userData)
+void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *dbusObjProxy, GDBusProxy *dbusProxy,
+                                               GVariant *property, const gchar * const invalidProperty, gpointer userData)
 {
-    qDebug() << __PRETTY_FUNCTION__;
+    Q_UNUSED(mngClient);
+    Q_UNUSED(dbusObjProxy);
+    Q_UNUSED(invalidProperty);
+
+    DFMBlockMonitorPrivate *d = static_cast<DFMBlockMonitorPrivate *>(userData);
+    Q_ASSERT_X(d, __FUNCTION__, "monitor is not valid");
+
+    // obtain the object path like "/org/freedesktop/UDisks2/block_devices/sdb1" from dbusProxy
+    // and which is the key of DFMBlockMonitorPrivate::devices
+    QString objPath = dbusProxy ? QString(g_dbus_proxy_get_object_path(dbusProxy)) : QString();
+    if (objPath.isEmpty())
+        return;
+
+    // obtain the DFMDevice(s) handler to emit the propertyChanged signal
+    QList<DFMBlockDevice *> devs;
+    if (objPath.startsWith("/org/freedesktop/UDisks2/drives/")) { // means this is a DRIVE objech which property has changed
+        qDebug() << "drive changed...";
+        // TODO: we need to find a way to notify apps that the drivers' properties have changed
+        // but for now, we can just ignore it, there is not so much properties of drives' that we shall concern about.
+        devs = d->devicesOfDrive.values(objPath);
+    } else { // we treat it as Blocks
+        DFMBlockDevice *dev = d->devices.value(objPath, nullptr);
+        if (dev)
+            devs << dev;
+    }
+    if (devs.isEmpty()) // since there is no device for this object, so there is no need to do subsequent works
+        return;
+
+    GVariantIter *iter = nullptr;
+    const char *property_name = nullptr;
+    GVariant *value = nullptr;
+
+    // iterate the changed key-values of this object, it is storaged like dictionaries. the a{sv} means array of String-Variant pair.
+    g_variant_get (property, "a{sv}", &iter);
+    while (g_variant_iter_next(iter, "{&sv}", &property_name, &value)) {
+        char *value_str;
+        value_str = g_variant_print(value, FALSE);
+
+        qDebug() << property_name << "\t\tchanged, the new value is: " << value_str;
+        // TODO: we need find a way to map the property_name and the Property enum, so that we can find the right enum quickly.
+
+        // handle the signal emits here.
+        QList<DFMBlockDevice *>::const_iterator iter;
+        for (iter = devs.cbegin(); iter != devs.cend(); iter += 1) {
+            // TODO: emits the signal
+        }
+    }
 }
 
 DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
@@ -134,9 +347,12 @@ DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
     registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, d));
     registerStatus(std::bind(&DFMBlockMonitorPrivate::status, d));
     registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, d));
+    registerGetDevices(std::bind(&DFMBlockMonitorPrivate::getDevices, d));
 }
 
 DFMBlockMonitor::~DFMBlockMonitor()
 {
-
+    Q_D(DFMBlockMonitor);
+    d->stopMonitor();
 }
+

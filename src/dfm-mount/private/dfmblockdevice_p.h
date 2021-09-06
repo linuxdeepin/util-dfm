@@ -34,7 +34,7 @@ class DFMBlockDevicePrivate final: public DFMDevicePrivate
     Q_DECLARE_PUBLIC(DFMBlockDevice)
 
 public:
-    DFMBlockDevicePrivate(const QString &dev);
+    DFMBlockDevicePrivate();
 
     QString path() const DFM_MNT_OVERRIDE;
     QUrl mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
@@ -50,14 +50,26 @@ public:
     long sizeUsage() const DFM_MNT_OVERRIDE;
     long sizeFree() const DFM_MNT_OVERRIDE;
     DeviceType deviceType() const DFM_MNT_OVERRIDE;
+    QVariant getProperty(Property name) const DFM_MNT_OVERRIDE;
+
+    QVariant getBlockProperty(Property name) const;
+    QVariant getDriveProperty(Property name) const;
+    QVariant getFileSystemProperty(Property name) const;
+    QVariant getPartitionProperty(Property name) const;
 
     bool eject();
     bool powerOff();
 
+private:
+    QString charToQString(char *tmp) const;
+    QStringList charToQStringList(char **tmp) const;
+
 public:
     QString devDesc; // descriptor of device
-    UDisksBlock *blockHandler;
-    UDisksFilesystem *fsHandler;
+    UDisksBlock *blockHandler = nullptr;
+    UDisksFilesystem *fileSystemHandler = nullptr;
+    UDisksDrive *driveHandler = nullptr;
+    UDisksPartition *partitionHandler = nullptr;
 };
 DFM_MOUNT_END_NS
 

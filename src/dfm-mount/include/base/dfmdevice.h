@@ -63,6 +63,7 @@ public:
 
     DFM_MNT_VIRTUAL DeviceType deviceType() const;
     DFM_MNT_VIRTUAL QVariant getProperty(Property name) const;
+    MountError getLastError() const;
 
 public:
 
@@ -107,6 +108,7 @@ Q_SIGNALS:
     void mounted(const QUrl &mountPoint);
     void unmounted();
     void renamed(const QString &newName);
+    void propertyChanged(const Property &name, const QVariant &newVal);
 };
 DFM_MOUNT_END_NS
 

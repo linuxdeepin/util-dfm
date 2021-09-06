@@ -47,17 +47,20 @@ public:
     DFM_MNT_VIRTUAL bool stopMonitor();
     DFM_MNT_VIRTUAL MonitorStatus status() const;
     DFM_MNT_VIRTUAL DeviceType monitorObjectType() const;
+    DFM_MNT_VIRTUAL QList<DFMDevice *> getDevices() const;
 
 public:
-    using StartMonitor      = std::function<bool ()>;
-    using StopMonitor       = std::function<bool ()>;
-    using Status            = std::function<MonitorStatus ()>;
-    using MonitorObjectType = std::function<DeviceType ()>;
+    using StartMonitorFunc      = std::function<bool ()>;
+    using StopMonitorFunc       = std::function<bool ()>;
+    using StatusFunc            = std::function<MonitorStatus ()>;
+    using MonitorObjectTypeFunc = std::function<DeviceType ()>;
+    using GetDevicesFunc        = std::function<QList<DFMDevice *> ()>;
 
-    void registerStartMonitor(const StartMonitor &func);
-    void registerStopMonitor(const StopMonitor &func);
-    void registerStatus(const Status &func);
-    void registerMonitorObjectType(const MonitorObjectType &func);
+    void registerStartMonitor(const StartMonitorFunc &func);
+    void registerStopMonitor(const StopMonitorFunc &func);
+    void registerStatus(const StatusFunc &func);
+    void registerMonitorObjectType(const MonitorObjectTypeFunc &func);
+    void registerGetDevices(const GetDevicesFunc &func);
 
 Q_SIGNALS:
     void driveAdded();

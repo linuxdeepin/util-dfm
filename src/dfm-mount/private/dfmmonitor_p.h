@@ -39,10 +39,11 @@ class DFMMonitorPrivate : public QObjectPrivate
 public:
     DFMMonitorPrivate();
 
-    DFMMonitor::StartMonitor start = nullptr;
-    DFMMonitor::StopMonitor stop = nullptr;
-    DFMMonitor::Status status = nullptr;
-    DFMMonitor::MonitorObjectType mot = nullptr;
+    DFMMonitor::StartMonitorFunc start = nullptr;
+    DFMMonitor::StopMonitorFunc stop = nullptr;
+    DFMMonitor::StatusFunc status = nullptr;
+    DFMMonitor::MonitorObjectTypeFunc mot = nullptr;
+    DFMMonitor::GetDevicesFunc getDevices = nullptr;
 };
 
 DFM_MOUNT_END_NS
