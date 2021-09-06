@@ -30,11 +30,23 @@
 
 BEGIN_IO_NAMESPACE
 
+class DMtpIOFactoryPrivate;
+
 class DMtpIOFactory : public DIOFactory
 {
 public:
     explicit DMtpIOFactory(const QUrl &uri);
     ~DMtpIOFactory();
+
+    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
+    QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
+    QSharedPointer<DEnumerator> createEnumerator() const DFM_OVERRIDE;
+    QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
+    QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
+
+private:
+    QSharedPointer<DMtpIOFactoryPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DMtpIOFactory)
 };
 
 END_IO_NAMESPACE

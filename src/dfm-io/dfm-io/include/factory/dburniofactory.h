@@ -30,11 +30,23 @@
 
 BEGIN_IO_NAMESPACE
 
+class DBurnIOFactoryPrivate;
+
 class DBurnIOFactory : public DIOFactory
 {
 public:
     explicit DBurnIOFactory(const QUrl &uri);
     ~DBurnIOFactory();
+
+    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
+    QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
+    QSharedPointer<DEnumerator> createEnumerator() const DFM_OVERRIDE;
+    QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
+    QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
+
+private:
+    QSharedPointer<DBurnIOFactoryPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DBurnIOFactory)
 };
 
 END_IO_NAMESPACE

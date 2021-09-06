@@ -39,17 +39,21 @@ BEGIN_IO_NAMESPACE
 
 class DAfpbrowseIOFactory;
 
-class DAfpbrowseIOFactoryPrivate : public DIOFactoryPrivate
+class DAfpbrowseIOFactoryPrivate
 {
 public:
     explicit DAfpbrowseIOFactoryPrivate(DAfpbrowseIOFactory *q);
-    ~DAfpbrowseIOFactoryPrivate() override;
+    ~DAfpbrowseIOFactoryPrivate();
 
-    virtual QSharedPointer<DFileInfo> doCreateFileInfo() const override;
-    virtual QSharedPointer<DFile> doCreateFile() const override;
-    virtual QSharedPointer<DEnumerator> doCreateEnumerator() const override;
-    virtual QSharedPointer<DWatcher> doCreateWatcher() const override;
-    virtual QSharedPointer<DOperator> doCreateOperator() const override;
+    QSharedPointer<DFileInfo> createFileInfo() const;
+    QSharedPointer<DFile> createFile() const;
+    QSharedPointer<DEnumerator> createEnumerator() const;
+    QSharedPointer<DWatcher> createWatcher() const;
+    QSharedPointer<DOperator> createOperator() const;
+
+public:
+    DAfpbrowseIOFactory *q_ptr;
+    Q_DECLARE_PUBLIC(DAfpbrowseIOFactory)
 };
 
 END_IO_NAMESPACE

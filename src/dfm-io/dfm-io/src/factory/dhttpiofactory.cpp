@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DHttpIOFactoryPrivate::DHttpIOFactoryPrivate(DHttpIOFactory *q) : DIOFactoryPrivate(q)
+DHttpIOFactoryPrivate::DHttpIOFactoryPrivate(DHttpIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DHttpIOFactoryPrivate::~DHttpIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DHttpIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DHttpIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DHttpIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DHttpIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DHttpIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DHttpIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DHttpIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DHttpIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DHttpIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DHttpIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DHttpIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DHttpIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DHttpIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DHttpIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DHttpIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DHttpIOFactory::DHttpIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DHttpIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DHttpIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DHttpIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DHttpIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DHttpIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DHttpIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DHttpIOFactory::createEnumerator, this));
 }
 
 DHttpIOFactory::~DHttpIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DHttpIOFactory::createFileInfo() const
+{
+    Q_D(const DHttpIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DHttpIOFactory::createFile() const
+{
+    Q_D(const DHttpIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DHttpIOFactory::createEnumerator() const
+{
+    Q_D(const DHttpIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DHttpIOFactory::createWatcher() const
+{
+    Q_D(const DHttpIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DHttpIOFactory::createOperator() const
+{
+    Q_D(const DHttpIOFactory);
+    return d->createOperator();
 }

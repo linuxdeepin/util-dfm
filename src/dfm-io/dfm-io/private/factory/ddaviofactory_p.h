@@ -39,17 +39,21 @@ BEGIN_IO_NAMESPACE
 
 class DDavIOFactory;
 
-class DDavIOFactoryPrivate : public DIOFactoryPrivate
+class DDavIOFactoryPrivate
 {
 public:
     explicit DDavIOFactoryPrivate(DDavIOFactory *q);
-    ~DDavIOFactoryPrivate() override;
+    ~DDavIOFactoryPrivate();
 
-    virtual QSharedPointer<DFileInfo> doCreateFileInfo() const override;
-    virtual QSharedPointer<DFile> doCreateFile() const override;
-    virtual QSharedPointer<DEnumerator> doCreateEnumerator() const override;
-    virtual QSharedPointer<DWatcher> doCreateWatcher() const override;
-    virtual QSharedPointer<DOperator> doCreateOperator() const override;
+    QSharedPointer<DFileInfo> createFileInfo() const;
+    QSharedPointer<DFile> createFile() const;
+    QSharedPointer<DEnumerator> createEnumerator() const;
+    QSharedPointer<DWatcher> createWatcher() const;
+    QSharedPointer<DOperator> createOperator() const;
+
+public:
+    DDavIOFactory *q_ptr;
+    Q_DECLARE_PUBLIC(DDavIOFactory)
 };
 
 END_IO_NAMESPACE

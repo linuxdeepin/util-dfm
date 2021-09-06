@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DDavIOFactoryPrivate::DDavIOFactoryPrivate(DDavIOFactory *q) : DIOFactoryPrivate(q)
+DDavIOFactoryPrivate::DDavIOFactoryPrivate(DDavIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DDavIOFactoryPrivate::~DDavIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DDavIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DDavIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DDavIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DDavIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DDavIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DDavIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DDavIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DDavIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DDavIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DDavIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DDavIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DDavIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DDavIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DDavIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DDavIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DDavIOFactory::DDavIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DDavIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DDavIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DDavIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DDavIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DDavIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DDavIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DDavIOFactory::createEnumerator, this));
 }
 
 DDavIOFactory::~DDavIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DDavIOFactory::createFileInfo() const
+{
+    Q_D(const DDavIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DDavIOFactory::createFile() const
+{
+    Q_D(const DDavIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DDavIOFactory::createEnumerator() const
+{
+    Q_D(const DDavIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DDavIOFactory::createWatcher() const
+{
+    Q_D(const DDavIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DDavIOFactory::createOperator() const
+{
+    Q_D(const DDavIOFactory);
+    return d->createOperator();
 }

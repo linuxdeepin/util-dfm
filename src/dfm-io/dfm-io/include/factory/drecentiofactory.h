@@ -30,11 +30,23 @@
 
 BEGIN_IO_NAMESPACE
 
+class DRecentIOFactoryPrivate;
+
 class DRecentIOFactory : public DIOFactory
 {
 public:
     explicit DRecentIOFactory(const QUrl &uri);
     ~DRecentIOFactory();
+
+    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
+    QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
+    QSharedPointer<DEnumerator> createEnumerator() const DFM_OVERRIDE;
+    QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
+    QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
+
+private:
+    QSharedPointer<DRecentIOFactoryPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DRecentIOFactory)
 };
 
 END_IO_NAMESPACE

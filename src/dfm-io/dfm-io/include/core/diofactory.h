@@ -29,6 +29,8 @@
 
 #include <QSharedPointer>
 
+#include <functional>
+
 BEGIN_IO_NAMESPACE
 
 class DIOFactoryPrivate;
@@ -41,7 +43,14 @@ class DOperator;
 class DIOFactory
 {
 public:
-    DIOFactory() = default;
+    using CreateFileInfoFunc = std::function<QSharedPointer<DFileInfo>()>;
+    using CreateFileFunc = std::function<QSharedPointer<DFile>()>;
+    using CreateEnumeratorFunc = std::function<QSharedPointer<DEnumerator>()>;
+    using CreateWatcherFunc = std::function<QSharedPointer<DWatcher>()>;
+    using CreateOperatorFunc = std::function<QSharedPointer<DOperator>()>;
+
+    DIOFactory(const QUrl &uri);
+    virtual ~DIOFactory();
 
     void setUri(const QUrl &uri);
     QUrl uri() const;
@@ -51,6 +60,17 @@ public:
     DFM_VIRTUAL QSharedPointer<DEnumerator> createEnumerator() const;
     DFM_VIRTUAL QSharedPointer<DWatcher> createWatcher() const;
     DFM_VIRTUAL QSharedPointer<DOperator> createOperator() const;
+
+    /**
+     * @brief 注册接口
+     * @param
+     * @return
+     */
+    void registerCreateFileInfo(const CreateFileInfoFunc &func);
+    void registerCreateFile(const CreateFileFunc &func);
+    void registerCreateEnumerator(const CreateEnumeratorFunc &func);
+    void registerCreateWatcher(const CreateWatcherFunc &func);
+    void registerCreateOperator(const CreateOperatorFunc &func);
 
     DFMIOError lastError() const;
 

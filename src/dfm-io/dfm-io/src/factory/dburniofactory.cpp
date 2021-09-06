@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DBurnIOFactoryPrivate::DBurnIOFactoryPrivate(DBurnIOFactory *q) : DIOFactoryPrivate(q)
+DBurnIOFactoryPrivate::DBurnIOFactoryPrivate(DBurnIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DBurnIOFactoryPrivate::~DBurnIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DBurnIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DBurnIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DBurnIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DBurnIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DBurnIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DBurnIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DBurnIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DBurnIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DBurnIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DBurnIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DBurnIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DBurnIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DBurnIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DBurnIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DBurnIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DBurnIOFactory::DBurnIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DBurnIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DBurnIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DBurnIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DBurnIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DBurnIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DBurnIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DBurnIOFactory::createEnumerator, this));
 }
 
 DBurnIOFactory::~DBurnIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DBurnIOFactory::createFileInfo() const
+{
+    Q_D(const DBurnIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DBurnIOFactory::createFile() const
+{
+    Q_D(const DBurnIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DBurnIOFactory::createEnumerator() const
+{
+    Q_D(const DBurnIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DBurnIOFactory::createWatcher() const
+{
+    Q_D(const DBurnIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DBurnIOFactory::createOperator() const
+{
+    Q_D(const DBurnIOFactory);
+    return d->createOperator();
 }

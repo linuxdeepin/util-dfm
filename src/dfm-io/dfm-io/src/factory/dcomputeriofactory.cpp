@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DComputerIOFactoryPrivate::DComputerIOFactoryPrivate(DComputerIOFactory *q) : DIOFactoryPrivate(q)
+DComputerIOFactoryPrivate::DComputerIOFactoryPrivate(DComputerIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DComputerIOFactoryPrivate::~DComputerIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DComputerIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DComputerIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DComputerIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DComputerIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DComputerIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DComputerIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DComputerIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DComputerIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DComputerIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DComputerIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DComputerIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DComputerIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DComputerIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DComputerIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DComputerIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DComputerIOFactory::DComputerIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DComputerIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DComputerIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DComputerIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DComputerIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DComputerIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DComputerIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DComputerIOFactory::createEnumerator, this));
 }
 
 DComputerIOFactory::~DComputerIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DComputerIOFactory::createFileInfo() const
+{
+    Q_D(const DComputerIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DComputerIOFactory::createFile() const
+{
+    Q_D(const DComputerIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DComputerIOFactory::createEnumerator() const
+{
+    Q_D(const DComputerIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DComputerIOFactory::createWatcher() const
+{
+    Q_D(const DComputerIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DComputerIOFactory::createOperator() const
+{
+    Q_D(const DComputerIOFactory);
+    return d->createOperator();
 }

@@ -42,13 +42,17 @@ public:
     explicit DLocalWatcherPrivate(DLocalWatcher *q);
     ~DLocalWatcherPrivate();
 
+    void setWatchType(DWatcher::WatchType type);
+    DWatcher::WatchType watchType() const;
     bool start(int timeRate);
     bool stop();
+    bool running() const;
 
     static void watchCallback(GFileMonitor *monitor, GFile *child, GFile *other, GFileMonitorEvent event_type, gpointer user_data);
 
 public:
     GFileMonitor *monitor = nullptr;
+    DWatcher::WatchType type = DWatcher::WatchType::AUTO;
 
     DLocalWatcher *q_ptr;
 };

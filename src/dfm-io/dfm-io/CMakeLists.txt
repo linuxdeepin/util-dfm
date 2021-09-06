@@ -86,19 +86,15 @@ FILE (GLOB IO_INCLUDES_INSTALL
 )
 FILE (GLOB IO_INCLUDES_INSTALL_CORE
     "include/core/*.h" "include/core/*.hpp"
-    "private/core/*.h" "private/core/*.hpp"
 )
 FILE (GLOB IO_INCLUDES_INSTALL_ERROR
     "include/error/*.h" "include/error/*.hpp"
-    "private/error/*.h" "private/error/*.hpp"
 )
 FILE (GLOB IO_INCLUDES_INSTALL_FACTORY
     "include/factory/*.h" "include/factory/*.hpp"
-    "private/factory/*.h" "private/factory/*.hpp"
 )
 FILE (GLOB IO_INCLUDES_INSTALL_LOCAL
     "include/local/*.h" "include/local/*.hpp"
-    "private/local/*.h" "private/local/*.hpp"
 )
 
 install (FILES ${IO_INCLUDES_INSTALL}
@@ -116,6 +112,21 @@ install (FILES ${IO_INCLUDES_INSTALL_FACTORY}
 install (FILES ${IO_INCLUDES_INSTALL_LOCAL}
     DESTINATION include/dfm-io/local
 )
+
+# private
+FILE (GLOB IO_INCLUDES_INSTALL_CORE
+    "private/core/*.h" "private/core/*.hpp"
+)
+FILE (GLOB IO_INCLUDES_INSTALL_ERROR
+    "private/error/*.h" "private/error/*.hpp"
+)
+FILE (GLOB IO_INCLUDES_INSTALL_FACTORY
+    "private/factory/*.h" "private/factory/*.hpp"
+)
+FILE (GLOB IO_INCLUDES_INSTALL_LOCAL
+    "private/local/*.h" "private/local/*.hpp"
+)
+# todo install private
 
 #install (TARGETS dfm-io
 #    DESTINATION "/${CMAKE_INSTALL_LIBDIR}"

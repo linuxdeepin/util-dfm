@@ -30,11 +30,23 @@
 
 BEGIN_IO_NAMESPACE
 
+class DAfpbrowseIOFactoryPrivate;
+
 class DAfpbrowseIOFactory : public DIOFactory
 {
 public:
     explicit DAfpbrowseIOFactory(const QUrl &uri);
     ~DAfpbrowseIOFactory();
+
+    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
+    QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
+    QSharedPointer<DEnumerator> createEnumerator() const DFM_OVERRIDE;
+    QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
+    QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
+
+private:
+    QSharedPointer<DAfpbrowseIOFactoryPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DAfpbrowseIOFactory)
 };
 
 END_IO_NAMESPACE

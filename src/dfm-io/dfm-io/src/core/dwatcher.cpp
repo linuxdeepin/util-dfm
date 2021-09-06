@@ -93,11 +93,34 @@ QList<DFileInfo::AttributeID> DWatcher::watchAttributeIDList() const
     return d->ids;
 }
 
+void DWatcher::setWatchType(DWatcher::WatchType type)
+{
+    Q_D(DWatcher);
+
+    if (!d->setWatchTypeFunc)
+        return;
+
+    return d->setWatchTypeFunc(type);
+}
+
+DWatcher::WatchType DWatcher::watchType() const
+{
+    Q_D(const DWatcher);
+
+    if (!d->watchTypeFunc)
+        return DWatcher::WatchType::AUTO;
+
+    return d->watchTypeFunc();
+}
+
 bool DWatcher::running() const
 {
     Q_D(const DWatcher);
 
-    return false;
+    if (!d->runningFunc)
+        return false;
+
+    return d->runningFunc();
 }
 
 DFM_VIRTUAL bool DWatcher::start(int timeRate)
@@ -121,6 +144,13 @@ DFM_VIRTUAL bool DWatcher::stop()
     return d->stopFunc();
 }
 
+void DWatcher::registerRunning(const DWatcher::RunningFunc &func)
+{
+    Q_D(DWatcher);
+
+    d->runningFunc = func;
+}
+
 void DWatcher::registerStart(const DWatcher::StartFunc &func)
 {
     Q_D(DWatcher);
@@ -133,6 +163,20 @@ void DWatcher::registerStop(const DWatcher::StopFunc &func)
     Q_D(DWatcher);
 
     d->stopFunc = func;
+}
+
+void DWatcher::registerSetWatchType(const DWatcher::SetWatchTypeFunc &func)
+{
+    Q_D(DWatcher);
+
+    d->setWatchTypeFunc = func;
+}
+
+void DWatcher::registerWatchType(const DWatcher::WatchTypeFunc &func)
+{
+    Q_D(DWatcher);
+
+    d->watchTypeFunc = func;
 }
 
 DFMIOError DWatcher::lastError() const

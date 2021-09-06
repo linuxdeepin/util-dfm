@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DGoogleIOFactoryPrivate::DGoogleIOFactoryPrivate(DGoogleIOFactory *q) : DIOFactoryPrivate(q)
+DGoogleIOFactoryPrivate::DGoogleIOFactoryPrivate(DGoogleIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DGoogleIOFactoryPrivate::~DGoogleIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DGoogleIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DGoogleIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DGoogleIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DGoogleIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DGoogleIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DGoogleIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DGoogleIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DGoogleIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DGoogleIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DGoogleIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DGoogleIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DGoogleIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DGoogleIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DGoogleIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DGoogleIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DGoogleIOFactory::DGoogleIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DGoogleIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DGoogleIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DGoogleIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DGoogleIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DGoogleIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DGoogleIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DGoogleIOFactory::createEnumerator, this));
 }
 
 DGoogleIOFactory::~DGoogleIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DGoogleIOFactory::createFileInfo() const
+{
+    Q_D(const DGoogleIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DGoogleIOFactory::createFile() const
+{
+    Q_D(const DGoogleIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DGoogleIOFactory::createEnumerator() const
+{
+    Q_D(const DGoogleIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DGoogleIOFactory::createWatcher() const
+{
+    Q_D(const DGoogleIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DGoogleIOFactory::createOperator() const
+{
+    Q_D(const DGoogleIOFactory);
+    return d->createOperator();
 }

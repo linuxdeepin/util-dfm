@@ -40,6 +40,9 @@ public:
     explicit DLocalWatcher(const QUrl &uri, QObject *parent = nullptr);
     ~DLocalWatcher() override;
 
+    void setWatchType(WatchType type) DFM_OVERRIDE;
+    WatchType watchType() const DFM_OVERRIDE;
+    bool running() const DFM_OVERRIDE;
     bool start(int timeRate) DFM_OVERRIDE;
     bool stop() DFM_OVERRIDE;
 

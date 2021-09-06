@@ -39,17 +39,21 @@ BEGIN_IO_NAMESPACE
 
 class DGphoto2IOFactory;
 
-class DGphoto2IOFactoryPrivate : public DIOFactoryPrivate
+class DGphoto2IOFactoryPrivate
 {
 public:
     explicit DGphoto2IOFactoryPrivate(DGphoto2IOFactory *q);
-    ~DGphoto2IOFactoryPrivate() override;
+    ~DGphoto2IOFactoryPrivate();
 
-    virtual QSharedPointer<DFileInfo> doCreateFileInfo() const override;
-    virtual QSharedPointer<DFile> doCreateFile() const override;
-    virtual QSharedPointer<DEnumerator> doCreateEnumerator() const override;
-    virtual QSharedPointer<DWatcher> doCreateWatcher() const override;
-    virtual QSharedPointer<DOperator> doCreateOperator() const override;
+    QSharedPointer<DFileInfo> createFileInfo() const;
+    QSharedPointer<DFile> createFile() const;
+    QSharedPointer<DEnumerator> createEnumerator() const;
+    QSharedPointer<DWatcher> createWatcher() const;
+    QSharedPointer<DOperator> createOperator() const;
+
+public:
+    DGphoto2IOFactory *q_ptr;
+    Q_DECLARE_PUBLIC(DGphoto2IOFactory)
 };
 
 END_IO_NAMESPACE

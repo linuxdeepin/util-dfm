@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DNetworkIOFactoryPrivate::DNetworkIOFactoryPrivate(DNetworkIOFactory *q) : DIOFactoryPrivate(q)
+DNetworkIOFactoryPrivate::DNetworkIOFactoryPrivate(DNetworkIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DNetworkIOFactoryPrivate::~DNetworkIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DNetworkIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DNetworkIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DNetworkIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DNetworkIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DNetworkIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DNetworkIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DNetworkIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DNetworkIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DNetworkIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DNetworkIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DNetworkIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DNetworkIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DNetworkIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DNetworkIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DNetworkIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DNetworkIOFactory::DNetworkIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DNetworkIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DNetworkIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DNetworkIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DNetworkIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DNetworkIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DNetworkIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DNetworkIOFactory::createEnumerator, this));
 }
 
 DNetworkIOFactory::~DNetworkIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DNetworkIOFactory::createFileInfo() const
+{
+    Q_D(const DNetworkIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DNetworkIOFactory::createFile() const
+{
+    Q_D(const DNetworkIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DNetworkIOFactory::createEnumerator() const
+{
+    Q_D(const DNetworkIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DNetworkIOFactory::createWatcher() const
+{
+    Q_D(const DNetworkIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DNetworkIOFactory::createOperator() const
+{
+    Q_D(const DNetworkIOFactory);
+    return d->createOperator();
 }

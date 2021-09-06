@@ -40,28 +40,54 @@ class DWatcher : public QObject
 {
     Q_OBJECT
 public:
+    enum class WatchType : uint8_t {
+        AUTO = 0x0000,
+        DIR = 0x0001,
+        FILE = 0x0002,
+    };
+
+    using RunningFunc = std::function<bool()>;
     using StartFunc = std::function<bool(int)>;
     using StopFunc = std::function<bool()>;
+    using SetWatchTypeFunc = std::function<void(WatchType)>;
+    using WatchTypeFunc = std::function<WatchType()>;
 
 public:
     explicit DWatcher(const QUrl &uri, QObject *parent = nullptr);
     virtual ~DWatcher();
 
     QUrl uri() const;
+
+    /**
+     * @brief a non-negative integer with the limit in milliseconds to poll for changes
+     * @param
+     * @return
+     */
     void setTimeRate(int msec);
     int timeRate() const;
+
     void setWatchAttributeIDList(const QList<DFileInfo::AttributeID> &ids);
     void addWatchAttributeID(const DFileInfo::AttributeID &id);
     QList<DFileInfo::AttributeID> watchAttributeIDList() const;
 
-    bool running() const;
+    /**
+     * @brief 设置监控方式
+     * @param
+     * @return
+     */
+    DFM_VIRTUAL void setWatchType(WatchType type);
+    DFM_VIRTUAL WatchType watchType() const;
 
-    DFM_VIRTUAL bool start(int timeRate);
+    DFM_VIRTUAL bool running() const;
+    DFM_VIRTUAL bool start(int timeRate = 200);
     DFM_VIRTUAL bool stop();
 
     // register
+    void registerRunning(const RunningFunc &func);
     void registerStart(const StartFunc &func);
     void registerStop(const StopFunc &func);
+    void registerSetWatchType(const SetWatchTypeFunc &func);
+    void registerWatchType(const WatchTypeFunc &func);
 
     DFMIOError lastError() const;
 

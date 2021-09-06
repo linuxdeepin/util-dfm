@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DTrashIOFactoryPrivate::DTrashIOFactoryPrivate(DTrashIOFactory *q) : DIOFactoryPrivate(q)
+DTrashIOFactoryPrivate::DTrashIOFactoryPrivate(DTrashIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DTrashIOFactoryPrivate::~DTrashIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DTrashIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DTrashIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DTrashIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DTrashIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DTrashIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DTrashIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DTrashIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DTrashIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DTrashIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DTrashIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DTrashIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DTrashIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DTrashIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DTrashIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DTrashIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DTrashIOFactory::DTrashIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DTrashIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DTrashIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DTrashIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DTrashIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DTrashIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DTrashIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DTrashIOFactory::createEnumerator, this));
 }
 
 DTrashIOFactory::~DTrashIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DTrashIOFactory::createFileInfo() const
+{
+    Q_D(const DTrashIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DTrashIOFactory::createFile() const
+{
+    Q_D(const DTrashIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DTrashIOFactory::createEnumerator() const
+{
+    Q_D(const DTrashIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DTrashIOFactory::createWatcher() const
+{
+    Q_D(const DTrashIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DTrashIOFactory::createOperator() const
+{
+    Q_D(const DTrashIOFactory);
+    return d->createOperator();
 }

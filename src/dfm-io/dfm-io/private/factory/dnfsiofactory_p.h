@@ -39,17 +39,21 @@ BEGIN_IO_NAMESPACE
 
 class DNfsIOFactory;
 
-class DNfsIOFactoryPrivate : public DIOFactoryPrivate
+class DNfsIOFactoryPrivate
 {
 public:
     explicit DNfsIOFactoryPrivate(DNfsIOFactory *q);
-    ~DNfsIOFactoryPrivate() override;
+    ~DNfsIOFactoryPrivate();
 
-    virtual QSharedPointer<DFileInfo> doCreateFileInfo() const override;
-    virtual QSharedPointer<DFile> doCreateFile() const override;
-    virtual QSharedPointer<DEnumerator> doCreateEnumerator() const override;
-    virtual QSharedPointer<DWatcher> doCreateWatcher() const override;
-    virtual QSharedPointer<DOperator> doCreateOperator() const override;
+    QSharedPointer<DFileInfo> createFileInfo() const;
+    QSharedPointer<DFile> createFile() const;
+    QSharedPointer<DEnumerator> createEnumerator() const;
+    QSharedPointer<DWatcher> createWatcher() const;
+    QSharedPointer<DOperator> createOperator() const;
+
+public:
+    DNfsIOFactory *q_ptr;
+    Q_DECLARE_PUBLIC(DNfsIOFactory)
 };
 
 END_IO_NAMESPACE

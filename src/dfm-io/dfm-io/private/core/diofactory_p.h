@@ -33,6 +33,7 @@
 #include "core/dwatcher.h"
 #include "core/doperator.h"
 #include "error/error.h"
+#include "core/diofactory.h"
 
 BEGIN_IO_NAMESPACE
 
@@ -45,17 +46,23 @@ public:
     explicit DIOFactoryPrivate(DIOFactory *q);
     virtual ~DIOFactoryPrivate();
 
-    virtual QSharedPointer<DFileInfo> doCreateFileInfo() const = 0;
+    /*virtual QSharedPointer<DFileInfo> doCreateFileInfo() const = 0;
     virtual QSharedPointer<DFile> doCreateFile() const = 0;
     virtual QSharedPointer<DEnumerator> doCreateEnumerator() const = 0;
     virtual QSharedPointer<DWatcher> doCreateWatcher() const = 0;
-    virtual QSharedPointer<DOperator> doCreateOperator() const = 0;
+    virtual QSharedPointer<DOperator> doCreateOperator() const = 0;*/
 
 public:
     DIOFactory *q_ptr;
     QUrl uri;
 
     DFMIOError error;
+
+    DIOFactory::CreateFileInfoFunc createFileInfoFunc = nullptr;
+    DIOFactory::CreateFileFunc createFileFunc = nullptr;
+    DIOFactory::CreateEnumeratorFunc createEnumeratorFunc = nullptr;
+    DIOFactory::CreateWatcherFunc createWatcherFunc = nullptr;
+    DIOFactory::CreateOperatorFunc createOperatorFunc = nullptr;
 };
 
 END_IO_NAMESPACE

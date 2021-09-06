@@ -42,6 +42,16 @@ DLocalWatcherPrivate::~DLocalWatcherPrivate()
 
 }
 
+void DLocalWatcherPrivate::setWatchType(DWatcher::WatchType type)
+{
+    this->type = type;
+}
+
+DWatcher::WatchType DLocalWatcherPrivate::watchType() const
+{
+    return this->type;
+}
+
 bool DLocalWatcherPrivate::start(int timeRate)
 {
     Q_Q(DLocalWatcher);
@@ -65,7 +75,22 @@ bool DLocalWatcherPrivate::start(int timeRate)
 
     file = g_file_new_for_uri(fname.toLocal8Bit().data());
 
-    monitor = g_file_monitor_directory(file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &error);
+    if (type == DWatcher::WatchType::AUTO) {
+        GFileInfo *info;
+        guint32 fileType;
+
+        info = g_file_query_info (file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &error);
+        if (!info)
+            goto err;
+
+        fileType = g_file_info_get_attribute_uint32 (info, G_FILE_ATTRIBUTE_STANDARD_TYPE);
+        type = (fileType == G_FILE_TYPE_DIRECTORY) ? DWatcher::WatchType::DIR : DWatcher::WatchType::FILE;
+    }
+
+    if (type == DWatcher::WatchType::DIR)
+        monitor = g_file_monitor_directory (file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &error);
+      else
+        monitor = g_file_monitor (file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &error);
 
     if (!monitor)
         goto err;
@@ -96,12 +121,19 @@ bool DLocalWatcherPrivate::stop()
     return true;
 }
 
+bool DLocalWatcherPrivate::running() const
+{
+    return monitor != nullptr;
+}
+
 void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
                                        GFile *child,
                                        GFile *other,
                                        GFileMonitorEvent event_type,
                                        gpointer user_data)
 {
+    Q_UNUSED(monitor);
+
     DLocalWatcher *watcher = static_cast<DLocalWatcher*>(user_data);
     if (watcher == nullptr) {
         return;
@@ -178,13 +210,36 @@ DLocalWatcher::DLocalWatcher(const QUrl &uri, QObject *parent)
     : DWatcher(uri, parent)
     , d_ptr(new DLocalWatcherPrivate(this))
 {
+    registerSetWatchType(std::bind(&DLocalWatcher::setWatchType, this, std::placeholders::_1));
+    registerWatchType(std::bind(&DLocalWatcher::watchType, this));
+    registerRunning(std::bind(&DLocalWatcher::running, this));
     registerStart(std::bind(&DLocalWatcher::start, this, std::placeholders::_1));
     registerStop(std::bind(&DLocalWatcher::stop, this));
 }
 
 DLocalWatcher::~DLocalWatcher()
 {
-    d_ptr->stop();
+    Q_D(DLocalWatcher);
+    d->stop();
+}
+
+void DLocalWatcher::setWatchType(DWatcher::WatchType type)
+{
+    Q_D(DLocalWatcher);
+    d->setWatchType(type);
+}
+
+DWatcher::WatchType DLocalWatcher::watchType() const
+{
+    Q_D(const DLocalWatcher);
+    return d->watchType();
+}
+
+bool DLocalWatcher::running() const
+{
+    Q_D(const DLocalWatcher);
+
+    return d->running();
 }
 
 bool DLocalWatcher::start(int timeRate)

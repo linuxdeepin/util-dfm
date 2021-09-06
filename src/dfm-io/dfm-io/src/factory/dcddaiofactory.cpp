@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DCddaIOFactoryPrivate::DCddaIOFactoryPrivate(DCddaIOFactory *q) : DIOFactoryPrivate(q)
+DCddaIOFactoryPrivate::DCddaIOFactoryPrivate(DCddaIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DCddaIOFactoryPrivate::~DCddaIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DCddaIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DCddaIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DCddaIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DCddaIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DCddaIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DCddaIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DCddaIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DCddaIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DCddaIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DCddaIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DCddaIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DCddaIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DCddaIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DCddaIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DCddaIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DCddaIOFactory::DCddaIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DCddaIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DCddaIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DCddaIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DCddaIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DCddaIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DCddaIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DCddaIOFactory::createEnumerator, this));
 }
 
 DCddaIOFactory::~DCddaIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DCddaIOFactory::createFileInfo() const
+{
+    Q_D(const DCddaIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DCddaIOFactory::createFile() const
+{
+    Q_D(const DCddaIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DCddaIOFactory::createEnumerator() const
+{
+    Q_D(const DCddaIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DCddaIOFactory::createWatcher() const
+{
+    Q_D(const DCddaIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DCddaIOFactory::createOperator() const
+{
+    Q_D(const DCddaIOFactory);
+    return d->createOperator();
 }

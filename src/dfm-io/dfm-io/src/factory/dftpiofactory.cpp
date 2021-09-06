@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DFtpIOFactoryPrivate::DFtpIOFactoryPrivate(DFtpIOFactory *q) : DIOFactoryPrivate(q)
+DFtpIOFactoryPrivate::DFtpIOFactoryPrivate(DFtpIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DFtpIOFactoryPrivate::~DFtpIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DFtpIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DFtpIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DFtpIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DFtpIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DFtpIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DFtpIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DFtpIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DFtpIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DFtpIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DFtpIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DFtpIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DFtpIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DFtpIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DFtpIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DFtpIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DFtpIOFactory::DFtpIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DFtpIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DFtpIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DFtpIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DFtpIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DFtpIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DFtpIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DFtpIOFactory::createEnumerator, this));
 }
 
 DFtpIOFactory::~DFtpIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DFtpIOFactory::createFileInfo() const
+{
+    Q_D(const DFtpIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DFtpIOFactory::createFile() const
+{
+    Q_D(const DFtpIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DFtpIOFactory::createEnumerator() const
+{
+    Q_D(const DFtpIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DFtpIOFactory::createWatcher() const
+{
+    Q_D(const DFtpIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DFtpIOFactory::createOperator() const
+{
+    Q_D(const DFtpIOFactory);
+    return d->createOperator();
 }

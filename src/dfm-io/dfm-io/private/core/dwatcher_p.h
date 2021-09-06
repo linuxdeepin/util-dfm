@@ -42,18 +42,18 @@ public:
     explicit DWatcherPrivate(DWatcher *q);
     virtual ~DWatcherPrivate();
 
-    /*virtual bool start(int timeRate) = 0;
-    virtual bool stop() = 0;*/
-
 public:
     DWatcher *q_ptr;
     QUrl uri;
 
+    DWatcher::RunningFunc runningFunc = nullptr;
     DWatcher::StartFunc startFunc = nullptr;
     DWatcher::StopFunc stopFunc = nullptr;
+    DWatcher::SetWatchTypeFunc setWatchTypeFunc = nullptr;
+    DWatcher::WatchTypeFunc watchTypeFunc = nullptr;
 
     QList<DFileInfo::AttributeID> ids;
-    int timeRate = 0;
+    int timeRate = 200;
     DFMIOError error;
 };
 

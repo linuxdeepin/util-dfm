@@ -30,11 +30,23 @@
 
 BEGIN_IO_NAMESPACE
 
+class DDdavIOFactoryPrivate;
+
 class DDdavIOFactory : public DIOFactory
 {
 public:
     explicit DDdavIOFactory(const QUrl &uri);
     ~DDdavIOFactory();
+
+    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
+    QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
+    QSharedPointer<DEnumerator> createEnumerator() const DFM_OVERRIDE;
+    QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
+    QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
+
+private:
+    QSharedPointer<DDdavIOFactoryPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DDdavIOFactory)
 };
 
 END_IO_NAMESPACE

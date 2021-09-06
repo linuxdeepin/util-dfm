@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DGphoto2IOFactoryPrivate::DGphoto2IOFactoryPrivate(DGphoto2IOFactory *q) : DIOFactoryPrivate(q)
+DGphoto2IOFactoryPrivate::DGphoto2IOFactoryPrivate(DGphoto2IOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DGphoto2IOFactoryPrivate::~DGphoto2IOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DGphoto2IOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DGphoto2IOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DGphoto2IOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DGphoto2IOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DGphoto2IOFactoryPrivate::createFile() const
 {
+    Q_Q(const DGphoto2IOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DGphoto2IOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DGphoto2IOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DGphoto2IOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DGphoto2IOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DGphoto2IOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DGphoto2IOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DGphoto2IOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DGphoto2IOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DGphoto2IOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DGphoto2IOFactory::DGphoto2IOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DGphoto2IOFactoryPrivate(this))
 {
-    d_ptr.reset(new DGphoto2IOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DGphoto2IOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DGphoto2IOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DGphoto2IOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DGphoto2IOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DGphoto2IOFactory::createEnumerator, this));
 }
 
 DGphoto2IOFactory::~DGphoto2IOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DGphoto2IOFactory::createFileInfo() const
+{
+    Q_D(const DGphoto2IOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DGphoto2IOFactory::createFile() const
+{
+    Q_D(const DGphoto2IOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DGphoto2IOFactory::createEnumerator() const
+{
+    Q_D(const DGphoto2IOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DGphoto2IOFactory::createWatcher() const
+{
+    Q_D(const DGphoto2IOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DGphoto2IOFactory::createOperator() const
+{
+    Q_D(const DGphoto2IOFactory);
+    return d->createOperator();
 }

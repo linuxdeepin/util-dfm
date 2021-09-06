@@ -31,11 +31,23 @@
 
 BEGIN_IO_NAMESPACE
 
+class DLocalIOFactoryPrivate;
+
 class DLocalIOFactory : public DIOFactory
 {
 public:
     explicit DLocalIOFactory(const QUrl &uri);
     ~DLocalIOFactory();
+
+    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
+    QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
+    QSharedPointer<DEnumerator> createEnumerator() const DFM_OVERRIDE;
+    QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
+    QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
+
+private:
+    QSharedPointer<DLocalIOFactoryPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DLocalIOFactory)
 };
 
 END_IO_NAMESPACE

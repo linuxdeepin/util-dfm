@@ -35,7 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DDnssdIOFactoryPrivate::DDnssdIOFactoryPrivate(DDnssdIOFactory *q) : DIOFactoryPrivate(q)
+DDnssdIOFactoryPrivate::DDnssdIOFactoryPrivate(DDnssdIOFactory *q)
+    : q_ptr(q)
 {
 }
 
@@ -43,40 +44,88 @@ DDnssdIOFactoryPrivate::~DDnssdIOFactoryPrivate()
 {
 }
 
-QSharedPointer<DFileInfo> DDnssdIOFactoryPrivate::doCreateFileInfo() const
+QSharedPointer<DFileInfo> DDnssdIOFactoryPrivate::createFileInfo() const
 {
+    Q_Q(const DDnssdIOFactory);
+    const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
     return DLocalHelper::getFileInfo(url);
 }
 
-QSharedPointer<DFile> DDnssdIOFactoryPrivate::doCreateFile() const
+QSharedPointer<DFile> DDnssdIOFactoryPrivate::createFile() const
 {
+    Q_Q(const DDnssdIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DDnssdIOFactoryPrivate::doCreateEnumerator() const
+QSharedPointer<DEnumerator> DDnssdIOFactoryPrivate::createEnumerator() const
 {
+    Q_Q(const DDnssdIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
 }
 
-QSharedPointer<DWatcher> DDnssdIOFactoryPrivate::doCreateWatcher() const
+QSharedPointer<DWatcher> DDnssdIOFactoryPrivate::createWatcher() const
 {
+    Q_Q(const DDnssdIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
 }
 
-QSharedPointer<DOperator> DDnssdIOFactoryPrivate::doCreateOperator() const
+QSharedPointer<DOperator> DDnssdIOFactoryPrivate::createOperator() const
 {
+    Q_Q(const DDnssdIOFactory);
+    const QUrl &uri = q->uri();
+
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
 }
 
 DDnssdIOFactory::DDnssdIOFactory(const QUrl &uri)
-    : DIOFactory()
+    : DIOFactory(uri)
+    , d_ptr(new DDnssdIOFactoryPrivate(this))
 {
-    d_ptr.reset(new DDnssdIOFactoryPrivate(this));
-    d_ptr->uri = uri;
+    registerCreateFileInfo(std::bind(&DDnssdIOFactory::createFileInfo, this));
+    registerCreateFile(std::bind(&DDnssdIOFactory::createFile, this));
+    registerCreateWatcher(std::bind(&DDnssdIOFactory::createWatcher, this));
+    registerCreateOperator(std::bind(&DDnssdIOFactory::createOperator, this));
+    registerCreateEnumerator(std::bind(&DDnssdIOFactory::createEnumerator, this));
 }
 
 DDnssdIOFactory::~DDnssdIOFactory()
 {
+}
+
+QSharedPointer<DFileInfo> DDnssdIOFactory::createFileInfo() const
+{
+    Q_D(const DDnssdIOFactory);
+    return d->createFileInfo();
+}
+
+QSharedPointer<DFile> DDnssdIOFactory::createFile() const
+{
+    Q_D(const DDnssdIOFactory);
+    return d->createFile();
+}
+
+QSharedPointer<DEnumerator> DDnssdIOFactory::createEnumerator() const
+{
+    Q_D(const DDnssdIOFactory);
+    return d->createEnumerator();
+}
+
+QSharedPointer<DWatcher> DDnssdIOFactory::createWatcher() const
+{
+    Q_D(const DDnssdIOFactory);
+    return d->createWatcher();
+}
+
+QSharedPointer<DOperator> DDnssdIOFactory::createOperator() const
+{
+    Q_D(const DDnssdIOFactory);
+    return d->createOperator();
 }
