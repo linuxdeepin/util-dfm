@@ -11,6 +11,8 @@ if (NOT PROJECT_VERSION_MAJOR)
     set(PROJECT_VERSION_MAJOR 0)
 endif()
 
+include(GNUInstallDirs)
+
 # Setup the environment
 find_package(Qt5Core REQUIRED)
 find_package(PkgConfig REQUIRED)
