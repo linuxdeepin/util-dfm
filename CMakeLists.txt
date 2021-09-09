@@ -12,8 +12,13 @@ SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 set(QT_MINIMUM_VERSION "5.6.3")
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/src)
+include(GNUInstallDirs)
+find_package(Qt5 ${QT_MINIMUM_VERSION} CONFIG REQUIRED Core)
+find_package(PkgConfig REQUIRED)
 
 # Install settings
-set(CMAKE_INSTALL_PREFIX /usr)
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX /usr)
+endif ()
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/src)

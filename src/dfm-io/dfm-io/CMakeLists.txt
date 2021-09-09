@@ -128,9 +128,8 @@ install (FILES ${IO_INCLUDES_INSTALL_LOCAL}
 
 # todo install private
 
-install (TARGETS ${PROJECT_NAME}
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
+install_targets ("/${CMAKE_INSTALL_LIBDIR}" dfm-io)
+
 
 configure_file ("dfm-io.pc.in" "dfm-io.pc" @ONLY)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/dfm-io.pc
