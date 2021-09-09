@@ -28,6 +28,9 @@
 
 DFM_MOUNT_BEGIN_NS
 
+// TODO: this class is designed no subclass, need concern about the ABI compability?
+class DFMMonitor;
+class DFMDevice;
 class DFMDeviceManagerPrivate;
 class DFMDeviceManager final : public QObject
 {
@@ -35,8 +38,34 @@ class DFMDeviceManager final : public QObject
     Q_DECLARE_PRIVATE(DFMDeviceManager)
 
 public:
+    // TODO: need to think whether we really need to make it singleton pattern
+    static DFMDeviceManager *instance();
+
+    bool registerMonitor(DeviceType type, DFMMonitor *monitor);
+    // this object is owned by manager, DO NOT free it.
+    DFMMonitor *getRegisteredMonitor(DeviceType type) const;
+    bool startMonitorWatch();
+    bool stopMonitorWatch();
+    MonitorError lastError() const;
+
+    // the objects are owned by manager, do not free it manually
+    QList<DFMDevice *> devices(DeviceType type = DeviceType::AllDevice);
+
+Q_SIGNALS:
+    // TODO: complete the args of signals
+    void driveAdded();
+    void driveRemoved();
+    void blockDeviceAdded();
+    void blockDeviceRemoved();
+    void mounted(const QString &mountPoint);
+    void unmounted(const QString &unmountFrom); // TODO: do we need this path?
+    void propertyChanged(Property property, const QVariant &newVal);
+
+
+private:
     DFMDeviceManager(QObject *parent = nullptr);
     ~DFMDeviceManager();
+
 };
 
 DFM_MOUNT_END_NS

@@ -54,6 +54,7 @@ bool DFMBlockMonitorPrivate::startMonitor()
 
     getDevicesOnInit();
 
+    // the mng is owned by client, do not free it manually
     GDBusObjectManager *dbusMng = udisks_client_get_object_manager(client);
     if (!dbusMng) {
         g_object_unref(client);
@@ -131,7 +132,7 @@ void DFMBlockMonitorPrivate::getDevicesOnInit()
     Q_ASSERT_X(mng, __FUNCTION__, "manager must be valid");
 
     GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
-    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manually.
     GVariant *gOpts = g_variant_builder_end(builder);
 
     char **blkObjs = nullptr;

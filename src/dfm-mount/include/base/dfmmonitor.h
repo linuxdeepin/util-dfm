@@ -69,7 +69,7 @@ Q_SIGNALS:
     void deviceRemoved(DFMDevice *dev);
     void mountAdded(const QString &mountPoint);
     void mountRemoved(const QString &mountPoint);
-    void propertiesChanged(const QVariantMap &);
+    void propertyChanged(Property property, const QVariant &newVal);
 
 protected:
     DFMMonitor(DFMMonitorPrivate &dd, QObject *parent = nullptr);

@@ -23,6 +23,9 @@
 #define DFMDEVICEMANAGERPRIVATE_H
 
 #include "dfmdevicemanager.h"
+#include "dfmblockmonitor.h"
+#include "dfmprotocolmonitor.h"
+#include "base/dfmmount_global.h"
 
 #include <private/qobject_p.h>
 
@@ -33,6 +36,14 @@ class DFMDeviceManagerPrivate final: public QObjectPrivate
     Q_DECLARE_PUBLIC(DFMDeviceManager)
 public:
     DFMDeviceManagerPrivate();
+    bool registerMonitor(DeviceType type, DFMMonitor *monitor);
+    DFMMonitor *getRegisteredMonitor(DeviceType type) const;
+    bool startMonitor();
+    bool stopMonitor();
+    QList<DFMDevice *> devices(DeviceType type);
+
+    QMap<DeviceType, DFMMonitor *> monitors;
+    MonitorError lastError;
 };
 
 DFM_MOUNT_END_NS

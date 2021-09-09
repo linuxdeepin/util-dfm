@@ -138,8 +138,15 @@ enum class Property : uint16_t {
 };
 
 enum class MountError : uint16_t {
-    ErrNotMountable = 0,    // which means there is no filesystem interface for block devices.
+    ErrNoError = 0,
+    ErrNotMountable,    // which means there is no filesystem interface for block devices.
     ErrAlreadyMounted,
+};
+
+enum class MonitorError: uint16_t {
+    ErrNoError = 0,
+    ErrMonitorAlreadyRegistered,
+    ErrMonitorNotRegister,
 };
 
 DFM_MOUNT_END_NS
