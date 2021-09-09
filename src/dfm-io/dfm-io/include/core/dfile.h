@@ -54,6 +54,16 @@ public:
         CustomStart = 0x0100,
     };
 
+    enum class CopyFlag : uint8_t {
+        copyNone, // No flags set.
+        copyOverwrite, // Overwrite any existing files.
+        copyBackup, // Make a backup of any existing files.
+        copyNofollowSymlinks, // Don’t follow symlinks.
+        copyAllMetadata, // Copy all file metadata instead of just default set used for copy.
+        copyNoFallbackForMove, // Don’t use copy and delete fallback if native move not supported.
+        copyTargetDefaultPerms, // Leaves target file with default perms, instead of setting the source file perms.
+    };
+
     enum class DFMSeekType : uint8_t {
         BEGIN = 0,
         CURRENT = 1,
@@ -115,7 +125,12 @@ public:
     void registerExists(const ExistsFunc &func);
 
     QUrl uri() const;
-    DFMIOError lastError() const; 
+    DFMIOError lastError() const;
+
+    // static
+    static bool copyFile(const QString &sourcePath, const QString &destPath, CopyFlag flag,
+                         void *cancellabel = nullptr, std::function<void(int, int, void*)> progressCallback = nullptr,
+                         void *progressCallbackData = nullptr, void **error = nullptr);
 
 private:
     QSharedPointer<DFilePrivate> d_ptr;

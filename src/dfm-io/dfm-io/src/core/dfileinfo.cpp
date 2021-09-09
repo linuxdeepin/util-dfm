@@ -25,7 +25,7 @@
 
 USING_IO_NAMESPACE
 
-DFileInfoPrivate::AttrNameMap DFileInfoPrivate::attrNames = {
+DFileInfo::AttributeNameMap DFileInfo::attributeNames = {
     {DFileInfo::AttributeID::StandardType, "standard::type"}, // G_FILE_ATTRIBUTE_STANDARD_TYPE
     {DFileInfo::AttributeID::StandardIsHiden, "standard::is-hiden"}, // G_FILE_ATTRIBUTE_STANDARD_IS_HIDDEN
     {DFileInfo::AttributeID::StandardIsBackup, "standard::is-backup"}, // G_FILE_ATTRIBUTE_STANDARD_IS_BACKUP
@@ -124,14 +124,17 @@ DFileInfoPrivate::AttrNameMap DFileInfoPrivate::attrNames = {
     {DFileInfo::AttributeID::RecentModified, "recent::modified"}, // G_FILE_ATTRIBUTE_RECENT_MODIFIED
 
     {DFileInfo::AttributeID::CustomStart, "custom-start"},
-};
 
-QString DFileInfoPrivate::attributeName(DFileInfo::AttributeID id) const
-{
-    if (attrNames.count(id) > 0)
-        return QString::fromLocal8Bit(attrNames.at(id).c_str());
-    return "";
-}
+    {DFileInfo::AttributeID::StandardIsFile, "standard::is-file"},
+    {DFileInfo::AttributeID::StandardIsDir, "standard::is-dir"},
+    {DFileInfo::AttributeID::StandardIsRoot, "standard::is-root"},
+    {DFileInfo::AttributeID::StandardSuffix, "standard::suffix"},
+    {DFileInfo::AttributeID::StandardCompleteSuffix, "standard::complete-suffix"},
+    {DFileInfo::AttributeID::StandardFilePath, "standard::file-path"},
+    {DFileInfo::AttributeID::StandardParentPath, "standard::parent-path"},
+    {DFileInfo::AttributeID::StandardBaseName, "standard::base-name"},
+    {DFileInfo::AttributeID::StandardFileName, "standard::file-name"},
+};
 
 DFileInfo::DFileInfo()
     : d_ptr(new DFileInfoPrivate(this))
@@ -161,36 +164,106 @@ DFileInfo &DFileInfo::operator=(const DFileInfo &info)
     return *this;
 }
 
-QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool &success) const
+QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success, bool fetchMore) const
 {
-    success = false;
-    if (d_ptr->attributes.count(id) > 0) {
-        success = true;
-        return d_ptr->attributes.value(id);
-    }
+    Q_D(const DFileInfo);
+
+    *success = false;
+
+    if (d->attributeFunc)
+        return d->attributeFunc(id, success, fetchMore);
 
     return QVariant();
 }
 
 bool DFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 {
-    d_ptr->attributes[id] = value;
-    return true;
+    Q_D(DFileInfo);
+
+    if (!d->setAttributeFunc)
+        return false;
+
+    return d->setAttributeFunc(id, value);
 }
 
 bool DFileInfo::hasAttribute(DFileInfo::AttributeID id) const
 {
-    return d_ptr->attributes.count(id);
+    Q_D(const DFileInfo);
+
+    if (!d->hasAttributeFunc)
+        return false;
+
+    return d->hasAttributeFunc(id);
 }
 
 bool DFileInfo::removeAttribute(DFileInfo::AttributeID id)
 {
-    return d_ptr->attributes.remove(id);
+    Q_D(DFileInfo);
+
+    if (!d->removeAttributeFunc)
+        return false;
+
+    return d->removeAttributeFunc(id);
 }
 
 QList<DFileInfo::AttributeID> DFileInfo::attributeIDList() const
 {
-    return d_ptr->attributes.keys();
+    Q_D(const DFileInfo);
+
+    if (!d->attributeListFunc)
+        return QList<DFileInfo::AttributeID>();
+
+    return d->attributeListFunc();
+}
+
+bool DFileInfo::exists() const
+{
+    if (!d_ptr)
+        return false;
+    if(!d_ptr->existsFunc)
+        return false;
+    return d_ptr->existsFunc();
+}
+
+void DFileInfo::registerAttribute(const DFileInfo::AttributeFunc &func)
+{
+    Q_D(DFileInfo);
+
+    d->attributeFunc = func;
+}
+
+void DFileInfo::registerSetAttribute(const DFileInfo::SetAttributeFunc &func)
+{
+    Q_D(DFileInfo);
+
+    d->setAttributeFunc = func;
+}
+
+void DFileInfo::registerHasAttribute(const DFileInfo::HasAttributeFunc &func)
+{
+    Q_D(DFileInfo);
+
+    d->hasAttributeFunc = func;
+}
+
+void DFileInfo::registerRemoveAttribute(const DFileInfo::RemoveAttributeFunc &func)
+{
+    Q_D(DFileInfo);
+
+    d->removeAttributeFunc = func;
+}
+
+void DFileInfo::registerAttributeList(const DFileInfo::AttributeListFunc &func)
+{
+    Q_D(DFileInfo);
+
+    d->attributeListFunc = func;
+}
+
+void DFileInfo::registerExists(const DFileInfo::ExistsFunc &func)
+{
+    if (d_ptr)
+        d_ptr->existsFunc = func;
 }
 
 QUrl DFileInfo::uri() const
@@ -201,20 +274,15 @@ QUrl DFileInfo::uri() const
 QString DFileInfo::dump() const
 {
     QString ret;
-    QMap<AttributeID, QVariant>::const_iterator iter = d_ptr->attributes.begin();
+    /*QMap<AttributeID, QVariant>::const_iterator iter = d_ptr->attributes.begin();
     while (iter != d_ptr->attributes.end()) {
         ret.append(attributeName(iter.key()));
         ret.append(":");
         ret.append(iter.value().toString());
         ret.append("\n");
         ++iter;
-    }
+    }*/
     return ret;
-}
-
-QString DFileInfo::attributeName(DFileInfo::AttributeID id) const
-{
-    return d_ptr->attributeName(id);
 }
 
 DFMIOError DFileInfo::lastError() const

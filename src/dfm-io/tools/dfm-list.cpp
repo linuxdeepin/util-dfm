@@ -52,7 +52,7 @@ static void show_fileinfo(QSharedPointer<DFileInfo> info)
     } else {
         // only show display-name
         bool success = false;
-        const QString &path = info->attribute(DFileInfo::AttributeID::StandardDisplayName, success).toString();
+        const QString &path = info->attribute(DFileInfo::AttributeID::StandardDisplayName, &success).toString();
         printf("%s", path.toStdString().c_str());
     }
 }

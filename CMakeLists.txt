@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(util-dfm)
 
 # Setup the environment
-SET(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_CXX_STANDARD 17)
 
 option(BUILD_UTILS "Build utilities" OFF)
 SET(CMAKE_AUTOMOC ON)

@@ -39,12 +39,6 @@ BEGIN_IO_NAMESPACE
 class DFileInfoPrivate: public QSharedData
 {
 public:
-    using AttrNameMap = std::unordered_map<DFileInfo::AttributeID, std::string>;
-    using AttrValMap  = QMap<DFileInfo::AttributeID, QVariant>;
-
-    static AttrNameMap attrNames;
-
-public:
     inline DFileInfoPrivate(DFileInfo *q)
         : QSharedData(),
           q_ptr(q)
@@ -63,15 +57,18 @@ public:
 
     }
 
-    QString attributeName(DFileInfo::AttributeID id) const;
-
-
 public:
     DFileInfo *q_ptr;
 
     QUrl uri;
     DFMIOError error;
-    AttrValMap attributes;
+
+    DFileInfo::AttributeFunc attributeFunc = nullptr;
+    DFileInfo::SetAttributeFunc setAttributeFunc = nullptr;
+    DFileInfo::HasAttributeFunc hasAttributeFunc = nullptr;
+    DFileInfo::RemoveAttributeFunc removeAttributeFunc = nullptr;
+    DFileInfo::AttributeListFunc attributeListFunc = nullptr;
+    DFileInfo::ExistsFunc existsFunc = nullptr;
 };
 
 END_IO_NAMESPACE

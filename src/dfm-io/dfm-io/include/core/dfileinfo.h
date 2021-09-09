@@ -24,12 +24,14 @@
 #define DFILEINFO_H
 
 #include "dfmio_global.h"
-
 #include "error/error.h"
 
 #include <QUrl>
 #include <QSharedData>
 #include <QSharedPointer>
+
+#include <functional>
+#include <unordered_map>
 
 BEGIN_IO_NAMESPACE
 
@@ -71,7 +73,7 @@ public:
         StandardSymlinkTarget = 16, // byte string
         StandardTargetUri = 17, // string
         StandardSortOrder = 18, // int32
-        StandardDescription = 19, //
+        StandardDescription = 19, // string
 
         EtagValue = 40, // string
 
@@ -137,7 +139,7 @@ public:
         FileSystemType = 443, // string
         FileSystemReadOnly = 444, // boolean
         FileSystemUsePreview = 445, // uint32
-        FileSystemRemote = 446, //
+        FileSystemRemote = 446, // boolean
 
         GvfsBackend = 470, // string
 
@@ -147,10 +149,30 @@ public:
         TrashDeletionDate = 511, // string
         TrashOrigPath = 512, // string
 
-        RecentModified = 540, //
+        RecentModified = 540, // uint64
 
-        CustomStart = 1000,
+        CustomStart = 600,
+
+        StandardIsFile = 610,
+        StandardIsDir = 611,
+        StandardIsRoot = 612,
+        StandardSuffix = 613,
+        StandardCompleteSuffix = 614,
+        StandardFilePath = 615,
+        StandardParentPath = 616,
+        StandardBaseName = 617,
+        StandardFileName = 618,
     };
+
+    using AttributeNameMap = std::unordered_map<DFileInfo::AttributeID, std::string>;
+    static AttributeNameMap attributeNames;
+
+    using AttributeFunc = std::function<QVariant(DFileInfo::AttributeID, bool *, bool)>;
+    using SetAttributeFunc = std::function<bool(DFileInfo::AttributeID, const QVariant &)>;
+    using HasAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
+    using RemoveAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
+    using AttributeListFunc = std::function<QList<DFileInfo::AttributeID>()>;
+    using ExistsFunc = std::function<bool()>;
 
 public:
     DFileInfo();
@@ -159,20 +181,29 @@ public:
     virtual ~DFileInfo();
     DFileInfo &operator=(const DFileInfo &info);
 
-    QVariant attribute(AttributeID id, bool &success) const;
-    bool setAttribute(AttributeID id, const QVariant &value);
-    bool hasAttribute(AttributeID id) const;
-    bool removeAttribute(AttributeID id);
-    QList<AttributeID> attributeIDList() const;
+    DFM_VIRTUAL QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr, bool fetchMore = true) const;
+    DFM_VIRTUAL bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
+    DFM_VIRTUAL bool hasAttribute(DFileInfo::AttributeID id) const;
+    DFM_VIRTUAL bool removeAttribute(DFileInfo::AttributeID id);
+    DFM_VIRTUAL QList<DFileInfo::AttributeID> attributeIDList() const;
+    DFM_VIRTUAL bool exists() const;
+
+    // register
+    void registerAttribute(const AttributeFunc &func);
+    void registerSetAttribute(const SetAttributeFunc &func);
+    void registerHasAttribute(const HasAttributeFunc &func);
+    void registerRemoveAttribute(const RemoveAttributeFunc &func);
+    void registerAttributeList(const AttributeListFunc &func);
+    void registerExists(const ExistsFunc &func);
 
     QUrl uri() const;
     QString dump() const;
-    QString attributeName(AttributeID id) const;
 
     DFMIOError lastError() const;
 
-protected:
-    QSharedDataPointer<DFileInfoPrivate> d_ptr;
+private:
+    QSharedPointer<DFileInfoPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DFileInfo)
 };
 
 END_IO_NAMESPACE

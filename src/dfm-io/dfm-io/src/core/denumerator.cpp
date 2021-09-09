@@ -104,7 +104,7 @@ QString DEnumerator::next()
     if (fileInfo != d->info)
         d->info = fileInfo;
     bool success;
-    return fileInfo ? fileInfo->attribute(DFileInfo::AttributeID::StandardDisplayName, success).toString() : QString();
+    return fileInfo ? fileInfo->attribute(DFileInfo::AttributeID::StandardDisplayName, &success).toString() : QString();
 }
 
 QUrl DEnumerator::uri() const

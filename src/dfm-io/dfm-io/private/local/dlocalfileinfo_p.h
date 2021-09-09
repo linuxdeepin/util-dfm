@@ -22,31 +22,45 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DGIOHELPER_H
-#define DGIOHELPER_H
+#ifndef DLOCALFILEINFO_P_H
+#define DLOCALFILEINFO_P_H
 
 #include "dfmio_global.h"
+
+#include "gio/gio.h"
+
+#include "local/dlocalfileinfo.h"
 #include "core/dfileinfo.h"
 
-#include <gio/gio.h>
-
-#include <QSharedPointer>
+#include <QMap>
 
 BEGIN_IO_NAMESPACE
 
-class DLocalHelper
+class DLocalFileInfo;
+
+class DLocalFileInfoPrivate
 {
 public:
-    static QSharedPointer<DFileInfo> getFileInfo(const QString &path);
-    static QSharedPointer<DFileInfo> getFileInfoFromGFileInfo(GFileInfo *gfileinfo);
-    static GFileInfo *getFileInfoFromDFileInfo(const DFileInfo &dfileinfo);
+    explicit DLocalFileInfoPrivate(DLocalFileInfo *ptr);
+    ~DLocalFileInfoPrivate();
 
-    static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id);
-    static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);
-    static void setAttributeFromDFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value);
-    static std::string attributeStringById(DFileInfo::AttributeID id);
+    bool init();
+
+    QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr, bool fetchMore = true);
+    bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
+    bool hasAttribute(DFileInfo::AttributeID id);
+    bool removeAttribute(DFileInfo::AttributeID id);
+    QList<DFileInfo::AttributeID> attributeIDList() const;
+    bool exists() const;
+
+public:
+    QMap<DFileInfo::AttributeID, QVariant> attributes;
+    GFileInfo *gfileinfo = nullptr;
+
+    DLocalFileInfo *q_ptr;
+    Q_DECLARE_PUBLIC(DLocalFileInfo)
 };
 
 END_IO_NAMESPACE
 
-#endif // DGIOHELPER_H
+#endif // DLOCALFILEINFO_P_H

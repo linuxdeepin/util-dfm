@@ -22,6 +22,8 @@
 */
 #include "core/dfile_p.h"
 
+#include <gio/gio.h>
+
 #include <QDebug>
 
 USING_IO_NAMESPACE
@@ -336,4 +338,22 @@ DFMIOError DFile::lastError() const
         return DFMIOError();
 
     return d->error;
+}
+
+bool DFile::copyFile(const QString &sourcePath, const QString &destPath, DFile::CopyFlag flag, void *cancellabel, std::function<void (int, int, void *)> progressCallback, void *progressCallbackData, void **error)
+{
+    GFile *fileSource = g_file_new_for_path(sourcePath.toLocal8Bit().data());
+    GFile *fileDest = g_file_new_for_path(destPath.toLocal8Bit().data());
+
+    GError *gerror = nullptr;
+
+    bool success = g_file_copy(fileSource, fileDest, GFileCopyFlags(flag), nullptr, nullptr, nullptr, &gerror);
+
+    g_object_unref(fileSource);
+    g_object_unref(fileDest);
+
+    if (gerror)
+        g_error_free(gerror);
+
+    return success;
 }

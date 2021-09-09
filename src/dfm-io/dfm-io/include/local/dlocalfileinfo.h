@@ -22,31 +22,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DGIOHELPER_H
-#define DGIOHELPER_H
+#ifndef DLOCALFILEINFO_H
+#define DLOCALFILEINFO_H
 
 #include "dfmio_global.h"
+
 #include "core/dfileinfo.h"
-
-#include <gio/gio.h>
-
-#include <QSharedPointer>
 
 BEGIN_IO_NAMESPACE
 
-class DLocalHelper
+class DLocalFileInfoPrivate;
+
+class DLocalFileInfo : public DFileInfo
 {
 public:
-    static QSharedPointer<DFileInfo> getFileInfo(const QString &path);
-    static QSharedPointer<DFileInfo> getFileInfoFromGFileInfo(GFileInfo *gfileinfo);
-    static GFileInfo *getFileInfoFromDFileInfo(const DFileInfo &dfileinfo);
+    explicit DLocalFileInfo(const QUrl &uri);
+    virtual ~DLocalFileInfo();
 
-    static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id);
-    static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);
-    static void setAttributeFromDFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value);
-    static std::string attributeStringById(DFileInfo::AttributeID id);
+    QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr, bool fetchMore = true) DFM_OVERRIDE;
+    bool setAttribute(DFileInfo::AttributeID id, const QVariant &value) DFM_OVERRIDE;
+    bool hasAttribute(DFileInfo::AttributeID id) DFM_OVERRIDE;
+    bool removeAttribute(DFileInfo::AttributeID id) DFM_OVERRIDE;
+    QList<DFileInfo::AttributeID> attributeIDList() const DFM_OVERRIDE;
+    bool exists() const DFM_OVERRIDE;
+
+private:
+    QSharedPointer<DLocalFileInfoPrivate> d_ptr;
+    Q_DECLARE_PRIVATE(DLocalFileInfo)
 };
 
 END_IO_NAMESPACE
 
-#endif // DGIOHELPER_H
+#endif // DLOCALFILEINFO_H
