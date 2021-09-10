@@ -28,19 +28,15 @@
 
 #include <QMap>
 
-extern "C" {
 #include <udisks/udisks.h>
-}
 
 DFM_MOUNT_BEGIN_NS
 
 class DFMBlockDevice;
 class DFMBlockMonitorPrivate final: public DFMMonitorPrivate
 {
-    Q_DECLARE_PUBLIC(DFMBlockMonitor)
-
 public:
-    DFMBlockMonitorPrivate();
+    DFMBlockMonitorPrivate(DFMBlockMonitor *qq);
 
     bool startMonitor() DFM_MNT_OVERRIDE;
     bool stopMonitor() DFM_MNT_OVERRIDE;

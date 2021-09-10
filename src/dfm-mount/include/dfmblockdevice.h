@@ -33,7 +33,6 @@ class DFMBlockDevicePrivate;
 class DFMBlockDevice final : public DFMDevice
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(DFMBlockDevice)
 
 public:
     DFMBlockDevice() = delete;

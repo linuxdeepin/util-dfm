@@ -33,7 +33,6 @@ class DFMProtocolDevicePrivate;
 class DFMProtocolDevice final : public DFMDevice
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(DFMProtocolDevice)
 
 public:
     DFMProtocolDevice(const QString &device, QObject *parent = nullptr);

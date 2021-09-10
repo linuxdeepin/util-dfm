@@ -27,15 +27,14 @@
 #include "dfmprotocolmonitor.h"
 #include "base/dfmmount_global.h"
 
-#include <private/qobject_p.h>
+#include <QMap>
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMDeviceManagerPrivate final: public QObjectPrivate
+class DFMDeviceManagerPrivate final
 {
-    Q_DECLARE_PUBLIC(DFMDeviceManager)
 public:
-    DFMDeviceManagerPrivate();
+    DFMDeviceManagerPrivate(DFMDeviceManager *qq);
     bool registerMonitor(DeviceType type, DFMMonitor *monitor);
     DFMMonitor *getRegisteredMonitor(DeviceType type) const;
     bool startMonitor();
@@ -44,6 +43,8 @@ public:
 
     QMap<DeviceType, DFMMonitor *> monitors;
     MonitorError lastError;
+
+    DFMDeviceManager *q = nullptr;
 };
 
 DFM_MOUNT_END_NS

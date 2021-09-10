@@ -33,23 +33,23 @@
 DFM_MOUNT_USE_NS
 
 DFMProtocolDevice::DFMProtocolDevice(const QString &device, QObject *parent)
-    : DFMDevice(* new DFMProtocolDevicePrivate(device), parent)
+    : DFMDevice(new DFMProtocolDevicePrivate(device, this), parent)
 {
-    Q_D(DFMProtocolDevice);
-    registerPath(std::bind(&DFMProtocolDevicePrivate::path, d));
-    registerMount(std::bind(&DFMProtocolDevicePrivate::mount, d, std::placeholders::_1));
-    registerMountAsync(std::bind(&DFMProtocolDevicePrivate::mountAsync, d, std::placeholders::_1));
-    registerUnmount(std::bind(&DFMProtocolDevicePrivate::unmount, d));
-    registerUnmountAsync(std::bind(&DFMProtocolDevicePrivate::unmountAsync, d));
-    registerRename(std::bind(&DFMProtocolDevicePrivate::rename, d, std::placeholders::_1));
-    registerRenameAsync(std::bind(&DFMProtocolDevicePrivate::renameAsync, d, std::placeholders::_1));
-    registerAccessPoint(std::bind(&DFMProtocolDevicePrivate::accessPoint, d));
-    registerMountPoint(std::bind(&DFMProtocolDevicePrivate::mountPoint, d));
-    registerFileSystem(std::bind(&DFMProtocolDevicePrivate::fileSystem, d));
-    registerSizeTotal(std::bind(&DFMProtocolDevicePrivate::sizeTotal, d));
-    registerSizeUsage(std::bind(&DFMProtocolDevicePrivate::sizeUsage, d));
-    registerSizeFree(std::bind(&DFMProtocolDevicePrivate::sizeFree, d));
-    registerDeviceType(std::bind(&DFMProtocolDevicePrivate::deviceType, d));
+    auto subd = castSubPrivate<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    registerPath(std::bind(&DFMProtocolDevicePrivate::path, subd));
+    registerMount(std::bind(&DFMProtocolDevicePrivate::mount, subd, std::placeholders::_1));
+    registerMountAsync(std::bind(&DFMProtocolDevicePrivate::mountAsync, subd, std::placeholders::_1));
+    registerUnmount(std::bind(&DFMProtocolDevicePrivate::unmount, subd));
+    registerUnmountAsync(std::bind(&DFMProtocolDevicePrivate::unmountAsync, subd));
+    registerRename(std::bind(&DFMProtocolDevicePrivate::rename, subd, std::placeholders::_1));
+    registerRenameAsync(std::bind(&DFMProtocolDevicePrivate::renameAsync, subd, std::placeholders::_1));
+    registerAccessPoint(std::bind(&DFMProtocolDevicePrivate::accessPoint, subd));
+    registerMountPoint(std::bind(&DFMProtocolDevicePrivate::mountPoint, subd));
+    registerFileSystem(std::bind(&DFMProtocolDevicePrivate::fileSystem, subd));
+    registerSizeTotal(std::bind(&DFMProtocolDevicePrivate::sizeTotal, subd));
+    registerSizeUsage(std::bind(&DFMProtocolDevicePrivate::sizeUsage, subd));
+    registerSizeFree(std::bind(&DFMProtocolDevicePrivate::sizeFree, subd));
+    registerDeviceType(std::bind(&DFMProtocolDevicePrivate::deviceType, subd));
 }
 
 DFMProtocolDevice::~DFMProtocolDevice()
@@ -57,8 +57,8 @@ DFMProtocolDevice::~DFMProtocolDevice()
 
 }
 
-DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &dev)
-    : devDesc(dev)
+DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &dev, DFMProtocolDevice *qq)
+    : DFMDevicePrivate(qq), devDesc(dev)
 {
 
 }
@@ -71,14 +71,12 @@ QString DFMProtocolDevicePrivate::path() const
 QUrl DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
 {
     qDebug() << __PRETTY_FUNCTION__ << "is triggered";
-    Q_Q(DFMProtocolDevice);
     Q_EMIT q->mounted(QUrl());
     return QUrl();
 }
 
 void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts)
 {
-    Q_Q(DFMProtocolDevice);
     QtConcurrent::run([&]{
         auto ret = mount(opts);
         Q_EMIT q->mounted(ret);
@@ -92,7 +90,6 @@ bool DFMProtocolDevicePrivate::unmount()
 
 void DFMProtocolDevicePrivate::unmountAsync()
 {
-    Q_Q(DFMProtocolDevice);
     QtConcurrent::run([&]{
         auto ret = unmount();
         if (ret)
@@ -107,7 +104,6 @@ bool DFMProtocolDevicePrivate::rename(const QString &newName)
 
 void DFMProtocolDevicePrivate::renameAsync(const QString &newName)
 {
-    Q_Q(DFMProtocolDevice);
     QtConcurrent::run([&]{
         auto ret = rename(newName);
         if (ret)

@@ -30,7 +30,7 @@
 DFM_MOUNT_USE_NS
 
 DFMProtocolMonitor::DFMProtocolMonitor(QObject *parent)
-    : DFMMonitor (* new DFMProtocolMonitorPrivate(), parent)
+    : DFMMonitor (new DFMProtocolMonitorPrivate(this), parent)
 {
     Q_D(DFMProtocolMonitor);
     registerStartMonitor(std::bind(&DFMProtocolMonitorPrivate::startMonitor, d));
@@ -44,7 +44,8 @@ DFMProtocolMonitor::~DFMProtocolMonitor()
 
 }
 
-DFMProtocolMonitorPrivate::DFMProtocolMonitorPrivate()
+DFMProtocolMonitorPrivate::DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq)
+    : DFMMonitorPrivate (qq)
 {
 
 }

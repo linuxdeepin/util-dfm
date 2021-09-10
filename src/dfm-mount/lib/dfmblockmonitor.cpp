@@ -31,7 +31,8 @@
 
 DFM_MOUNT_USE_NS
 
-DFMBlockMonitorPrivate::DFMBlockMonitorPrivate()
+DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
+    : DFMMonitorPrivate (qq)
 {
 
 }
@@ -126,7 +127,6 @@ QList<DFMDevice *> DFMBlockMonitorPrivate::getDevices() const
 
 void DFMBlockMonitorPrivate::getDevicesOnInit()
 {
-    Q_Q(DFMBlockMonitor);
     Q_ASSERT_X(client, __FUNCTION__, "client must be valid to get all devices");
     UDisksManager *mng = udisks_client_get_manager(client);
     Q_ASSERT_X(mng, __FUNCTION__, "manager must be valid");
@@ -154,16 +154,17 @@ void DFMBlockMonitorPrivate::getDevicesOnInit()
 
             if (block) {
                 DFMBlockDevice *dev = new DFMBlockDevice(q);
-                dev->d_func()->blockHandler = block;
+                auto blkD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(dev->d.data());
+                blkD->blockHandler = block;
                 qDebug() << "*\t\tblock founded";
 
                 if (filesystem) {
-                    dev->d_func()->fileSystemHandler = filesystem;
+                    blkD->fileSystemHandler = filesystem;
                     qDebug() << "*\t\tfilesystem founded";
                 }
 
                 if (partition) {
-                    dev->d_func()->partitionHandler = partition;
+                    blkD->partitionHandler = partition;
                     qDebug() << "*\t\tpartition founded";
                 }
 
@@ -173,7 +174,7 @@ void DFMBlockMonitorPrivate::getDevicesOnInit()
                 if (driveObject) {
                     UDisksDrive *drive = udisks_object_peek_drive(driveObject);
                     if (drive) {
-                        dev->d_func()->driveHandler = drive;
+                        blkD->driveHandler = drive;
                         qDebug() << "*\t\tdrive founded";
 
                         this->drives.insert(QString(driveObjPath), drive);
@@ -228,23 +229,24 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
 
     DFMBlockDevice *blkDev = nullptr;
     if (block) {
-        blkDev = new DFMBlockDevice(d->q_func());
-        blkDev->d_func()->blockHandler = block;
+        blkDev = new DFMBlockDevice(d->q);
+        auto blkD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(blkDev->d.data());
+        blkD->blockHandler = block;
         QString drive = blkDev->getProperty(Property::BlockDrive).toString();
         if (d->drives.contains(drive)) {
-            blkDev->d_func()->driveHandler = d->drives.value(drive);
+            blkD->driveHandler = d->drives.value(drive);
         }
 
         if (fileSystem) {
-            blkDev->d_func()->fileSystemHandler = fileSystem;
+           blkD->fileSystemHandler = fileSystem;
             // Q_EMIT monitor->filesystemadded
         }
         if (partition) {
-            blkDev->d_func()->partitionHandler = partition;
+            blkD->partitionHandler = partition;
             // Q_EMIT monitor->partitionadded
         }
 
-        Q_EMIT d->q_func()->deviceAdded(blkDev);
+        Q_EMIT d->q->deviceAdded(blkDev);
         d->devices.insert(objKey, blkDev);
     }
 }
@@ -341,19 +343,19 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
 }
 
 DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
-    : DFMMonitor (* new DFMBlockMonitorPrivate(), parent)
+    : DFMMonitor (new DFMBlockMonitorPrivate(this), parent)
 {
-    Q_D(DFMBlockMonitor);
-    registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, d));
-    registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, d));
-    registerStatus(std::bind(&DFMBlockMonitorPrivate::status, d));
-    registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, d));
-    registerGetDevices(std::bind(&DFMBlockMonitorPrivate::getDevices, d));
+    auto subd = castSubPrivate<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, subd));
+    registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, subd));
+    registerStatus(std::bind(&DFMBlockMonitorPrivate::status, subd));
+    registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, subd));
+    registerGetDevices(std::bind(&DFMBlockMonitorPrivate::getDevices, subd));
 }
 
 DFMBlockMonitor::~DFMBlockMonitor()
 {
-    Q_D(DFMBlockMonitor);
-    d->stopMonitor();
+    auto subd = castSubPrivate<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    subd->stopMonitor();
 }
 

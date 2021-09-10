@@ -41,6 +41,14 @@
 
 DFM_MOUNT_BEGIN_NS
 
+template<typename ParentPrivate, typename SubPrivate>
+inline SubPrivate *castSubPrivate(ParentPrivate *p) {
+    auto pPointer = dynamic_cast<SubPrivate *>(p);
+    if (!pPointer)
+        abort();
+    return pPointer;
+}
+
 enum class DeviceType : uint16_t {
     AllDevice      = 0,
     BlockDevice    = 1,    // normal block devices, like removable disks

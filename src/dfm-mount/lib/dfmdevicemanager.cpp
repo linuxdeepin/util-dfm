@@ -19,16 +19,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "base/dfmdevice.h"
 #include "dfmdevicemanager.h"
 #include "private/dfmdevicemanager_p.h"
 #include "dfmblockmonitor.h"
-#include "base/dfmdevice.h"
 
 #include <QDebug>
 
 DFM_MOUNT_USE_NS
 
-DFMDeviceManagerPrivate::DFMDeviceManagerPrivate()
+DFMDeviceManagerPrivate::DFMDeviceManagerPrivate(DFMDeviceManager *qq)
+    : q(qq)
 {
 
 }
@@ -43,7 +44,6 @@ bool DFMDeviceManagerPrivate::registerMonitor(DeviceType type, DFMMonitor *monit
     }
     monitors.insert(type, monitor);
 
-    Q_Q(DFMDeviceManager);
     QObject::connect(monitor, &DFMMonitor::driveAdded,       q, &DFMDeviceManager::driveAdded);
     QObject::connect(monitor, &DFMMonitor::driveRemoved,     q, &DFMDeviceManager::driveRemoved);
     QObject::connect(monitor, &DFMMonitor::deviceAdded,      q, &DFMDeviceManager::blockDeviceAdded);
@@ -120,7 +120,7 @@ QList<DFMDevice *> DFMDeviceManagerPrivate::devices(DeviceType type)
 }
 
 DFMDeviceManager::DFMDeviceManager(QObject *parent)
-    : QObject (* new DFMDeviceManagerPrivate(), parent)
+    : QObject (parent), d(new DFMDeviceManagerPrivate(this))
 {
     registerMonitor(DeviceType::BlockDevice, new DFMBlockMonitor(this));
 }
@@ -144,38 +144,31 @@ DFMDeviceManager *DFMDeviceManager::instance()
  */
 bool DFMDeviceManager::registerMonitor(DeviceType type, DFMMonitor *monitor)
 {
-    Q_D(DFMDeviceManager);
     return d->registerMonitor(type, monitor);
 }
 
 DFMMonitor *DFMDeviceManager::getRegisteredMonitor(DeviceType type) const
 {
-    Q_D(const DFMDeviceManager);
     return d->getRegisteredMonitor(type);
 }
 
 bool DFMDeviceManager::startMonitorWatch()
 {
-    Q_D(DFMDeviceManager);
     return d->startMonitor();
 }
 
 bool DFMDeviceManager::stopMonitorWatch()
 {
-    Q_D(DFMDeviceManager);
     return d->stopMonitor();
 }
 
 MonitorError DFMDeviceManager::lastError() const
 {
-    Q_D(const DFMDeviceManager);
     return d->lastError;
 }
 
 QList<DFMDevice *> DFMDeviceManager::devices(DeviceType type)
 {
-    Q_D(DFMDeviceManager);
     return d->devices(type);
 }
-
 

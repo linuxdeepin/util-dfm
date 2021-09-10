@@ -26,24 +26,24 @@
 #include "base/dfmmount_global.h"
 #include "base/dfmmonitor.h"
 
-#include <private/qobject_p.h>
-
 #include <functional>
 
 using namespace std;
 DFM_MOUNT_BEGIN_NS
 
-class DFMMonitorPrivate : public QObjectPrivate
+class DFMMonitorPrivate
 {
-    Q_DECLARE_PUBLIC(DFMMonitor)
 public:
-    DFMMonitorPrivate();
+    DFMMonitorPrivate(DFMMonitor *qq);
+    virtual ~DFMMonitorPrivate();
 
     DFMMonitor::StartMonitorFunc start = nullptr;
     DFMMonitor::StopMonitorFunc stop = nullptr;
     DFMMonitor::StatusFunc status = nullptr;
     DFMMonitor::MonitorObjectTypeFunc mot = nullptr;
     DFMMonitor::GetDevicesFunc getDevices = nullptr;
+
+    DFMMonitor *q = nullptr;
 };
 
 DFM_MOUNT_END_NS

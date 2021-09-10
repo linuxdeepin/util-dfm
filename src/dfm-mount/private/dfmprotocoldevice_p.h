@@ -30,10 +30,8 @@
 DFM_MOUNT_BEGIN_NS
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
 {
-    Q_DECLARE_PUBLIC(DFMProtocolDevice)
-
 public:
-    DFMProtocolDevicePrivate(const QString &dev);
+    DFMProtocolDevicePrivate(const QString &dev, DFMProtocolDevice *qq);
 
     QString path() const;
     QUrl mount(const QVariantMap &opts);

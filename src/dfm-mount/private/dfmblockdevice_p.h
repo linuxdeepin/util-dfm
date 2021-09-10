@@ -31,10 +31,8 @@ DFM_MOUNT_BEGIN_NS
 
 class DFMBlockDevicePrivate final: public DFMDevicePrivate
 {
-    Q_DECLARE_PUBLIC(DFMBlockDevice)
-
 public:
-    DFMBlockDevicePrivate();
+    DFMBlockDevicePrivate(DFMBlockDevice *qq);
 
     QString path() const DFM_MNT_OVERRIDE;
     QUrl mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;

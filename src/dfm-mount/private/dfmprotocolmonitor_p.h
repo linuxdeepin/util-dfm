@@ -28,19 +28,14 @@
 
 #include <QMap>
 
-extern "C" {
-#include <udisks/udisks.h>
-}
-
 DFM_MOUNT_BEGIN_NS
 
 class DFMProtocolDevice;
 class DFMProtocolMonitorPrivate final: public DFMMonitorPrivate
 {
-    Q_DECLARE_PUBLIC(DFMProtocolMonitor)
 
 public:
-    DFMProtocolMonitorPrivate();
+    DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq);
     bool startMonitor();
     bool stopMonitor();
     MonitorStatus status() const;

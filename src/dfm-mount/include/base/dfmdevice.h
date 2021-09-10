@@ -37,11 +37,10 @@ class DFMDevicePrivate;
 class DFMDevice: public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(DFMDevice)
 
 public:
-    explicit DFMDevice(QObject *parent = nullptr);
-    virtual ~DFMDevice() {}
+    explicit DFMDevice(DFMDevicePrivate *dd, QObject *parent = nullptr);
+    virtual ~DFMDevice();
 
     DFM_MNT_VIRTUAL QString path() const;
 
@@ -100,15 +99,14 @@ public:
     void registerDeviceType(const DeviceTypeFunc &func);
     void registerGetProperty(const GetPropertyFunc &func);
 
-protected:
-    DFMDevice(DFMDevicePrivate &dd, QObject *parent = nullptr);
-
-
 Q_SIGNALS:
     void mounted(const QUrl &mountPoint);
     void unmounted();
     void renamed(const QString &newName);
     void propertyChanged(const Property &name, const QVariant &newVal);
+
+protected:
+    QScopedPointer<DFMDevicePrivate> d;
 };
 DFM_MOUNT_END_NS
 

@@ -23,9 +23,6 @@ set(QtFindModules Core Gui Widgets Concurrent)
 foreach(QtModule ${QtFindModules})
     find_package(Qt5 COMPONENTS ${QtModule} REQUIRED)
 
-    # include qt module private include directors
-    include_directories(${Qt5${QtModule}_PRIVATE_INCLUDE_DIRS})
-
     # can use target_link_libraries(xxx ${QtUseModules})
     list(APPEND QtUseModules "Qt5::${QtModule}")
     message("QtModule found ${QtModule} OK!")
@@ -41,8 +38,7 @@ foreach(PkgConfigModule ${PkgConfigFindModules})
     include_directories(${PkgUseModuleVal_INCLUDE_DIRS})
 endforeach(PkgConfigModule)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${Qt5Core_PRIVATE_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(LIB_HEADER
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmdevice.h

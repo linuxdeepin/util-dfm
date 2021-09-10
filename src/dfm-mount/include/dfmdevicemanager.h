@@ -35,7 +35,6 @@ class DFMDeviceManagerPrivate;
 class DFMDeviceManager final : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(DFMDeviceManager)
 
 public:
     // TODO: need to think whether we really need to make it singleton pattern
@@ -65,6 +64,8 @@ Q_SIGNALS:
 private:
     DFMDeviceManager(QObject *parent = nullptr);
     ~DFMDeviceManager();
+
+    QScopedPointer<DFMDeviceManagerPrivate> d;
 
 };
 
