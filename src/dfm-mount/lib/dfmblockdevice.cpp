@@ -23,14 +23,136 @@
 
 #include "dfmblockdevice.h"
 #include "private/dfmblockdevice_p.h"
+#include "base/dfmmountdefines.h"
 
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
+#include <QStorageInfo>
 
 #include <functional>
 #include <udisks/udisks.h>
 
 DFM_MOUNT_USE_NS
+
+// only for parse the return value of *_DUP_*, do not use it with *_GET_*
+static QString charToQString(char *tmp) {
+    if (!tmp)
+        return QString();
+    QString ret(tmp);
+    g_free(tmp);
+    return ret;
+}
+
+// only for parse the return value of *_DUP_*, do not use it with *_GET_*
+static QStringList charToQStringList(char **tmp) {
+    QStringList ret;
+    int next = 0;
+    while (tmp && tmp[next]) {
+        ret << QString(tmp[next]);
+        next += 1;
+    }
+    if (tmp)
+        g_strfreev(tmp);
+    return ret;
+}
+
+//static void mountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
+static GAsyncReadyCallback mountAsyncCallback = [](GObject *source_object, GAsyncResult *res, gpointer user_data) {
+    DFMBlockDevice *dev = static_cast<DFMBlockDevice *>(user_data);
+    Q_ASSERT_X(dev, __FUNCTION__, "device is not valid");
+
+    char *mountPoint = nullptr;
+    GError *err = nullptr;
+
+    UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
+    Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
+
+    bool result = udisks_filesystem_call_mount_finish(fs, &mountPoint, res, &err);
+    if (result) {
+        QString mpt(mountPoint);
+        Q_EMIT dev->mounted(QUrl(mpt));
+    } else {
+        // TODO: handle error
+    }
+
+    if (mountPoint)
+        g_free(mountPoint);
+    if (err)
+        g_error_free(err);
+};
+
+static GAsyncReadyCallback unmountAsyncCallback = [](GObject *source_object, GAsyncResult *res, gpointer user_data) {
+    DFMBlockDevice *dev = static_cast<DFMBlockDevice *>(user_data);
+    Q_ASSERT_X(dev, __FUNCTION__, "device is not valid");
+
+    UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
+    Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
+
+    GError *err = nullptr;
+    bool result = udisks_filesystem_call_unmount_finish(fs, res, &err);
+    if (result) {
+        Q_EMIT dev->unmounted();
+        // TODO: if the device is encryptable, lock the device after unmount (from gvfs)
+    } else {
+        // TODO: handle the errors
+    }
+
+    if (err)
+        g_error_free(err);
+};
+
+static GAsyncReadyCallback renameAsyncCallback = [](GObject *source_object, GAsyncResult *res, gpointer user_data) {
+    DFMBlockDevice *dev = static_cast<DFMBlockDevice *>(user_data);
+    Q_ASSERT_X(dev, __FUNCTION__, "device is not valid");
+
+    UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
+    Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
+
+    GError *err = nullptr;
+    bool result = udisks_filesystem_call_set_label_finish(fs, res, &err);
+    if (result) {
+        QString newLabel = dev->getProperty(Property::BlockIDLabel).toString();
+        Q_EMIT dev->renamed(newLabel);
+    } else {
+        // TODO: error handle
+        if (err)
+            g_error_free(err);
+    }
+};
+
+static GAsyncReadyCallback ejectAsyncCallback = [](GObject *source_object, GAsyncResult *res, gpointer user_data) {
+    DFMBlockDevice *dev = static_cast<DFMBlockDevice *>(user_data);
+    Q_ASSERT_X(dev, __FUNCTION__, "device is not valid");
+
+    UDisksDrive *drive = UDISKS_DRIVE(source_object);
+    Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
+
+    GError *err = nullptr;
+    bool result = udisks_drive_call_eject_finish(drive, res, &err);
+    if (result) {
+        Q_EMIT dev->ejected();
+    } else {
+        // TODO: handle errors
+        g_error_free(err);
+    }
+};
+
+static GAsyncReadyCallback powerOffAsyncCallback = [](GObject *source_object, GAsyncResult *res, gpointer user_data) {
+    DFMBlockDevice *dev = static_cast<DFMBlockDevice *>(user_data);
+    Q_ASSERT_X(dev, __FUNCTION__, "device is not valid");
+
+    UDisksDrive *drive = UDISKS_DRIVE(source_object);
+    Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
+
+    GError *err = nullptr;
+    bool result = udisks_drive_call_power_off_finish(drive, res, &err);
+    if (result) {
+        Q_EMIT dev->powerOffed();
+    } else {
+        // TODO: handle errors
+        g_error_free(err);
+    }
+};
 
 DFMBlockDevice::DFMBlockDevice(QObject *parent)
     : DFMDevice(new DFMBlockDevicePrivate(this), parent)
@@ -74,12 +196,26 @@ bool DFMBlockDevice::eject()
     return false;
 }
 
+void DFMBlockDevice::ejectAsync()
+{
+    auto subD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    if (subD)
+        return subD->ejectAsync();
+}
+
 bool DFMBlockDevice::powerOff()
 {
     auto subD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (subD)
         return subD->powerOff();
     return false;
+}
+
+void DFMBlockDevice::powerOffAsync()
+{
+    auto subD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    if (subD)
+        return subD->powerOffAsync();
 }
 
 DFMBlockDevicePrivate::DFMBlockDevicePrivate(DFMBlockDevice *qq)
@@ -95,15 +231,16 @@ QString DFMBlockDevicePrivate::path() const
 
 QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 {
+    Q_UNUSED(opts); // TODO: use it later
     if (!fileSystemHandler) {
-        lastError = MountError::ErrNotMountable;
+        lastError = MountError::NotMountable;
         qWarning() << "device is not mountable";
         return QUrl();
     }
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = MountError::ErrAlreadyMounted;
+        lastError = MountError::AlreadyMounted;
         qWarning() << "device is already mounted at " << mpts;
         return mpts.first();
     }
@@ -121,6 +258,7 @@ QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
         // TODO: we need to complete the SCHEME later
         ret.setUrl(QString(mountPoint));
         g_free(mountPoint);
+        Q_EMIT q->mounted(ret);
     }
     if (err)
         g_error_free(err);
@@ -130,48 +268,160 @@ QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 
 void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts)
 {
-    QtConcurrent::run([&]{
-        auto ret = mount(opts);
-        Q_EMIT q->mounted(ret);
-    });
+    Q_UNUSED(opts); // TODO: use it later
+
+    if (!fileSystemHandler) {
+        lastError = MountError::NotMountable;
+        qWarning() << "device is not mountable";
+        return;
+    }
+
+    QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
+    if (!mpts.empty()) {
+        lastError = MountError::AlreadyMounted;
+        qWarning() << "device is already mounted at " << mpts;
+        return;
+    }
+
+    // mount device async
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+    udisks_filesystem_call_mount(fileSystemHandler, gOpts, nullptr, mountAsyncCallback, q);
 }
 
 bool DFMBlockDevicePrivate::unmount()
 {
+    if (!fileSystemHandler) {
+        lastError = MountError::NotMountable;
+        qWarning() << "device is not mountable";
+        return true; // since device is not mountable, then it cannot be mounted
+    }
+
+    QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
+    if (mpts.empty()) {
+        lastError = MountError::NotMounted;
+        qWarning() << "device is not mounted";
+        return true; // since it's not mounted, then this invocation returns true
+    }
+
+    // start unmount device sync
+    // construct the options
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+
+    GError *err = nullptr;
+
+    // unmount sync
+    bool result = udisks_filesystem_call_unmount_sync(fileSystemHandler, gOpts, nullptr, &err);
+    if (result) {
+        if (err)
+            g_error_free(err);
+        Q_EMIT q->unmounted();
+        return true;
+    }
+
+    // handle the errors
+    if (err)
+        g_error_free(err);
     return false;
 }
 
 void DFMBlockDevicePrivate::unmountAsync()
 {
-    QtConcurrent::run([&]{
-        auto ret = unmount();
-        if (ret)
-            Q_EMIT q->unmounted();
-    });
+    if (!fileSystemHandler) {
+        lastError = MountError::NotMountable;
+        qWarning() << "device is not mountable";
+        return;
+    }
+
+    QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
+    if (mpts.empty()) {
+        lastError = MountError::NotMounted;
+        qWarning() << "device is not mounted";
+        return;
+    }
+
+    // start unmount device async
+    // construct the options
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+
+    udisks_filesystem_call_unmount(fileSystemHandler, gOpts, nullptr, unmountAsyncCallback, q);
 }
 
 bool DFMBlockDevicePrivate::rename(const QString &newName)
 {
+    if (!fileSystemHandler) {
+        lastError = MountError::NotMountable;
+        qWarning() << "device is not mountable";
+        return false;
+    }
+
+    QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
+    if (!mpts.empty()) {
+        lastError = MountError::AlreadyMounted;
+        qWarning() << "device is mounted, you have to unmount first";
+        return false;
+    }
+
+    // construct the options
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+    const char *label = newName.toStdString().c_str();
+    GError *err = nullptr;
+
+    bool result = udisks_filesystem_call_set_label_sync(fileSystemHandler, label, gOpts, nullptr, &err);
+    if (result) {
+        if (err)
+            g_error_free(err);
+        Q_EMIT q->renamed(newName);
+        return true;
+    }
+
+    // TODO: handle error
+    if (err)
+        g_error_free(err);
     return false;
 }
 
 void DFMBlockDevicePrivate::renameAsync(const QString &newName)
 {
-    QtConcurrent::run([&]{
-        auto ret = rename(newName);
-        if (ret)
-            Q_EMIT q->renamed(newName);
-    });
+    if (!fileSystemHandler) {
+        lastError = MountError::NotMountable;
+        qWarning() << "device is not mountable";
+        return;
+    }
+
+    QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
+    if (!mpts.empty()) {
+        lastError = MountError::AlreadyMounted;
+        qWarning() << "device is mounted, you have to unmount first";
+        return;
+    }
+
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+    const char *label = newName.toStdString().c_str();
+
+    udisks_filesystem_call_set_label(fileSystemHandler, label, gOpts, nullptr, renameAsyncCallback, q);
 }
 
 QUrl DFMBlockDevicePrivate::accessPoint() const
 {
-    return QUrl();
+    // TODO: only optical devices have a virtual url for now, so return the real path for normal devices
+    // and the virtual path for optical devices, finish them later.
+    return mountPoint();
 }
 
 QUrl DFMBlockDevicePrivate::mountPoint() const
 {
-    return QUrl();
+    auto mpts = q->getProperty(Property::FileSystemMountPoint).toStringList();
+    return mpts.isEmpty() ? QUrl() : QUrl(mpts.first());
 }
 
 QString DFMBlockDevicePrivate::fileSystem() const
@@ -179,19 +429,27 @@ QString DFMBlockDevicePrivate::fileSystem() const
     return getProperty(Property::BlockIDType).toString();
 }
 
-long DFMBlockDevicePrivate::sizeTotal() const
+qint64 DFMBlockDevicePrivate::sizeTotal() const
 {
-    return 0;
+    return q->getProperty(Property::BlockSize).toLongLong();
 }
 
-long DFMBlockDevicePrivate::sizeUsage() const
+qint64 DFMBlockDevicePrivate::sizeUsage() const
 {
-    return 0;
+    return sizeTotal() - sizeFree();
 }
 
-long DFMBlockDevicePrivate::sizeFree() const
+qint64 DFMBlockDevicePrivate::sizeFree() const
 {
-    return 0;
+    auto mpts = q->getProperty(Property::FileSystemMountPoint).toStringList();
+    if (mpts.isEmpty()) {
+//        lastError = MountError::NotMounted;
+        qWarning() << "need to mount first to get the availabel size";
+        return 0;
+    }
+    auto mpt = mpts.first();
+    QStorageInfo info(mpt);
+    return info.bytesAvailable();
 }
 
 DeviceType DFMBlockDevicePrivate::deviceType() const
@@ -464,34 +722,93 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
 
 bool DFMBlockDevicePrivate::eject()
 {
-    return false;
+    bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
+    if (!ejectable) {
+        lastError = MountError::NotEjectable;
+        qWarning() << "device is not ejectable";
+        return false;
+    }
+
+    if (!driveHandler) {
+        lastError = MountError::NoDriver;
+        qWarning() << "device DO NOT have a driver, cannot eject";
+        return false;
+    }
+
+    // construct the options
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+    GError *err = nullptr;
+
+    bool result = udisks_drive_call_eject_sync(driveHandler, gOpts, nullptr, &err);
+    if (!result) {
+        // TODO: handle the errors
+        if (err)
+            g_error_free(err);
+        return false;
+    }
+    return true;
+}
+
+void DFMBlockDevicePrivate::ejectAsync()
+{
+    bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
+    if (!ejectable) {
+        lastError = MountError::NotEjectable;
+        qWarning() << "device is not ejectable";
+        return;
+    }
+
+    if (!driveHandler) {
+        lastError = MountError::NoDriver;
+        qWarning() << "device DO NOT have a driver, cannot eject";
+        return;
+    }
+
+    // construct the options
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+    udisks_drive_call_eject(driveHandler, gOpts, nullptr, ejectAsyncCallback, q);
 }
 
 bool DFMBlockDevicePrivate::powerOff()
 {
+    if (!driveHandler) {
+        lastError = MountError::NoDriver;
+        qWarning() << "device DO NOT have a driver, cannot poweroff";
+        return false;
+    }
+
+    // construct the options
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+
+    GError *err = nullptr;
+    bool result = udisks_drive_call_power_off_sync(driveHandler, gOpts, nullptr, &err);
+    if (result) {
+        return true;
+    }
+
+    // TODO: handle the errors
+    if (err)
+        g_error_free(err);
     return false;
 }
 
-// only for parse the return value of *_DUP_*, do not use it with *_GET_*
-QString DFMBlockDevicePrivate::charToQString(char *tmp) const
+void DFMBlockDevicePrivate::powerOffAsync()
 {
-    if (!tmp)
-        return QString();
-    QString ret(tmp);
-    g_free(tmp);
-    return ret;
-}
-
-// only for parse the return value of *_DUP_*, do not use it with *_GET_*
-QStringList DFMBlockDevicePrivate::charToQStringList(char **tmp) const
-{
-    QStringList ret;
-    int next = 0;
-    while (tmp && tmp[next]) {
-        ret << QString(tmp[next]);
-        next += 1;
+    if (!driveHandler) {
+        lastError = MountError::NoDriver;
+        qWarning() << "device DO NOT have a driver, cannot poweroff";
+        return;
     }
-    if (tmp)
-        g_strfreev(tmp);
-    return ret;
+
+    // construct the options
+    GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+    // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manully.
+    GVariant *gOpts = g_variant_builder_end(builder);
+    udisks_drive_call_power_off(driveHandler, gOpts, nullptr, powerOffAsyncCallback, q);
 }

@@ -121,21 +121,21 @@ QString DFMDevice::fileSystem() const
     return d->fileSystem();
 }
 
-long DFMDevice::sizeTotal() const
+qint64 DFMDevice::sizeTotal() const
 {
     Q_ASSERT_X(d->sizeTotal, __PRETTY_FUNCTION__, "not register");
 
     return d->sizeTotal();
 }
 
-long DFMDevice::sizeFree() const
+qint64 DFMDevice::sizeFree() const
 {
     Q_ASSERT_X(d->sizeFree, __PRETTY_FUNCTION__, "not register");
 
     return d->sizeFree();
 }
 
-long DFMDevice::sizeUsage() const
+qint64 DFMDevice::sizeUsage() const
 {
     Q_ASSERT_X(d->sizeUsage, __PRETTY_FUNCTION__, "not register");
 

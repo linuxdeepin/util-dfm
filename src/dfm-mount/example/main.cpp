@@ -21,8 +21,13 @@ int main(int argc, char **argv) {
 //    });
     DFMDeviceManager *mng = DFMDeviceManager::instance();
     qDebug() << mng->startMonitorWatch();
-    QObject::connect(mng, &DFMDeviceManager::blockDeviceAdded, []{
-        qDebug() << "new device added...";
+    QObject::connect(mng, &DFMDeviceManager::blockDeviceAdded, [mng](DFMDevice *dev){
+        qDebug() << "new device added..." << dev->getProperty(Property::BlockIDLabel).toString();
+        qDebug() << "mount new device async...";
+//        dev->mountAsync({});
+//        QObject::connect(dev, &DFMDevice::mounted, mng, [](const QUrl &mpt){
+//            qDebug() << "device mounted at: " << mpt;
+//        });
     });
 
     qDebug() << "=================================================================>";

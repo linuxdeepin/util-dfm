@@ -23,5 +23,20 @@
 #ifndef DFMMOUNTDEFINES_H
 #define DFMMOUNTDEFINES_H
 
+#include "dfmmount_global.h"
+
+#include <QtCore/QtGlobal>
+
+DFM_MOUNT_BEGIN_NS
+
+template<typename ParentPrivate, typename SubPrivate>
+inline SubPrivate *castSubPrivate(ParentPrivate *p) {
+    auto pPointer = dynamic_cast<SubPrivate *>(p);
+    if (!pPointer)
+        abort();
+    return pPointer;
+}
+
+DFM_MOUNT_END_NS
 
 #endif // DFMMOUNTDEFINES_H

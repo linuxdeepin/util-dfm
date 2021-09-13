@@ -26,7 +26,6 @@
 #include "dfmblockdevice.h"
 #include "udisks/udisks-generated.h"
 #include "private/dfmdevice_p.h"
-
 DFM_MOUNT_BEGIN_NS
 
 class DFMBlockDevicePrivate final: public DFMDevicePrivate
@@ -44,9 +43,9 @@ public:
     QUrl accessPoint() const DFM_MNT_OVERRIDE;
     QUrl mountPoint() const DFM_MNT_OVERRIDE;
     QString fileSystem() const DFM_MNT_OVERRIDE;
-    long sizeTotal() const DFM_MNT_OVERRIDE;
-    long sizeUsage() const DFM_MNT_OVERRIDE;
-    long sizeFree() const DFM_MNT_OVERRIDE;
+    qint64 sizeTotal() const DFM_MNT_OVERRIDE;
+    qint64 sizeUsage() const DFM_MNT_OVERRIDE;
+    qint64 sizeFree() const DFM_MNT_OVERRIDE;
     DeviceType deviceType() const DFM_MNT_OVERRIDE;
     QVariant getProperty(Property name) const DFM_MNT_OVERRIDE;
 
@@ -56,11 +55,9 @@ public:
     QVariant getPartitionProperty(Property name) const;
 
     bool eject();
+    void ejectAsync();
     bool powerOff();
-
-private:
-    QString charToQString(char *tmp) const;
-    QStringList charToQStringList(char **tmp) const;
+    void powerOffAsync();
 
 public:
     QString devDesc; // descriptor of device

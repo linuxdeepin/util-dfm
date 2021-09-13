@@ -39,7 +39,7 @@ bool DFMDeviceManagerPrivate::registerMonitor(DeviceType type, DFMMonitor *monit
     Q_ASSERT_X(monitor, __FUNCTION__, "monitor must be valid to register!");
 
     if (monitors.contains(type)) {
-        lastError = MonitorError::ErrMonitorAlreadyRegistered;
+        lastError = MonitorError::MonitorAlreadyRegistered;
         return false;
     }
     monitors.insert(type, monitor);
@@ -96,7 +96,7 @@ QList<DFMDevice *> DFMDeviceManagerPrivate::devices(DeviceType type)
             if (monitor)
                 ret << monitor->getDevices();
             else
-                lastError = MonitorError::ErrMonitorNotRegister;
+                lastError = MonitorError::MonitorNotRegister;
         }
         return ret;
     };
@@ -105,7 +105,7 @@ QList<DFMDevice *> DFMDeviceManagerPrivate::devices(DeviceType type)
         auto monitor = monitors.value(type);
         if (monitor)
             return monitor->getDevices();
-        lastError = MonitorError::ErrMonitorNotRegister;
+        lastError = MonitorError::MonitorNotRegister;
         return QList<DFMDevice *>();
     };
 
@@ -117,6 +117,7 @@ QList<DFMDevice *> DFMDeviceManagerPrivate::devices(DeviceType type)
     case DeviceType::BlockDevice:
         return getDevsOfType(type);
     }
+    return QList<DFMDevice *>();
 }
 
 DFMDeviceManager::DFMDeviceManager(QObject *parent)

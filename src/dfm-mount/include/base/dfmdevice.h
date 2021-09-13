@@ -56,9 +56,9 @@ public:
     DFM_MNT_VIRTUAL QUrl accessPoint() const;
     DFM_MNT_VIRTUAL QUrl mountPoint() const;
     DFM_MNT_VIRTUAL QString fileSystem() const;
-    DFM_MNT_VIRTUAL long sizeTotal() const;
-    DFM_MNT_VIRTUAL long sizeFree() const;
-    DFM_MNT_VIRTUAL long sizeUsage() const;
+    DFM_MNT_VIRTUAL qint64 sizeTotal() const;
+    DFM_MNT_VIRTUAL qint64 sizeFree() const;
+    DFM_MNT_VIRTUAL qint64 sizeUsage() const;
 
     DFM_MNT_VIRTUAL DeviceType deviceType() const;
     DFM_MNT_VIRTUAL QVariant getProperty(Property name) const;
@@ -77,9 +77,9 @@ public:
     using AccessPointFunc  = std::function<QUrl ()>;
     using MountPointFunc   = std::function<QUrl ()>;
     using FileSystemFunc   = std::function<QString ()>;
-    using SizeTotalFunc    = std::function<long ()>;
-    using SizeUsageFunc    = std::function<long ()>;
-    using SizeFreeFunc     = std::function<long ()>;
+    using SizeTotalFunc    = std::function<qint64 ()>;
+    using SizeUsageFunc    = std::function<qint64 ()>;
+    using SizeFreeFunc     = std::function<qint64 ()>;
     using DeviceTypeFunc   = std::function<DeviceType ()>;
     using GetPropertyFunc  = std::function<QVariant (Property)>;
 

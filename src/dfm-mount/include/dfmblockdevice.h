@@ -46,7 +46,13 @@ private:
 
 public:
     bool eject();
+    void ejectAsync();
     bool powerOff();
+    void powerOffAsync();
+
+Q_SIGNALS:
+    void ejected();
+    void powerOffed();
 
     friend class DFMBlockMonitorPrivate;
 };

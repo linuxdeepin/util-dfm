@@ -54,8 +54,8 @@ Q_SIGNALS:
     // TODO: complete the args of signals
     void driveAdded();
     void driveRemoved();
-    void blockDeviceAdded();
-    void blockDeviceRemoved();
+    void blockDeviceAdded(DFMDevice *dev);
+    void blockDeviceRemoved(DFMDevice *dev);
     void mounted(const QString &mountPoint);
     void unmounted(const QString &unmountFrom); // TODO: do we need this path?
     void propertyChanged(Property property, const QVariant &newVal);

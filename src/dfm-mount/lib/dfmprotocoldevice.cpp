@@ -23,6 +23,7 @@
 
 #include "dfmprotocoldevice.h"
 #include "private/dfmprotocoldevice_p.h"
+#include "base/dfmmountdefines.h"
 
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>

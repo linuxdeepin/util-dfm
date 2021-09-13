@@ -25,6 +25,7 @@
 #include "private/dfmblockmonitor_p.h"
 #include "dfmblockdevice.h"
 #include "private/dfmblockdevice_p.h"
+#include "base/dfmmountdefines.h"
 
 #include <QDebug>
 #include <QMapIterator>
@@ -340,6 +341,8 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
             // TODO: emits the signal
         }
     }
+
+    // TODO: when mountpoint is changed to empty, should emit the unmounted signal
 }
 
 DFMBlockMonitor::DFMBlockMonitor(QObject *parent)

@@ -41,14 +41,6 @@
 
 DFM_MOUNT_BEGIN_NS
 
-template<typename ParentPrivate, typename SubPrivate>
-inline SubPrivate *castSubPrivate(ParentPrivate *p) {
-    auto pPointer = dynamic_cast<SubPrivate *>(p);
-    if (!pPointer)
-        abort();
-    return pPointer;
-}
-
 enum class DeviceType : uint16_t {
     AllDevice      = 0,
     BlockDevice    = 1,    // normal block devices, like removable disks
@@ -146,15 +138,18 @@ enum class Property : uint16_t {
 };
 
 enum class MountError : uint16_t {
-    ErrNoError = 0,
-    ErrNotMountable,    // which means there is no filesystem interface for block devices.
-    ErrAlreadyMounted,
+    NoError = 0,
+    NotMountable,    // which means there is no filesystem interface for block devices.
+    AlreadyMounted,
+    NotMounted,
+    NotEjectable,
+    NoDriver,
 };
 
 enum class MonitorError: uint16_t {
-    ErrNoError = 0,
-    ErrMonitorAlreadyRegistered,
-    ErrMonitorNotRegister,
+    NoError = 0,
+    MonitorAlreadyRegistered,
+    MonitorNotRegister,
 };
 
 DFM_MOUNT_END_NS
