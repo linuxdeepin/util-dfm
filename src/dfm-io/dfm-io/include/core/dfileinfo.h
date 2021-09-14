@@ -202,8 +202,7 @@ public:
     DFMIOError lastError() const;
 
 private:
-    QSharedPointer<DFileInfoPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DFileInfo)
+    QSharedPointer<DFileInfoPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

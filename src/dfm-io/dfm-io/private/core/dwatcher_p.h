@@ -37,13 +37,12 @@ class DWatcher;
 
 class DWatcherPrivate
 {
-    Q_DECLARE_PUBLIC(DWatcher)
 public:
     explicit DWatcherPrivate(DWatcher *q);
     virtual ~DWatcherPrivate();
 
 public:
-    DWatcher *q_ptr;
+    DWatcher *q = nullptr;
     QUrl uri;
 
     DWatcher::RunningFunc runningFunc = nullptr;

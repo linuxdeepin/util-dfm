@@ -29,6 +29,8 @@
 #include "core/diofactory_p.h"
 #include "core/dfile.h"
 
+#include <gio/gio.h>
+
 #include <QElapsedTimer>
 #include <QDebug>
 
@@ -41,51 +43,20 @@ static void err_msg(const char *msg)
     fprintf(stderr, "dfm-copy: %s\n", msg);
 }
 
-static QSharedPointer<DFile> make_stream(QSharedPointer<DIOFactory> factory, DFile::OpenFlag flag)
+static void copy(const QString &sourcePath, const QString &destPath)
 {
-    if (!factory) {
-        err_msg("create factory failed.");
-        return nullptr;
-    }
+    GFile *fileSource = g_file_new_for_path(sourcePath.toLocal8Bit().data());
+    GFile *fileDest = g_file_new_for_path(destPath.toLocal8Bit().data());
 
-    auto file = factory->createFile();
-    if (!file) {
-        err_msg("get device file failed.");
-        return nullptr;
-    }
-    if (!file->open(flag)) {
-        return nullptr;
-    }
+    GError *gerror = nullptr;
 
-    return file;
-}
+    g_file_copy(fileSource, fileDest, G_FILE_COPY_OVERWRITE, nullptr, nullptr, nullptr, &gerror);
 
-#define BLOCK 4 * 4096
-static void copy(const QUrl &url_src, const QUrl &url_dst)
-{
-    char buff[BLOCK];
-    int read = 0;
+    g_object_unref(fileSource);
+    g_object_unref(fileDest);
 
-    QSharedPointer<DFMIO::DIOFactory> factory_src = produceQSharedIOFactory(url_src.scheme(), static_cast<QUrl>(url_src));
-    QSharedPointer<DFMIO::DIOFactory> factory_dst = produceQSharedIOFactory(url_dst.scheme(), static_cast<QUrl>(url_dst));
-
-    QSharedPointer<DFile> stream_src = make_stream(factory_src, DFile::OpenFlag::ReadOnly);
-    QSharedPointer<DFile> stream_dst = make_stream(factory_dst, DFile::OpenFlag::WriteOnly);
-
-    if (!stream_src || !stream_dst) {
-        return;
-    }
-    QElapsedTimer timer;
-    timer.start();
-    while ((read = stream_src->read(buff, BLOCK)) > 0) {
-        if (stream_dst->write(buff, read) != read) {
-            err_msg("write failed.");
-            break;
-        }
-    }
-
-    auto time = timer.elapsed();
-    qInfo() << time;
+    if (gerror)
+        g_error_free(gerror);
 }
 
 static void usage()
@@ -104,20 +75,12 @@ int main(int argc, char *argv[])
     const char *uri_src = argv[1];
     const char *uri_dst = argv[2];
 
-    QUrl url_src(QString::fromLocal8Bit(uri_src));
-    QUrl url_dst(QString::fromLocal8Bit(uri_dst));
-
-    if (!url_src.isValid() || !url_dst.isValid())
-        return 1;
-
-    dfmio_init();
-
     QElapsedTimer timer;
     timer.start();
-    copy(url_src, url_dst);
+    copy(uri_src, uri_dst);
 
     auto time = timer.elapsed();
-    qInfo() << "dfm-io elapsed time: (ms)" << time;
+    qInfo() << "gio copy func call elapsed time: (ms)" << time;
 
     return 0;
 }

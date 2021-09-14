@@ -32,7 +32,7 @@
 USING_IO_NAMESPACE
 
 DLocalWatcherPrivate::DLocalWatcherPrivate(DLocalWatcher *q)
-    : q_ptr(q)
+    : q(q)
 {
 
 }
@@ -54,8 +54,6 @@ DWatcher::WatchType DLocalWatcherPrivate::watchType() const
 
 bool DLocalWatcherPrivate::start(int timeRate)
 {
-    Q_Q(DLocalWatcher);
-
     // stop the last monitor.
 
     if (monitor)
@@ -208,7 +206,7 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
 
 DLocalWatcher::DLocalWatcher(const QUrl &uri, QObject *parent)
     : DWatcher(uri, parent)
-    , d_ptr(new DLocalWatcherPrivate(this))
+    , d(new DLocalWatcherPrivate(this))
 {
     registerSetWatchType(std::bind(&DLocalWatcher::setWatchType, this, std::placeholders::_1));
     registerWatchType(std::bind(&DLocalWatcher::watchType, this));
@@ -219,39 +217,30 @@ DLocalWatcher::DLocalWatcher(const QUrl &uri, QObject *parent)
 
 DLocalWatcher::~DLocalWatcher()
 {
-    Q_D(DLocalWatcher);
     d->stop();
 }
 
 void DLocalWatcher::setWatchType(DWatcher::WatchType type)
 {
-    Q_D(DLocalWatcher);
     d->setWatchType(type);
 }
 
 DWatcher::WatchType DLocalWatcher::watchType() const
 {
-    Q_D(const DLocalWatcher);
     return d->watchType();
 }
 
 bool DLocalWatcher::running() const
 {
-    Q_D(const DLocalWatcher);
-
     return d->running();
 }
 
 bool DLocalWatcher::start(int timeRate)
 {
-    Q_D(DLocalWatcher);
-
     return d->start(timeRate);
 }
 
 bool DLocalWatcher::stop()
 {
-    Q_D(DLocalWatcher);
-
     return d->stop();
 }

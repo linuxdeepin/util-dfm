@@ -45,8 +45,7 @@ public:
     QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
 
 private:
-    QSharedPointer<DSmbbrowseIOFactoryPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DSmbbrowseIOFactory)
+    QSharedPointer<DSmbbrowseIOFactoryPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

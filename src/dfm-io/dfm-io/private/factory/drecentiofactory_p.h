@@ -52,8 +52,7 @@ public:
     QSharedPointer<DOperator> createOperator() const;
 
 public:
-    DRecentIOFactory *q_ptr;
-    Q_DECLARE_PUBLIC(DRecentIOFactory)
+    DRecentIOFactory *q = nullptr;
 };
 
 END_IO_NAMESPACE

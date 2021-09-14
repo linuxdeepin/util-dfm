@@ -52,8 +52,7 @@ public:
     QSharedPointer<DOperator> createOperator() const;
 
 public:
-    DCddaIOFactory *q_ptr;
-    Q_DECLARE_PUBLIC(DCddaIOFactory)
+    DCddaIOFactory *q = nullptr;
 };
 
 END_IO_NAMESPACE

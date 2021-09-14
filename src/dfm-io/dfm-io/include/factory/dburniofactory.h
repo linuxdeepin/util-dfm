@@ -45,8 +45,7 @@ public:
     QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
 
 private:
-    QSharedPointer<DBurnIOFactoryPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DBurnIOFactory)
+    QSharedPointer<DBurnIOFactoryPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

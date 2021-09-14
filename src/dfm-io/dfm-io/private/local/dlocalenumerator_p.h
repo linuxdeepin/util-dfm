@@ -47,7 +47,7 @@ public:
 
 public:
     QList<QSharedPointer<DFileInfo>> list_;
-    DLocalEnumerator *q_ptr;
+    DLocalEnumerator *q = nullptr;
 
     bool done = false;
     DFMIOError dfmError;

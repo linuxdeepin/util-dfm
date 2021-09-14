@@ -52,8 +52,7 @@ public:
     QSharedPointer<DOperator> createOperator() const;
 
 public:
-    DBurnIOFactory *q_ptr;
-    Q_DECLARE_PUBLIC(DBurnIOFactory)
+    DBurnIOFactory *q = nullptr;
 };
 
 END_IO_NAMESPACE

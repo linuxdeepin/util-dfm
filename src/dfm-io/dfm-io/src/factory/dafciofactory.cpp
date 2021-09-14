@@ -36,7 +36,7 @@
 USING_IO_NAMESPACE
 
 DAfcIOFactoryPrivate::DAfcIOFactoryPrivate(DAfcIOFactory *q)
-    : q_ptr(q)
+    : q(q)
 {
 }
 
@@ -46,7 +46,6 @@ DAfcIOFactoryPrivate::~DAfcIOFactoryPrivate()
 
 QSharedPointer<DFileInfo> DAfcIOFactoryPrivate::createFileInfo() const
 {
-    Q_Q(const DAfcIOFactory);
     const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
@@ -55,7 +54,6 @@ QSharedPointer<DFileInfo> DAfcIOFactoryPrivate::createFileInfo() const
 
 QSharedPointer<DFile> DAfcIOFactoryPrivate::createFile() const
 {
-    Q_Q(const DAfcIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
@@ -63,7 +61,6 @@ QSharedPointer<DFile> DAfcIOFactoryPrivate::createFile() const
 
 QSharedPointer<DEnumerator> DAfcIOFactoryPrivate::createEnumerator() const
 {
-    Q_Q(const DAfcIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
@@ -71,7 +68,6 @@ QSharedPointer<DEnumerator> DAfcIOFactoryPrivate::createEnumerator() const
 
 QSharedPointer<DWatcher> DAfcIOFactoryPrivate::createWatcher() const
 {
-    Q_Q(const DAfcIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
@@ -79,7 +75,6 @@ QSharedPointer<DWatcher> DAfcIOFactoryPrivate::createWatcher() const
 
 QSharedPointer<DOperator> DAfcIOFactoryPrivate::createOperator() const
 {
-    Q_Q(const DAfcIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
@@ -87,7 +82,7 @@ QSharedPointer<DOperator> DAfcIOFactoryPrivate::createOperator() const
 
 DAfcIOFactory::DAfcIOFactory(const QUrl &uri)
     : DIOFactory(uri)
-    , d_ptr(new DAfcIOFactoryPrivate(this))
+    , d(new DAfcIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DAfcIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DAfcIOFactory::createFile, this));
@@ -102,30 +97,25 @@ DAfcIOFactory::~DAfcIOFactory()
 
 QSharedPointer<DFileInfo> DAfcIOFactory::createFileInfo() const
 {
-    Q_D(const DAfcIOFactory);
     return d->createFileInfo();
 }
 
 QSharedPointer<DFile> DAfcIOFactory::createFile() const
 {
-    Q_D(const DAfcIOFactory);
     return d->createFile();
 }
 
 QSharedPointer<DEnumerator> DAfcIOFactory::createEnumerator() const
 {
-    Q_D(const DAfcIOFactory);
     return d->createEnumerator();
 }
 
 QSharedPointer<DWatcher> DAfcIOFactory::createWatcher() const
 {
-    Q_D(const DAfcIOFactory);
     return d->createWatcher();
 }
 
 QSharedPointer<DOperator> DAfcIOFactory::createOperator() const
 {
-    Q_D(const DAfcIOFactory);
     return d->createOperator();
 }

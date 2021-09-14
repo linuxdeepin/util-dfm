@@ -36,7 +36,7 @@
 USING_IO_NAMESPACE
 
 DSftpIOFactoryPrivate::DSftpIOFactoryPrivate(DSftpIOFactory *q)
-    : q_ptr(q)
+    : q(q)
 {
 }
 
@@ -46,7 +46,6 @@ DSftpIOFactoryPrivate::~DSftpIOFactoryPrivate()
 
 QSharedPointer<DFileInfo> DSftpIOFactoryPrivate::createFileInfo() const
 {
-    Q_Q(const DSftpIOFactory);
     const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
@@ -55,7 +54,6 @@ QSharedPointer<DFileInfo> DSftpIOFactoryPrivate::createFileInfo() const
 
 QSharedPointer<DFile> DSftpIOFactoryPrivate::createFile() const
 {
-    Q_Q(const DSftpIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
@@ -63,7 +61,6 @@ QSharedPointer<DFile> DSftpIOFactoryPrivate::createFile() const
 
 QSharedPointer<DEnumerator> DSftpIOFactoryPrivate::createEnumerator() const
 {
-    Q_Q(const DSftpIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
@@ -71,7 +68,6 @@ QSharedPointer<DEnumerator> DSftpIOFactoryPrivate::createEnumerator() const
 
 QSharedPointer<DWatcher> DSftpIOFactoryPrivate::createWatcher() const
 {
-    Q_Q(const DSftpIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
@@ -79,7 +75,6 @@ QSharedPointer<DWatcher> DSftpIOFactoryPrivate::createWatcher() const
 
 QSharedPointer<DOperator> DSftpIOFactoryPrivate::createOperator() const
 {
-    Q_Q(const DSftpIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
@@ -87,7 +82,7 @@ QSharedPointer<DOperator> DSftpIOFactoryPrivate::createOperator() const
 
 DSftpIOFactory::DSftpIOFactory(const QUrl &uri)
     : DIOFactory(uri)
-    , d_ptr(new DSftpIOFactoryPrivate(this))
+    , d(new DSftpIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DSftpIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DSftpIOFactory::createFile, this));
@@ -102,30 +97,25 @@ DSftpIOFactory::~DSftpIOFactory()
 
 QSharedPointer<DFileInfo> DSftpIOFactory::createFileInfo() const
 {
-    Q_D(const DSftpIOFactory);
     return d->createFileInfo();
 }
 
 QSharedPointer<DFile> DSftpIOFactory::createFile() const
 {
-    Q_D(const DSftpIOFactory);
     return d->createFile();
 }
 
 QSharedPointer<DEnumerator> DSftpIOFactory::createEnumerator() const
 {
-    Q_D(const DSftpIOFactory);
     return d->createEnumerator();
 }
 
 QSharedPointer<DWatcher> DSftpIOFactory::createWatcher() const
 {
-    Q_D(const DSftpIOFactory);
     return d->createWatcher();
 }
 
 QSharedPointer<DOperator> DSftpIOFactory::createOperator() const
 {
-    Q_D(const DSftpIOFactory);
     return d->createOperator();
 }

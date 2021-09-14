@@ -52,8 +52,7 @@ public:
     QSharedPointer<DOperator> createOperator() const;
 
 public:
-    DGphoto2IOFactory *q_ptr;
-    Q_DECLARE_PUBLIC(DGphoto2IOFactory)
+    DGphoto2IOFactory *q = nullptr;
 };
 
 END_IO_NAMESPACE

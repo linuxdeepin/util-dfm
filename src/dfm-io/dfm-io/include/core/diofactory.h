@@ -75,10 +75,9 @@ public:
     DFMIOError lastError() const;
 
 protected:
-    QScopedPointer<DIOFactoryPrivate> d_ptr;
+    QScopedPointer<DIOFactoryPrivate> d;
 
 private:
-    Q_DECLARE_PRIVATE(DIOFactory)
     Q_DISABLE_COPY(DIOFactory)
 };
 

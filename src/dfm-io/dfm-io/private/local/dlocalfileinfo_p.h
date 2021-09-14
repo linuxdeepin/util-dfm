@@ -41,7 +41,7 @@ class DLocalFileInfo;
 class DLocalFileInfoPrivate
 {
 public:
-    explicit DLocalFileInfoPrivate(DLocalFileInfo *ptr);
+    explicit DLocalFileInfoPrivate(DLocalFileInfo *q);
     ~DLocalFileInfoPrivate();
 
     bool init();
@@ -57,8 +57,7 @@ public:
     QMap<DFileInfo::AttributeID, QVariant> attributes;
     GFileInfo *gfileinfo = nullptr;
 
-    DLocalFileInfo *q_ptr;
-    Q_DECLARE_PUBLIC(DLocalFileInfo)
+    DLocalFileInfo *q = nullptr;
 };
 
 END_IO_NAMESPACE

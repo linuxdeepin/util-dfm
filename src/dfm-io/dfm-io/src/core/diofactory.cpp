@@ -27,7 +27,7 @@
 USING_IO_NAMESPACE
 
 DIOFactoryPrivate::DIOFactoryPrivate(DIOFactory *q)
-    : q_ptr(q)
+    : q(q)
 {
 
 }
@@ -38,9 +38,8 @@ DIOFactoryPrivate::~DIOFactoryPrivate()
 }
 
 DIOFactory::DIOFactory(const QUrl &uri)
-    : d_ptr(new DIOFactoryPrivate(this))
+    : d(new DIOFactoryPrivate(this))
 {
-    Q_D(DIOFactory);
     d->uri = uri;
 }
 
@@ -51,8 +50,6 @@ DIOFactory::~DIOFactory()
 
 void DIOFactory::setUri(const QUrl &uri)
 {
-    Q_D(DIOFactory);
-
     if (!d)
         return;
 
@@ -61,8 +58,6 @@ void DIOFactory::setUri(const QUrl &uri)
 
 QUrl DIOFactory::uri() const
 {
-    Q_D(const DIOFactory);
-
     if (!d)
         return QUrl();
 
@@ -71,8 +66,6 @@ QUrl DIOFactory::uri() const
 
 DFM_VIRTUAL QSharedPointer<DFileInfo> DIOFactory::createFileInfo() const
 {
-    Q_D(const DIOFactory);
-
     if (!d->createFileInfoFunc)
         return nullptr;
 
@@ -81,8 +74,6 @@ DFM_VIRTUAL QSharedPointer<DFileInfo> DIOFactory::createFileInfo() const
 
 DFM_VIRTUAL QSharedPointer<DFile> DIOFactory::createFile() const
 {
-    Q_D(const DIOFactory);
-
     if (!d->createFileFunc)
         return nullptr;
 
@@ -91,8 +82,6 @@ DFM_VIRTUAL QSharedPointer<DFile> DIOFactory::createFile() const
 
 DFM_VIRTUAL QSharedPointer<DEnumerator> DIOFactory::createEnumerator() const
 {
-    Q_D(const DIOFactory);
-
     if (!d->createEnumeratorFunc)
         return nullptr;
 
@@ -101,8 +90,6 @@ DFM_VIRTUAL QSharedPointer<DEnumerator> DIOFactory::createEnumerator() const
 
 DFM_VIRTUAL QSharedPointer<DWatcher> DIOFactory::createWatcher() const
 {
-    Q_D(const DIOFactory);
-
     if (!d->createWatcherFunc)
         return nullptr;
 
@@ -111,8 +98,6 @@ DFM_VIRTUAL QSharedPointer<DWatcher> DIOFactory::createWatcher() const
 
 DFM_VIRTUAL QSharedPointer<DOperator> DIOFactory::createOperator() const
 {
-    Q_D(const DIOFactory);
-
     if (!d->createOperatorFunc)
         return nullptr;
 
@@ -121,38 +106,31 @@ DFM_VIRTUAL QSharedPointer<DOperator> DIOFactory::createOperator() const
 
 void DIOFactory::registerCreateFileInfo(const DIOFactory::CreateFileInfoFunc &func)
 {
-    Q_D(DIOFactory);
     d->createFileInfoFunc = func;
 }
 
 void DIOFactory::registerCreateFile(const DIOFactory::CreateFileFunc &func)
 {
-    Q_D(DIOFactory);
     d->createFileFunc = func;
 }
 
 void DIOFactory::registerCreateEnumerator(const DIOFactory::CreateEnumeratorFunc &func)
 {
-    Q_D(DIOFactory);
     d->createEnumeratorFunc = func;
 }
 
 void DIOFactory::registerCreateWatcher(const DIOFactory::CreateWatcherFunc &func)
 {
-    Q_D(DIOFactory);
     d->createWatcherFunc = func;
 }
 
 void DIOFactory::registerCreateOperator(const DIOFactory::CreateOperatorFunc &func)
 {
-    Q_D(DIOFactory);
     d->createOperatorFunc = func;
 }
 
 DFMIOError DIOFactory::lastError() const
 {
-    Q_D(const DIOFactory);
-
     if (!d)
         return DFMIOError();
 

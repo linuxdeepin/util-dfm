@@ -47,8 +47,7 @@ public:
     bool exists() const DFM_OVERRIDE;
 
 private:
-    QSharedPointer<DLocalFileInfoPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DLocalFileInfo)
+    QSharedPointer<DLocalFileInfoPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

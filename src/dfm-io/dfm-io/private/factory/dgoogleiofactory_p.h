@@ -52,8 +52,7 @@ public:
     QSharedPointer<DOperator> createOperator() const;
 
 public:
-    DGoogleIOFactory *q_ptr;
-    Q_DECLARE_PUBLIC(DGoogleIOFactory)
+    DGoogleIOFactory *q = nullptr;
 };
 
 END_IO_NAMESPACE

@@ -36,7 +36,7 @@
 USING_IO_NAMESPACE
 
 DLocalOperatorPrivate::DLocalOperatorPrivate(DLocalOperator *q)
-    : q_ptr(q)
+    : q(q)
 {
 }
 
@@ -46,8 +46,6 @@ DLocalOperatorPrivate::~DLocalOperatorPrivate()
 
 bool DLocalOperatorPrivate::renameFile(const QString &new_name)
 {
-    Q_Q(DLocalOperator);
-
     const QUrl &uri = q->uri();
 
     GError *error = nullptr;
@@ -74,8 +72,6 @@ bool DLocalOperatorPrivate::renameFile(const QString &new_name)
 
 bool DLocalOperatorPrivate::copyFile(const QUrl &to, DOperator::CopyFlag flag)
 {
-    Q_Q(DLocalOperator);
-
     GError *error = nullptr;
 
     const QUrl &uri = q->uri();
@@ -101,8 +97,6 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &to, DOperator::CopyFlag flag)
 
 bool DLocalOperatorPrivate::moveFile(const QUrl &to, DOperator::CopyFlag flag)
 {
-    Q_Q(DLocalOperator);
-
     GError *error = nullptr;
 
     const QUrl &uri = q->uri();
@@ -127,8 +121,6 @@ bool DLocalOperatorPrivate::moveFile(const QUrl &to, DOperator::CopyFlag flag)
 
 bool DLocalOperatorPrivate::trashFile()
 {
-    Q_Q(DLocalOperator);
-
     GError *error = nullptr;
 
     const QUrl &uri = q->uri();
@@ -147,8 +139,6 @@ bool DLocalOperatorPrivate::trashFile()
 
 bool DLocalOperatorPrivate::deleteFile()
 {
-    Q_Q(DLocalOperator);
-
     GError *error = nullptr;
 
     const QUrl &uri = q->uri();
@@ -168,8 +158,6 @@ bool DLocalOperatorPrivate::deleteFile()
 
 bool DLocalOperatorPrivate::restoreFile()
 {
-    Q_Q(DLocalOperator);
-
     GError *error = nullptr;
 
     const QUrl &uri = q->uri();
@@ -212,8 +200,6 @@ bool DLocalOperatorPrivate::touchFile()
     // G_FILE_CREATE_PRIVATE
     // G_FILE_CREATE_REPLACE_DESTINATION
 
-    Q_Q(DLocalOperator);
-
     GError *error = nullptr;
 
     const QUrl &uri = q->uri();
@@ -236,8 +222,6 @@ bool DLocalOperatorPrivate::touchFile()
 
 bool DLocalOperatorPrivate::makeDirectory()
 {
-    Q_Q(DLocalOperator);
-
     // only create direct path
     GError *error = nullptr;
 
@@ -258,8 +242,6 @@ bool DLocalOperatorPrivate::makeDirectory()
 
 bool DLocalOperatorPrivate::createLink(const QUrl &link)
 {
-    Q_Q(DLocalOperator);
-
     GError *error = nullptr;
 
     const QUrl &uri = q->uri();
@@ -282,8 +264,6 @@ bool DLocalOperatorPrivate::createLink(const QUrl &link)
 bool DLocalOperatorPrivate::setFileInfo(const DFileInfo &fileInfo)
 {
     // GFileQueryInfoFlags value: G_FILE_QUERY_INFO_NONE/G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS
-
-    Q_Q(DLocalOperator);
 
     GError *error = nullptr;
 
@@ -317,7 +297,7 @@ void DLocalOperatorPrivate::setErrorInfo(GError *gerror)
 }
 
 DLocalOperator::DLocalOperator(const QUrl &uri) : DOperator(uri)
-  , d_ptr(new DLocalOperatorPrivate(this))
+  , d(new DLocalOperatorPrivate(this))
 {
     registerRenameFile(std::bind(&DLocalOperator::renameFile, this, std::placeholders::_1));
     registerCopyFile(std::bind(&DLocalOperator::copyFile, this, std::placeholders::_1, std::placeholders::_2));
@@ -339,70 +319,50 @@ DLocalOperator::~DLocalOperator()
 
 bool DLocalOperator::renameFile(const QString &newName)
 {
-    Q_D(DLocalOperator);
-
     return d->renameFile(newName);
 }
 
 bool DLocalOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag)
 {
-    Q_D(DLocalOperator);
-
     return d->copyFile(destUri, flag);
 }
 
 bool DLocalOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag)
 {
-    Q_D(DLocalOperator);
-
     return d->moveFile(destUri, flag);
 }
 
 bool DLocalOperator::trashFile()
 {
-    Q_D(DLocalOperator);
-
     return d->trashFile();
 }
 
 bool DLocalOperator::deleteFile()
 {
-    Q_D(DLocalOperator);
-
     return d->deleteFile();
 }
 
 bool DLocalOperator::restoreFile()
 {
-    Q_D(DLocalOperator);
-
     return d->restoreFile();
 }
 
 bool DLocalOperator::touchFile()
 {
-    Q_D(DLocalOperator);
-
     return d->touchFile();
 }
 
 bool DLocalOperator::makeDirectory()
 {
-    Q_D(DLocalOperator);
-
     return d->makeDirectory();
 }
 
 bool DLocalOperator::createLink(const QUrl &link)
 {
-    Q_D(DLocalOperator);
-
     return d->createLink(link);
 }
 
 bool DLocalOperator::setFileInfo(const DFileInfo &fileInfo)
 {
-    Q_D(DLocalOperator);
-
     return d->setFileInfo(fileInfo);
 }

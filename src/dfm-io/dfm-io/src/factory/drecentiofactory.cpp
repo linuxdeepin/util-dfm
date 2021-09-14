@@ -36,7 +36,7 @@
 USING_IO_NAMESPACE
 
 DRecentIOFactoryPrivate::DRecentIOFactoryPrivate(DRecentIOFactory *q)
-    : q_ptr(q)
+    : q(q)
 {
 }
 
@@ -46,7 +46,6 @@ DRecentIOFactoryPrivate::~DRecentIOFactoryPrivate()
 
 QSharedPointer<DFileInfo> DRecentIOFactoryPrivate::createFileInfo() const
 {
-    Q_Q(const DRecentIOFactory);
     const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
@@ -55,7 +54,6 @@ QSharedPointer<DFileInfo> DRecentIOFactoryPrivate::createFileInfo() const
 
 QSharedPointer<DFile> DRecentIOFactoryPrivate::createFile() const
 {
-    Q_Q(const DRecentIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
@@ -63,7 +61,6 @@ QSharedPointer<DFile> DRecentIOFactoryPrivate::createFile() const
 
 QSharedPointer<DEnumerator> DRecentIOFactoryPrivate::createEnumerator() const
 {
-    Q_Q(const DRecentIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
@@ -71,7 +68,6 @@ QSharedPointer<DEnumerator> DRecentIOFactoryPrivate::createEnumerator() const
 
 QSharedPointer<DWatcher> DRecentIOFactoryPrivate::createWatcher() const
 {
-    Q_Q(const DRecentIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
@@ -79,7 +75,6 @@ QSharedPointer<DWatcher> DRecentIOFactoryPrivate::createWatcher() const
 
 QSharedPointer<DOperator> DRecentIOFactoryPrivate::createOperator() const
 {
-    Q_Q(const DRecentIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
@@ -87,7 +82,7 @@ QSharedPointer<DOperator> DRecentIOFactoryPrivate::createOperator() const
 
 DRecentIOFactory::DRecentIOFactory(const QUrl &uri)
     : DIOFactory(uri)
-    , d_ptr(new DRecentIOFactoryPrivate(this))
+    , d(new DRecentIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DRecentIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DRecentIOFactory::createFile, this));
@@ -102,30 +97,25 @@ DRecentIOFactory::~DRecentIOFactory()
 
 QSharedPointer<DFileInfo> DRecentIOFactory::createFileInfo() const
 {
-    Q_D(const DRecentIOFactory);
     return d->createFileInfo();
 }
 
 QSharedPointer<DFile> DRecentIOFactory::createFile() const
 {
-    Q_D(const DRecentIOFactory);
     return d->createFile();
 }
 
 QSharedPointer<DEnumerator> DRecentIOFactory::createEnumerator() const
 {
-    Q_D(const DRecentIOFactory);
     return d->createEnumerator();
 }
 
 QSharedPointer<DWatcher> DRecentIOFactory::createWatcher() const
 {
-    Q_D(const DRecentIOFactory);
     return d->createWatcher();
 }
 
 QSharedPointer<DOperator> DRecentIOFactory::createOperator() const
 {
-    Q_D(const DRecentIOFactory);
     return d->createOperator();
 }

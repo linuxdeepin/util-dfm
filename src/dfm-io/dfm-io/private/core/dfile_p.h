@@ -32,19 +32,12 @@ class DFile;
 
 class DFilePrivate
 {
-    Q_DECLARE_PUBLIC(DFile)
 public:
     explicit DFilePrivate(DFile *q);
     virtual ~DFilePrivate();
 
-    /*virtual bool openFile(DFile::OpenFlag mode) = 0;
-    virtual bool closeFile() = 0;
-    virtual qint64 readData(char *data, qint64 maxSize) = 0;
-    virtual qint64 writeData(const char *data, qint64 len) = 0;
-    virtual bool seekFile(qint64 pos) = 0;*/
-
 public:
-    DFile *q_ptr = nullptr;
+    DFile *q = nullptr;
     QUrl uri;
 
     bool isOpen = false;

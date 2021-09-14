@@ -37,7 +37,6 @@ class DLocalWatcher;
 
 class DLocalWatcherPrivate
 {
-    Q_DECLARE_PUBLIC(DLocalWatcher)
 public:
     explicit DLocalWatcherPrivate(DLocalWatcher *q);
     ~DLocalWatcherPrivate();
@@ -54,7 +53,7 @@ public:
     GFileMonitor *monitor = nullptr;
     DWatcher::WatchType type = DWatcher::WatchType::AUTO;
 
-    DLocalWatcher *q_ptr;
+    DLocalWatcher *q = nullptr;
 };
 
 END_IO_NAMESPACE

@@ -52,8 +52,7 @@ public:
     QSharedPointer<DOperator> createOperator() const;
 
 public:
-    DAfpbrowseIOFactory *q_ptr;
-    Q_DECLARE_PUBLIC(DAfpbrowseIOFactory)
+    DAfpbrowseIOFactory *q = nullptr;
 };
 
 END_IO_NAMESPACE

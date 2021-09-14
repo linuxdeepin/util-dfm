@@ -58,8 +58,7 @@ public:
     DFMIOError lastError() const;
 
 private:
-    QSharedPointer<DEnumeratorPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DEnumerator)
+    QSharedPointer<DEnumeratorPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

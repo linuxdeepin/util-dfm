@@ -47,8 +47,7 @@ public:
     bool stop() DFM_OVERRIDE;
 
 private:
-    QSharedPointer<DLocalWatcherPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DLocalWatcher)
+    QSharedPointer<DLocalWatcherPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

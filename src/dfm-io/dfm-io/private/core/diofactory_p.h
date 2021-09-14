@@ -41,7 +41,6 @@ class DIOFactory;
 
 class DIOFactoryPrivate
 {
-    Q_DECLARE_PUBLIC(DIOFactory)
 public:
     explicit DIOFactoryPrivate(DIOFactory *q);
     virtual ~DIOFactoryPrivate();
@@ -53,7 +52,7 @@ public:
     virtual QSharedPointer<DOperator> doCreateOperator() const = 0;*/
 
 public:
-    DIOFactory *q_ptr;
+    DIOFactory *q = nullptr;
     QUrl uri;
 
     DFMIOError error;

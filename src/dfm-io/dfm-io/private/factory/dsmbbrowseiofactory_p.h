@@ -52,8 +52,7 @@ public:
     QSharedPointer<DOperator> createOperator() const;
 
 public:
-    DSmbbrowseIOFactory *q_ptr;
-    Q_DECLARE_PUBLIC(DSmbbrowseIOFactory)
+    DSmbbrowseIOFactory *q = nullptr;
 };
 
 END_IO_NAMESPACE

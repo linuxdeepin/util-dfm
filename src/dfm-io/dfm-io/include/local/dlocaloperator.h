@@ -53,8 +53,7 @@ public:
     bool setFileInfo(const DFileInfo &fileInfo) DFM_OVERRIDE;
 
 private:
-    QSharedPointer<DLocalOperatorPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DLocalOperator)
+    QSharedPointer<DLocalOperatorPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

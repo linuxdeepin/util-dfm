@@ -30,7 +30,7 @@ USING_IO_NAMESPACE
 
 
 DFilePrivate::DFilePrivate(DFile *q)
-    : q_ptr(q)
+    : q(q)
 {
 
 }
@@ -41,21 +41,17 @@ DFilePrivate::~DFilePrivate()
 }
 
 DFile::DFile(const QUrl &uri)
-    : d_ptr(new DFilePrivate(this))
+    : d(new DFilePrivate(this))
 {
-    Q_D(DFile);
     d->uri = uri;
 }
 
 DFile::~DFile()
 {
-    close();
 }
 
 DFM_VIRTUAL bool DFile::open(DFile::OpenFlag mode)
 {
-    Q_D(DFile);
-
     if (!d->openFunc)
         return false;
 
@@ -66,8 +62,6 @@ DFM_VIRTUAL bool DFile::open(DFile::OpenFlag mode)
 
 DFM_VIRTUAL bool DFile::close()
 {
-    Q_D(DFile);
-
     if (!d->closeFunc)
         return false;
 
@@ -83,8 +77,6 @@ DFM_VIRTUAL bool DFile::close()
 
 DFM_VIRTUAL qint64 DFile::read(char *data, qint64 maxSize)
 {
-    Q_D(DFile);
-
     if (!d->readFunc)
         return -1;
 
@@ -98,8 +90,6 @@ DFM_VIRTUAL qint64 DFile::read(char *data, qint64 maxSize)
 
 QByteArray DFile::read(qint64 maxSize)
 {
-    Q_D(DFile);
-
     if (!d->readQFunc)
         return QByteArray();
 
@@ -113,8 +103,6 @@ QByteArray DFile::read(qint64 maxSize)
 
 QByteArray DFile::readAll()
 {
-    Q_D(DFile);
-
     if (!d->readAllFunc)
         return QByteArray();
 
@@ -128,8 +116,6 @@ QByteArray DFile::readAll()
 
 DFM_VIRTUAL qint64 DFile::write(const char *data, qint64 len)
 {
-    Q_D(DFile);
-
     if (!d->writeFunc)
         return -1;
 
@@ -143,8 +129,6 @@ DFM_VIRTUAL qint64 DFile::write(const char *data, qint64 len)
 
 qint64 DFile::write(const char *data)
 {
-    Q_D(DFile);
-
     if (!d->writeAllFunc)
         return -1;
 
@@ -158,8 +142,6 @@ qint64 DFile::write(const char *data)
 
 qint64 DFile::write(const QByteArray &byteArray)
 {
-    Q_D(DFile);
-
     if (!d->writeQFunc)
         return -1;
 
@@ -173,8 +155,6 @@ qint64 DFile::write(const QByteArray &byteArray)
 
 DFM_VIRTUAL bool DFile::seek(qint64 pos, DFMSeekType type)
 {
-    Q_D(DFile);
-
     if (!d->seekFunc)
         return -1;
 
@@ -188,8 +168,6 @@ DFM_VIRTUAL bool DFile::seek(qint64 pos, DFMSeekType type)
 
 DFM_VIRTUAL qint64 DFile::pos()
 {
-    Q_D(DFile);
-
     if (!d->posFunc)
         return -1;
 
@@ -203,8 +181,6 @@ DFM_VIRTUAL qint64 DFile::pos()
 
 bool DFile::flush()
 {
-    Q_D(DFile);
-
     if (!d->flushFunc)
         return -1;
 
@@ -218,8 +194,6 @@ bool DFile::flush()
 
 qint64 DFile::size()
 {
-    Q_D(DFile);
-
     if (!d->sizeFunc)
         return -1;
 
@@ -233,8 +207,6 @@ qint64 DFile::size()
 
 bool DFile::exists()
 {
-    Q_D(DFile);
-
     if (!d->existsFunc)
         return -1;
 
@@ -248,92 +220,76 @@ bool DFile::exists()
 
 void DFile::registerOpen(const OpenFunc &func)
 {
-    Q_D(DFile);
     d->openFunc = func;
 }
 
 void DFile::registerClose(const CloseFunc &func)
 {
-    Q_D(DFile);
     d->closeFunc = func;
 }
 
 void DFile::registerRead(const ReadFunc &func)
 {
-    Q_D(DFile);
     d->readFunc = func;
 }
 
 void DFile::registerReadQ(const DFile::ReadQFunc &func)
 {
-    Q_D(DFile);
     d->readQFunc = func;
 }
 
 void DFile::registerReadAll(const DFile::ReadAllFunc &func)
 {
-    Q_D(DFile);
     d->readAllFunc = func;
 }
 
 void DFile::registerWrite(const WriteFunc &func)
 {
-    Q_D(DFile);
     d->writeFunc = func;
 }
 
 void DFile::registerWriteAll(const DFile::WriteAllFunc &func)
 {
-    Q_D(DFile);
     d->writeAllFunc = func;
 }
 
 void DFile::registerWriteQ(const DFile::WriteQFunc &func)
 {
-    Q_D(DFile);
     d->writeQFunc = func;
 }
 
 void DFile::registerSeek(const SeekFunc &func)
 {
-    Q_D(DFile);
     d->seekFunc = func;
 }
 
 void DFile::registerPos(const DFile::PosFunc &func)
 {
-    Q_D(DFile);
     d->posFunc = func;
 }
 
 void DFile::registerFlush(const DFile::FlushFunc &func)
 {
-    Q_D(DFile);
     d->flushFunc = func;
 }
 
 void DFile::registerSize(const DFile::SizeFunc &func)
 {
-    Q_D(DFile);
     d->sizeFunc = func;
 }
 
 void DFile::registerExists(const DFile::ExistsFunc &func)
 {
-    Q_D(DFile);
     d->existsFunc = func;
 }
 
 QUrl DFile::uri() const
 {
-    Q_D(const DFile);
     return d->uri;
 }
 
 DFMIOError DFile::lastError() const
 {
-    Q_D(const DFile);
-
     if (!d)
         return DFMIOError();
 

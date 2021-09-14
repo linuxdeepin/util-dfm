@@ -1,5 +1,7 @@
 project(tools)
 
+add_definitions(-DQT_NO_KEYWORDS)
+
 # include
 include_directories(
     ${PROJECT_SOURCE_DIR}/../dfm-io/inlcude
@@ -14,6 +16,15 @@ target_link_libraries(dfm-info dfm-io)
 
 add_executable(dfm-copy dfm-copy.cpp)
 target_link_libraries(dfm-copy dfm-io)
+
+add_executable(dfm-copy2 dfm-copy2.cpp)
+target_link_libraries(dfm-copy2 dfm-io)
+
+add_executable(dfm-copy3 dfm-copy3.cpp)
+target_link_libraries(dfm-copy3 dfm-io)
+
+add_executable(dfm-copy4 dfm-copy4.cpp)
+target_link_libraries(dfm-copy4 dfm-io)
 
 add_executable(dfm-cat dfm-cat.cpp)
 target_link_libraries(dfm-cat dfm-io)

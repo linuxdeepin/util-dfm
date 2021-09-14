@@ -35,8 +35,8 @@
 
 USING_IO_NAMESPACE
 
-DLocalEnumeratorPrivate::DLocalEnumeratorPrivate(DLocalEnumerator *ptr)
-    : q_ptr(ptr)
+DLocalEnumeratorPrivate::DLocalEnumeratorPrivate(DLocalEnumerator *q)
+    : q(q)
 {
 }
 
@@ -53,7 +53,7 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
     GFileInfo *gfileinfo = nullptr;
     GError *error = nullptr;
 
-    GFile *gfile = g_file_new_for_uri(q_ptr->uri().toString().toStdString().c_str());
+    GFile *gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
     enumerator = g_file_enumerate_children(gfile,
                                            "*",
                                            G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
@@ -104,7 +104,7 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 
 DLocalEnumerator::DLocalEnumerator(const QUrl &uri)
     : DEnumerator(uri)
-    , d_ptr(new DLocalEnumeratorPrivate(this))
+    , d(new DLocalEnumeratorPrivate(this))
 {
     registerFileInfoList(std::bind(&DLocalEnumerator::fileInfoList, this));
 }
@@ -115,6 +115,5 @@ DLocalEnumerator::~DLocalEnumerator()
 
 QList<QSharedPointer<DFileInfo> > DLocalEnumerator::fileInfoList()
 {
-    Q_D(DLocalEnumerator);
     return d->fileInfoList();
 }

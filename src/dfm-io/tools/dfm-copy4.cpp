@@ -29,63 +29,48 @@
 #include "core/diofactory_p.h"
 #include "core/dfile.h"
 
+#include <gio/gio.h>
+
 #include <QElapsedTimer>
 #include <QDebug>
 
 #include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 USING_IO_NAMESPACE
+
+qint64 readData(int m_fileFd, char *data, qint64 maxlen)
+{
+    return ::read(m_fileFd, data, static_cast<size_t>(maxlen));
+}
+
+qint64 writeData(int m_fileFd, const char *data, qint64 maxlen)
+{
+    return ::write(m_fileFd, data, static_cast<size_t>(maxlen));
+}
 
 static void err_msg(const char *msg)
 {
     fprintf(stderr, "dfm-copy: %s\n", msg);
 }
 
-static QSharedPointer<DFile> make_stream(QSharedPointer<DIOFactory> factory, DFile::OpenFlag flag)
-{
-    if (!factory) {
-        err_msg("create factory failed.");
-        return nullptr;
-    }
-
-    auto file = factory->createFile();
-    if (!file) {
-        err_msg("get device file failed.");
-        return nullptr;
-    }
-    if (!file->open(flag)) {
-        return nullptr;
-    }
-
-    return file;
-}
-
 #define BLOCK 4 * 4096
-static void copy(const QUrl &url_src, const QUrl &url_dst)
+static void copy(const QString &url_src, const QString &url_dst)
 {
     char buff[BLOCK];
     int read = 0;
 
-    QSharedPointer<DFMIO::DIOFactory> factory_src = produceQSharedIOFactory(url_src.scheme(), static_cast<QUrl>(url_src));
-    QSharedPointer<DFMIO::DIOFactory> factory_dst = produceQSharedIOFactory(url_dst.scheme(), static_cast<QUrl>(url_dst));
+    int m_fileFd = ::open(url_src.toLocal8Bit().data(), O_RDONLY, 0755);
+    int m_fileFd2 = ::open(url_dst.toLocal8Bit().data(), O_CREAT | O_WRONLY, 0755);
 
-    QSharedPointer<DFile> stream_src = make_stream(factory_src, DFile::OpenFlag::ReadOnly);
-    QSharedPointer<DFile> stream_dst = make_stream(factory_dst, DFile::OpenFlag::WriteOnly);
-
-    if (!stream_src || !stream_dst) {
-        return;
-    }
-    QElapsedTimer timer;
-    timer.start();
-    while ((read = stream_src->read(buff, BLOCK)) > 0) {
-        if (stream_dst->write(buff, read) != read) {
+    while ((read = readData(m_fileFd, buff, BLOCK)) > 0) {
+        if (writeData(m_fileFd2, buff, read) != read) {
             err_msg("write failed.");
             break;
         }
     }
-
-    auto time = timer.elapsed();
-    qInfo() << time;
 }
 
 static void usage()
@@ -104,20 +89,20 @@ int main(int argc, char *argv[])
     const char *uri_src = argv[1];
     const char *uri_dst = argv[2];
 
-    QUrl url_src(QString::fromLocal8Bit(uri_src));
-    QUrl url_dst(QString::fromLocal8Bit(uri_dst));
+    /*const QString &scheme_src = url_src.scheme();
+    const QString &scheme_dst = url_dst.scheme();
 
-    if (!url_src.isValid() || !url_dst.isValid())
-        return 1;
+    if (scheme_src != scheme_dst)
+        return 1;*/
 
     dfmio_init();
-
+    //REGISTER_FACTORY1(DLocalIOFactory, scheme_src, QUrl);
     QElapsedTimer timer;
     timer.start();
-    copy(url_src, url_dst);
+    copy(uri_src, uri_dst);
 
     auto time = timer.elapsed();
-    qInfo() << "dfm-io elapsed time: (ms)" << time;
+    qInfo() << "system call elapsed time: (ms)" << time;
 
     return 0;
 }

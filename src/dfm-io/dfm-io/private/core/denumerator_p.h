@@ -38,7 +38,6 @@ class DFileInfo;
 
 class DEnumeratorPrivate
 {
-    Q_DECLARE_PUBLIC(DEnumerator)
 public:
     explicit DEnumeratorPrivate(DEnumerator *q);
     virtual ~DEnumeratorPrivate();
@@ -49,7 +48,7 @@ public:
     QSharedPointer<DFileInfo> popCache();
 
 public:
-    DEnumerator *q_ptr = nullptr;
+    DEnumerator *q = nullptr;
 
     QUrl uri;
     bool done = false;

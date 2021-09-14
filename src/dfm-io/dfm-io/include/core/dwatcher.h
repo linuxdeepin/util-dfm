@@ -97,8 +97,7 @@ Q_SIGNALS:
     void fileAdded(const QUrl &uri, const DFileInfo &fileInfo);
 
 private:
-    QSharedPointer<DWatcherPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DWatcher)
+    QSharedPointer<DWatcherPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

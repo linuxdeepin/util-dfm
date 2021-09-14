@@ -100,8 +100,7 @@ public:
     DFMIOError lastError() const; 
 
 private:
-    QSharedPointer<DOperatorPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DOperator)
+    QSharedPointer<DOperatorPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

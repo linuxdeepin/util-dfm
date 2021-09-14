@@ -36,7 +36,7 @@
 USING_IO_NAMESPACE
 
 DAfpbrowseIOFactoryPrivate::DAfpbrowseIOFactoryPrivate(DAfpbrowseIOFactory *q)
-    : q_ptr(q)
+    : q(q)
 {
 }
 
@@ -46,7 +46,6 @@ DAfpbrowseIOFactoryPrivate::~DAfpbrowseIOFactoryPrivate()
 
 QSharedPointer<DFileInfo> DAfpbrowseIOFactoryPrivate::createFileInfo() const
 {
-    Q_Q(const DAfpbrowseIOFactory);
     const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
@@ -55,7 +54,6 @@ QSharedPointer<DFileInfo> DAfpbrowseIOFactoryPrivate::createFileInfo() const
 
 QSharedPointer<DFile> DAfpbrowseIOFactoryPrivate::createFile() const
 {
-    Q_Q(const DAfpbrowseIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
@@ -63,7 +61,6 @@ QSharedPointer<DFile> DAfpbrowseIOFactoryPrivate::createFile() const
 
 QSharedPointer<DEnumerator> DAfpbrowseIOFactoryPrivate::createEnumerator() const
 {
-    Q_Q(const DAfpbrowseIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
@@ -71,7 +68,6 @@ QSharedPointer<DEnumerator> DAfpbrowseIOFactoryPrivate::createEnumerator() const
 
 QSharedPointer<DWatcher> DAfpbrowseIOFactoryPrivate::createWatcher() const
 {
-    Q_Q(const DAfpbrowseIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
@@ -79,7 +75,6 @@ QSharedPointer<DWatcher> DAfpbrowseIOFactoryPrivate::createWatcher() const
 
 QSharedPointer<DOperator> DAfpbrowseIOFactoryPrivate::createOperator() const
 {
-    Q_Q(const DAfpbrowseIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
@@ -87,7 +82,7 @@ QSharedPointer<DOperator> DAfpbrowseIOFactoryPrivate::createOperator() const
 
 DAfpbrowseIOFactory::DAfpbrowseIOFactory(const QUrl &uri)
     : DIOFactory(uri)
-    , d_ptr(new DAfpbrowseIOFactoryPrivate(this))
+    , d(new DAfpbrowseIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DAfpbrowseIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DAfpbrowseIOFactory::createFile, this));
@@ -102,30 +97,25 @@ DAfpbrowseIOFactory::~DAfpbrowseIOFactory()
 
 QSharedPointer<DFileInfo> DAfpbrowseIOFactory::createFileInfo() const
 {
-    Q_D(const DAfpbrowseIOFactory);
     return d->createFileInfo();
 }
 
 QSharedPointer<DFile> DAfpbrowseIOFactory::createFile() const
 {
-    Q_D(const DAfpbrowseIOFactory);
     return d->createFile();
 }
 
 QSharedPointer<DEnumerator> DAfpbrowseIOFactory::createEnumerator() const
 {
-    Q_D(const DAfpbrowseIOFactory);
     return d->createEnumerator();
 }
 
 QSharedPointer<DWatcher> DAfpbrowseIOFactory::createWatcher() const
 {
-    Q_D(const DAfpbrowseIOFactory);
     return d->createWatcher();
 }
 
 QSharedPointer<DOperator> DAfpbrowseIOFactory::createOperator() const
 {
-    Q_D(const DAfpbrowseIOFactory);
     return d->createOperator();
 }

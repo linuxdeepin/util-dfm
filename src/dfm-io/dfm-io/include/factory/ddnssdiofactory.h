@@ -45,8 +45,7 @@ public:
     QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
 
 private:
-    QSharedPointer<DDnssdIOFactoryPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DDnssdIOFactory)
+    QSharedPointer<DDnssdIOFactoryPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

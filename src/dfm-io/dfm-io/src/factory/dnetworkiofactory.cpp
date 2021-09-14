@@ -36,7 +36,7 @@
 USING_IO_NAMESPACE
 
 DNetworkIOFactoryPrivate::DNetworkIOFactoryPrivate(DNetworkIOFactory *q)
-    : q_ptr(q)
+    : q(q)
 {
 }
 
@@ -46,7 +46,6 @@ DNetworkIOFactoryPrivate::~DNetworkIOFactoryPrivate()
 
 QSharedPointer<DFileInfo> DNetworkIOFactoryPrivate::createFileInfo() const
 {
-    Q_Q(const DNetworkIOFactory);
     const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
@@ -55,7 +54,6 @@ QSharedPointer<DFileInfo> DNetworkIOFactoryPrivate::createFileInfo() const
 
 QSharedPointer<DFile> DNetworkIOFactoryPrivate::createFile() const
 {
-    Q_Q(const DNetworkIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
@@ -63,7 +61,6 @@ QSharedPointer<DFile> DNetworkIOFactoryPrivate::createFile() const
 
 QSharedPointer<DEnumerator> DNetworkIOFactoryPrivate::createEnumerator() const
 {
-    Q_Q(const DNetworkIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
@@ -71,7 +68,6 @@ QSharedPointer<DEnumerator> DNetworkIOFactoryPrivate::createEnumerator() const
 
 QSharedPointer<DWatcher> DNetworkIOFactoryPrivate::createWatcher() const
 {
-    Q_Q(const DNetworkIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
@@ -79,7 +75,6 @@ QSharedPointer<DWatcher> DNetworkIOFactoryPrivate::createWatcher() const
 
 QSharedPointer<DOperator> DNetworkIOFactoryPrivate::createOperator() const
 {
-    Q_Q(const DNetworkIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
@@ -87,7 +82,7 @@ QSharedPointer<DOperator> DNetworkIOFactoryPrivate::createOperator() const
 
 DNetworkIOFactory::DNetworkIOFactory(const QUrl &uri)
     : DIOFactory(uri)
-    , d_ptr(new DNetworkIOFactoryPrivate(this))
+    , d(new DNetworkIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DNetworkIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DNetworkIOFactory::createFile, this));
@@ -102,30 +97,25 @@ DNetworkIOFactory::~DNetworkIOFactory()
 
 QSharedPointer<DFileInfo> DNetworkIOFactory::createFileInfo() const
 {
-    Q_D(const DNetworkIOFactory);
     return d->createFileInfo();
 }
 
 QSharedPointer<DFile> DNetworkIOFactory::createFile() const
 {
-    Q_D(const DNetworkIOFactory);
     return d->createFile();
 }
 
 QSharedPointer<DEnumerator> DNetworkIOFactory::createEnumerator() const
 {
-    Q_D(const DNetworkIOFactory);
     return d->createEnumerator();
 }
 
 QSharedPointer<DWatcher> DNetworkIOFactory::createWatcher() const
 {
-    Q_D(const DNetworkIOFactory);
     return d->createWatcher();
 }
 
 QSharedPointer<DOperator> DNetworkIOFactory::createOperator() const
 {
-    Q_D(const DNetworkIOFactory);
     return d->createOperator();
 }

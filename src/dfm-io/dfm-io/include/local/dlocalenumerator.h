@@ -42,8 +42,7 @@ public:
     QList<QSharedPointer<DFileInfo>> fileInfoList();
 
 private:
-    QSharedPointer<DLocalEnumeratorPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DLocalEnumerator)
+    QSharedPointer<DLocalEnumeratorPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

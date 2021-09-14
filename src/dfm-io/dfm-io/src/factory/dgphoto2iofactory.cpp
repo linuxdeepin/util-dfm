@@ -36,7 +36,7 @@
 USING_IO_NAMESPACE
 
 DGphoto2IOFactoryPrivate::DGphoto2IOFactoryPrivate(DGphoto2IOFactory *q)
-    : q_ptr(q)
+    : q(q)
 {
 }
 
@@ -46,7 +46,6 @@ DGphoto2IOFactoryPrivate::~DGphoto2IOFactoryPrivate()
 
 QSharedPointer<DFileInfo> DGphoto2IOFactoryPrivate::createFileInfo() const
 {
-    Q_Q(const DGphoto2IOFactory);
     const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
@@ -55,7 +54,6 @@ QSharedPointer<DFileInfo> DGphoto2IOFactoryPrivate::createFileInfo() const
 
 QSharedPointer<DFile> DGphoto2IOFactoryPrivate::createFile() const
 {
-    Q_Q(const DGphoto2IOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
@@ -63,7 +61,6 @@ QSharedPointer<DFile> DGphoto2IOFactoryPrivate::createFile() const
 
 QSharedPointer<DEnumerator> DGphoto2IOFactoryPrivate::createEnumerator() const
 {
-    Q_Q(const DGphoto2IOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
@@ -71,7 +68,6 @@ QSharedPointer<DEnumerator> DGphoto2IOFactoryPrivate::createEnumerator() const
 
 QSharedPointer<DWatcher> DGphoto2IOFactoryPrivate::createWatcher() const
 {
-    Q_Q(const DGphoto2IOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
@@ -79,7 +75,6 @@ QSharedPointer<DWatcher> DGphoto2IOFactoryPrivate::createWatcher() const
 
 QSharedPointer<DOperator> DGphoto2IOFactoryPrivate::createOperator() const
 {
-    Q_Q(const DGphoto2IOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
@@ -87,7 +82,7 @@ QSharedPointer<DOperator> DGphoto2IOFactoryPrivate::createOperator() const
 
 DGphoto2IOFactory::DGphoto2IOFactory(const QUrl &uri)
     : DIOFactory(uri)
-    , d_ptr(new DGphoto2IOFactoryPrivate(this))
+    , d(new DGphoto2IOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DGphoto2IOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DGphoto2IOFactory::createFile, this));
@@ -102,30 +97,25 @@ DGphoto2IOFactory::~DGphoto2IOFactory()
 
 QSharedPointer<DFileInfo> DGphoto2IOFactory::createFileInfo() const
 {
-    Q_D(const DGphoto2IOFactory);
     return d->createFileInfo();
 }
 
 QSharedPointer<DFile> DGphoto2IOFactory::createFile() const
 {
-    Q_D(const DGphoto2IOFactory);
     return d->createFile();
 }
 
 QSharedPointer<DEnumerator> DGphoto2IOFactory::createEnumerator() const
 {
-    Q_D(const DGphoto2IOFactory);
     return d->createEnumerator();
 }
 
 QSharedPointer<DWatcher> DGphoto2IOFactory::createWatcher() const
 {
-    Q_D(const DGphoto2IOFactory);
     return d->createWatcher();
 }
 
 QSharedPointer<DOperator> DGphoto2IOFactory::createOperator() const
 {
-    Q_D(const DGphoto2IOFactory);
     return d->createOperator();
 }

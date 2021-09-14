@@ -30,8 +30,8 @@
 
 USING_IO_NAMESPACE
 
-DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *ptr)
-    : q_ptr(ptr)
+DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
+    : q(q)
 {
 
 }
@@ -42,8 +42,6 @@ DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
 
 bool DLocalFileInfoPrivate::init()
 {
-    Q_Q(DLocalFileInfo);
-
     const QUrl &url = q->uri();
     const QString &path = url.toString();
 
@@ -116,7 +114,7 @@ QList<DFileInfo::AttributeID> DLocalFileInfoPrivate::attributeIDList() const
 
 bool DLocalFileInfoPrivate::exists() const
 {
-    const QUrl &url = q_ptr->uri();
+    const QUrl &url = q->uri();
     const QString &path = url.toString();
 
     GFile *gfile = g_file_new_for_path(path.toLocal8Bit().data());
@@ -127,7 +125,7 @@ bool DLocalFileInfoPrivate::exists() const
 }
 
 DLocalFileInfo::DLocalFileInfo(const QUrl &uri) : DFileInfo(uri)
-    , d_ptr(new DLocalFileInfoPrivate(this))
+    , d(new DLocalFileInfoPrivate(this))
 {
     registerAttribute(std::bind(&DLocalFileInfo::attribute, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     registerSetAttribute(std::bind(&DLocalFileInfo::setAttribute, this, std::placeholders::_1, std::placeholders::_2));
@@ -135,7 +133,6 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri) : DFileInfo(uri)
     registerRemoveAttribute(std::bind(&DLocalFileInfo::removeAttribute, this, std::placeholders::_1));
     registerAttributeList(std::bind(&DLocalFileInfo::attributeIDList, this));
 
-    Q_D(DLocalFileInfo);
     d->init();
 }
 
@@ -146,42 +143,32 @@ DLocalFileInfo::~DLocalFileInfo()
 
 QVariant DLocalFileInfo::attribute(DFileInfo::AttributeID id, bool *success /*= nullptr */, bool fetchMore)
 {
-    Q_D(DLocalFileInfo);
-
     return d->attribute(id, success, fetchMore);
 }
 
 bool DLocalFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 {
-    Q_D(DLocalFileInfo);
-
     return d->setAttribute(id, value);
 }
 
 bool DLocalFileInfo::hasAttribute(DFileInfo::AttributeID id)
 {
-    Q_D(DLocalFileInfo);
-
     return d->hasAttribute(id);
 }
 
 bool DLocalFileInfo::removeAttribute(DFileInfo::AttributeID id)
 {
-    Q_D(DLocalFileInfo);
-
     return d->removeAttribute(id);
 }
 
 QList<DFileInfo::AttributeID> DLocalFileInfo::attributeIDList() const
 {
-    Q_D(const DLocalFileInfo);
-
     return d->attributeIDList();
 }
 
 bool DLocalFileInfo::exists() const
 {
-    if (!d_ptr)
+    if (!d)
         return false;
-    return d_ptr->exists();
+    return d->exists();
 }

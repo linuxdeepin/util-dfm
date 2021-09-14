@@ -41,7 +41,7 @@ class DFileInfoPrivate: public QSharedData
 public:
     inline DFileInfoPrivate(DFileInfo *q)
         : QSharedData(),
-          q_ptr(q)
+          q(q)
     {
 
     }
@@ -58,7 +58,7 @@ public:
     }
 
 public:
-    DFileInfo *q_ptr;
+    DFileInfo *q = nullptr;
 
     QUrl uri;
     DFMIOError error;

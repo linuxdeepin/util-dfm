@@ -133,8 +133,7 @@ public:
                          void *progressCallbackData = nullptr, void **error = nullptr);
 
 private:
-    QSharedPointer<DFilePrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DFile)
+    QSharedPointer<DFilePrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

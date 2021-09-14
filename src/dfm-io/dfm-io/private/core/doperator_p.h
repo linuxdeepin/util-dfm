@@ -30,26 +30,12 @@ BEGIN_IO_NAMESPACE
 
 class DOperatorPrivate
 {
-    Q_DECLARE_PUBLIC(DOperator)
 public:
     explicit DOperatorPrivate(DOperator *q);
     virtual ~DOperatorPrivate();
 
-    /*virtual bool renameFile (const QString &new_name) = 0;
-    virtual bool copyFile(const QUrl &dstUri, DOperator::CopyFlag flag) = 0;
-    virtual bool moveFile(const QUrl &dstUri, DOperator::CopyFlag flag) = 0;
-
-    virtual bool trashFile() = 0;
-    virtual bool deleteFile() = 0;
-    virtual bool restoreFile() = 0;
-
-    virtual bool touchFile() = 0;
-    virtual bool makeDirectory() = 0;
-    virtual bool createLink(const QUrl &link) = 0;
-    virtual bool setFileInfo(const DFileInfo &fileInfo) = 0;*/
-
 public:
-    DOperator *q_ptr;
+    DOperator *q = nullptr;
     QUrl uri;
 
     DOperator::RenameFileFunc renameFileFunc = nullptr;

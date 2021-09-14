@@ -29,7 +29,7 @@
 USING_IO_NAMESPACE
 
 DEnumeratorPrivate::DEnumeratorPrivate(DEnumerator *q)
-    : q_ptr(q),
+    : q(q),
       done(false),
       info(nullptr)
 {
@@ -70,9 +70,8 @@ QSharedPointer<DFileInfo> DEnumeratorPrivate::popCache()
 }
 
 DEnumerator::DEnumerator(const QUrl &uri)
-    : d_ptr(new DEnumeratorPrivate(this))
+    : d(new DEnumeratorPrivate(this))
 {
-    Q_D(DEnumerator);
     d->uri = uri;
 }
 
@@ -83,16 +82,14 @@ DEnumerator::~DEnumerator()
 
 bool DEnumerator::hasNext() const
 {
-    if (!d_ptr->cached.empty())
+    if (!d->cached.empty())
         return true;
 
-    return d_ptr->fetchMore();
+    return d->fetchMore();
 }
 
 QString DEnumerator::next()
 {
-    Q_D(DEnumerator);
-
     if (!d)
         return "";
 
@@ -109,8 +106,6 @@ QString DEnumerator::next()
 
 QUrl DEnumerator::uri() const
 {
-    Q_D(const DEnumerator);
-
     if (!d)
         return QUrl();
 
@@ -119,8 +114,6 @@ QUrl DEnumerator::uri() const
 
 QSharedPointer<DFileInfo> DEnumerator::fileInfo() const
 {
-    Q_D(const DEnumerator);
-
     if (!d)
         return nullptr;
 
@@ -129,14 +122,11 @@ QSharedPointer<DFileInfo> DEnumerator::fileInfo() const
 
 void DEnumerator::registerFileInfoList(const FileInfoListFunc &func)
 {
-    Q_D(DEnumerator);
     d->fileInfoListFunc = func;
 }
 
 DFMIOError DEnumerator::lastError() const
 {
-    Q_D(const DEnumerator);
-
     if (!d)
         return DFMIOError();
 

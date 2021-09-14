@@ -36,7 +36,7 @@
 USING_IO_NAMESPACE
 
 DSmbIOFactoryPrivate::DSmbIOFactoryPrivate(DSmbIOFactory *q)
-    : q_ptr(q)
+    : q(q)
 {
 }
 
@@ -46,7 +46,6 @@ DSmbIOFactoryPrivate::~DSmbIOFactoryPrivate()
 
 QSharedPointer<DFileInfo> DSmbIOFactoryPrivate::createFileInfo() const
 {
-    Q_Q(const DSmbIOFactory);
     const QUrl &uri = q->uri();
     const QString &url = uri.url();
 
@@ -55,7 +54,6 @@ QSharedPointer<DFileInfo> DSmbIOFactoryPrivate::createFileInfo() const
 
 QSharedPointer<DFile> DSmbIOFactoryPrivate::createFile() const
 {
-    Q_Q(const DSmbIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
@@ -63,7 +61,6 @@ QSharedPointer<DFile> DSmbIOFactoryPrivate::createFile() const
 
 QSharedPointer<DEnumerator> DSmbIOFactoryPrivate::createEnumerator() const
 {
-    Q_Q(const DSmbIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
@@ -71,7 +68,6 @@ QSharedPointer<DEnumerator> DSmbIOFactoryPrivate::createEnumerator() const
 
 QSharedPointer<DWatcher> DSmbIOFactoryPrivate::createWatcher() const
 {
-    Q_Q(const DSmbIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalWatcher>(new DLocalWatcher(uri));
@@ -79,7 +75,6 @@ QSharedPointer<DWatcher> DSmbIOFactoryPrivate::createWatcher() const
 
 QSharedPointer<DOperator> DSmbIOFactoryPrivate::createOperator() const
 {
-    Q_Q(const DSmbIOFactory);
     const QUrl &uri = q->uri();
 
     return QSharedPointer<DLocalOperator>(new DLocalOperator(uri));
@@ -87,7 +82,7 @@ QSharedPointer<DOperator> DSmbIOFactoryPrivate::createOperator() const
 
 DSmbIOFactory::DSmbIOFactory(const QUrl &uri)
     : DIOFactory(uri)
-    , d_ptr(new DSmbIOFactoryPrivate(this))
+    , d(new DSmbIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DSmbIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DSmbIOFactory::createFile, this));
@@ -102,30 +97,25 @@ DSmbIOFactory::~DSmbIOFactory()
 
 QSharedPointer<DFileInfo> DSmbIOFactory::createFileInfo() const
 {
-    Q_D(const DSmbIOFactory);
     return d->createFileInfo();
 }
 
 QSharedPointer<DFile> DSmbIOFactory::createFile() const
 {
-    Q_D(const DSmbIOFactory);
     return d->createFile();
 }
 
 QSharedPointer<DEnumerator> DSmbIOFactory::createEnumerator() const
 {
-    Q_D(const DSmbIOFactory);
     return d->createEnumerator();
 }
 
 QSharedPointer<DWatcher> DSmbIOFactory::createWatcher() const
 {
-    Q_D(const DSmbIOFactory);
     return d->createWatcher();
 }
 
 QSharedPointer<DOperator> DSmbIOFactory::createOperator() const
 {
-    Q_D(const DSmbIOFactory);
     return d->createOperator();
 }

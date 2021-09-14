@@ -37,9 +37,8 @@ class DLocalFile;
 
 class DLocalFilePrivate
 {
-    Q_DECLARE_PUBLIC(DLocalFile)
 public:
-    explicit DLocalFilePrivate(DLocalFile *ptr);
+    explicit DLocalFilePrivate(DLocalFile *q);
     ~DLocalFilePrivate();
 
     bool open(DFile::OpenFlag mode);
@@ -61,12 +60,12 @@ private:
     GOutputStream* outputStream();
 
 public:
-    GFileIOStream *ioStream = nullptr;
+    GIOStream *ioStream = nullptr;
     GInputStream *iStream = nullptr;
     GOutputStream *oStream = nullptr;
 
 
-    DLocalFile *q_ptr;
+    DLocalFile *q = nullptr;
 };
 
 END_IO_NAMESPACE

@@ -137,18 +137,18 @@ DFileInfo::AttributeNameMap DFileInfo::attributeNames = {
 };
 
 DFileInfo::DFileInfo()
-    : d_ptr(new DFileInfoPrivate(this))
+    : d(new DFileInfoPrivate(this))
 {
 }
 
 DFileInfo::DFileInfo(const QUrl &uri)
-    : d_ptr(new DFileInfoPrivate(this))
+    : d(new DFileInfoPrivate(this))
 {
-    d_ptr->uri = uri;
+    d->uri = uri;
 }
 
 DFileInfo::DFileInfo(const DFileInfo &info)
-    : d_ptr(info.d_ptr)
+    : d(info.d)
 {
 
 }
@@ -160,14 +160,12 @@ DFileInfo::~DFileInfo()
 
 DFileInfo &DFileInfo::operator=(const DFileInfo &info)
 {
-    d_ptr = info.d_ptr;
+    d = info.d;
     return *this;
 }
 
 QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success, bool fetchMore) const
 {
-    Q_D(const DFileInfo);
-
     *success = false;
 
     if (d->attributeFunc)
@@ -178,8 +176,6 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success, bool fet
 
 bool DFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 {
-    Q_D(DFileInfo);
-
     if (!d->setAttributeFunc)
         return false;
 
@@ -188,8 +184,6 @@ bool DFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 
 bool DFileInfo::hasAttribute(DFileInfo::AttributeID id) const
 {
-    Q_D(const DFileInfo);
-
     if (!d->hasAttributeFunc)
         return false;
 
@@ -198,8 +192,6 @@ bool DFileInfo::hasAttribute(DFileInfo::AttributeID id) const
 
 bool DFileInfo::removeAttribute(DFileInfo::AttributeID id)
 {
-    Q_D(DFileInfo);
-
     if (!d->removeAttributeFunc)
         return false;
 
@@ -208,8 +200,6 @@ bool DFileInfo::removeAttribute(DFileInfo::AttributeID id)
 
 QList<DFileInfo::AttributeID> DFileInfo::attributeIDList() const
 {
-    Q_D(const DFileInfo);
-
     if (!d->attributeListFunc)
         return QList<DFileInfo::AttributeID>();
 
@@ -218,57 +208,47 @@ QList<DFileInfo::AttributeID> DFileInfo::attributeIDList() const
 
 bool DFileInfo::exists() const
 {
-    if (!d_ptr)
+    if (!d)
         return false;
-    if(!d_ptr->existsFunc)
+    if(!d->existsFunc)
         return false;
-    return d_ptr->existsFunc();
+    return d->existsFunc();
 }
 
 void DFileInfo::registerAttribute(const DFileInfo::AttributeFunc &func)
 {
-    Q_D(DFileInfo);
-
     d->attributeFunc = func;
 }
 
 void DFileInfo::registerSetAttribute(const DFileInfo::SetAttributeFunc &func)
 {
-    Q_D(DFileInfo);
-
     d->setAttributeFunc = func;
 }
 
 void DFileInfo::registerHasAttribute(const DFileInfo::HasAttributeFunc &func)
 {
-    Q_D(DFileInfo);
-
     d->hasAttributeFunc = func;
 }
 
 void DFileInfo::registerRemoveAttribute(const DFileInfo::RemoveAttributeFunc &func)
 {
-    Q_D(DFileInfo);
-
     d->removeAttributeFunc = func;
 }
 
 void DFileInfo::registerAttributeList(const DFileInfo::AttributeListFunc &func)
 {
-    Q_D(DFileInfo);
-
     d->attributeListFunc = func;
 }
 
 void DFileInfo::registerExists(const DFileInfo::ExistsFunc &func)
 {
-    if (d_ptr)
-        d_ptr->existsFunc = func;
+    if (d)
+        d->existsFunc = func;
 }
 
 QUrl DFileInfo::uri() const
 {
-    return d_ptr->uri;
+    return d->uri;
 }
 
 QString DFileInfo::dump() const
@@ -287,5 +267,5 @@ QString DFileInfo::dump() const
 
 DFMIOError DFileInfo::lastError() const
 {
-    return d_ptr->error;
+    return d->error;
 }

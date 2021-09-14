@@ -45,8 +45,7 @@ public:
     QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
 
 private:
-    QSharedPointer<DGoogleIOFactoryPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DGoogleIOFactory)
+    QSharedPointer<DGoogleIOFactoryPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE

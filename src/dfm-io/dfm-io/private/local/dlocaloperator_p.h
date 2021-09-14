@@ -37,7 +37,6 @@ class DLocalOperator;
 
 class DLocalOperatorPrivate
 {
-    Q_DECLARE_PUBLIC(DLocalOperator)
 public:
     explicit DLocalOperatorPrivate(DLocalOperator *q);
     ~DLocalOperatorPrivate();
@@ -57,7 +56,7 @@ private:
     GFile *makeGFile(const QUrl &url);
     void setErrorInfo(GError *gerror);
 
-    DLocalOperator *q_ptr;
+    DLocalOperator *q = nullptr;
 };
 
 END_IO_NAMESPACE

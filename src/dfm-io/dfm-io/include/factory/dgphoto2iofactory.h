@@ -45,8 +45,7 @@ public:
     QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
 
 private:
-    QSharedPointer<DGphoto2IOFactoryPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(DGphoto2IOFactory)
+    QSharedPointer<DGphoto2IOFactoryPrivate> d = nullptr;
 };
 
 END_IO_NAMESPACE
