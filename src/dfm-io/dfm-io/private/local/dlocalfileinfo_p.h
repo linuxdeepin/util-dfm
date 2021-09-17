@@ -46,12 +46,13 @@ public:
 
     bool init();
 
-    QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr, bool fetchMore = true);
+    QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr);
     bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
     bool hasAttribute(DFileInfo::AttributeID id);
     bool removeAttribute(DFileInfo::AttributeID id);
     QList<DFileInfo::AttributeID> attributeIDList() const;
     bool exists() const;
+    bool flush();
 
 public:
     QMap<DFileInfo::AttributeID, QVariant> attributes;

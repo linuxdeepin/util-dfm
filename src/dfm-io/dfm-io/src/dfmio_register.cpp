@@ -61,25 +61,63 @@ bool dfmio::dfmio_init()
         REGISTER_FACTORY1(DFtpIOFactory, "ftp", QUrl);
         REGISTER_FACTORY1(DMtpIOFactory, "mtp", QUrl);
         REGISTER_FACTORY1(DAfcIOFactory, "afc", QUrl);
+
         REGISTER_FACTORY1(DAfpIOFactory, "afp", QUrl);
         REGISTER_FACTORY1(DDavIOFactory, "dav", QUrl);
         REGISTER_FACTORY1(DDdavIOFactory, "ddav", QUrl);
         REGISTER_FACTORY1(DNfsIOFactory, "nfs", QUrl);
         REGISTER_FACTORY1(DSmbIOFactory, "smb", QUrl);
+
         REGISTER_FACTORY1(DBurnIOFactory, "burn", QUrl);
         REGISTER_FACTORY1(DSftpIOFactory, "sftp", QUrl);
         REGISTER_FACTORY1(DAfpbrowseIOFactory, "afpbrowse", QUrl);
         REGISTER_FACTORY1(DArchiveIOFactory, "archive", QUrl);
         REGISTER_FACTORY1(DCddaIOFactory, "cdda", QUrl);
+
         REGISTER_FACTORY1(DComputerIOFactory, "computer", QUrl);
         REGISTER_FACTORY1(DDnssdIOFactory, "dnssd", QUrl);
         REGISTER_FACTORY1(DGphoto2IOFactory, "gphoto2", QUrl);
         REGISTER_FACTORY1(DHttpIOFactory, "http", QUrl);
         REGISTER_FACTORY1(DNetworkIOFactory, "network", QUrl);
+
         REGISTER_FACTORY1(DRecentIOFactory, "recent", QUrl);
         REGISTER_FACTORY1(DSmbbrowseIOFactory, "smbbrowse", QUrl);
         REGISTER_FACTORY1(DGoogleIOFactory, "google", QUrl);
     });
 
     return true;
+}
+
+QSet<QString> dfmio::schemesInited()
+{
+    QSet<QString> set;
+    set.insert("file");
+    set.insert("trash");
+    set.insert("ftp");
+    set.insert("mtp");
+    set.insert("afc");
+
+    set.insert("afp");
+    set.insert("dav");
+    set.insert("ddav");
+    set.insert("nfs");
+    set.insert("smb");
+
+    set.insert("burn");
+    set.insert("sftp");
+    set.insert("afpbrowse");
+    set.insert("archive");
+    set.insert("cdda");
+
+    set.insert("computer");
+    set.insert("dnssd");
+    set.insert("gphoto2");
+    set.insert("http");
+    set.insert("network");
+
+    set.insert("recent");
+    set.insert("smbbrowse");
+    set.insert("google");
+
+    return set;
 }

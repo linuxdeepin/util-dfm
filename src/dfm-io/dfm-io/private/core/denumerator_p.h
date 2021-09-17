@@ -42,19 +42,15 @@ public:
     explicit DEnumeratorPrivate(DEnumerator *q);
     virtual ~DEnumeratorPrivate();
 
-    //virtual QList<QSharedPointer<DFileInfo>> fileInfoList() = 0;
-
-    bool fetchMore();
-    QSharedPointer<DFileInfo> popCache();
-
 public:
     DEnumerator *q = nullptr;
 
+    DEnumerator::HasNextFunc hasNextFunc = nullptr;
+    DEnumerator::NextFunc nextFunc = nullptr;
+    DEnumerator::FileInfoFunc fileInfoFunc = nullptr;
+
     QUrl uri;
-    bool done = false;
     DFMIOError dfmError;
-    QSharedPointer<DFileInfo> info = nullptr;
-    QList<QSharedPointer<DFileInfo>> cached;
 
     DEnumerator::FileInfoListFunc fileInfoListFunc = nullptr;
 };

@@ -39,12 +39,13 @@ public:
     explicit DLocalFileInfo(const QUrl &uri);
     virtual ~DLocalFileInfo();
 
-    QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr, bool fetchMore = true) DFM_OVERRIDE;
+    QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) DFM_OVERRIDE;
     bool setAttribute(DFileInfo::AttributeID id, const QVariant &value) DFM_OVERRIDE;
     bool hasAttribute(DFileInfo::AttributeID id) DFM_OVERRIDE;
     bool removeAttribute(DFileInfo::AttributeID id) DFM_OVERRIDE;
     QList<DFileInfo::AttributeID> attributeIDList() const DFM_OVERRIDE;
     bool exists() const DFM_OVERRIDE;
+    bool flush() DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalFileInfoPrivate> d = nullptr;

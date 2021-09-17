@@ -69,6 +69,7 @@ public:
     DFileInfo::RemoveAttributeFunc removeAttributeFunc = nullptr;
     DFileInfo::AttributeListFunc attributeListFunc = nullptr;
     DFileInfo::ExistsFunc existsFunc = nullptr;
+    DFileInfo::FlushFunc flushFunc = nullptr;
 };
 
 END_IO_NAMESPACE

@@ -25,9 +25,10 @@
 #define DLOCALENUMERATOR_P_H
 
 #include "dfmio_global.h"
-
 #include "error/error.h"
 #include "core/denumerator_p.h"
+
+#include <gio/gio.h>
 
 #include <QList>
 #include <QSharedPointer>
@@ -45,11 +46,19 @@ public:
 
     QList<QSharedPointer<DFileInfo>> fileInfoList();
 
+    bool hasNext();
+    QString next() const;
+    QSharedPointer<DFileInfo> fileInfo() const;
+
+    void init();
+
 public:
     QList<QSharedPointer<DFileInfo>> list_;
     DLocalEnumerator *q = nullptr;
+    GFileEnumerator *enumerator = nullptr;
+    QSharedPointer<DFileInfo> fileInfoNext = nullptr;
+    GFile *fileNext = nullptr;
 
-    bool done = false;
     DFMIOError dfmError;
 };
 

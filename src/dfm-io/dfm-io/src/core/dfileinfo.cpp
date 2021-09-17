@@ -27,7 +27,7 @@ USING_IO_NAMESPACE
 
 DFileInfo::AttributeNameMap DFileInfo::attributeNames = {
     {DFileInfo::AttributeID::StandardType, "standard::type"}, // G_FILE_ATTRIBUTE_STANDARD_TYPE
-    {DFileInfo::AttributeID::StandardIsHiden, "standard::is-hiden"}, // G_FILE_ATTRIBUTE_STANDARD_IS_HIDDEN
+    {DFileInfo::AttributeID::StandardIsHidden, "standard::is-hidden"}, // G_FILE_ATTRIBUTE_STANDARD_IS_HIDDEN
     {DFileInfo::AttributeID::StandardIsBackup, "standard::is-backup"}, // G_FILE_ATTRIBUTE_STANDARD_IS_BACKUP
     {DFileInfo::AttributeID::StandardIsSymlink, "standard::is-symlink"}, // G_FILE_ATTRIBUTE_STANDARD_IS_SYMLINK
     {DFileInfo::AttributeID::StandardIsVirtual, "standard::is-virtual"}, // G_FILE_ATTRIBUTE_STANDARD_IS_VIRTUAL
@@ -164,12 +164,12 @@ DFileInfo &DFileInfo::operator=(const DFileInfo &info)
     return *this;
 }
 
-QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success, bool fetchMore) const
+QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
 {
     *success = false;
 
     if (d->attributeFunc)
-        return d->attributeFunc(id, success, fetchMore);
+        return d->attributeFunc(id, success);
 
     return QVariant();
 }
@@ -215,6 +215,18 @@ bool DFileInfo::exists() const
     return d->existsFunc();
 }
 
+/*!
+ * @brief flush attribute by @setAttribute to disk
+ * @param
+ * @return
+ */
+bool DFileInfo::flush()
+{
+    if (d->flushFunc)
+        return d->flushFunc();
+    return false;
+}
+
 void DFileInfo::registerAttribute(const DFileInfo::AttributeFunc &func)
 {
     d->attributeFunc = func;
@@ -242,8 +254,12 @@ void DFileInfo::registerAttributeList(const DFileInfo::AttributeListFunc &func)
 
 void DFileInfo::registerExists(const DFileInfo::ExistsFunc &func)
 {
-    if (d)
-        d->existsFunc = func;
+    d->existsFunc = func;
+}
+
+void DFileInfo::registerFlush(const DFileInfo::FlushFunc &func)
+{
+    d->flushFunc = func;
 }
 
 QUrl DFileInfo::uri() const

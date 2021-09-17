@@ -28,6 +28,7 @@
 #include "core/diofactory.h"
 #include "core/diofactory_p.h"
 #include "core/dfile.h"
+#include "local/dlocalfile.h"
 
 #include <QElapsedTimer>
 #include <QDebug>
@@ -60,10 +61,10 @@ static QSharedPointer<DFile> make_stream(QSharedPointer<DIOFactory> factory, DFi
     return file;
 }
 
-#define BLOCK 4 * 4096
 static void copy(const QUrl &url_src, const QUrl &url_dst)
 {
-    char buff[BLOCK];
+    const int block = 128 * 1024;
+    char buff[block];
     int read = 0;
 
     QSharedPointer<DFMIO::DIOFactory> factory_src = produceQSharedIOFactory(url_src.scheme(), static_cast<QUrl>(url_src));
@@ -75,17 +76,12 @@ static void copy(const QUrl &url_src, const QUrl &url_dst)
     if (!stream_src || !stream_dst) {
         return;
     }
-    QElapsedTimer timer;
-    timer.start();
-    while ((read = stream_src->read(buff, BLOCK)) > 0) {
+    while ((read = stream_src->read(buff, block)) > 0) {
         if (stream_dst->write(buff, read) != read) {
             err_msg("write failed.");
             break;
         }
     }
-
-    auto time = timer.elapsed();
-    qInfo() << time;
 }
 
 static void usage()

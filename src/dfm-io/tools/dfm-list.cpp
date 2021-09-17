@@ -31,6 +31,7 @@
 #include <stdio.h>
 
 #include <QVariant>
+#include <QDebug>
 
 USING_IO_NAMESPACE
 
@@ -40,21 +41,6 @@ static bool lflag = false;
 static void err_msg(const char *msg)
 {
     fprintf(stderr, "dfm-list: %s\n", msg);
-}
-
-static void show_fileinfo(QSharedPointer<DFileInfo> info)
-{
-    if (!info)
-        return;
-
-    if (lflag) {
-        printf("%s\n", info->dump().toStdString().c_str());
-    } else {
-        // only show display-name
-        bool success = false;
-        const QString &path = info->attribute(DFileInfo::AttributeID::StandardDisplayName, &success).toString();
-        printf("%s", path.toStdString().c_str());
-    }
 }
 
 static void enum_uri(const QUrl &url)
@@ -72,9 +58,8 @@ static void enum_uri(const QUrl &url)
     }
 
     while (enumerator->hasNext()) {
-        enumerator->next();
-
-        show_fileinfo(enumerator->fileInfo());
+        const QString &path = enumerator->next();
+        printf("%s", path.toLocal8Bit().data());
         printf("\n");
     }
 }
@@ -115,7 +100,6 @@ int main(int argc, char *argv[])
         return 1;
 
     dfmio_init();
-    //REGISTER_FACTORY1(DLocalIOFactory, url.scheme(), QUrl);
 
     enum_uri(url);
 

@@ -128,7 +128,7 @@ public:
     DFMIOError lastError() const;
 
     // static
-    static bool copyFile(const QString &sourcePath, const QString &destPath, CopyFlag flag,
+    static bool copyFile(const QString &sourcePath, const QString &destPath, CopyFlag flag = CopyFlag::copyOverwrite,
                          void *cancellabel = nullptr, std::function<void(int, int, void*)> progressCallback = nullptr,
                          void *progressCallbackData = nullptr, void **error = nullptr);
 

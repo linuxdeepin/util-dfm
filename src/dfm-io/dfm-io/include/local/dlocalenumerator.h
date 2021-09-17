@@ -39,6 +39,10 @@ public:
     explicit DLocalEnumerator(const QUrl &uri);
     ~DLocalEnumerator();
 
+    bool hasNext() const DFM_OVERRIDE;
+    QString next() const DFM_OVERRIDE;
+    QSharedPointer<DFileInfo> fileInfo() const DFM_OVERRIDE;
+
     QList<QSharedPointer<DFileInfo>> fileInfoList();
 
 private:

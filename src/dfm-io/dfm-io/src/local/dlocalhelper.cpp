@@ -23,8 +23,8 @@
 */
 
 #include "local/dlocalhelper.h"
-
 #include "core/dfileinfo.h"
+#include "local/dlocalfileinfo.h"
 
 #include "gio/gfileinfo.h"
 
@@ -149,34 +149,14 @@ namespace LocalFunc {
     }
 }
 
-QSharedPointer<DFileInfo> DLocalHelper::getFileInfo(const QString &path)
+QSharedPointer<DFileInfo> DLocalHelper::getFileInfo(const QString &uri)
 {
-    qInfo() << path;
-    GFile *file = g_file_new_for_uri(path.toLocal8Bit().data());
-
-    GError *error = nullptr;
-    GFileInfo *gfileinfo = g_file_query_info(file, "*", G_FILE_QUERY_INFO_NONE, nullptr, &error);
-    g_object_unref(file);
-
-    if (error)
-        g_error_free(error);
-
-    if (!gfileinfo)
-        return nullptr;
-
-    QSharedPointer<DFileInfo> info = DLocalHelper::getFileInfoFromGFileInfo(gfileinfo);
-    g_object_unref(gfileinfo);
-    return info;
+    return DLocalHelper::getFileInfoByUri(uri);
 }
 
-QSharedPointer<DFileInfo> DLocalHelper::getFileInfoFromGFileInfo(GFileInfo *gfileinfo)
+QSharedPointer<DFileInfo> DLocalHelper::getFileInfoByUri(const QString &uri)
 {
-    QSharedPointer<DFileInfo> info = QSharedPointer<DFileInfo>(new DFileInfo());
-
-    for (const auto &[key, value] : DFileInfo::attributeNames) {
-        info->setAttribute(key, attributeFromGFileInfo(gfileinfo, key));
-    }
-
+    QSharedPointer<DFileInfo> info = QSharedPointer<DFileInfo>(new DLocalFileInfo(QUrl(uri)));
     return info;
 }
 
@@ -185,7 +165,7 @@ GFileInfo *DLocalHelper::getFileInfoFromDFileInfo(const DFileInfo &dfileinfo)
     GFileInfo *info = g_file_info_new();
 
     for (const auto &[key, value] : DFileInfo::attributeNames) {
-        setAttributeFromDFileInfo(info, key, dfileinfo.attribute(key, nullptr, false));
+        setAttributeByGFileInfo(info, key, dfileinfo.attribute(key, nullptr));
     }
 
     return info;
@@ -202,8 +182,8 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     }
 
     // check has attribute
-    const char *key = DLocalHelper::attributeStringById(id).c_str();
-    bool hasAttr = g_file_info_has_attribute(gfileinfo, key);
+    const std::string &key = DLocalHelper::attributeStringById(id);
+    bool hasAttr = g_file_info_has_attribute(gfileinfo, key.c_str());
     if (!hasAttr)
         return QVariant();
 
@@ -225,12 +205,12 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     case DFileInfo::AttributeID::UnixBlockSize:
     case DFileInfo::AttributeID::FileSystemUsePreview:
     case DFileInfo::AttributeID::TrashItemCount: {
-        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key);
+        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // int32_t
     case DFileInfo::AttributeID::StandardSortOrder: {
-        int32_t ret = g_file_info_get_attribute_int32(gfileinfo, key);
+        int32_t ret = g_file_info_get_attribute_int32(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // uint64_t
@@ -246,11 +226,11 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     case DFileInfo::AttributeID::FileSystemFree:
     case DFileInfo::AttributeID::FileSystemUsed:
     case DFileInfo::AttributeID::RecentModified: {
-        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key);
+        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
         return QVariant(qulonglong(ret));
     }
     // bool
-    case DFileInfo::AttributeID::StandardIsHiden:
+    case DFileInfo::AttributeID::StandardIsHidden:
     case DFileInfo::AttributeID::StandardIsBackup:
     case DFileInfo::AttributeID::StandardIsSymlink:
     case DFileInfo::AttributeID::StandardIsVirtual:
@@ -274,14 +254,14 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     case DFileInfo::AttributeID::DosIsSystem:
     case DFileInfo::AttributeID::FileSystemReadOnly:
     case DFileInfo::AttributeID::FileSystemRemote: {
-        bool ret = g_file_info_get_attribute_boolean(gfileinfo, key);
+        bool ret = g_file_info_get_attribute_boolean(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // byte string
     case DFileInfo::AttributeID::StandardName:
     case DFileInfo::AttributeID::StandardSymlinkTarget:
     case DFileInfo::AttributeID::ThumbnailPath: {
-        const char *ret = g_file_info_get_attribute_byte_string(gfileinfo, key);
+        const char *ret = g_file_info_get_attribute_byte_string(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // string
@@ -305,14 +285,14 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     case DFileInfo::AttributeID::SelinuxContext:
     case DFileInfo::AttributeID::TrashDeletionDate:
     case DFileInfo::AttributeID::TrashOrigPath: {
-        const char *ret = g_file_info_get_attribute_string(gfileinfo, key);
+        const char *ret = g_file_info_get_attribute_string(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // object
     case DFileInfo::AttributeID::StandardIcon:
     case DFileInfo::AttributeID::StandardSymbolicIcon:
     case DFileInfo::AttributeID::PreviewIcon: {
-        GObject *ret = g_file_info_get_attribute_object(gfileinfo, key);
+        GObject *ret = g_file_info_get_attribute_object(gfileinfo, key.c_str());
         Q_UNUSED(ret);
         // TODO
         return QVariant();
@@ -327,6 +307,7 @@ QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::A
 {
     if (id < DFileInfo::AttributeID::CustomStart)
         return QVariant();
+
     switch (id) {
     case DFileInfo::AttributeID::StandardIsFile: {
         return LocalFunc::isFile(path);
@@ -360,7 +341,7 @@ QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::A
     }
 }
 
-void DLocalHelper::setAttributeFromDFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value)
+void DLocalHelper::setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value)
 {
     if (!gfileinfo)
         return;
@@ -414,7 +395,7 @@ void DLocalHelper::setAttributeFromDFileInfo(GFileInfo *gfileinfo, DFileInfo::At
         return;
     }
     // bool
-    case DFileInfo::AttributeID::StandardIsHiden:
+    case DFileInfo::AttributeID::StandardIsHidden:
     case DFileInfo::AttributeID::StandardIsBackup:
     case DFileInfo::AttributeID::StandardIsSymlink:
     case DFileInfo::AttributeID::StandardIsVirtual:
@@ -488,7 +469,9 @@ void DLocalHelper::setAttributeFromDFileInfo(GFileInfo *gfileinfo, DFileInfo::At
 
 std::string DLocalHelper::attributeStringById(DFileInfo::AttributeID id)
 {
-    if (DFileInfo::attributeNames.count(id) > 0)
-        return DFileInfo::attributeNames.at(id);
+    if (DFileInfo::attributeNames.count(id) > 0) {
+        const std::string &value = DFileInfo::attributeNames.at(id);
+        return value;
+    }
     return "";
 }

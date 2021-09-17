@@ -42,18 +42,16 @@ DLocalEnumeratorPrivate::DLocalEnumeratorPrivate(DLocalEnumerator *q)
 
 DLocalEnumeratorPrivate::~DLocalEnumeratorPrivate()
 {
+    g_object_unref(enumerator);
 }
 
 QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 {
-    if (done)
-        return list_;
-
     GFileEnumerator *enumerator = nullptr;
-    GFileInfo *gfileinfo = nullptr;
     GError *error = nullptr;
 
     GFile *gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
+
     enumerator = g_file_enumerate_children(gfile,
                                            "*",
                                            G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
@@ -70,26 +68,30 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
         g_object_unref(gfile);
         return list_;
     }
-    if (error)
-        g_error_free(error);
     g_object_unref(gfile);
 
-    error = nullptr;
-    while ((gfileinfo = g_file_enumerator_next_file(enumerator, nullptr, &error)) != nullptr) {
-        auto info = DLocalHelper::getFileInfoFromGFileInfo(gfileinfo);
-        g_object_unref(gfileinfo);
+    GFile *gfileIn = nullptr;
+    GFileInfo *gfileInfoIn = nullptr;
+
+    while (g_file_enumerator_iterate(enumerator, &gfileInfoIn, &gfileIn, nullptr, &error)) {
+        if (!gfileInfoIn)
+            break;
+
+        const char *uri = g_file_get_uri(gfileIn);
+        QSharedPointer<DFileInfo> info = DLocalHelper::getFileInfoByUri(uri);
 
         if (info)
-            list_.append(QSharedPointer<DFileInfo>(info));
+            list_.append(info);
 
         if (error) {
             qWarning() << "error:" << error->message;
             dfmError.setCode(DFMIOErrorCode(error->code));
+
             g_error_free(error);
+            error = nullptr;
         }
-        error = nullptr;
     }
-    g_file_enumerator_close(enumerator, nullptr, &error);
+
     if (error) {
         qWarning() << error->message;
         dfmError.setCode(DFMIOErrorCode(error->code));
@@ -97,9 +99,69 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
     }
     g_object_unref(enumerator);
 
-    done = true;
-
     return list_;
+}
+
+bool DLocalEnumeratorPrivate::hasNext()
+{
+    GError *error = nullptr;
+    GFileInfo *gfileInfoIn = nullptr;
+
+    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfoIn, &fileNext, nullptr, &error);
+    if (hasNext) {
+
+        if (!gfileInfoIn)
+            return false;
+
+        const char *uri = g_file_get_uri(fileNext);
+
+        fileInfoNext = DLocalHelper::getFileInfoByUri(uri);
+
+        return true;
+    }
+
+    if (error) {
+        qWarning() << error->message;
+        dfmError.setCode(DFMIOErrorCode(error->code));
+        g_error_free(error);
+    }
+    return false;
+}
+
+QString DLocalEnumeratorPrivate::next() const
+{
+    char *path = g_file_get_path(fileNext);
+
+    return QString::fromLocal8Bit(path);
+}
+
+QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
+{
+    return fileInfoNext;
+}
+
+void DLocalEnumeratorPrivate::init()
+{
+    GError *error = nullptr;
+
+    const QString &uriPath = q->uri().toString();
+    GFile *gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+
+    enumerator = g_file_enumerate_children(gfile,
+                                           "*",
+                                           G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                                           nullptr,
+                                           &error);
+
+    if (nullptr == enumerator) {
+        if (error) {
+            qWarning() << error->message;
+            dfmError.setCode(DFMIOErrorCode(error->code));
+
+            g_error_free(error);
+        }
+    }
+    g_object_unref(gfile);
 }
 
 DLocalEnumerator::DLocalEnumerator(const QUrl &uri)
@@ -107,10 +169,30 @@ DLocalEnumerator::DLocalEnumerator(const QUrl &uri)
     , d(new DLocalEnumeratorPrivate(this))
 {
     registerFileInfoList(std::bind(&DLocalEnumerator::fileInfoList, this));
+    registerHasNext(std::bind(&DLocalEnumerator::hasNext, this));
+    registerNext(std::bind(&DLocalEnumerator::next, this));
+    registerFileInfo(std::bind(&DLocalEnumerator::fileInfo, this));
+
+    d->init();
 }
 
 DLocalEnumerator::~DLocalEnumerator()
 {
+}
+
+bool DLocalEnumerator::hasNext() const
+{
+    return d->hasNext();
+}
+
+QString DLocalEnumerator::next() const
+{
+    return d->next();
+}
+
+QSharedPointer<DFileInfo> DLocalEnumerator::fileInfo() const
+{
+    return d->fileInfo();
 }
 
 QList<QSharedPointer<DFileInfo> > DLocalEnumerator::fileInfoList()

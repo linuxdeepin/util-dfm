@@ -37,13 +37,13 @@ BEGIN_IO_NAMESPACE
 class DLocalHelper
 {
 public:
-    static QSharedPointer<DFileInfo> getFileInfo(const QString &path);
-    static QSharedPointer<DFileInfo> getFileInfoFromGFileInfo(GFileInfo *gfileinfo);
+    static QSharedPointer<DFileInfo> getFileInfo(const QString &uri);
+    static QSharedPointer<DFileInfo> getFileInfoByUri(const QString &uri);
     static GFileInfo *getFileInfoFromDFileInfo(const DFileInfo &dfileinfo);
 
     static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id);
     static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);
-    static void setAttributeFromDFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value);
+    static void setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value);
     static std::string attributeStringById(DFileInfo::AttributeID id);
 };
 

@@ -29,6 +29,7 @@
 #include <memory>
 
 #include <QMap>
+#include <QSet>
 #include <QSharedPointer>
 
 BEGIN_IO_NAMESPACE
@@ -85,6 +86,7 @@ private:
 };
 
 bool dfmio_init();
+QSet<QString> schemesInited();
 
 END_IO_NAMESPACE
 

@@ -62,13 +62,19 @@ bool DLocalFileInfoPrivate::init()
     return true;
 }
 
-QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *success, bool fetchMore)
+QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *success)
 {
     *success = false;
 
     if (attributes.count(id) == 0) {
-        if (fetchMore && gfileinfo) {
-            auto value = DLocalHelper::attributeFromGFileInfo(gfileinfo, id);
+        if (gfileinfo) {
+            QVariant value;
+            if (id > DFileInfo::AttributeID::CustomStart) {
+                const QString &path = q->uri().path();
+                value = DLocalHelper::customAttributeFromPath(path, id);
+            } else {
+                value = DLocalHelper::attributeFromGFileInfo(gfileinfo, id);
+            }
             setAttribute(id, value);
             *success = true;
             return value;
@@ -92,8 +98,9 @@ bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
 {
     if (attributes.count(id) > 0)
         return true;
+
     if (gfileinfo) {
-        auto value = DLocalHelper::attributeFromGFileInfo(gfileinfo, id);
+        const QVariant &value = DLocalHelper::attributeFromGFileInfo(gfileinfo, id);
         setAttribute(id, value);
         return true;
     }
@@ -124,14 +131,25 @@ bool DLocalFileInfoPrivate::exists() const
     return exists;
 }
 
+bool DLocalFileInfoPrivate::flush()
+{
+    auto it = attributes.constBegin();
+    while(it != attributes.constEnd()) {
+        DLocalHelper::setAttributeByGFileInfo(gfileinfo, it.key(), it.value());
+        ++it;
+    }
+    return true;
+}
 DLocalFileInfo::DLocalFileInfo(const QUrl &uri) : DFileInfo(uri)
     , d(new DLocalFileInfoPrivate(this))
 {
-    registerAttribute(std::bind(&DLocalFileInfo::attribute, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    registerAttribute(std::bind(&DLocalFileInfo::attribute, this, std::placeholders::_1, std::placeholders::_2));
     registerSetAttribute(std::bind(&DLocalFileInfo::setAttribute, this, std::placeholders::_1, std::placeholders::_2));
     registerHasAttribute(std::bind(&DLocalFileInfo::hasAttribute, this, std::placeholders::_1));
     registerRemoveAttribute(std::bind(&DLocalFileInfo::removeAttribute, this, std::placeholders::_1));
     registerAttributeList(std::bind(&DLocalFileInfo::attributeIDList, this));
+    registerExists(std::bind(&DLocalFileInfo::exists, this));
+    registerFlush(std::bind(&DLocalFileInfo::flush, this));
 
     d->init();
 }
@@ -141,9 +159,9 @@ DLocalFileInfo::~DLocalFileInfo()
 
 }
 
-QVariant DLocalFileInfo::attribute(DFileInfo::AttributeID id, bool *success /*= nullptr */, bool fetchMore)
+QVariant DLocalFileInfo::attribute(DFileInfo::AttributeID id, bool *success /*= nullptr */)
 {
-    return d->attribute(id, success, fetchMore);
+    return d->attribute(id, success);
 }
 
 bool DLocalFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
@@ -168,7 +186,10 @@ QList<DFileInfo::AttributeID> DLocalFileInfo::attributeIDList() const
 
 bool DLocalFileInfo::exists() const
 {
-    if (!d)
-        return false;
     return d->exists();
+}
+
+bool DLocalFileInfo::flush()
+{
+    return d->flush();
 }

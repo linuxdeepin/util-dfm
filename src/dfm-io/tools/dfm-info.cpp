@@ -75,7 +75,6 @@ int main(int argc, char *argv[])
         return 1;
 
     dfmio_init();
-    //REGISTER_FACTORY1(DLocalIOFactory, url.scheme(), QUrl);
 
     display(url);
 

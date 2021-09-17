@@ -55,7 +55,7 @@ public:
 
     enum class AttributeID : uint16_t {
         StandardType = 0, // uint32
-        StandardIsHiden = 1, // boolean
+        StandardIsHidden = 1, // boolean
         StandardIsBackup = 2, // boolean
         StandardIsSymlink = 3, // boolean
         StandardIsVirtual = 4, // boolean
@@ -167,12 +167,13 @@ public:
     using AttributeNameMap = std::unordered_map<DFileInfo::AttributeID, std::string>;
     static AttributeNameMap attributeNames;
 
-    using AttributeFunc = std::function<QVariant(DFileInfo::AttributeID, bool *, bool)>;
+    using AttributeFunc = std::function<QVariant(DFileInfo::AttributeID, bool *)>;
     using SetAttributeFunc = std::function<bool(DFileInfo::AttributeID, const QVariant &)>;
     using HasAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
     using RemoveAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
     using AttributeListFunc = std::function<QList<DFileInfo::AttributeID>()>;
     using ExistsFunc = std::function<bool()>;
+    using FlushFunc = std::function<bool()>;
 
 public:
     DFileInfo();
@@ -181,12 +182,13 @@ public:
     virtual ~DFileInfo();
     DFileInfo &operator=(const DFileInfo &info);
 
-    DFM_VIRTUAL QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr, bool fetchMore = true) const;
+    DFM_VIRTUAL QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) const;
     DFM_VIRTUAL bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
     DFM_VIRTUAL bool hasAttribute(DFileInfo::AttributeID id) const;
     DFM_VIRTUAL bool removeAttribute(DFileInfo::AttributeID id);
     DFM_VIRTUAL QList<DFileInfo::AttributeID> attributeIDList() const;
     DFM_VIRTUAL bool exists() const;
+    DFM_VIRTUAL bool flush();
 
     // register
     void registerAttribute(const AttributeFunc &func);
@@ -195,6 +197,7 @@ public:
     void registerRemoveAttribute(const RemoveAttributeFunc &func);
     void registerAttributeList(const AttributeListFunc &func);
     void registerExists(const ExistsFunc &func);
+    void registerFlush(const FlushFunc &func);
 
     QUrl uri() const;
     QString dump() const;

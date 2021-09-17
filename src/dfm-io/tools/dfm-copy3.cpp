@@ -68,26 +68,24 @@ static void err_msg(const char *msg)
     fprintf(stderr, "dfm-copy: %s\n", msg);
 }
 
-#define BLOCK 4 * 4096
 static void copy(const QString &url_src, const QString &url_dst)
 {
-    char buff[BLOCK];
+    const int block = 128 * 1024;
+    char buff[block];
     int read = 0;
 
     GError *error = nullptr;
-    GFile *gfile = g_file_new_for_uri(url_src.toLocal8Bit().data());
+    GFile *gfile = g_file_new_for_path(url_src.toLocal8Bit().data());
     GFileInputStream *inputStream = g_file_read(gfile, nullptr, &error);
 
-    GError *errorOut = nullptr;
-    GFile *gfileOut = g_file_new_for_uri(url_dst.toLocal8Bit().data());
+    GFile *gfileOut = g_file_new_for_path(url_dst.toLocal8Bit().data());
     GFileOutputStream *outputStream = g_file_replace(gfileOut,
                                                      nullptr,
                                                      false,
                                                      G_FILE_CREATE_NONE,
                                                      nullptr,
                                                      &error);
-
-    while ((read = readData(inputStream, buff, BLOCK)) > 0) {
+    while ((read = readData(inputStream, buff, block)) > 0) {
         if (writeData(outputStream, buff, read) != read) {
             err_msg("write failed.");
             break;
@@ -116,14 +114,8 @@ int main(int argc, char *argv[])
     const char *uri_src = argv[1];
     const char *uri_dst = argv[2];
 
-    /*const QString &scheme_src = url_src.scheme();
-    const QString &scheme_dst = url_dst.scheme();
-
-    if (scheme_src != scheme_dst)
-        return 1;*/
-
     dfmio_init();
-    //REGISTER_FACTORY1(DLocalIOFactory, scheme_src, QUrl);
+
     QElapsedTimer timer;
     timer.start();
     copy(uri_src, uri_dst);

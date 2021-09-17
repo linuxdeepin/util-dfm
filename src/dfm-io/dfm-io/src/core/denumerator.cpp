@@ -29,9 +29,7 @@
 USING_IO_NAMESPACE
 
 DEnumeratorPrivate::DEnumeratorPrivate(DEnumerator *q)
-    : q(q),
-      done(false),
-      info(nullptr)
+    : q(q)
 {
 
 }
@@ -39,34 +37,6 @@ DEnumeratorPrivate::DEnumeratorPrivate(DEnumerator *q)
 DEnumeratorPrivate::~DEnumeratorPrivate()
 {
 
-}
-
-DFM_VIRTUAL bool DEnumeratorPrivate::fetchMore()
-{
-    if (done)
-        return false;
-
-    if (!fileInfoListFunc)
-        return false;
-
-    const QList<QSharedPointer<DFileInfo>> &list = fileInfoListFunc();
-    if (list.empty())
-        return false;
-
-    cached = std::move(list);
-
-    done = true;
-    return true;
-}
-
-QSharedPointer<DFileInfo> DEnumeratorPrivate::popCache()
-{
-    if (cached.empty())
-        return nullptr;
-    auto ret = cached.front();
-    cached.pop_front();
-
-    return ret;
 }
 
 DEnumerator::DEnumerator(const QUrl &uri)
@@ -82,26 +52,16 @@ DEnumerator::~DEnumerator()
 
 bool DEnumerator::hasNext() const
 {
-    if (!d->cached.empty())
-        return true;
-
-    return d->fetchMore();
+    if (d->hasNextFunc)
+        return d->hasNextFunc();
+    return false;
 }
 
-QString DEnumerator::next()
+QString DEnumerator::next() const
 {
-    if (!d)
-        return "";
-
-    auto fileInfo = d->popCache();
-    if (!fileInfo) {
-        if (d->fetchMore())
-            fileInfo = d->popCache();
-    }
-    if (fileInfo != d->info)
-        d->info = fileInfo;
-    bool success;
-    return fileInfo ? fileInfo->attribute(DFileInfo::AttributeID::StandardDisplayName, &success).toString() : QString();
+    if (d->nextFunc)
+        return d->nextFunc();
+    return QString();
 }
 
 QUrl DEnumerator::uri() const
@@ -114,15 +74,29 @@ QUrl DEnumerator::uri() const
 
 QSharedPointer<DFileInfo> DEnumerator::fileInfo() const
 {
-    if (!d)
-        return nullptr;
-
-    return d->info;
+    if (d->fileInfoFunc)
+        return d->fileInfoFunc();
+    return nullptr;
 }
 
 void DEnumerator::registerFileInfoList(const FileInfoListFunc &func)
 {
     d->fileInfoListFunc = func;
+}
+
+void DEnumerator::registerHasNext(const DEnumerator::HasNextFunc &func)
+{
+    d->hasNextFunc = func;
+}
+
+void DEnumerator::registerNext(const DEnumerator::NextFunc &func)
+{
+    d->nextFunc = func;
+}
+
+void DEnumerator::registerFileInfo(const DEnumerator::FileInfoFunc &func)
+{
+    d->fileInfoFunc = func;
 }
 
 DFMIOError DEnumerator::lastError() const

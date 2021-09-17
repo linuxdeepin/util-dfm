@@ -56,16 +56,16 @@ static void err_msg(const char *msg)
     fprintf(stderr, "dfm-copy: %s\n", msg);
 }
 
-#define BLOCK 4 * 4096
 static void copy(const QString &url_src, const QString &url_dst)
 {
-    char buff[BLOCK];
+    const int block = 128 * 1024;
+    char buff[block];
     int read = 0;
 
     int m_fileFd = ::open(url_src.toLocal8Bit().data(), O_RDONLY, 0755);
     int m_fileFd2 = ::open(url_dst.toLocal8Bit().data(), O_CREAT | O_WRONLY, 0755);
 
-    while ((read = readData(m_fileFd, buff, BLOCK)) > 0) {
+    while ((read = readData(m_fileFd, buff, block)) > 0) {
         if (writeData(m_fileFd2, buff, read) != read) {
             err_msg("write failed.");
             break;
@@ -89,14 +89,8 @@ int main(int argc, char *argv[])
     const char *uri_src = argv[1];
     const char *uri_dst = argv[2];
 
-    /*const QString &scheme_src = url_src.scheme();
-    const QString &scheme_dst = url_dst.scheme();
-
-    if (scheme_src != scheme_dst)
-        return 1;*/
-
     dfmio_init();
-    //REGISTER_FACTORY1(DLocalIOFactory, scheme_src, QUrl);
+
     QElapsedTimer timer;
     timer.start();
     copy(uri_src, uri_dst);
