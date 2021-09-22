@@ -296,10 +296,10 @@ DFMIOError DFile::lastError() const
     return d->error;
 }
 
-bool DFile::copyFile(const QString &sourcePath, const QString &destPath, DFile::CopyFlag flag, void *cancellabel, std::function<void (int, int, void *)> progressCallback, void *progressCallbackData, void **error)
+bool DFile::copyFile(const QString &sourceUri, const QString &destUri, DFile::CopyFlag flag, void *cancellabel, std::function<void (int, int, void *)> progressCallback, void *progressCallbackData, void **error)
 {
-    GFile *fileSource = g_file_new_for_path(sourcePath.toLocal8Bit().data());
-    GFile *fileDest = g_file_new_for_path(destPath.toLocal8Bit().data());
+    GFile *fileSource = g_file_new_for_uri(sourceUri.toLocal8Bit().data());
+    GFile *fileDest = g_file_new_for_uri(destUri.toLocal8Bit().data());
 
     GError *gerror = nullptr;
 

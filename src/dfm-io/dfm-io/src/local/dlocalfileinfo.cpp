@@ -134,7 +134,7 @@ bool DLocalFileInfoPrivate::exists() const
 bool DLocalFileInfoPrivate::flush()
 {
     auto it = attributes.constBegin();
-    while(it != attributes.constEnd()) {
+    while (it != attributes.constEnd()) {
         DLocalHelper::setAttributeByGFileInfo(gfileinfo, it.key(), it.value());
         ++it;
     }
