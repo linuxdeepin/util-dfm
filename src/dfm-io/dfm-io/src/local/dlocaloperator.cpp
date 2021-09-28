@@ -46,12 +46,12 @@ DLocalOperatorPrivate::~DLocalOperatorPrivate()
 
 bool DLocalOperatorPrivate::renameFile(const QString &new_name)
 {
-    const QUrl &uri = q->uri();
+    const QUrl &url = q->uri();
 
     GError *error = nullptr;
 
-    const char *name = new_name.toStdString().c_str();
-    GFile *gfile = makeGFile(uri);
+    const char *name = new_name.toLocal8Bit().data();
+    GFile *gfile = makeGFile(url);
     if (!gfile)
         return false;
 
@@ -70,21 +70,25 @@ bool DLocalOperatorPrivate::renameFile(const QString &new_name)
     return true;
 }
 
-bool DLocalOperatorPrivate::copyFile(const QUrl &to, DOperator::CopyFlag flag)
+bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag)
 {
     GError *error = nullptr;
 
-    const QUrl &uri = q->uri();
-    const QUrl &from = uri;
-    GFile *gfile_from = makeGFile(from);
-    if (!gfile_from)
-        return false;
+    const QUrl &urlFrom = q->uri();
 
-    GFile *gfile_to = makeGFile(to);
-    if (!gfile_to)
-        return false;
+    GFile *gfile_from = makeGFile(urlFrom);
+    GFile *gfile_to = makeGFile(urlTo);
 
-    bool ret = g_file_copy(gfile_from, gfile_to, GFileCopyFlags(flag), nullptr, nullptr, nullptr, &error);
+    GFile *gfileTarget = nullptr;
+    if (DLocalHelper::checkGFileType(gfile_to, G_FILE_TYPE_DIRECTORY)) {
+        char *basename = g_file_get_basename (gfile_from);
+        gfileTarget = g_file_get_child(gfile_to, basename);
+        g_free(basename);
+    } else {
+        gfileTarget = makeGFile(urlTo);
+    }
+
+    bool ret = g_file_copy(gfile_from, gfileTarget, GFileCopyFlags(flag), nullptr, nullptr, nullptr, &error);
     if (!ret)
         setErrorInfo(error);
 
@@ -92,6 +96,7 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &to, DOperator::CopyFlag flag)
         g_error_free(error);
     g_object_unref(gfile_from);
     g_object_unref(gfile_to);
+    g_object_unref(gfileTarget);
     return ret;
 }
 
@@ -99,8 +104,7 @@ bool DLocalOperatorPrivate::moveFile(const QUrl &to, DOperator::CopyFlag flag)
 {
     GError *error = nullptr;
 
-    const QUrl &uri = q->uri();
-    const QUrl &from = uri;
+    const QUrl &from = q->uri();
     GFile *gfile_from = makeGFile(from);
     if (!gfile_from)
         return false;
@@ -263,8 +267,6 @@ bool DLocalOperatorPrivate::createLink(const QUrl &link)
 
 bool DLocalOperatorPrivate::setFileInfo(const DFileInfo &fileInfo)
 {
-    // GFileQueryInfoFlags value: G_FILE_QUERY_INFO_NONE/G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS
-
     GError *error = nullptr;
 
     const QUrl &uri = q->uri();

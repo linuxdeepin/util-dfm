@@ -45,6 +45,9 @@ public:
     static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);
     static void setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value);
     static std::string attributeStringById(DFileInfo::AttributeID id);
+
+    // tools
+    static bool checkGFileType(GFile *file, GFileType type);
 };
 
 END_IO_NAMESPACE

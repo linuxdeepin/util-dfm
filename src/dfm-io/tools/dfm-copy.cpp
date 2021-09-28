@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     copy(url_src, url_dst);
 
     auto time = timer.elapsed();
-    qInfo() << "dfm-io elapsed time: (ms)" << time;
+    qInfo() << "dfm-io call elapsed time: (ms)" << time;
 
     return 0;
 }

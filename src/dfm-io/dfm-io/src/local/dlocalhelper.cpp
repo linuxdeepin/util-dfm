@@ -109,38 +109,28 @@ namespace LocalFunc {
         return retPath;
     }
 
-    bool checkFileType(const QString &path, GFileType type)
-    {
-        GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
-
-        GError *error = nullptr;
-        GFileInfo *gfileinfo = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &error);
-        g_object_unref(file);
-
-        if (error)
-            g_error_free(error);
-
-        if (!gfileinfo)
-            return false;
-
-        bool ret = g_file_info_get_file_type(gfileinfo) == type;
-        g_object_unref(gfileinfo);
-        return ret;
-    }
-
     bool isFile(const QString &path)
     {
-        return checkFileType(path, G_FILE_TYPE_REGULAR);
+        GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+        const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_REGULAR);
+        g_object_unref(file);
+        return ret;
     }
 
     bool isDir(const QString &path)
     {
-        return checkFileType(path, G_FILE_TYPE_DIRECTORY);
+        GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+        const bool ret =  DLocalHelper::checkGFileType(file, G_FILE_TYPE_DIRECTORY);
+        g_object_unref(file);
+        return ret;
     }
 
     bool isSymlink(const QString &path)
     {
-        return checkFileType(path, G_FILE_TYPE_SYMBOLIC_LINK);
+        GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+        const bool ret =  DLocalHelper::checkGFileType(file, G_FILE_TYPE_SYMBOLIC_LINK);
+        g_object_unref(file);
+        return ret;
     }
 
     bool isRoot(const QString &path)
@@ -474,4 +464,20 @@ std::string DLocalHelper::attributeStringById(DFileInfo::AttributeID id)
         return value;
     }
     return "";
+}
+
+bool DLocalHelper::checkGFileType(GFile *file, GFileType type)
+{
+    GError *error = nullptr;
+    GFileInfo *gfileinfo = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &error);
+
+    if (error)
+        g_error_free(error);
+
+    if (!gfileinfo)
+        return false;
+
+    bool ret = g_file_info_get_file_type(gfileinfo) == type;
+    g_object_unref(gfileinfo);
+    return ret;
 }

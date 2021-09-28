@@ -21,6 +21,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "core/dfile_p.h"
+#include "local/dlocalhelper.h"
 
 #include <gio/gio.h>
 
@@ -301,12 +302,22 @@ bool DFile::copyFile(const QString &sourceUri, const QString &destUri, DFile::Co
     GFile *fileSource = g_file_new_for_uri(sourceUri.toLocal8Bit().data());
     GFile *fileDest = g_file_new_for_uri(destUri.toLocal8Bit().data());
 
+    GFile *gfileTarget = nullptr;
+    if (DLocalHelper::checkGFileType(fileDest, G_FILE_TYPE_DIRECTORY)) {
+        char *basename = g_file_get_basename (fileSource);
+        gfileTarget = g_file_get_child(fileDest, basename);
+        g_free(basename);
+    } else {
+        gfileTarget = g_file_new_for_uri(destUri.toLocal8Bit().data());
+    }
+
     GError *gerror = nullptr;
 
-    bool success = g_file_copy(fileSource, fileDest, GFileCopyFlags(flag), nullptr, nullptr, nullptr, &gerror);
+    bool success = g_file_copy(fileSource, gfileTarget, GFileCopyFlags(flag), nullptr, nullptr, nullptr, &gerror);
 
     g_object_unref(fileSource);
     g_object_unref(fileDest);
+    g_object_unref(gfileTarget);
 
     if (gerror)
         g_error_free(gerror);

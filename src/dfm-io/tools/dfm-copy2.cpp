@@ -28,6 +28,7 @@
 #include "core/diofactory.h"
 #include "core/diofactory_p.h"
 #include "core/dfile.h"
+#include "local/dlocalhelper.h"
 
 #include <gio/gio.h>
 
@@ -35,6 +36,7 @@
 #include <QDebug>
 
 #include <stdio.h>
+#include <fcntl.h>
 
 USING_IO_NAMESPACE
 
@@ -45,18 +47,45 @@ static void err_msg(const char *msg)
 
 static void copy(const QString &sourcePath, const QString &destPath)
 {
-    GFile *fileSource = g_file_new_for_path(sourcePath.toLocal8Bit().data());
-    GFile *fileDest = g_file_new_for_path(destPath.toLocal8Bit().data());
+    GFile *gfileSource = g_file_new_for_uri(sourcePath.toLocal8Bit().data());
+    GFile *gfileDest = g_file_new_for_uri(destPath.toLocal8Bit().data());
 
-    GError *gerror = nullptr;
+    GFile *gfileTarget = nullptr;
+    if (DLocalHelper::checkGFileType(gfileDest, G_FILE_TYPE_DIRECTORY)) {
+        char *basename = g_file_get_basename (gfileSource);
+        gfileTarget = g_file_get_child(gfileDest, basename);
+        g_free(basename);
+    } else {
+        gfileTarget = g_file_new_for_uri(destPath.toLocal8Bit().data());
+    }
 
-    g_file_copy(fileSource, fileDest, G_FILE_COPY_OVERWRITE, nullptr, nullptr, nullptr, &gerror);
+    //预先读取
+    {
+        char *path = g_file_get_path(gfileSource);
+        int fromfd = ::open(path, O_RDONLY);
+        if (-1 != fromfd) {
+            GError *error = nullptr;
+            GFileInfo *gfileinfo = g_file_query_info(gfileSource, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, nullptr, &error);
+            if (gfileinfo) {
+                goffset size = g_file_info_get_size(gfileinfo);
+                readahead(fromfd, 0, static_cast<size_t>(size));
+                g_object_unref(gfileinfo);
+            }
+            if (error)
+                g_error_free(error);
+            close(fromfd);
+        }
+    }
 
-    g_object_unref(fileSource);
-    g_object_unref(fileDest);
+    GError *error = nullptr;
+    g_file_copy(gfileSource, gfileTarget, G_FILE_COPY_OVERWRITE, nullptr, nullptr, nullptr, &error);
 
-    if (gerror)
-        g_error_free(gerror);
+    g_object_unref(gfileSource);
+    g_object_unref(gfileDest);
+    g_object_unref(gfileTarget);
+
+    if (error)
+        g_error_free(error);
 }
 
 static void usage()
@@ -80,7 +109,7 @@ int main(int argc, char *argv[])
     copy(uri_src, uri_dst);
 
     auto time = timer.elapsed();
-    qInfo() << "gio copy func call elapsed time: (ms)" << time;
+    qInfo() << "gio g_file_copy call elapsed time: (ms)" << time;
 
     return 0;
 }

@@ -28,6 +28,7 @@
 #include "core/diofactory.h"
 #include "core/diofactory_p.h"
 #include "core/dfile.h"
+#include "local/dlocalhelper.h"
 
 #include <gio/gio.h>
 
@@ -35,6 +36,7 @@
 #include <QDebug>
 
 #include <stdio.h>
+#include <fcntl.h>
 
 USING_IO_NAMESPACE
 
@@ -75,16 +77,42 @@ static void copy(const QString &url_src, const QString &url_dst)
     int read = 0;
 
     GError *error = nullptr;
-    GFile *gfile = g_file_new_for_path(url_src.toLocal8Bit().data());
-    GFileInputStream *inputStream = g_file_read(gfile, nullptr, &error);
+    GFile *gfileSource = g_file_new_for_uri(url_src.toLocal8Bit().data());
+    GFile *gfileDest = g_file_new_for_uri(url_dst.toLocal8Bit().data());
 
-    GFile *gfileOut = g_file_new_for_path(url_dst.toLocal8Bit().data());
-    GFileOutputStream *outputStream = g_file_replace(gfileOut,
+    GFile *gfileTarget = nullptr;
+    if (DLocalHelper::checkGFileType(gfileDest, G_FILE_TYPE_DIRECTORY)) {
+        char *basename = g_file_get_basename (gfileSource);
+        gfileTarget = g_file_get_child(gfileDest, basename);
+        g_free(basename);
+    } else {
+        gfileTarget = g_file_new_for_uri(url_dst.toLocal8Bit().data());
+    }
+
+    GFileInputStream *inputStream = g_file_read(gfileSource, nullptr, &error);
+    GFileOutputStream *outputStream = g_file_replace(gfileTarget,
                                                      nullptr,
                                                      false,
                                                      G_FILE_CREATE_NONE,
                                                      nullptr,
                                                      &error);
+
+    //预先读取
+    {
+        char *path = g_file_get_path(gfileSource);
+        int fromfd = ::open(path, O_RDONLY);
+        if (-1 != fromfd) {
+            GError *error = nullptr;
+            GFileInfo *gfileinfo = g_file_query_info(gfileSource, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, nullptr, &error);
+            if (gfileinfo) {
+                goffset size = g_file_info_get_size(gfileinfo);
+                readahead(fromfd, 0, static_cast<size_t>(size));
+                g_object_unref(gfileinfo);
+            }
+            close(fromfd);
+        }
+    }
+
     while ((read = readData(inputStream, buff, block)) > 0) {
         if (writeData(outputStream, buff, read) != read) {
             err_msg("write failed.");
@@ -96,6 +124,10 @@ static void copy(const QString &url_src, const QString &url_dst)
     g_output_stream_close((GOutputStream*)outputStream, nullptr, nullptr);
     g_object_unref(inputStream);
     g_object_unref(outputStream);
+
+    g_object_unref(gfileSource);
+    g_object_unref(gfileDest);
+    g_object_unref(gfileTarget);
 }
 
 static void usage()
@@ -121,7 +153,7 @@ int main(int argc, char *argv[])
     copy(uri_src, uri_dst);
 
     auto time = timer.elapsed();
-    qInfo() << "gio func direct call elapsed time: (ms)" << time;
+    qInfo() << "gio stream call elapsed time: (ms)" << time;
 
     return 0;
 }
