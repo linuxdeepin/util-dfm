@@ -1,6 +1,8 @@
 project(tools)
 
 add_definitions(-DQT_NO_KEYWORDS)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -fsanitize=address")
 
 # include
 include_directories(
@@ -17,14 +19,14 @@ target_link_libraries(dfm-info dfm-io)
 add_executable(dfm-copy dfm-copy.cpp)
 target_link_libraries(dfm-copy dfm-io)
 
-add_executable(dfm-copy2 dfm-copy2.cpp)
-target_link_libraries(dfm-copy2 dfm-io)
+add_executable(dfm-copy-gio dfm-copy-gio.cpp)
+target_link_libraries(dfm-copy-gio dfm-io)
 
-add_executable(dfm-copy3 dfm-copy3.cpp)
-target_link_libraries(dfm-copy3 dfm-io)
+#add_executable(dfm-copy3 dfm-copy3.cpp)
+#target_link_libraries(dfm-copy3 dfm-io)
 
-add_executable(dfm-copy4 dfm-copy4.cpp)
-target_link_libraries(dfm-copy4 dfm-io)
+add_executable(dfm-copy-system dfm-copy-system.cpp)
+target_link_libraries(dfm-copy-system dfm-io)
 
 add_executable(dfm-cat dfm-cat.cpp)
 target_link_libraries(dfm-cat dfm-io)

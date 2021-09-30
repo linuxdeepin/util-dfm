@@ -46,7 +46,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
     const QUrl &uri = q->uri();
     GFile *gfile = g_file_new_for_uri(uri.toString().toStdString().c_str());
 
-    GError *error = nullptr;
+    GError *gerror = nullptr;
 
     switch (mode) {
     case DFile::OpenFlag::ReadOnly: {
@@ -54,10 +54,10 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-        iStream = (GInputStream*)g_file_read(gfile, nullptr, &error);
-        if (error) {
-            qWarning() << error->message;
-            g_error_free(error);
+        iStream = (GInputStream*)g_file_read(gfile, nullptr, &gerror);
+        if (gerror) {
+            qWarning() << gerror->message;
+            g_error_free(gerror);
         }
 
         if (!iStream) {
@@ -72,10 +72,10 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
                                                  false,
                                                  G_FILE_CREATE_NONE,
                                                  nullptr,
-                                                 &error);
-        if (error) {
-            qWarning() << error->message;
-            g_error_free(error);
+                                                 &gerror);
+        if (gerror) {
+            qWarning() << gerror->message;
+            g_error_free(gerror);
         }
 
         if (!oStream) {
@@ -90,10 +90,10 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
                                                         false,
                                                         G_FILE_CREATE_NONE,
                                                         nullptr,
-                                                        &error);
-        if (error) {
-            qWarning() << error->message;
-            g_error_free(error);
+                                                        &gerror);
+        if (gerror) {
+            qWarning() << gerror->message;
+            g_error_free(gerror);
         }
 
         if (!ioStream) {
@@ -104,10 +104,10 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
     }
     case DFile::OpenFlag::Append: {
         // 追加的方式打开
-        oStream = (GOutputStream*)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &error);
-        if (error) {
-            qWarning() << error->message;
-            g_error_free(error);
+        oStream = (GOutputStream*)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
+        if (gerror) {
+            qWarning() << gerror->message;
+            g_error_free(gerror);
         }
         if (!oStream) {
             g_object_unref(gfile);
@@ -122,10 +122,10 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
                                                         false,
                                                         G_FILE_CREATE_NONE,
                                                         nullptr,
-                                                        &error);
-        if (error) {
-            qWarning() << error->message;
-            g_error_free(error);
+                                                        &gerror);
+        if (gerror) {
+            qWarning() << gerror->message;
+            g_error_free(gerror);
         }
 
         if (!ioStream) {
@@ -145,10 +145,10 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
                                                         false,
                                                         G_FILE_CREATE_NONE,
                                                         nullptr,
-                                                        &error);
-        if (error) {
-            qWarning() << error->message;
-            g_error_free(error);
+                                                        &gerror);
+        if (gerror) {
+            qWarning() << gerror->message;
+            g_error_free(gerror);
         }
 
         if (!ioStream) {
@@ -168,10 +168,10 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
                                                         false,
                                                         G_FILE_CREATE_NONE,
                                                         nullptr,
-                                                        &error);
-        if (error) {
-            qWarning() << error->message;
-            g_error_free(error);
+                                                        &gerror);
+        if (gerror) {
+            qWarning() << gerror->message;
+            g_error_free(gerror);
         }
 
         if (!ioStream) {
@@ -187,10 +187,10 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
                                                         false,
                                                         G_FILE_CREATE_NONE,
                                                         nullptr,
-                                                        &error);
-        if (error) {
-            qWarning() << error->message;
-            g_error_free(error);
+                                                        &gerror);
+        if (gerror) {
+            qWarning() << gerror->message;
+            g_error_free(gerror);
         }
 
         if (!ioStream) {
@@ -231,16 +231,16 @@ qint64 DLocalFilePrivate::read(char *data, qint64 maxSize)
         return -1;
     }
 
-    GError *error = nullptr;
+    GError *gerror = nullptr;
     gssize read = g_input_stream_read(inputStream,
                                       data,
                                       static_cast<gsize>(maxSize),
                                       nullptr,
-                                      &error);
+                                      &gerror);
 
-    if (error) {
-        qWarning() << error->message;
-        g_error_free(error);
+    if (gerror) {
+        qWarning() << gerror->message;
+        g_error_free(gerror);
         return -1;
     }
 
@@ -256,15 +256,15 @@ QByteArray DLocalFilePrivate::read(qint64 maxSize)
     }
 
     char data[maxSize];
-    GError *error = nullptr;
+    GError *gerror = nullptr;
     g_input_stream_read(inputStream,
                         data,
                         static_cast<gsize>(maxSize),
                         nullptr,
-                        &error);
-    if (error) {
-        qWarning() << error->message;
-        g_error_free(error);
+                        &gerror);
+    if (gerror) {
+        qWarning() << gerror->message;
+        g_error_free(gerror);
         return QByteArray();
     }
 
@@ -285,7 +285,7 @@ QByteArray DLocalFilePrivate::readAll()
 
     gsize bytes_read;
     char data[size];
-    GError *error = nullptr;
+    GError *gerror = nullptr;
 
     while (true) {
         gboolean read = g_input_stream_read_all(inputStream,
@@ -293,11 +293,11 @@ QByteArray DLocalFilePrivate::readAll()
                                                 size,
                                                 &bytes_read,
                                                 nullptr,
-                                                &error);
-        if (!read || error) {
-            if (error) {
-                qWarning() << error->message;
-                g_error_free(error);
+                                                &gerror);
+        if (!read || gerror) {
+            if (gerror) {
+                qWarning() << gerror->message;
+                g_error_free(gerror);
             }
             break;
         }
@@ -316,15 +316,15 @@ qint64 DLocalFilePrivate::write(const char *data, qint64 maxSize)
         return -1;
     }
 
-    GError *error = nullptr;
+    GError *gerror = nullptr;
     gssize write = g_output_stream_write(outputStream,
                                          data,
                                          static_cast<gsize>(maxSize),
                                          nullptr,
-                                         &error);
-    if (error) {
-        qWarning() << error->message;
-        g_error_free(error);
+                                         &gerror);
+    if (gerror) {
+        qWarning() << gerror->message;
+        g_error_free(gerror);
     }
     return write;
 }
@@ -338,16 +338,16 @@ qint64 DLocalFilePrivate::write(const char *data)
     }
 
     gsize bytes_write;
-    GError *error = nullptr;
+    GError *gerror = nullptr;
     gssize write = g_output_stream_write_all(outputStream,
                                              data,
                                              strlen(data),
                                              &bytes_write,
                                              nullptr,
-                                             &error);
-    if (error) {
-        qWarning() << error->message;
-        g_error_free(error);
+                                             &gerror);
+    if (gerror) {
+        qWarning() << gerror->message;
+        g_error_free(gerror);
     }
     return write;
 }
@@ -378,7 +378,7 @@ bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
     }
 
     bool ret = false;
-    GError *error = nullptr;
+    GError *gerror = nullptr;
     GSeekType gtype = G_SEEK_CUR;
     switch (type)
     {
@@ -393,9 +393,9 @@ bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
         break;
     }
 
-    ret = g_seekable_seek(seekable, pos, gtype, nullptr, &error);
-    if (error) {
-        g_error_free(error);
+    ret = g_seekable_seek(seekable, pos, gtype, nullptr, &gerror);
+    if (gerror) {
+        g_error_free(gerror);
     }
 
     return ret;
@@ -434,12 +434,12 @@ bool DLocalFilePrivate::flush()
         return false;
     }
 
-    GError *error = nullptr;
-    gboolean ret = g_output_stream_flush(outputStream, nullptr, &error);
+    GError *gerror = nullptr;
+    gboolean ret = g_output_stream_flush(outputStream, nullptr, &gerror);
 
-    if (error) {
-        qWarning() << error->message;
-        g_error_free(error);
+    if (gerror) {
+        qWarning() << gerror->message;
+        g_error_free(gerror);
     }
     return ret;
 }
@@ -449,12 +449,12 @@ qint64 DLocalFilePrivate::size()
     const QUrl &uri = q->uri();
     GFile *gfile = g_file_new_for_uri(uri.toString().toStdString().c_str());
 
-    GError *error = nullptr;
-    GFileInfo *fileInfo = g_file_query_info(gfile, "G_FILE_ATTRIBUTE_STANDARD_SIZE", G_FILE_QUERY_INFO_NONE, nullptr, &error);
+    GError *gerror = nullptr;
+    GFileInfo *fileInfo = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
 
-    if (error) {
-        qWarning() << error->message;
-        g_error_free(error);
+    if (gerror) {
+        qWarning() << gerror->message;
+        g_error_free(gerror);
     }
 
     if (fileInfo) {

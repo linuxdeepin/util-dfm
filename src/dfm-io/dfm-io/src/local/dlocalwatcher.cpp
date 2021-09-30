@@ -60,7 +60,7 @@ bool DLocalWatcherPrivate::start(int timeRate)
         g_object_unref(monitor);
     monitor = nullptr;
 
-    GError *error = nullptr;
+    GError *gerror = nullptr;
     GFile *file = nullptr;
 
     // stop first
@@ -77,7 +77,7 @@ bool DLocalWatcherPrivate::start(int timeRate)
         GFileInfo *info;
         guint32 fileType;
 
-        info = g_file_query_info (file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &error);
+        info = g_file_query_info (file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
         if (!info)
             goto err;
 
@@ -86,9 +86,9 @@ bool DLocalWatcherPrivate::start(int timeRate)
     }
 
     if (type == DWatcher::WatchType::DIR)
-        monitor = g_file_monitor_directory (file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &error);
+        monitor = g_file_monitor_directory (file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
       else
-        monitor = g_file_monitor (file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &error);
+        monitor = g_file_monitor (file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
 
     if (!monitor)
         goto err;
@@ -100,8 +100,8 @@ bool DLocalWatcherPrivate::start(int timeRate)
     return true;
 
 err:
-    qInfo() << "error:" << error->message;
-    g_error_free(error);
+    qInfo() << "error:" << gerror->message;
+    g_error_free(gerror);
     g_object_unref(file);
 
     return false;

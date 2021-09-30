@@ -61,31 +61,32 @@ static void copy(const QString &sourcePath, const QString &destPath)
 
     //预先读取
     {
-        char *path = g_file_get_path(gfileSource);
-        int fromfd = ::open(path, O_RDONLY);
+        char *gpath = g_file_get_path(gfileSource);
+        int fromfd = ::open(gpath, O_RDONLY);
         if (-1 != fromfd) {
-            GError *error = nullptr;
-            GFileInfo *gfileinfo = g_file_query_info(gfileSource, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, nullptr, &error);
+            GError *gerror = nullptr;
+            GFileInfo *gfileinfo = g_file_query_info(gfileSource, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
             if (gfileinfo) {
                 goffset size = g_file_info_get_size(gfileinfo);
                 readahead(fromfd, 0, static_cast<size_t>(size));
                 g_object_unref(gfileinfo);
             }
-            if (error)
-                g_error_free(error);
+            if (gerror)
+                g_error_free(gerror);
             close(fromfd);
         }
+        g_free(gpath);
     }
 
-    GError *error = nullptr;
-    g_file_copy(gfileSource, gfileTarget, G_FILE_COPY_OVERWRITE, nullptr, nullptr, nullptr, &error);
+    GError *gerror = nullptr;
+    g_file_copy(gfileSource, gfileTarget, G_FILE_COPY_OVERWRITE, nullptr, nullptr, nullptr, &gerror);
 
     g_object_unref(gfileSource);
     g_object_unref(gfileDest);
     g_object_unref(gfileTarget);
 
-    if (error)
-        g_error_free(error);
+    if (gerror)
+        g_error_free(gerror);
 }
 
 static void usage()

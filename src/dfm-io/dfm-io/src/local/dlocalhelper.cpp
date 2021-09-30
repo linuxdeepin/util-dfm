@@ -89,9 +89,11 @@ namespace LocalFunc {
     {
         GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
 
-        QString retPath = QString::fromLocal8Bit(g_file_get_path(file));
+        char *gpath = g_file_get_path(file);
+        QString retPath = QString::fromLocal8Bit(gpath);
 
         g_object_unref(file);
+        g_free(gpath);
 
         return retPath;
     }
@@ -101,10 +103,12 @@ namespace LocalFunc {
         GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
         GFile *fileParent = g_file_get_parent(file);
 
-        QString retPath = QString::fromLocal8Bit(g_file_get_path(fileParent));
+        char *gpath = g_file_get_path(fileParent);
+        QString retPath = QString::fromLocal8Bit(gpath);
 
         g_object_unref(file);
         g_object_unref(fileParent);
+        g_free(gpath);
 
         return retPath;
     }
@@ -468,11 +472,11 @@ std::string DLocalHelper::attributeStringById(DFileInfo::AttributeID id)
 
 bool DLocalHelper::checkGFileType(GFile *file, GFileType type)
 {
-    GError *error = nullptr;
-    GFileInfo *gfileinfo = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &error);
+    GError *gerror = nullptr;
+    GFileInfo *gfileinfo = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
 
-    if (error)
-        g_error_free(error);
+    if (gerror)
+        g_error_free(gerror);
 
     if (!gfileinfo)
         return false;

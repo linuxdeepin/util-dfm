@@ -47,13 +47,13 @@ bool DLocalFileInfoPrivate::init()
 
     GFile *file = g_file_new_for_uri(path.toLocal8Bit().data());
 
-    GError *error = nullptr;
+    GError *gerror = nullptr;
 
-    GFileInfo *gfileinfo = g_file_query_info(file, "*", G_FILE_QUERY_INFO_NONE, nullptr, &error);
+    GFileInfo *gfileinfo = g_file_query_info(file, "*", G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
     g_object_unref(file);
 
-    if (error)
-        g_error_free(error);
+    if (gerror)
+        g_error_free(gerror);
 
     if (!gfileinfo)
         return false;

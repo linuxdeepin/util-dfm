@@ -59,8 +59,7 @@ static void enum_uri(const QUrl &url)
 
     while (enumerator->hasNext()) {
         const QString &path = enumerator->next();
-        printf("%s", path.toLocal8Bit().data());
-        printf("\n");
+        qInfo() << path;
     }
 }
 

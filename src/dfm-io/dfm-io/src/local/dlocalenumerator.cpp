@@ -48,7 +48,7 @@ DLocalEnumeratorPrivate::~DLocalEnumeratorPrivate()
 QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 {
     GFileEnumerator *enumerator = nullptr;
-    GError *error = nullptr;
+    GError *gerror = nullptr;
 
     GFile *gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
 
@@ -56,14 +56,14 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
                                            "*",
                                            G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
                                            nullptr,
-                                           &error);
+                                           &gerror);
 
     if (nullptr == enumerator) {
-        if (error) {
-            qWarning() << error->message;
-            dfmError.setCode(DFMIOErrorCode(error->code));
+        if (gerror) {
+            qWarning() << gerror->message;
+            dfmError.setCode(DFMIOErrorCode(gerror->code));
 
-            g_error_free(error);
+            g_error_free(gerror);
         }
         g_object_unref(gfile);
         return list_;
@@ -73,29 +73,30 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
     GFile *gfileIn = nullptr;
     GFileInfo *gfileInfoIn = nullptr;
 
-    while (g_file_enumerator_iterate(enumerator, &gfileInfoIn, &gfileIn, nullptr, &error)) {
+    while (g_file_enumerator_iterate(enumerator, &gfileInfoIn, &gfileIn, nullptr, &gerror)) {
         if (!gfileInfoIn)
             break;
 
-        const char *uri = g_file_get_uri(gfileIn);
+        char *uri = g_file_get_uri(gfileIn);
         QSharedPointer<DFileInfo> info = DLocalHelper::getFileInfoByUri(uri);
+        g_free(uri);
 
         if (info)
             list_.append(info);
 
-        if (error) {
-            qWarning() << "error:" << error->message;
-            dfmError.setCode(DFMIOErrorCode(error->code));
+        if (gerror) {
+            qWarning() << "error:" << gerror->message;
+            dfmError.setCode(DFMIOErrorCode(gerror->code));
 
-            g_error_free(error);
-            error = nullptr;
+            g_error_free(gerror);
+            gerror = nullptr;
         }
     }
 
-    if (error) {
-        qWarning() << error->message;
-        dfmError.setCode(DFMIOErrorCode(error->code));
-        g_error_free(error);
+    if (gerror) {
+        qWarning() << gerror->message;
+        dfmError.setCode(DFMIOErrorCode(gerror->code));
+        g_error_free(gerror);
     }
     g_object_unref(enumerator);
 
@@ -104,35 +105,37 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 
 bool DLocalEnumeratorPrivate::hasNext()
 {
-    GError *error = nullptr;
+    GError *gerror = nullptr;
     GFileInfo *gfileInfoIn = nullptr;
 
-    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfoIn, &fileNext, nullptr, &error);
+    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfoIn, &fileNext, nullptr, &gerror);
     if (hasNext) {
 
         if (!gfileInfoIn)
             return false;
 
-        const char *uri = g_file_get_uri(fileNext);
+        char *uri = g_file_get_uri(fileNext);
 
         fileInfoNext = DLocalHelper::getFileInfoByUri(uri);
+        g_free(uri);
 
         return true;
     }
 
-    if (error) {
-        qWarning() << error->message;
-        dfmError.setCode(DFMIOErrorCode(error->code));
-        g_error_free(error);
+    if (gerror) {
+        qWarning() << gerror->message;
+        dfmError.setCode(DFMIOErrorCode(gerror->code));
+        g_error_free(gerror);
     }
     return false;
 }
 
 QString DLocalEnumeratorPrivate::next() const
 {
-    char *path = g_file_get_path(fileNext);
-
-    return QString::fromLocal8Bit(path);
+    char *gpath = g_file_get_path(fileNext);
+    QString qsPath = QString::fromLocal8Bit(gpath);
+    g_free(gpath);
+    return qsPath;
 }
 
 QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
@@ -142,7 +145,7 @@ QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
 
 void DLocalEnumeratorPrivate::init()
 {
-    GError *error = nullptr;
+    GError *gerror = nullptr;
 
     const QString &uriPath = q->uri().toString();
     GFile *gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
@@ -151,14 +154,14 @@ void DLocalEnumeratorPrivate::init()
                                            "*",
                                            G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
                                            nullptr,
-                                           &error);
+                                           &gerror);
 
     if (nullptr == enumerator) {
-        if (error) {
-            qWarning() << error->message;
-            dfmError.setCode(DFMIOErrorCode(error->code));
+        if (gerror) {
+            qWarning() << gerror->message;
+            dfmError.setCode(DFMIOErrorCode(gerror->code));
 
-            g_error_free(error);
+            g_error_free(gerror);
         }
     }
     g_object_unref(gfile);

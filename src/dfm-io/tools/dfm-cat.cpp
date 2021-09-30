@@ -29,10 +29,14 @@
 #include "core/diofactory.h"
 #include "core/diofactory_p.h"
 
+#include <gio/gio.h>
+
 #include <QString>
+#include <QDebug>
 
 #include <sys/unistd.h>
 #include <stdio.h>
+#include <iostream>
 
 USING_IO_NAMESPACE
 
@@ -109,6 +113,25 @@ int main(int argc, char *argv[])
     //REGISTER_FACTORY1(DLocalIOFactory, url.scheme(), QUrl);
 
     cat(url);
+
+    char ch1[] = "abc";
+    char ch2[] = "abc";
+    char const *ch5 = "abc";
+    char const *ch6 = "abc";
+    const char *ch7 = "abc";
+    const char *ch8 = "abc";
+
+    const QString &path = "file:/home/lanxs_/Desktop/test.txt";
+    const QString &path2 = "file:/home/lanxs_/Desktop/test2.txt";
+    const char *cpath = path.toLocal8Bit().data();
+    const char *cpath2 = path2.toLocal8Bit().data();
+    GFile *gfile = g_file_new_for_uri(cpath);
+
+    const QString &name = "ssss";
+
+    GError *gerror = nullptr;
+    GFile *gfile_ret = g_file_set_display_name(gfile, name.toLocal8Bit().data(), nullptr, &gerror);
+
 
     return 0;
 }

@@ -36,6 +36,7 @@ DOperatorPrivate::~DOperatorPrivate()
 }
 
 DOperator::DOperator(const QUrl &uri)
+    : d(new DOperatorPrivate(this))
 {
     d->uri = uri;
 }
