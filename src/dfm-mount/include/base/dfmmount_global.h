@@ -31,10 +31,10 @@
 #  define DFMMOUNTSHARED_EXPORT Q_DECL_IMPORT
 #endif
 
-#define DFM_MOUNT_NAMESPACE dfm_mount
-#define DFM_MOUNT_BEGIN_NS namespace DFM_MOUNT_NAMESPACE {
+#define DFMMOUNT dfmmount
+#define DFM_MOUNT_BEGIN_NS namespace DFMMOUNT {
 #define DFM_MOUNT_END_NS }
-#define DFM_MOUNT_USE_NS using namespace DFM_MOUNT_NAMESPACE;
+#define DFM_MOUNT_USE_NS using namespace DFMMOUNT;
 
 #define DFM_MNT_VIRTUAL
 #define DFM_MNT_OVERRIDE

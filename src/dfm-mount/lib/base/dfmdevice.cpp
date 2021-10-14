@@ -29,7 +29,7 @@
 
 DFM_MOUNT_USE_NS
 
-DFM_MOUNT_NAMESPACE::DFMDevicePrivate::DFMDevicePrivate(DFMDevice *qq)
+DFMMOUNT::DFMDevicePrivate::DFMDevicePrivate(DFMDevice *qq)
     : q(qq)
 {
 

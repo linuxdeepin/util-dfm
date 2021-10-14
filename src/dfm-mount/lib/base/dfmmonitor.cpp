@@ -28,7 +28,7 @@
 
 DFM_MOUNT_USE_NS
 
-DFM_MOUNT_NAMESPACE::DFMMonitorPrivate::DFMMonitorPrivate(DFMMonitor *qq)
+DFMMOUNT::DFMMonitorPrivate::DFMMonitorPrivate(DFMMonitor *qq)
     : q(qq)
 {
 

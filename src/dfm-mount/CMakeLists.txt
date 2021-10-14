@@ -40,11 +40,14 @@ endforeach(PkgConfigModule)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-set(LIB_HEADER
+set(LIB_BASE_HEADER
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmdevice.h
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmonitor.h
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmount_global.h
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmountdefines.h
+    )
+
+set(LIB_HEADER
     ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockdevice.h
     ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockmonitor.h
     ${CMAKE_CURRENT_LIST_DIR}/include/dfmprotocoldevice.h
@@ -70,7 +73,7 @@ set(LIB_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/lib/dfmdevicemanager.cpp)
 
 # Build library
-add_library(${PROJECT_NAME} SHARED ${LIB_HEADER} ${LIB_P_HEADER} ${LIB_SRCS})
+add_library(${PROJECT_NAME} SHARED ${LIB_HEADER} ${LIB_BASE_HEADER} ${LIB_P_HEADER} ${LIB_SRCS})
 
 set_target_properties(
     dfm-mount PROPERTIES
@@ -88,7 +91,7 @@ include(GNUInstallDirs)
 # Install lib
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES ${LIB_HEADER} DESTINATION include/${PROJECT_NAME})
-
+install(FILES ${LIB_BASE_HEADER} DESTINATION include/${PROJECT_NAME}/base)
 configure_file("./lib/dfm-mount.pc.in" "./lib/dfm-mount.pc" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/lib/dfm-mount.pc"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
