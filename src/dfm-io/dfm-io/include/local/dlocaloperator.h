@@ -40,17 +40,19 @@ public:
     ~DLocalOperator();
 
     bool renameFile(const QString &newName) DFM_OVERRIDE;
-    bool copyFile(const QUrl &destUri, CopyFlag flag) DFM_OVERRIDE;
-    bool moveFile(const QUrl &destUri, CopyFlag flag) DFM_OVERRIDE;
+    bool copyFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackfunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
+    bool moveFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackfunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
 
     bool trashFile() DFM_OVERRIDE;
     bool deleteFile() DFM_OVERRIDE;
-    bool restoreFile() DFM_OVERRIDE;
+    bool restoreFile(ProgressCallbackfunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
 
     bool touchFile() DFM_OVERRIDE;
     bool makeDirectory() DFM_OVERRIDE;
     bool createLink(const QUrl &link) DFM_OVERRIDE;
     bool setFileInfo(const DFileInfo &fileInfo) DFM_OVERRIDE;
+
+    bool cancel() DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalOperatorPrivate> d = nullptr;

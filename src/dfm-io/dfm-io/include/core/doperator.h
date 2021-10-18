@@ -51,18 +51,22 @@ public:
         UserFlag = 0x100
     };
 
+    using ProgressCallbackfunc = void(*)(int64_t, int64_t, void *); // current_num_bytes, total_num_bytes, user_data
+
     using RenameFileFunc = std::function<bool(const QString&)>;
-    using CopyFileFunc = std::function<bool(const QUrl&, CopyFlag)>;
-    using MoveFileFunc = std::function<bool(const QUrl&, CopyFlag)>;
+    using CopyFileFunc = std::function<bool(const QUrl&, CopyFlag, ProgressCallbackfunc, void *)>;
+    using MoveFileFunc = std::function<bool(const QUrl&, CopyFlag, ProgressCallbackfunc, void *)>;
 
     using TrashFileFunc = std::function<bool()>;
     using DeleteFileFunc = std::function<bool()>;
-    using RestoreFileFunc = std::function<bool()>;
+    using RestoreFileFunc = std::function<bool(ProgressCallbackfunc, void *)>;
 
     using TouchFileFunc = std::function<bool()>;
     using MakeDirectoryFunc = std::function<bool()>;
     using CreateLinkFunc = std::function<bool(const QUrl&)>;
     using SetFileInfoFunc = std::function<bool(const DFileInfo&)>;
+
+    using CancelFunc = std::function<bool()>;
 
 public:
     DOperator(const QUrl &uri);
@@ -71,17 +75,19 @@ public:
     QUrl uri() const;
 
     DFM_VIRTUAL bool renameFile(const QString &newName);
-    DFM_VIRTUAL bool copyFile(const QUrl &destUri, CopyFlag flag);
-    DFM_VIRTUAL bool moveFile(const QUrl &destUri, CopyFlag flag);
+    DFM_VIRTUAL bool copyFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackfunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL bool moveFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackfunc func = nullptr, void *userData = nullptr);
 
     DFM_VIRTUAL bool trashFile();
     DFM_VIRTUAL bool deleteFile();
-    DFM_VIRTUAL bool restoreFile();
+    DFM_VIRTUAL bool restoreFile(ProgressCallbackfunc func = nullptr, void *userData = nullptr);
 
     DFM_VIRTUAL bool touchFile();
     DFM_VIRTUAL bool makeDirectory();
     DFM_VIRTUAL bool createLink(const QUrl &link);
     DFM_VIRTUAL bool setFileInfo(const DFileInfo &fileInfo);
+
+    DFM_VIRTUAL bool cancel();
 
     //register
     void registerRenameFile(const RenameFileFunc &func);
@@ -96,6 +102,8 @@ public:
     void registerMakeDirectory(const MakeDirectoryFunc &func);
     void registerCreateLink(const CreateLinkFunc &func);
     void registerSetFileInfo(const SetFileInfoFunc &func);
+
+    void registerCancel(const CancelFunc &func);
 
     DFMIOError lastError() const; 
 

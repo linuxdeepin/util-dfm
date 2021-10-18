@@ -75,7 +75,7 @@ static bool watcher_dir(const QUrl &url)
         printf("file added:%s.\n", uri.url().toStdString().c_str());
     });
 
-    if (!watcher->start(0)) {
+    if (!watcher->start()) {
         err_msg("start watcher failed.");
         return false;
     }

@@ -42,21 +42,23 @@ public:
     ~DLocalOperatorPrivate();
 
     bool renameFile (const QString &new_name);
-    bool copyFile(const QUrl &dstUri, DOperator::CopyFlag flag);
-    bool moveFile(const QUrl &dstUri, DOperator::CopyFlag flag);
+    bool copyFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackfunc func = nullptr, void *userData = nullptr);
+    bool moveFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackfunc func = nullptr, void *userData = nullptr);
     bool trashFile();
     bool deleteFile();
-    bool restoreFile();
+    bool restoreFile(DOperator::ProgressCallbackfunc func = nullptr, void *userData = nullptr);
     bool touchFile();
     bool makeDirectory();
     bool createLink(const QUrl &link);
     bool setFileInfo(const DFileInfo &fileInfo);
+    bool cancel();
 
 private:
     GFile *makeGFile(const QUrl &url);
     void setErrorInfo(GError *gerror);
 
     DLocalOperator *q = nullptr;
+    GCancellable *gcancellable = nullptr;
 };
 
 END_IO_NAMESPACE

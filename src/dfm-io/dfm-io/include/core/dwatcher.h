@@ -95,6 +95,7 @@ Q_SIGNALS:
     void fileChanged(const QUrl &uri, const DFileInfo &fileInfo);
     void fileDeleted(const QUrl &uri, const DFileInfo &fileInfo);
     void fileAdded(const QUrl &uri, const DFileInfo &fileInfo);
+    void fileRenamed(const QUrl &urlOld, const QUrl &urlNew);
 
 private:
     QSharedPointer<DWatcherPrivate> d = nullptr;

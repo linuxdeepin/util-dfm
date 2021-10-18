@@ -51,6 +51,8 @@ public:
     DOperator::CreateLinkFunc createLinkFunc = nullptr;
     DOperator::SetFileInfoFunc setFileInfoFunc = nullptr;
 
+    DOperator::CancelFunc cancelFunc = nullptr;
+
     DFMIOError error;
 };
 

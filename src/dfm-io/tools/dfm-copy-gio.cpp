@@ -79,6 +79,7 @@ static void copy(const QString &sourcePath, const QString &destPath)
     }
 
     GError *gerror = nullptr;
+
     g_file_copy(gfileSource, gfileTarget, G_FILE_COPY_OVERWRITE, nullptr, nullptr, nullptr, &gerror);
 
     g_object_unref(gfileSource);

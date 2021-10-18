@@ -47,10 +47,12 @@ public:
     bool stop();
     bool running() const;
 
-    static void watchCallback(GFileMonitor *monitor, GFile *child, GFile *other, GFileMonitorEvent event_type, gpointer user_data);
+    static void watchCallback(GFileMonitor *gmonitor, GFile *child, GFile *other, GFileMonitorEvent event_type, gpointer user_data);
 
 public:
-    GFileMonitor *monitor = nullptr;
+    GFileMonitor *gmonitor = nullptr;
+    GMainLoop *loop = nullptr;
+    GFile *gfile = nullptr;
     DWatcher::WatchType type = DWatcher::WatchType::AUTO;
 
     DLocalWatcher *q = nullptr;

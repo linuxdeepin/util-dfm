@@ -34,12 +34,14 @@ USING_IO_NAMESPACE
 DLocalWatcherPrivate::DLocalWatcherPrivate(DLocalWatcher *q)
     : q(q)
 {
-
 }
 
 DLocalWatcherPrivate::~DLocalWatcherPrivate()
 {
-
+    if (gmonitor)
+        g_object_unref(gmonitor);
+    if (gfile)
+        g_object_unref(gfile);
 }
 
 void DLocalWatcherPrivate::setWatchType(DWatcher::WatchType type)
@@ -56,12 +58,11 @@ bool DLocalWatcherPrivate::start(int timeRate)
 {
     // stop the last monitor.
 
-    if (monitor)
-        g_object_unref(monitor);
-    monitor = nullptr;
+    if (gmonitor)
+        g_object_unref(gmonitor);
+    gmonitor = nullptr;
 
     GError *gerror = nullptr;
-    GFile *file = nullptr;
 
     // stop first
     if (!stop()) {
@@ -71,49 +72,56 @@ bool DLocalWatcherPrivate::start(int timeRate)
     const QUrl &uri = q->uri();
     const QString &fname = uri.url();
 
-    file = g_file_new_for_uri(fname.toLocal8Bit().data());
+    gfile = g_file_new_for_uri(fname.toLocal8Bit().data());
 
     if (type == DWatcher::WatchType::AUTO) {
         GFileInfo *info;
         guint32 fileType;
 
-        info = g_file_query_info (file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
+        info = g_file_query_info (gfile, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
         if (!info)
             goto err;
 
         fileType = g_file_info_get_attribute_uint32 (info, G_FILE_ATTRIBUTE_STANDARD_TYPE);
+
+        g_object_unref(info);
         type = (fileType == G_FILE_TYPE_DIRECTORY) ? DWatcher::WatchType::DIR : DWatcher::WatchType::FILE;
     }
 
     if (type == DWatcher::WatchType::DIR)
-        monitor = g_file_monitor_directory (file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
+        gmonitor = g_file_monitor_directory (gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
       else
-        monitor = g_file_monitor (file, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
+        gmonitor = g_file_monitor (gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
 
-    if (!monitor)
+    if (!gmonitor)
         goto err;
 
-    g_file_monitor_set_rate_limit(monitor, timeRate);
+    g_file_monitor_set_rate_limit(gmonitor, timeRate);
 
-    g_signal_connect(monitor, "changed", G_CALLBACK(&DLocalWatcherPrivate::watchCallback), this);
-    //g_object_unref(file);
+    loop = g_main_loop_new (nullptr, false);
+
+    g_signal_connect(gmonitor, "changed", G_CALLBACK(&DLocalWatcherPrivate::watchCallback), q);
+
+    g_main_loop_run (loop);
+    g_main_loop_unref (loop);
+
     return true;
 
 err:
     qInfo() << "error:" << gerror->message;
     g_error_free(gerror);
-    g_object_unref(file);
+    g_object_unref(gfile);
 
     return false;
 }
 bool DLocalWatcherPrivate::stop()
 {
-    if (monitor) {
-        if (!g_file_monitor_cancel(monitor)) {
+    if (gmonitor) {
+        if (!g_file_monitor_cancel(gmonitor)) {
             qInfo() << "cancel file monitor failed.";
         }
-        g_object_unref(monitor);
-        monitor = nullptr;
+        g_object_unref(gmonitor);
+        gmonitor = nullptr;
     }
 
     return true;
@@ -121,7 +129,7 @@ bool DLocalWatcherPrivate::stop()
 
 bool DLocalWatcherPrivate::running() const
 {
-    return monitor != nullptr;
+    return gmonitor != nullptr;
 }
 
 void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
@@ -137,61 +145,48 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
         return;
     }
 
-    gchar *child_str;
-    gchar *other_str;
+    QString childUrl;
+    QString otherUrl;
 
-    child_str = g_file_get_uri(child);
-
+    gchar *child_str = g_file_get_uri(child);
+    childUrl = QString::fromLocal8Bit(child_str);
+    g_free(child_str);
     if (other) {
-        other_str = g_file_get_uri(other);
-    } else {
-        other_str = g_strdup("(none)");
+        gchar *other_str = g_file_get_uri(other);
+        otherUrl = QString::fromLocal8Bit(other_str);
+        g_free(other_str);
     }
 
     switch (event_type) {
     case G_FILE_MONITOR_EVENT_CHANGED:
-        // g_print ("%s: changed", child_str);
-        Q_EMIT watcher->fileChanged(QUrl(child_str), DFileInfo());
+        watcher->fileChanged(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
-        // g_print ("%s: changes done", child_str);
-        Q_EMIT watcher->fileChanged(QUrl(child_str), DFileInfo());
+        watcher->fileChanged(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_DELETED:
-        // g_print ("%s: deleted", child_str);
-        Q_EMIT watcher->fileDeleted(QUrl(child_str), DFileInfo());
+        watcher->fileDeleted(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_CREATED:
-        // g_print ("%s: created", child_str);
-        //QMetaObject::invokeMethod(watcher, "fileAdded", Qt::QueuedConnection, Q_ARG(QUrl, QUrl(child_str)), Q_ARG(DFileInfo, DFileInfo()));
-        Q_EMIT watcher->fileAdded(QUrl(child_str), DFileInfo());
+        watcher->fileAdded(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
-        // g_print ("%s: attributes changed", child_str);
-        Q_EMIT watcher->fileChanged(QUrl(child_str), DFileInfo());
+        watcher->fileChanged(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_PRE_UNMOUNT:
-        // g_print ("%s: pre-unmount", child_str);
         break;
     case G_FILE_MONITOR_EVENT_UNMOUNTED:
-        // g_print ("%s: unmounted", child_str);
         break;
     case G_FILE_MONITOR_EVENT_MOVED_IN:
-        // g_print ("%s: moved in", child_str);
-        // if (other)
-        //     g_print (" (from %s)", other_str);
-        Q_EMIT watcher->fileAdded(QUrl(child_str), DFileInfo());
+        watcher->fileAdded(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_MOVED_OUT:
-        // g_print ("%s: moved out", child_str);
-        // if (other)
-        //     g_print (" (to %s)", other_str);
-        Q_EMIT watcher->fileDeleted(QUrl(child_str), DFileInfo());
+        watcher->fileDeleted(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_RENAMED:
-        // g_print ("%s: renamed to %s\n", child_str, other_str);
-        Q_EMIT watcher->fileDeleted(QUrl(child_str), DFileInfo());
-        Q_EMIT watcher->fileAdded(QUrl(other_str), DFileInfo());
+        //watcher->fileDeleted(QUrl(childUrl), DFileInfo());
+        //watcher->fileAdded(QUrl(otherUrl), DFileInfo());
+        watcher->fileRenamed(QUrl(childUrl), QUrl(otherUrl));
         break;
 
     case G_FILE_MONITOR_EVENT_MOVED:
@@ -199,9 +194,6 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
         g_assert_not_reached();
         break;
     }
-
-    g_free(child_str);
-    g_free(other_str);
 }
 
 DLocalWatcher::DLocalWatcher(const QUrl &uri, QObject *parent)
@@ -235,7 +227,7 @@ bool DLocalWatcher::running() const
     return d->running();
 }
 
-bool DLocalWatcher::start(int timeRate)
+bool DLocalWatcher::start(int timeRate /*= 200*/)
 {
     return d->start(timeRate);
 }

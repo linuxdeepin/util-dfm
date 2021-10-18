@@ -59,20 +59,20 @@ DFM_VIRTUAL bool DOperator::renameFile(const QString &newName)
     return d->renameFileFunc(newName);
 }
 
-DFM_VIRTUAL bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag)
+DFM_VIRTUAL bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackfunc func, void *userData)
 {
     if (!d->copyFileFunc)
         return false;
 
-    return d->copyFileFunc(destUri, flag);
+    return d->copyFileFunc(destUri, flag, func, userData);
 }
 
-DFM_VIRTUAL bool DOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag)
+DFM_VIRTUAL bool DOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackfunc func, void *userData)
 {
     if (!d->moveFileFunc)
         return false;
 
-    return d->moveFileFunc(destUri, flag);
+    return d->moveFileFunc(destUri, flag, func, userData);
 }
 
 DFM_VIRTUAL bool DOperator::trashFile()
@@ -91,12 +91,12 @@ DFM_VIRTUAL bool DOperator::deleteFile()
     return d->deleteFileFunc();
 }
 
-DFM_VIRTUAL bool DOperator::restoreFile()
+DFM_VIRTUAL bool DOperator::restoreFile(ProgressCallbackfunc func, void *userData)
 {
     if (!d->restoreFileFunc)
         return false;
 
-    return d->restoreFileFunc();
+    return d->restoreFileFunc(func, userData);
 }
 
 DFM_VIRTUAL bool DOperator::touchFile()
@@ -129,6 +129,14 @@ DFM_VIRTUAL bool DOperator::setFileInfo(const DFileInfo &fileInfo)
         return false;
 
     return d->setFileInfoFunc(fileInfo);
+}
+
+bool DOperator::cancel()
+{
+    if (!d->setFileInfoFunc)
+        return false;
+
+    return d->cancelFunc();
 }
 
 void DOperator::registerRenameFile(const DOperator::RenameFileFunc &func)
@@ -179,6 +187,11 @@ void DOperator::registerCreateLink(const DOperator::CreateLinkFunc &func)
 void DOperator::registerSetFileInfo(const DOperator::SetFileInfoFunc &func)
 {
     d->setFileInfoFunc = func;
+}
+
+void DOperator::registerCancel(const DOperator::CancelFunc &func)
+{
+    d->cancelFunc = func;
 }
 
 DFMIOError DOperator::lastError() const
