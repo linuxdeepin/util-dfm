@@ -32,19 +32,24 @@
 
 DFM_MOUNT_BEGIN_NS
 
+#define OBJECT_ADDED        "object-added"
+#define OBJECT_REMOVED      "object-removed"
+#define PROPERTY_CHANGED    "interface-proxy-properties-changed"
+
 class DFMBlockDevice;
 class DFMBlockMonitorPrivate final: public DFMMonitorPrivate
 {
 public:
     DFMBlockMonitorPrivate(DFMBlockMonitor *qq);
+    ~DFMBlockMonitorPrivate();
 
     bool startMonitor() DFM_MNT_OVERRIDE;
     bool stopMonitor() DFM_MNT_OVERRIDE;
     MonitorStatus status() const DFM_MNT_OVERRIDE;
     DeviceType monitorObjectType() const DFM_MNT_OVERRIDE;
-    QList<DFMDevice *> getDevices() const DFM_MNT_OVERRIDE;
+    QList<DFMDevice *> getDevices() DFM_MNT_OVERRIDE;
 
-    void getDevicesOnInit();
+    void getAllDevs();
 
 private:
     static void onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData);
@@ -58,10 +63,13 @@ public:
 
     QMap<QString, DFMBlockDevice *> devices;
     QMap<QString, UDisksDrive *> drives;
+
     // the key is the path of driver, and the value is the blocks belong to the driver,
     // in this way could help us notify app the drivers' property has changed easily, and just for this purpose.
     // not all blocks have a driver, such as loop device do not have a physical driver.
     QMultiMap<QString, DFMBlockDevice *> devicesOfDrive;
+
+    QMap<QString, ulong> connections;
 };
 
 DFM_MOUNT_END_NS

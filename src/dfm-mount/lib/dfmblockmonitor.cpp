@@ -35,61 +35,25 @@ DFM_MOUNT_USE_NS
 DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
     : DFMMonitorPrivate (qq)
 {
-
-}
-
-bool DFMBlockMonitorPrivate::startMonitor()
-{
-    if (client)
-        return true;
-
     GError *err = nullptr;
     client = udisks_client_new_sync(nullptr, &err);
-    if (!client) {
-        if (err) {
-            const QString && errMsg = err->message;
-            qCritical() << "start monitor block error: " << errMsg;
-            g_error_free(err);
-        }
-        return false;
+    if (err) {
+        qCritical() << "init udisks client failed. " << err->message;
+        g_error_free(err);
     }
-
-    getDevicesOnInit();
-
-    // the mng is owned by client, do not free it manually
-    GDBusObjectManager *dbusMng = udisks_client_get_object_manager(client);
-    if (!dbusMng) {
-        g_object_unref(client);
-        client = nullptr;
-        qCritical() << "start monitor block failed: cannot get dbus monitor";
-        return false;
-    }
-
-    // there is no good way to solve these warnings... but it does not affect anything.
-    g_signal_connect(dbusMng, "object-added", G_CALLBACK(&DFMBlockMonitorPrivate::onObjectAdded), this);
-    g_signal_connect(dbusMng, "object_removed", G_CALLBACK(&DFMBlockMonitorPrivate::onObjectRemoved), this);
-    g_signal_connect(dbusMng, "interface-proxy-properties-changed", G_CALLBACK(&DFMBlockMonitorPrivate::onPropertyChanged), this);
-
-    curStatus = MonitorStatus::Monitoring;
-
-    qDebug() << "monitor started...";
-    return true;
 }
 
-bool DFMBlockMonitorPrivate::stopMonitor()
+DFMBlockMonitorPrivate::~DFMBlockMonitorPrivate()
 {
+    qDebug() << "block monitor release...";
     if (client) {
         g_object_unref(client);
         client = nullptr;
     }
 
     // clear the caches and release the mems.
-    QStringList keys = devices.keys();
-    for (int i = 0; i < keys.count(); i++) {
-        auto *dev = devices.take(keys.at(i));
-        delete dev;
-        dev = nullptr;
-    }
+    for (auto key: devices.keys())
+        delete devices[key];
     devices.clear();
 
     // the values of drivers which we use *_PEEK_* to obtain them belong to UDisksClient, they are just refs, do not free/unref it.
@@ -98,9 +62,47 @@ bool DFMBlockMonitorPrivate::stopMonitor()
     drives.clear();
     // the values of devicesOfDrive are just a ref of DFMBlockDevice, which has been released above, so do not free it too.
     devicesOfDrive.clear();
+}
+
+bool DFMBlockMonitorPrivate::startMonitor()
+{
+    if (!client) {
+        qCritical() << "client is not valid";
+        return false;
+    }
+
+    // the mng is owned by client, do not free it manually
+    GDBusObjectManager *dbusMng = udisks_client_get_object_manager(client);
+    if (!dbusMng) {
+        qCritical() << "start monitor block failed: cannot get dbus monitor";
+        return false;
+    }
+
+    connections.insert(OBJECT_ADDED,
+                       g_signal_connect(dbusMng, OBJECT_ADDED, G_CALLBACK(&DFMBlockMonitorPrivate::onObjectAdded), this));
+    connections.insert(OBJECT_REMOVED,
+                       g_signal_connect(dbusMng, OBJECT_REMOVED, G_CALLBACK(&DFMBlockMonitorPrivate::onObjectRemoved), this));
+    connections.insert(PROPERTY_CHANGED,
+                       g_signal_connect(dbusMng, PROPERTY_CHANGED, G_CALLBACK(&DFMBlockMonitorPrivate::onPropertyChanged), this));
+
+    curStatus = MonitorStatus::Monitoring;
+    qDebug() << "monitor started...";
+    return true;
+}
+
+bool DFMBlockMonitorPrivate::stopMonitor()
+{
+    if (!client) {
+        qDebug() << "client is not valid";
+        return false;
+    }
+
+    GDBusObjectManager *dbusMng = udisks_client_get_object_manager(client);
+    for (auto iter = connections.cbegin(); iter != connections.cend(); iter++)
+        g_signal_handler_disconnect(dbusMng, iter.value());
+    connections.clear();
 
     curStatus = MonitorStatus::Idle;
-
     qDebug() << "monitor stopped...";
     return true;
 }
@@ -115,22 +117,23 @@ DeviceType DFMBlockMonitorPrivate::monitorObjectType() const
     return DeviceType::BlockDevice;
 }
 
-QList<DFMDevice *> DFMBlockMonitorPrivate::getDevices() const
+QList<DFMDevice *> DFMBlockMonitorPrivate::getDevices()
 {
+    getAllDevs();
     QList<DFMDevice *> ret;
-    QMapIterator<QString, DFMBlockDevice *> iter(devices);
-    while (iter.hasNext()) {
-        iter.next();
+    for (auto iter = devices.cbegin(); iter != devices.cend(); iter++)
         ret.push_back(iter.value());
-    }
     return ret;
 }
 
-void DFMBlockMonitorPrivate::getDevicesOnInit()
+void DFMBlockMonitorPrivate::getAllDevs()
 {
     Q_ASSERT_X(client, __FUNCTION__, "client must be valid to get all devices");
     UDisksManager *mng = udisks_client_get_manager(client);
-    Q_ASSERT_X(mng, __FUNCTION__, "manager must be valid");
+    if (!mng) {
+        qWarning() << "udisks client manager is not valid, cannot get devices";
+        return;
+    }
 
     GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
     // TODO: convert QVariantMap to GVariant and figure out whether builder and gvariant need to be released manually.
@@ -142,32 +145,31 @@ void DFMBlockMonitorPrivate::getDevicesOnInit()
     if (ok && blkObjs) {
         int next = 0;
         while (blkObjs && blkObjs[next]) {
-            UDisksObject *blockObject = udisks_client_peek_object(client, blkObjs[next]);
+            char *blkObjPath = blkObjs[next];
+            UDisksObject *blockObject = udisks_client_peek_object(client, blkObjPath);
             if (!blockObject)
                 continue;
 
-            // TODO: I will remove all the debugs before it released.
-            qDebug() << "********************start parsing block devices********************";
-            qDebug() << "*\t" << blkObjs[next];
             UDisksBlock *block = udisks_object_peek_block(blockObject);
             UDisksFilesystem *filesystem = udisks_object_peek_filesystem(blockObject);
             UDisksPartition *partition = udisks_object_peek_partition(blockObject);
 
             if (block) {
-                DFMBlockDevice *dev = new DFMBlockDevice(q);
+                DFMBlockDevice *dev = nullptr;
+                // if already contained this block, update handlers.
+                if (this->devices.contains(blkObjPath))
+                    dev = this->devices[blkObjPath];
+                else
+                    dev = new DFMBlockDevice(q);
+
                 auto blkD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(dev->d.data());
                 blkD->blockHandler = block;
-                qDebug() << "*\t\tblock founded";
 
-                if (filesystem) {
+                if (filesystem)
                     blkD->fileSystemHandler = filesystem;
-                    qDebug() << "*\t\tfilesystem founded";
-                }
 
-                if (partition) {
+                if (partition)
                     blkD->partitionHandler = partition;
-                    qDebug() << "*\t\tpartition founded";
-                }
 
                 char *driveObjPath = udisks_block_dup_drive(block);
                 UDisksObject *driveObject = udisks_client_peek_object(client, driveObjPath);
@@ -176,16 +178,13 @@ void DFMBlockMonitorPrivate::getDevicesOnInit()
                     UDisksDrive *drive = udisks_object_peek_drive(driveObject);
                     if (drive) {
                         blkD->driveHandler = drive;
-                        qDebug() << "*\t\tdrive founded";
-
                         this->drives.insert(QString(driveObjPath), drive);
                     }
                 }
 
-                this->devices.insert(blkObjs[next], dev);
+                this->devices.insert(blkObjPath, dev);
                 g_free(driveObjPath);
 
-                qDebug() << "******************** end parsing block devices ********************\n";
             }
             next += 1;
         }
@@ -208,14 +207,11 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
     if (!udisksObj)
         return;
 
-    // in past time, we never care about the UDisksJob, so we ignore it here.
     UDisksJob *job = udisks_object_peek_job(udisksObj);
     if (job)
         return;
-    qDebug() << "\t\t" << __FUNCTION__;
 
     QString objKey = g_dbus_object_get_object_path(obj);
-    qDebug() << "\t" << objKey;
 
     UDisksDrive *drive = udisks_object_peek_drive(udisksObj);
     if (drive) {
@@ -268,10 +264,8 @@ void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObjec
     if (job)
         return;
 
-    qDebug() << "\t\t" << __FUNCTION__;
-
     QString objKey = g_dbus_object_get_object_path(obj);
-    qDebug() << "\t" << objKey;
+//    qDebug() << "\t" << objKey;
 
     UDisksDrive *drive = udisks_object_peek_drive(udisksObj);
     if (drive) {
