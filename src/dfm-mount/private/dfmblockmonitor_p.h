@@ -63,13 +63,12 @@ public:
 
     QMap<QString, DFMBlockDevice *> devices;
     QMap<QString, UDisksDrive *> drives;
-
     // the key is the path of driver, and the value is the blocks belong to the driver,
     // in this way could help us notify app the drivers' property has changed easily, and just for this purpose.
     // not all blocks have a driver, such as loop device do not have a physical driver.
-    QMultiMap<QString, DFMBlockDevice *> devicesOfDrive;
-
+    QMap<QString, QList<DFMBlockDevice *>> devicesOfDrive;
     QMap<QString, ulong> connections;
+    static const QMap<QString, Property> propertyName2Property;
 };
 
 DFM_MOUNT_END_NS

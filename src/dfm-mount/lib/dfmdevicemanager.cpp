@@ -44,10 +44,8 @@ bool DFMDeviceManagerPrivate::registerMonitor(DeviceType type, DFMMonitor *monit
     }
     monitors.insert(type, monitor);
 
-    QObject::connect(monitor, &DFMMonitor::driveAdded,       q, &DFMDeviceManager::driveAdded);
-    QObject::connect(monitor, &DFMMonitor::driveRemoved,     q, &DFMDeviceManager::driveRemoved);
-    QObject::connect(monitor, &DFMMonitor::deviceAdded,      q, &DFMDeviceManager::blockDeviceAdded);
-    QObject::connect(monitor, &DFMMonitor::deviceRemoved,    q, &DFMDeviceManager::blockDeviceRemoved);
+    QObject::connect(monitor, &DFMMonitor::deviceAdded,      q, &DFMDeviceManager::deviceAdded);
+    QObject::connect(monitor, &DFMMonitor::deviceRemoved,    q, &DFMDeviceManager::deviceRemoved);
     QObject::connect(monitor, &DFMMonitor::mountAdded,       q, &DFMDeviceManager::mounted);
     QObject::connect(monitor, &DFMMonitor::mountRemoved,     q, &DFMDeviceManager::unmounted);
     QObject::connect(monitor, &DFMMonitor::propertyChanged,  q, &DFMDeviceManager::propertyChanged);
@@ -57,6 +55,10 @@ bool DFMDeviceManagerPrivate::registerMonitor(DeviceType type, DFMMonitor *monit
 
 DFMMonitor *DFMDeviceManagerPrivate::getRegisteredMonitor(DeviceType type) const
 {
+    if (type == DeviceType::AllDevice) {
+        qWarning() << "DeviceType::AllDevice is not a specific type.";
+        return nullptr;
+    }
     return monitors.value(type, nullptr);
 }
 

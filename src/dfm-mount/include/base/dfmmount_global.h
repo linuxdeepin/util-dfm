@@ -112,8 +112,8 @@ enum class Property : uint16_t {
     DriveSortKey,
     DriveConfiguration,        // variant
     DriveID,                   // str
-    DriveCanPowerOff,
-    DriveSiblingID,
+    DriveCanPowerOff,          // bool
+    DriveSiblingID,            // str
     DrivePropertyEND,
 
     FileSystemProperty,

@@ -60,11 +60,12 @@ public:
     void powerOffAsync();
 
 public:
-    QString devDesc; // descriptor of device
+    QString blkObjPath; // path of block device object
     UDisksBlock *blockHandler = nullptr;
     UDisksFilesystem *fileSystemHandler = nullptr;
     UDisksDrive *driveHandler = nullptr;
     UDisksPartition *partitionHandler = nullptr;
+    UDisksEncrypted *encryptedHandler = nullptr;
 };
 DFM_MOUNT_END_NS
 

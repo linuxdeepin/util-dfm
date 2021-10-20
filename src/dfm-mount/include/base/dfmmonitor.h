@@ -62,13 +62,13 @@ public:
     void registerGetDevices(const GetDevicesFunc &func);
 
 Q_SIGNALS:
-    void driveAdded();
-    void driveRemoved();
+    void driveAdded(const QString &driveObjPath);
+    void driveRemoved(const QString &driveObjPath);
     void deviceAdded(DFMDevice *dev);
-    void deviceRemoved(DFMDevice *dev);
-    void mountAdded(const QString &mountPoint);
-    void mountRemoved(const QString &mountPoint);
-    void propertyChanged(Property property, const QVariant &newVal);
+    void deviceRemoved(const QString &blkObjPath);
+    void mountAdded(DFMDevice *dev, const QString &mountPoint);
+    void mountRemoved(DFMDevice *dev);
+    void propertyChanged(DFMDevice *dev, const QMap<Property, QVariant> &changes);
 
 protected:
     QScopedPointer<DFMMonitorPrivate> d;

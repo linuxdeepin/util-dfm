@@ -103,7 +103,7 @@ Q_SIGNALS:
     void mounted(const QUrl &mountPoint);
     void unmounted();
     void renamed(const QString &newName);
-    void propertyChanged(const Property &name, const QVariant &newVal);
+    void propertyChanged(QMap<Property, QVariant> changes);
 
 protected:
     QScopedPointer<DFMDevicePrivate> d;

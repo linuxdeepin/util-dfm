@@ -56,7 +56,6 @@ static QStringList charToQStringList(char **tmp) {
     return ret;
 }
 
-//static void mountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
 static GAsyncReadyCallback mountAsyncCallback = [](GObject *source_object, GAsyncResult *res, gpointer user_data) {
     DFMBlockDevice *dev = static_cast<DFMBlockDevice *>(user_data);
     Q_ASSERT_X(dev, __FUNCTION__, "device is not valid");
@@ -68,12 +67,8 @@ static GAsyncReadyCallback mountAsyncCallback = [](GObject *source_object, GAsyn
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
 
     bool result = udisks_filesystem_call_mount_finish(fs, &mountPoint, res, &err);
-    if (result) {
-        QString mpt(mountPoint);
-        Q_EMIT dev->mounted(QUrl(mpt));
-    } else {
-        // TODO: handle error
-    }
+    if (!result)
+        ; // TODO: handle error
 
     if (mountPoint)
         g_free(mountPoint);
@@ -90,12 +85,8 @@ static GAsyncReadyCallback unmountAsyncCallback = [](GObject *source_object, GAs
 
     GError *err = nullptr;
     bool result = udisks_filesystem_call_unmount_finish(fs, res, &err);
-    if (result) {
-        Q_EMIT dev->unmounted();
-        // TODO: if the device is encryptable, lock the device after unmount (from gvfs)
-    } else {
+    if (!result)
         // TODO: handle the errors
-    }
 
     if (err)
         g_error_free(err);
@@ -157,22 +148,22 @@ static GAsyncReadyCallback powerOffAsyncCallback = [](GObject *source_object, GA
 DFMBlockDevice::DFMBlockDevice(QObject *parent)
     : DFMDevice(new DFMBlockDevicePrivate(this), parent)
 {
-    auto subd = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    registerPath(std::bind(&DFMBlockDevicePrivate::path, subd));
-    registerMount(std::bind(&DFMBlockDevicePrivate::mount, subd, std::placeholders::_1));
-    registerMountAsync(std::bind(&DFMBlockDevicePrivate::mountAsync, subd, std::placeholders::_1));
-    registerUnmount(std::bind(&DFMBlockDevicePrivate::unmount, subd));
-    registerUnmountAsync(std::bind(&DFMBlockDevicePrivate::unmountAsync, subd));
-    registerRename(std::bind(&DFMBlockDevicePrivate::rename, subd, std::placeholders::_1));
-    registerRenameAsync(std::bind(&DFMBlockDevicePrivate::renameAsync, subd, std::placeholders::_1));
-    registerAccessPoint(std::bind(&DFMBlockDevicePrivate::accessPoint, subd));
-    registerMountPoint(std::bind(&DFMBlockDevicePrivate::mountPoint, subd));
-    registerFileSystem(std::bind(&DFMBlockDevicePrivate::fileSystem, subd));
-    registerSizeTotal(std::bind(&DFMBlockDevicePrivate::sizeTotal, subd));
-    registerSizeUsage(std::bind(&DFMBlockDevicePrivate::sizeUsage, subd));
-    registerSizeFree(std::bind(&DFMBlockDevicePrivate::sizeFree, subd));
-    registerDeviceType(std::bind(&DFMBlockDevicePrivate::deviceType, subd));
-    registerGetProperty(std::bind(&DFMBlockDevicePrivate::getProperty, subd, std::placeholders::_1));
+    auto dp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    registerPath(std::bind(&DFMBlockDevicePrivate::path, dp));
+    registerMount(std::bind(&DFMBlockDevicePrivate::mount, dp, std::placeholders::_1));
+    registerMountAsync(std::bind(&DFMBlockDevicePrivate::mountAsync, dp, std::placeholders::_1));
+    registerUnmount(std::bind(&DFMBlockDevicePrivate::unmount, dp));
+    registerUnmountAsync(std::bind(&DFMBlockDevicePrivate::unmountAsync, dp));
+    registerRename(std::bind(&DFMBlockDevicePrivate::rename, dp, std::placeholders::_1));
+    registerRenameAsync(std::bind(&DFMBlockDevicePrivate::renameAsync, dp, std::placeholders::_1));
+    registerAccessPoint(std::bind(&DFMBlockDevicePrivate::accessPoint, dp));
+    registerMountPoint(std::bind(&DFMBlockDevicePrivate::mountPoint, dp));
+    registerFileSystem(std::bind(&DFMBlockDevicePrivate::fileSystem, dp));
+    registerSizeTotal(std::bind(&DFMBlockDevicePrivate::sizeTotal, dp));
+    registerSizeUsage(std::bind(&DFMBlockDevicePrivate::sizeUsage, dp));
+    registerSizeFree(std::bind(&DFMBlockDevicePrivate::sizeFree, dp));
+    registerDeviceType(std::bind(&DFMBlockDevicePrivate::deviceType, dp));
+    registerGetProperty(std::bind(&DFMBlockDevicePrivate::getProperty, dp, std::placeholders::_1));
 }
 
 DFMBlockDevice::~DFMBlockDevice()
@@ -180,42 +171,96 @@ DFMBlockDevice::~DFMBlockDevice()
     qDebug() << __FUNCTION__ << "is released";
 }
 
-QString DFMBlockDevice::deviceDescriptor() const
-{
-    auto subD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    if (subD)
-        return subD->devDesc;
-    return "";
-}
-
 bool DFMBlockDevice::eject()
 {
-    auto subD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    if (subD)
-        return subD->eject();
+    auto dp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    if (dp)
+        return dp->eject();
     return false;
 }
 
 void DFMBlockDevice::ejectAsync()
 {
-    auto subD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    if (subD)
-        return subD->ejectAsync();
+    auto dp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    if (dp)
+        return dp->ejectAsync();
 }
 
 bool DFMBlockDevice::powerOff()
 {
-    auto subD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    if (subD)
-        return subD->powerOff();
+    auto dp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    if (dp)
+        return dp->powerOff();
     return false;
 }
 
 void DFMBlockDevice::powerOffAsync()
 {
-    auto subD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    if (subD)
-        return subD->powerOffAsync();
+    auto dp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    if (dp)
+        return dp->powerOffAsync();
+}
+
+QStringList DFMBlockDevice::mountPoints() const
+{
+    return getProperty(Property::FileSystemMountPoint).toStringList();
+}
+
+QString DFMBlockDevice::device() const
+{
+    return getProperty(Property::BlockDevice).toString();
+}
+
+QString DFMBlockDevice::drive() const
+{
+    return getProperty(Property::BlockDrive).toString();
+}
+
+bool DFMBlockDevice::removable() const
+{
+    return getProperty(Property::DriveRemovable).toBool();
+}
+
+bool DFMBlockDevice::optical() const
+{
+    return getProperty(Property::DriveOptical).toBool();
+}
+
+bool DFMBlockDevice::opticalBlank() const
+{
+    return getProperty(Property::DriveOpticalBlank).toBool();
+}
+
+QStringList DFMBlockDevice::mediaCompatibility() const
+{
+    return getProperty(Property::DriveMediaCompatibility).toStringList();
+}
+
+bool DFMBlockDevice::canPowerOff() const
+{
+    return getProperty(Property::DriveCanPowerOff).toBool();
+}
+
+bool DFMBlockDevice::ejectable() const
+{
+    return getProperty(Property::DriveEjectable).toBool();
+}
+
+bool DFMBlockDevice::isEncrypted() const
+{
+    auto dp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    return dp->encryptedHandler != nullptr;
+}
+
+bool DFMBlockDevice::hasFileSystem() const
+{
+    auto dp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    return dp->fileSystemHandler != nullptr;
+}
+
+bool DFMBlockDevice::hintIgnore() const
+{
+    return getProperty(Property::BlockHintIgnore).toBool();
 }
 
 DFMBlockDevicePrivate::DFMBlockDevicePrivate(DFMBlockDevice *qq)
@@ -226,7 +271,7 @@ DFMBlockDevicePrivate::DFMBlockDevicePrivate(DFMBlockDevice *qq)
 
 QString DFMBlockDevicePrivate::path() const
 {
-    return devDesc;
+    return blkObjPath;
 }
 
 QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
@@ -258,7 +303,6 @@ QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
         // TODO: we need to complete the SCHEME later
         ret.setUrl(QString(mountPoint));
         g_free(mountPoint);
-        Q_EMIT q->mounted(ret);
     }
     if (err)
         g_error_free(err);

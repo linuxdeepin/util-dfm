@@ -36,6 +36,12 @@ class DFMDeviceManagerPrivate final
 public:
     DFMDeviceManagerPrivate(DFMDeviceManager *qq);
     bool registerMonitor(DeviceType type, DFMMonitor *monitor);
+
+    /*!
+     * \brief getRegisteredMonitor
+     * \param type cannot be DeviceType::AllDevice, must be a specific type.
+     * \return nullptr if you pass AllDevice, otherwise will return a specific pointer.
+     */
     DFMMonitor *getRegisteredMonitor(DeviceType type) const;
     bool startMonitor();
     bool stopMonitor();

@@ -28,7 +28,6 @@
 
 DFM_MOUNT_BEGIN_NS
 
-// TODO: this class is designed no subclass, need concern about the ABI compability?
 class DFMMonitor;
 class DFMDevice;
 class DFMDeviceManagerPrivate;
@@ -37,7 +36,6 @@ class DFMDeviceManager final : public QObject
     Q_OBJECT
 
 public:
-    // TODO: need to think whether we really need to make it singleton pattern
     static DFMDeviceManager *instance();
 
     bool registerMonitor(DeviceType type, DFMMonitor *monitor);
@@ -51,14 +49,15 @@ public:
     QList<DFMDevice *> devices(DeviceType type = DeviceType::AllDevice);
 
 Q_SIGNALS:
-    // TODO: complete the args of signals
-    void driveAdded();
-    void driveRemoved();
-    void blockDeviceAdded(DFMDevice *dev);
-    void blockDeviceRemoved(DFMDevice *dev);
-    void mounted(const QString &mountPoint);
-    void unmounted(const QString &unmountFrom); // TODO: do we need this path?
-    void propertyChanged(Property property, const QVariant &newVal);
+    void deviceAdded(DFMDevice *dev);
+    /*!
+     * \brief deviceRemoved
+     * \param path for block device the path is dbus object path.
+     */
+    void deviceRemoved(const QString &path);
+    void mounted(DFMDevice *dev, const QString &mountPoint);
+    void unmounted(DFMDevice *dev);
+    void propertyChanged(DFMDevice *dev, const QMap<Property, QVariant> &changes);
 
 
 private:

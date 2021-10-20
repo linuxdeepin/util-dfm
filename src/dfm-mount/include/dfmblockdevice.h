@@ -39,8 +39,6 @@ public:
     DFMBlockDevice(const DFMBlockDevice &) = delete;
     ~DFMBlockDevice();
 
-    QString deviceDescriptor() const;
-
 private:
     DFMBlockDevice(QObject *parent = nullptr);
 
@@ -49,6 +47,20 @@ public:
     void ejectAsync();
     bool powerOff();
     void powerOffAsync();
+
+    // these are convinience methods
+    QStringList mountPoints() const;
+    QString device() const;
+    QString drive() const;
+    bool removable() const;
+    bool optical() const;
+    bool opticalBlank() const;
+    QStringList mediaCompatibility() const;
+    bool canPowerOff() const;
+    bool ejectable() const;
+    bool isEncrypted() const;
+    bool hasFileSystem() const;
+    bool hintIgnore() const;
 
 Q_SIGNALS:
     void ejected();

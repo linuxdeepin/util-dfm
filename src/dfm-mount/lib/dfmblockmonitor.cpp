@@ -23,6 +23,7 @@
 
 #include "dfmblockmonitor.h"
 #include "private/dfmblockmonitor_p.h"
+#include "base/dfmdevice.h"
 #include "dfmblockdevice.h"
 #include "private/dfmblockdevice_p.h"
 #include "base/dfmmountdefines.h"
@@ -153,6 +154,7 @@ void DFMBlockMonitorPrivate::getAllDevs()
             UDisksBlock *block = udisks_object_peek_block(blockObject);
             UDisksFilesystem *filesystem = udisks_object_peek_filesystem(blockObject);
             UDisksPartition *partition = udisks_object_peek_partition(blockObject);
+            UDisksEncrypted *encrypted = udisks_object_peek_encrypted(blockObject);
 
             if (block) {
                 DFMBlockDevice *dev = nullptr;
@@ -162,14 +164,18 @@ void DFMBlockMonitorPrivate::getAllDevs()
                 else
                     dev = new DFMBlockDevice(q);
 
-                auto blkD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(dev->d.data());
-                blkD->blockHandler = block;
+                auto blkDp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(dev->d.data());
+                blkDp->blockHandler = block;
+                blkDp->blkObjPath = blkObjPath;
 
                 if (filesystem)
-                    blkD->fileSystemHandler = filesystem;
+                    blkDp->fileSystemHandler = filesystem;
+
+                if (encrypted)
+                    blkDp->encryptedHandler = encrypted;
 
                 if (partition)
-                    blkD->partitionHandler = partition;
+                    blkDp->partitionHandler = partition;
 
                 char *driveObjPath = udisks_block_dup_drive(block);
                 UDisksObject *driveObject = udisks_client_peek_object(client, driveObjPath);
@@ -177,8 +183,11 @@ void DFMBlockMonitorPrivate::getAllDevs()
                 if (driveObject) {
                     UDisksDrive *drive = udisks_object_peek_drive(driveObject);
                     if (drive) {
-                        blkD->driveHandler = drive;
+                        blkDp->driveHandler = drive;
                         this->drives.insert(QString(driveObjPath), drive);
+                        auto &devsOfDrive = this->devicesOfDrive[driveObjPath];
+                        if (!devsOfDrive.contains(dev))
+                            devsOfDrive.append(dev);
                     }
                 }
 
@@ -202,6 +211,7 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
     Q_UNUSED(mng);
     DFMBlockMonitorPrivate *d = static_cast<DFMBlockMonitorPrivate *>(userData);
     Q_ASSERT_X(d, __FUNCTION__, "monitor is not valid");
+    auto q = d->q;
 
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
     if (!udisksObj)
@@ -217,33 +227,40 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
     if (drive) {
         qDebug() << "driveAdded";
         d->drives.insert(objKey, drive);
-        // Q_EMIT monitor->driveAdded
+         Q_EMIT q->driveAdded(objKey);
     }
 
     UDisksBlock *block = udisks_object_peek_block(udisksObj);
     UDisksFilesystem *fileSystem = udisks_object_peek_filesystem(udisksObj);
     UDisksPartition *partition = udisks_object_peek_partition(udisksObj);
+    UDisksEncrypted *encrypted = udisks_object_peek_encrypted(udisksObj);
 
     DFMBlockDevice *blkDev = nullptr;
     if (block) {
         blkDev = new DFMBlockDevice(d->q);
-        auto blkD = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(blkDev->d.data());
-        blkD->blockHandler = block;
+        auto blkDp = castSubPrivate<DFMDevicePrivate, DFMBlockDevicePrivate>(blkDev->d.data());
+        blkDp->blockHandler = block;
+        blkDp->blkObjPath = objKey;
+
         QString drive = blkDev->getProperty(Property::BlockDrive).toString();
         if (d->drives.contains(drive)) {
-            blkD->driveHandler = d->drives.value(drive);
+            blkDp->driveHandler = d->drives.value(drive);
+            d->devicesOfDrive[drive].append(blkDev);
         }
 
         if (fileSystem) {
-           blkD->fileSystemHandler = fileSystem;
+           blkDp->fileSystemHandler = fileSystem;
             // Q_EMIT monitor->filesystemadded
         }
         if (partition) {
-            blkD->partitionHandler = partition;
+            blkDp->partitionHandler = partition;
             // Q_EMIT monitor->partitionadded
         }
+        if (encrypted) {
+            blkDp->encryptedHandler = encrypted;
+        }
 
-        Q_EMIT d->q->deviceAdded(blkDev);
+        Q_EMIT q->deviceAdded(blkDev);
         d->devices.insert(objKey, blkDev);
     }
 }
@@ -254,6 +271,7 @@ void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObjec
 
     DFMBlockMonitorPrivate *d = static_cast<DFMBlockMonitorPrivate *>(userData);
     Q_ASSERT_X(d, __FUNCTION__, "monitor is not valid");
+    auto q = d->q;
 
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
     if (!udisksObj)
@@ -265,23 +283,27 @@ void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObjec
         return;
 
     QString objKey = g_dbus_object_get_object_path(obj);
-//    qDebug() << "\t" << objKey;
-
     UDisksDrive *drive = udisks_object_peek_drive(udisksObj);
     if (drive) {
         qDebug() << "driveRemoved";
         d->drives.remove(objKey);
-        // Q_EMIT monitor->driveRemoved
+        d->devicesOfDrive.remove(objKey);
+        Q_EMIT q->driveRemoved(objKey);
     }
 
-    UDisksBlock *block = udisks_object_get_block(udisksObj);
-//    UDisksFilesystem *fileSystem = udisks_object_peek_filesystem(udisksObj);
-//    UDisksPartition *partition = udisks_object_peek_partition(udisksObj);
+    UDisksBlock *block = udisks_object_peek_block(udisksObj);
     if (block) {
-        // we get the handler by *_GET_* funcs, so there is no need to release it by ourselves.
+        // we get the handler by *_PEEK_* funcs, so there is no need to release it by ourselves.
         auto *dev = d->devices.take(objKey);
         delete dev;
-        // Q_EMIT monitor->deviceRemoved;
+        Q_EMIT q->deviceRemoved(objKey);
+
+        auto driveObjPath = udisks_block_get_drive(block);
+        if (d->devicesOfDrive.contains(driveObjPath)) {
+            d->devicesOfDrive[driveObjPath].removeAll(dev);
+            if (d->devicesOfDrive.value(driveObjPath).isEmpty())
+                d->devicesOfDrive.remove(driveObjPath);
+        }
     }
 }
 
@@ -294,6 +316,7 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
 
     DFMBlockMonitorPrivate *d = static_cast<DFMBlockMonitorPrivate *>(userData);
     Q_ASSERT_X(d, __FUNCTION__, "monitor is not valid");
+    auto q = d->q;
 
     // obtain the object path like "/org/freedesktop/UDisks2/block_devices/sdb1" from dbusProxy
     // and which is the key of DFMBlockMonitorPrivate::devices
@@ -301,58 +324,149 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
     if (objPath.isEmpty())
         return;
 
+    qDebug() << objPath << "; " << __FUNCTION__;
+
     // obtain the DFMDevice(s) handler to emit the propertyChanged signal
     QList<DFMBlockDevice *> devs;
     if (objPath.startsWith("/org/freedesktop/UDisks2/drives/")) { // means this is a DRIVE objech which property has changed
         qDebug() << "drive changed...";
-        // TODO: we need to find a way to notify apps that the drivers' properties have changed
-        // but for now, we can just ignore it, there is not so much properties of drives' that we shall concern about.
-        devs = d->devicesOfDrive.values(objPath);
+        // so we can notify all of the block devices of this drive that the dirve's property has changed.
+        devs = d->devicesOfDrive.value(objPath);
     } else { // we treat it as Blocks
         DFMBlockDevice *dev = d->devices.value(objPath, nullptr);
         if (dev)
             devs << dev;
     }
-    if (devs.isEmpty()) // since there is no device for this object, so there is no need to do subsequent works
+    if (devs.isEmpty()) { // since there is no device for this object, so there is no need to report changes
+        qDebug() << "no devies to notify.";
         return;
+    }
 
     GVariantIter *iter = nullptr;
     const char *property_name = nullptr;
     GVariant *value = nullptr;
-
-    // iterate the changed key-values of this object, it is storaged like dictionaries. the a{sv} means array of String-Variant pair.
+    QMap<Property, QVariant> changes;
     g_variant_get (property, "a{sv}", &iter);
     while (g_variant_iter_next(iter, "{&sv}", &property_name, &value)) {
-        char *value_str;
-        value_str = g_variant_print(value, FALSE);
+        char *value_str = g_variant_print(value, false);
+        QVariant newVal = gvariantToQVariant(value);
 
-        qDebug() << property_name << "\t\tchanged, the new value is: " << value_str;
-        // TODO: we need find a way to map the property_name and the Property enum, so that we can find the right enum quickly.
+        qDebug() << property_name << "\t\tchanged, the new value is: " << value_str
+                 << "\nconverted value is: " << newVal;
 
-        // handle the signal emits here.
-        QList<DFMBlockDevice *>::const_iterator iter;
-        for (iter = devs.cbegin(); iter != devs.cend(); iter += 1) {
-            // TODO: emits the signal
+        Property property = propertyName2Property.value(property_name, Property::BlockProperty);
+        if (property == Property::BlockProperty) {
+            qDebug() << "cannot find the enum of " << property_name;
+            continue;
         }
+
+        changes.insert(property, newVal);
     }
 
-    // TODO: when mountpoint is changed to empty, should emit the unmounted signal
+    // in most cases, the item count of devs will be 1, only when drive property changes, the counts might bigger than 1.
+    for (auto iter = devs.cbegin(); iter != devs.cend(); iter += 1) {
+        auto *dev = (*iter);
+        if (dev) {
+            Q_EMIT dev->propertyChanged(changes);
+            Q_EMIT q->propertyChanged(dev, changes);
+        }
+
+        // if the mountpoints changed to empty, then we think it is unmounted
+        if (changes.contains(Property::FileSystemMountPoint)) {
+            auto mpts = changes.value(Property::FileSystemMountPoint).toStringList();
+            if (mpts.isEmpty()) {
+                Q_EMIT dev->unmounted();
+                Q_EMIT q->mountRemoved(dev);
+            } else {
+                Q_EMIT dev->mounted(mpts.first());
+                Q_EMIT q->mountAdded(dev, mpts.first());
+            }
+        }
+    }
 }
 
 DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
     : DFMMonitor (new DFMBlockMonitorPrivate(this), parent)
 {
-    auto subd = castSubPrivate<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
-    registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, subd));
-    registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, subd));
-    registerStatus(std::bind(&DFMBlockMonitorPrivate::status, subd));
-    registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, subd));
-    registerGetDevices(std::bind(&DFMBlockMonitorPrivate::getDevices, subd));
+    auto dp = castSubPrivate<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, dp));
+    registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, dp));
+    registerStatus(std::bind(&DFMBlockMonitorPrivate::status, dp));
+    registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, dp));
+    registerGetDevices(std::bind(&DFMBlockMonitorPrivate::getDevices, dp));
 }
 
 DFMBlockMonitor::~DFMBlockMonitor()
 {
-    auto subd = castSubPrivate<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
-    subd->stopMonitor();
+    auto dp = castSubPrivate<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    dp->stopMonitor();
 }
 
+#define StringPropertyItem(key, val)    std::pair<QString, Property>(key, val)
+
+const QMap<QString, Property> DFMBlockMonitorPrivate::propertyName2Property {
+    StringPropertyItem("Configuration",           Property::BlockConfiguration),
+    StringPropertyItem("CryptoBackingDevice",     Property::BlockCryptoBackingDevice),
+    StringPropertyItem("Device",                  Property::BlockDevice),
+    StringPropertyItem("Drive",                   Property::BlockDrive),
+    StringPropertyItem("IdLabel",                 Property::BlockIDLabel),
+    StringPropertyItem("IdType",                  Property::BlockIDType),
+    StringPropertyItem("IdUsage",                 Property::BlockIDUsage),
+    StringPropertyItem("IdUUID",                  Property::BlockIDUUID),
+    StringPropertyItem("IdVersion",               Property::BlockIDVersion),
+    StringPropertyItem("DeviceNumber",            Property::BlockDeviceNumber),
+    StringPropertyItem("PreferredDevice",         Property::BlockPreferredDevice),
+    StringPropertyItem("Id",                      Property::BlockID),
+    StringPropertyItem("Size",                    Property::BlockSize),
+    StringPropertyItem("ReadOnly",                Property::BlockReadOnly),
+    StringPropertyItem("Symlinks",                Property::BlockSymlinks),
+    StringPropertyItem("HintPartitionable",       Property::BlockHintPartitionable),
+    StringPropertyItem("HintSystem",              Property::BlockHintSystem),
+    StringPropertyItem("HintIgnore",              Property::BlockHintIgnore),
+    StringPropertyItem("HintAuto",                Property::BlockHintAuto),
+    StringPropertyItem("HintName",                Property::BlockHintName),
+    StringPropertyItem("HintIconName",            Property::BlockHintIconName),
+    StringPropertyItem("HintSymbolicIconName",    Property::BlockHintSymbolicIconName),
+    StringPropertyItem("MdRaid",                  Property::BlockMdRaid),
+    StringPropertyItem("MdRaidMember",            Property::BlockMdRaidMember),
+    StringPropertyItem("ConnectionBus",           Property::DriveConnectionBus),
+    StringPropertyItem("Removable",               Property::DriveRemovable),
+    StringPropertyItem("Ejectable",               Property::DriveEjectable),
+    StringPropertyItem("Seat",                    Property::DriveSeat),
+    StringPropertyItem("Media",                   Property::DriveMedia),
+    StringPropertyItem("MediaCompatibility",      Property::DriveMediaCompatibility),
+    StringPropertyItem("MediaRemovable",          Property::DriveMediaRemovable),
+    StringPropertyItem("MediaAvailable",          Property::DriveMediaAvailable),
+    StringPropertyItem("MediaChangeDetected",     Property::DriveMediaChangeDetected),
+    StringPropertyItem("TimeDetected",            Property::DriveTimeDetected),
+    StringPropertyItem("TimeMediaDetected",       Property::DriveTimeMediaDetected),
+    StringPropertyItem("Size",                    Property::DriveSize),
+    StringPropertyItem("Optical",                 Property::DriveOptical),
+    StringPropertyItem("OpticalBlank",            Property::DriveOpticalBlank),
+    StringPropertyItem("OpticalNumTracks",        Property::DriveOpticalNumTracks),
+    StringPropertyItem("OpticalNumAudioTracks",   Property::DriveOpticalNumAudioTracks),
+    StringPropertyItem("OpticalNumDataTracks",    Property::DriveOpticalNumDataTracks),
+    StringPropertyItem("OpticalNumSessions",      Property::DriveOpticalNumSessions),
+    StringPropertyItem("Model",                   Property::DriveModel),
+    StringPropertyItem("Revision",                Property::DriveRevision),
+    StringPropertyItem("RotationRate",            Property::DriveRotationRate),
+    StringPropertyItem("Serial",                  Property::DriveSerial),
+    StringPropertyItem("Vender",                  Property::DriveVender),
+    StringPropertyItem("WWN",                     Property::DriveWWN),
+    StringPropertyItem("SortKey",                 Property::DriveSortKey),
+    StringPropertyItem("Configuration",           Property::DriveConfiguration),
+    StringPropertyItem("ID",                      Property::DriveID),
+    StringPropertyItem("CanPowerOff",             Property::DriveCanPowerOff),
+    StringPropertyItem("SiblingID",               Property::DriveSiblingID),
+    StringPropertyItem("MountPoints",             Property::FileSystemMountPoint),
+    StringPropertyItem("Number",                  Property::PartitionNumber),
+    StringPropertyItem("Type",                    Property::PartitionType),
+    StringPropertyItem("Offset",                  Property::PartitionOffset),
+    StringPropertyItem("Size",                    Property::PartitionSize),
+    StringPropertyItem("Flags",                   Property::PartitionFlags),
+    StringPropertyItem("Name",                    Property::PartitionName),
+    StringPropertyItem("UUID",                    Property::PartitionUUID),
+    StringPropertyItem("Table",                   Property::PartitionTable),
+    StringPropertyItem("IsContainer",             Property::PartitionIsContainer),
+    StringPropertyItem("IsContained",             Property::PartitionIsContained),
+};
