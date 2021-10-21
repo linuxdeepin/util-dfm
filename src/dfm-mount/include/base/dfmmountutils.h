@@ -20,34 +20,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKMONITOR_H
-#define DFMBLOCKMONITOR_H
+#ifndef DFMMOUNTUTILS_H
+#define DFMMOUNTUTILS_H
 
-#include "base/dfmmonitor.h"
+#include "dfmmount_global.h"
 
-#include <QObject>
+#include <QVariant>
 
+typedef struct _GVariant GVariant;
 DFM_MOUNT_BEGIN_NS
 
-class DFMBlockMonitorPrivate;
-class DFMBlockMonitor final : public DFMMonitor
-{
-    Q_OBJECT
-    Q_DECLARE_PRIVATE(DFMBlockMonitor)
 
+template<typename FromClass, typename ToClass>
+inline ToClass *castClassFromTo(FromClass *p) {
+    auto pPointer = dynamic_cast<ToClass *>(p);
+//    if (!pPointer)
+//        abort();
+    return pPointer;
+}
+
+class Utils {
 public:
-    DFMBlockMonitor(QObject *parent = nullptr);
-    ~DFMBlockMonitor();
+static QVariant castFromGVariant(GVariant *val);
 
-    QStringList resolveDevice(const QVariantMap &devspec, const QVariantMap &opts);
-    QStringList resolveDeviceFromDrive(const QString &drvObjPath);
+static GVariant *castFromQVariant(const QVariant &val);
 
-Q_SIGNALS:
-    void driveAdded(const QString &drvObjPath);
-    void driveRemoved(const QString &drvObjPath);
-    void fileSystemAdded(const QString &blkObjPath);
-    void fileSystemRemoved(const QString &blkObjPath);
+static GVariant *castFromQVariantMap(const QVariantMap &val);
+
+static GVariant *castFromQStringList(const QStringList &val);
+
+static GVariant *castFromList(const QList<QVariant> &val);
 };
-DFM_MOUNT_END_NS
 
-#endif // DFMBLOCKMONITOR_H
+DFM_MOUNT_END_NS
+#endif

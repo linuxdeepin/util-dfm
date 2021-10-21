@@ -39,25 +39,21 @@ public:
     static DFMDeviceManager *instance();
 
     bool registerMonitor(DeviceType type, DFMMonitor *monitor);
-    // this object is owned by manager, DO NOT free it.
     DFMMonitor *getRegisteredMonitor(DeviceType type) const;
     bool startMonitorWatch();
     bool stopMonitorWatch();
     MonitorError lastError() const;
 
-    // the objects are owned by manager, do not free it manually
-    QList<DFMDevice *> devices(DeviceType type = DeviceType::AllDevice);
+    QMap<DeviceType, QStringList> devices(DeviceType type = DeviceType::AllDevice);
 
 Q_SIGNALS:
-    void deviceAdded(DFMDevice *dev);
-    /*!
-     * \brief deviceRemoved
-     * \param path for block device the path is dbus object path.
-     */
-    void deviceRemoved(const QString &path);
-    void mounted(DFMDevice *dev, const QString &mountPoint);
-    void unmounted(DFMDevice *dev);
-    void propertyChanged(DFMDevice *dev, const QMap<Property, QVariant> &changes);
+    // these signals are transferred from monitors, you can use them or connect directly from monitors,
+    // but if you want to cannect some special signals, find them in specific monitor.
+    void deviceAdded(const QString &deviceKey, DeviceType type);
+    void deviceRemoved(const QString &deviceKey, DeviceType type);
+    void mounted(const QString &deviceKey, const QString &mountPoint, DeviceType type);
+    void unmounted(const QString &deviceKey, DeviceType type);
+    void propertyChanged(const QString &deviceKey, const QMap<Property, QVariant> &changes, DeviceType type);
 
 
 private:

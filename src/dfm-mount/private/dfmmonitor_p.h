@@ -42,6 +42,7 @@ public:
     DFMMonitor::StatusFunc status = nullptr;
     DFMMonitor::MonitorObjectTypeFunc mot = nullptr;
     DFMMonitor::GetDevicesFunc getDevices = nullptr;
+    DFMMonitor::CreateDeviceByIdFunc createDeviceById = nullptr;
 
     DFMMonitor *q = nullptr;
 };

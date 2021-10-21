@@ -31,7 +31,7 @@ DFM_MOUNT_BEGIN_NS
 class DFMBlockDevicePrivate final: public DFMDevicePrivate
 {
 public:
-    DFMBlockDevicePrivate(DFMBlockDevice *qq);
+    DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq);
 
     QString path() const DFM_MNT_OVERRIDE;
     QUrl mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
@@ -59,13 +59,15 @@ public:
     bool powerOff();
     void powerOffAsync();
 
+private:
+    void init(UDisksClient *cli);
 public:
-    QString blkObjPath; // path of block device object
-    UDisksBlock *blockHandler = nullptr;
-    UDisksFilesystem *fileSystemHandler = nullptr;
-    UDisksDrive *driveHandler = nullptr;
-    UDisksPartition *partitionHandler = nullptr;
-    UDisksEncrypted *encryptedHandler = nullptr;
+    QString             blkObjPath; // path of block device object
+    UDisksBlock         *blockHandler       { nullptr };
+    UDisksFilesystem    *fileSystemHandler  { nullptr };
+    UDisksDrive         *driveHandler       { nullptr };
+    UDisksPartition     *partitionHandler   { nullptr };
+    UDisksEncrypted     *encryptedHandler   { nullptr };
 };
 DFM_MOUNT_END_NS
 

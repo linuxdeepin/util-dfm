@@ -47,9 +47,11 @@ public:
     bool stopMonitor() DFM_MNT_OVERRIDE;
     MonitorStatus status() const DFM_MNT_OVERRIDE;
     DeviceType monitorObjectType() const DFM_MNT_OVERRIDE;
-    QList<DFMDevice *> getDevices() DFM_MNT_OVERRIDE;
+    QStringList getDevices() DFM_MNT_OVERRIDE;
+    QSharedPointer<DFMDevice> createDeviceById(const QString &id) DFM_MNT_OVERRIDE;
 
-    void getAllDevs();
+    QStringList resolveDevice(const QVariantMap &devspec, const QVariantMap &opts);
+    QStringList resolveDeviceOfDrive(const QString &drvObjPath);
 
 private:
     static void onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData);
@@ -61,12 +63,7 @@ public:
     UDisksClient *client = nullptr;
     MonitorStatus curStatus = MonitorStatus::Idle;
 
-    QMap<QString, DFMBlockDevice *> devices;
-    QMap<QString, UDisksDrive *> drives;
-    // the key is the path of driver, and the value is the blocks belong to the driver,
-    // in this way could help us notify app the drivers' property has changed easily, and just for this purpose.
-    // not all blocks have a driver, such as loop device do not have a physical driver.
-    QMap<QString, QList<DFMBlockDevice *>> devicesOfDrive;
+//    QMap<QString, QStringList> devicesOfDrive;
     QMap<QString, ulong> connections;
     static const QMap<QString, Property> propertyName2Property;
 };

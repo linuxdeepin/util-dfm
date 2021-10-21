@@ -27,6 +27,8 @@
 
 #include <QObject>
 
+typedef struct _UDisksClient UDisksClient;
+
 DFM_MOUNT_BEGIN_NS
 
 class DFMBlockDevicePrivate;
@@ -40,7 +42,7 @@ public:
     ~DFMBlockDevice();
 
 private:
-    DFMBlockDevice(QObject *parent = nullptr);
+    DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent = nullptr);
 
 public:
     bool eject();
@@ -52,6 +54,7 @@ public:
     QStringList mountPoints() const;
     QString device() const;
     QString drive() const;
+    QString idLabel() const;
     bool removable() const;
     bool optical() const;
     bool opticalBlank() const;

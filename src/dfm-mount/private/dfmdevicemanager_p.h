@@ -45,7 +45,7 @@ public:
     DFMMonitor *getRegisteredMonitor(DeviceType type) const;
     bool startMonitor();
     bool stopMonitor();
-    QList<DFMDevice *> devices(DeviceType type);
+    QMap<DeviceType, QStringList> devices(DeviceType type);
 
     QMap<DeviceType, DFMMonitor *> monitors;
     MonitorError lastError;

@@ -78,11 +78,18 @@ DeviceType DFMMonitor::monitorObjectType() const
     return d->mot();
 }
 
-QList<DFMDevice *> DFMMonitor::getDevices() const
+QStringList DFMMonitor::getDevices() const
 {
     Q_ASSERT_X(d->mot, __PRETTY_FUNCTION__, "not register");
 
     return d->getDevices();
+}
+
+QSharedPointer<DFMDevice> DFMMonitor::createDeviceById(const QString &id) const
+{
+    Q_ASSERT_X(d->mot, __PRETTY_FUNCTION__, "not register");
+
+    return d->createDeviceById(id);
 }
 
 void DFMMonitor::registerStartMonitor(const DFMMonitor::StartMonitorFunc &func)
@@ -118,5 +125,12 @@ void DFMMonitor::registerGetDevices(const DFMMonitor::GetDevicesFunc &func)
     Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
 
     d->getDevices = func;
+}
+
+void DFMMonitor::registerCreateDeviceById(const DFMMonitor::CreateDeviceByIdFunc &func)
+{
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->createDeviceById = func;
 }
 

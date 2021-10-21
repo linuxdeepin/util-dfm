@@ -45,6 +45,7 @@ set(LIB_BASE_HEADER
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmonitor.h
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmount_global.h
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmountdefines.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmountutils.h
     )
 
 set(LIB_HEADER
@@ -66,6 +67,7 @@ set(LIB_P_HEADER
 set(LIB_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/lib/base/dfmdevice.cpp
     ${CMAKE_CURRENT_LIST_DIR}/lib/base/dfmmonitor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/base/dfmmountutils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockdevice.cpp
     ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockmonitor.cpp
     ${CMAKE_CURRENT_LIST_DIR}/lib/dfmprotocoldevice.cpp

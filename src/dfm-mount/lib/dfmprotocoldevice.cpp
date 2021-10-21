@@ -24,6 +24,7 @@
 #include "dfmprotocoldevice.h"
 #include "private/dfmprotocoldevice_p.h"
 #include "base/dfmmountdefines.h"
+#include "base/dfmmountutils.h"
 
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
@@ -36,7 +37,7 @@ DFM_MOUNT_USE_NS
 DFMProtocolDevice::DFMProtocolDevice(const QString &device, QObject *parent)
     : DFMDevice(new DFMProtocolDevicePrivate(device, this), parent)
 {
-    auto dp = castSubPrivate<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    auto dp = castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
     registerPath(std::bind(&DFMProtocolDevicePrivate::path, dp));
     registerMount(std::bind(&DFMProtocolDevicePrivate::mount, dp, std::placeholders::_1));
     registerMountAsync(std::bind(&DFMProtocolDevicePrivate::mountAsync, dp, std::placeholders::_1));
@@ -91,8 +92,8 @@ void DFMProtocolDevicePrivate::unmountAsync()
 {
     QtConcurrent::run([&]{
         auto ret = unmount();
-        if (ret)
-            Q_EMIT q->unmounted();
+        if (ret);
+//            Q_EMIT q->unmounted();
     });
 }
 
@@ -105,8 +106,8 @@ void DFMProtocolDevicePrivate::renameAsync(const QString &newName)
 {
     QtConcurrent::run([&]{
         auto ret = rename(newName);
-        if (ret)
-            Q_EMIT q->renamed(newName);
+        if (ret);
+//            Q_EMIT q->renamed(newName);
     });
 }
 

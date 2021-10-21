@@ -56,8 +56,9 @@ enum class MonitorStatus : uint16_t {
 };
 
 enum class Property : uint16_t {
+    NotInit = 0,
     // blocks property
-    BlockProperty = 0,         // this is invalid but just a placeholder
+    BlockProperty,             // this is invalid but just a placeholder
     BlockConfiguration,        // variant
     BlockCryptoBackingDevice,  // str
     BlockDevice,

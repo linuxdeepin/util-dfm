@@ -28,6 +28,8 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QUrl>
+#include <QMap>
+#include <QVariant>
 
 #include <functional>
 
@@ -98,12 +100,6 @@ public:
     void registerSizeFree(const SizeFreeFunc &func);
     void registerDeviceType(const DeviceTypeFunc &func);
     void registerGetProperty(const GetPropertyFunc &func);
-
-Q_SIGNALS:
-    void mounted(const QUrl &mountPoint);
-    void unmounted();
-    void renamed(const QString &newName);
-    void propertyChanged(QMap<Property, QVariant> changes);
 
 protected:
     QScopedPointer<DFMDevicePrivate> d;

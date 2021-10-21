@@ -44,11 +44,21 @@ bool DFMDeviceManagerPrivate::registerMonitor(DeviceType type, DFMMonitor *monit
     }
     monitors.insert(type, monitor);
 
-    QObject::connect(monitor, &DFMMonitor::deviceAdded,      q, &DFMDeviceManager::deviceAdded);
-    QObject::connect(monitor, &DFMMonitor::deviceRemoved,    q, &DFMDeviceManager::deviceRemoved);
-    QObject::connect(monitor, &DFMMonitor::mountAdded,       q, &DFMDeviceManager::mounted);
-    QObject::connect(monitor, &DFMMonitor::mountRemoved,     q, &DFMDeviceManager::unmounted);
-    QObject::connect(monitor, &DFMMonitor::propertyChanged,  q, &DFMDeviceManager::propertyChanged);
+    QObject::connect(monitor, &DFMMonitor::deviceAdded,      q, [type, this](const QString &devId){
+        Q_EMIT q->deviceAdded(devId, type);
+    });
+    QObject::connect(monitor, &DFMMonitor::deviceRemoved,    q, [type, this](const QString &devId){
+        Q_EMIT q->deviceRemoved(devId, type);
+    });
+    QObject::connect(monitor, &DFMMonitor::mountAdded,       q, [type, this](const QString &devId, const QString &mpt){
+        Q_EMIT q->mounted(devId, mpt, type);
+    });
+    QObject::connect(monitor, &DFMMonitor::mountRemoved,     q, [type, this](const QString &devId){
+        Q_EMIT q->unmounted(devId, type);
+    });
+    QObject::connect(monitor, &DFMMonitor::propertyChanged,  q, [type, this](const QString &devId, const QMap<Property, QVariant> &changes){
+        Q_EMIT q->propertyChanged(devId, changes, type);
+    });
 
     return true;
 }
@@ -90,13 +100,14 @@ bool DFMDeviceManagerPrivate::stopMonitor()
     return res;
 }
 
-QList<DFMDevice *> DFMDeviceManagerPrivate::devices(DeviceType type)
+QMap<DeviceType, QStringList> DFMDeviceManagerPrivate::devices(DeviceType type)
 {
     auto getAllDev = [this]{
-        QList<DFMDevice *> ret;
+        QMap<DeviceType, QStringList> ret;
         for (const auto &monitor: monitors) {
             if (monitor)
-                ret << monitor->getDevices();
+                ; // TODO
+//                ret << monitor->getDevices();
             else
                 lastError = MonitorError::MonitorNotRegister;
         }
@@ -104,11 +115,15 @@ QList<DFMDevice *> DFMDeviceManagerPrivate::devices(DeviceType type)
     };
 
     auto getDevsOfType = [this](DeviceType type) {
+        QMap<DeviceType, QStringList> ret;
         auto monitor = monitors.value(type);
-        if (monitor)
-            return monitor->getDevices();
+        if (monitor) {
+            ret.insert(type, monitor->getDevices());
+            return ret;
+        }
+
         lastError = MonitorError::MonitorNotRegister;
-        return QList<DFMDevice *>();
+        return ret;
     };
 
     switch (type) {
@@ -119,7 +134,6 @@ QList<DFMDevice *> DFMDeviceManagerPrivate::devices(DeviceType type)
     case DeviceType::BlockDevice:
         return getDevsOfType(type);
     }
-    return QList<DFMDevice *>();
 }
 
 DFMDeviceManager::DFMDeviceManager(QObject *parent)
@@ -170,7 +184,7 @@ MonitorError DFMDeviceManager::lastError() const
     return d->lastError;
 }
 
-QList<DFMDevice *> DFMDeviceManager::devices(DeviceType type)
+QMap<DeviceType, QStringList> DFMDeviceManager::devices(DeviceType type)
 {
     return d->devices(type);
 }
