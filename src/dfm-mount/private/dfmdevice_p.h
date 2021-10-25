@@ -47,7 +47,6 @@ public:
     DFMDevice::UnmountAsyncFunc unmountAsync = nullptr;
     DFMDevice::RenameFunc rename = nullptr;
     DFMDevice::RenameAsyncFunc renameAsync = nullptr;
-    DFMDevice::AccessPointFunc accessPoint = nullptr;
     DFMDevice::MountPointFunc mountPoint = nullptr;
     DFMDevice::FileSystemFunc fileSystem = nullptr;
     DFMDevice::SizeTotalFunc sizeTotal = nullptr;

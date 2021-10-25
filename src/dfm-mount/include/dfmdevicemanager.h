@@ -38,12 +38,12 @@ class DFMDeviceManager final : public QObject
 public:
     static DFMDeviceManager *instance();
 
-    bool registerMonitor(DeviceType type, DFMMonitor *monitor);
-    DFMMonitor *getRegisteredMonitor(DeviceType type) const;
+    template<class DFMSubMonitor, typename... ConstructArgs>
+    bool registerMonitor(ConstructArgs&&...);
+    QSharedPointer<DFMMonitor> getRegisteredMonitor(DeviceType type) const;
     bool startMonitorWatch();
     bool stopMonitorWatch();
     MonitorError lastError() const;
-
     QMap<DeviceType, QStringList> devices(DeviceType type = DeviceType::AllDevice);
 
 Q_SIGNALS:

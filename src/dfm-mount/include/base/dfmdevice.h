@@ -46,16 +46,15 @@ public:
 
     DFM_MNT_VIRTUAL QString path() const;
 
-    DFM_MNT_VIRTUAL QUrl mount(const QVariantMap &opts);
-    DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts);
+    DFM_MNT_VIRTUAL QUrl mount(const QVariantMap &opts = {});
+    DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts = {});
 
-    DFM_MNT_VIRTUAL bool unmount();
-    DFM_MNT_VIRTUAL void unmountAsync();
+    DFM_MNT_VIRTUAL bool unmount(const QVariantMap &opts = {});
+    DFM_MNT_VIRTUAL void unmountAsync(const QVariantMap &opts = {});
 
-    DFM_MNT_VIRTUAL bool rename(const QString &newName);
-    DFM_MNT_VIRTUAL void renameAsync(const QString &newName);
+    DFM_MNT_VIRTUAL bool rename(const QString &newName, const QVariantMap &opts = {});
+    DFM_MNT_VIRTUAL void renameAsync(const QString &newName, const QVariantMap &opts = {});
 
-    DFM_MNT_VIRTUAL QUrl accessPoint() const;
     DFM_MNT_VIRTUAL QUrl mountPoint() const;
     DFM_MNT_VIRTUAL QString fileSystem() const;
     DFM_MNT_VIRTUAL qint64 sizeTotal() const;
@@ -72,11 +71,10 @@ public:
     using PathFunc         = std::function<QString ()>;
     using MountFunc        = std::function<QUrl (const QVariantMap &)>;
     using MountAsyncFunc   = std::function<void (const QVariantMap &)>;
-    using UnmountFunc      = std::function<bool ()>;
-    using UnmountAsyncFunc = std::function<void ()>;
-    using RenameFunc       = std::function<bool (const QString &)>;
-    using RenameAsyncFunc  = std::function<void (const QString &)>;
-    using AccessPointFunc  = std::function<QUrl ()>;
+    using UnmountFunc      = std::function<bool (const QVariantMap &)>;
+    using UnmountAsyncFunc = std::function<void (const QVariantMap &)>;
+    using RenameFunc       = std::function<bool (const QString &, const QVariantMap &)>;
+    using RenameAsyncFunc  = std::function<void (const QString &, const QVariantMap &)>;
     using MountPointFunc   = std::function<QUrl ()>;
     using FileSystemFunc   = std::function<QString ()>;
     using SizeTotalFunc    = std::function<qint64 ()>;
@@ -92,7 +90,6 @@ public:
     void registerUnmountAsync(const UnmountAsyncFunc &func);
     void registerRename(const RenameFunc &func);
     void registerRenameAsync(const RenameAsyncFunc &func);
-    void registerAccessPoint(const AccessPointFunc &func);
     void registerMountPoint(const MountPointFunc &func);
     void registerFileSystem(const FileSystemFunc &func);
     void registerSizeTotal(const SizeTotalFunc &func);

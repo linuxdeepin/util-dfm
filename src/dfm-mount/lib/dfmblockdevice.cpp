@@ -153,11 +153,10 @@ DFMBlockDevice::DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, 
     registerPath(std::bind(&DFMBlockDevicePrivate::path, dp));
     registerMount(std::bind(&DFMBlockDevicePrivate::mount, dp, std::placeholders::_1));
     registerMountAsync(std::bind(&DFMBlockDevicePrivate::mountAsync, dp, std::placeholders::_1));
-    registerUnmount(std::bind(&DFMBlockDevicePrivate::unmount, dp));
-    registerUnmountAsync(std::bind(&DFMBlockDevicePrivate::unmountAsync, dp));
-    registerRename(std::bind(&DFMBlockDevicePrivate::rename, dp, std::placeholders::_1));
-    registerRenameAsync(std::bind(&DFMBlockDevicePrivate::renameAsync, dp, std::placeholders::_1));
-    registerAccessPoint(std::bind(&DFMBlockDevicePrivate::accessPoint, dp));
+    registerUnmount(std::bind(&DFMBlockDevicePrivate::unmount, dp, std::placeholders::_1));
+    registerUnmountAsync(std::bind(&DFMBlockDevicePrivate::unmountAsync, dp, std::placeholders::_1));
+    registerRename(std::bind(&DFMBlockDevicePrivate::rename, dp, std::placeholders::_1, std::placeholders::_2));
+    registerRenameAsync(std::bind(&DFMBlockDevicePrivate::renameAsync, dp, std::placeholders::_1, std::placeholders::_2));
     registerMountPoint(std::bind(&DFMBlockDevicePrivate::mountPoint, dp));
     registerFileSystem(std::bind(&DFMBlockDevicePrivate::fileSystem, dp));
     registerSizeTotal(std::bind(&DFMBlockDevicePrivate::sizeTotal, dp));
@@ -172,30 +171,30 @@ DFMBlockDevice::~DFMBlockDevice()
     qDebug() << __FUNCTION__ << "is released";
 }
 
-bool DFMBlockDevice::eject()
+bool DFMBlockDevice::eject(const QVariantMap &opts)
 {
     auto dp = castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    return dp ? dp->eject() : false;
+    return dp ? dp->eject(opts) : false;
 }
 
-void DFMBlockDevice::ejectAsync()
+void DFMBlockDevice::ejectAsync(const QVariantMap &opts)
 {
     auto dp = castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp)
-        return dp->ejectAsync();
+        return dp->ejectAsync(opts);
 }
 
-bool DFMBlockDevice::powerOff()
+bool DFMBlockDevice::powerOff(const QVariantMap &opts)
 {
     auto dp = castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    return dp ? dp->powerOff() : false;
+    return dp ? dp->powerOff(opts) : false;
 }
 
-void DFMBlockDevice::powerOffAsync()
+void DFMBlockDevice::powerOffAsync(const QVariantMap &opts)
 {
     auto dp = castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp)
-        return dp->powerOffAsync();
+        return dp->powerOffAsync(opts);
 }
 
 QStringList DFMBlockDevice::mountPoints() const
@@ -311,8 +310,6 @@ QUrl DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 
 void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts)
 {
-    Q_UNUSED(opts); // TODO: use it later
-
     if (!fileSystemHandler) {
         lastError = MountError::NotMountable;
         qWarning() << "device is not mountable";
@@ -331,7 +328,7 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts)
     udisks_filesystem_call_mount(fileSystemHandler, gopts, nullptr, mountAsyncCallback, q);
 }
 
-bool DFMBlockDevicePrivate::unmount()
+bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
 {
     if (!fileSystemHandler) {
         lastError = MountError::NotMountable;
@@ -348,7 +345,7 @@ bool DFMBlockDevicePrivate::unmount()
 
     // start unmount device sync
     // construct the options
-    GVariant *gopts = Utils::castFromQVariantMap({});
+    GVariant *gopts = Utils::castFromQVariantMap(opts);
     GError *err = nullptr;
 
     // unmount sync
@@ -366,7 +363,7 @@ bool DFMBlockDevicePrivate::unmount()
     return false;
 }
 
-void DFMBlockDevicePrivate::unmountAsync()
+void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts)
 {
     if (!fileSystemHandler) {
         lastError = MountError::NotMountable;
@@ -383,11 +380,11 @@ void DFMBlockDevicePrivate::unmountAsync()
 
     // start unmount device async
     // construct the options
-    GVariant *gopts = Utils::castFromQVariantMap({});
+    GVariant *gopts = Utils::castFromQVariantMap(opts);
     udisks_filesystem_call_unmount(fileSystemHandler, gopts, nullptr, unmountAsyncCallback, q);
 }
 
-bool DFMBlockDevicePrivate::rename(const QString &newName)
+bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &opts)
 {
     if (!fileSystemHandler) {
         lastError = MountError::NotMountable;
@@ -403,7 +400,7 @@ bool DFMBlockDevicePrivate::rename(const QString &newName)
     }
 
     // construct the options
-    GVariant *gopts = Utils::castFromQVariantMap({});
+    GVariant *gopts = Utils::castFromQVariantMap(opts);
     const char *label = newName.toStdString().c_str();
     GError *err = nullptr;
 
@@ -421,7 +418,7 @@ bool DFMBlockDevicePrivate::rename(const QString &newName)
     return false;
 }
 
-void DFMBlockDevicePrivate::renameAsync(const QString &newName)
+void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts)
 {
     if (!fileSystemHandler) {
         lastError = MountError::NotMountable;
@@ -436,17 +433,10 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName)
         return;
     }
 
-    GVariant *gopts = Utils::castFromQVariantMap({});
+    GVariant *gopts = Utils::castFromQVariantMap(opts);
     const char *label = newName.toStdString().c_str();
 
     udisks_filesystem_call_set_label(fileSystemHandler, label, gopts, nullptr, renameAsyncCallback, q);
-}
-
-QUrl DFMBlockDevicePrivate::accessPoint() const
-{
-    // TODO: only optical devices have a virtual url for now, so return the real path for normal devices
-    // and the virtual path for optical devices, finish them later.
-    return mountPoint();
 }
 
 QUrl DFMBlockDevicePrivate::mountPoint() const
@@ -750,7 +740,7 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
     }
 }
 
-bool DFMBlockDevicePrivate::eject()
+bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
 {
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
     if (!ejectable) {
@@ -766,7 +756,7 @@ bool DFMBlockDevicePrivate::eject()
     }
 
     // construct the options
-    GVariant *gopts = Utils::castFromQVariantMap({});
+    GVariant *gopts = Utils::castFromQVariantMap(opts);
     GError *err = nullptr;
 
     bool result = udisks_drive_call_eject_sync(driveHandler, gopts, nullptr, &err);
@@ -779,7 +769,7 @@ bool DFMBlockDevicePrivate::eject()
     return true;
 }
 
-void DFMBlockDevicePrivate::ejectAsync()
+void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts)
 {
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
     if (!ejectable) {
@@ -795,11 +785,11 @@ void DFMBlockDevicePrivate::ejectAsync()
     }
 
     // construct the options
-    GVariant *gopts = Utils::castFromQVariantMap({});
+    GVariant *gopts = Utils::castFromQVariantMap(opts);
     udisks_drive_call_eject(driveHandler, gopts, nullptr, ejectAsyncCallback, q);
 }
 
-bool DFMBlockDevicePrivate::powerOff()
+bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
 {
     if (!driveHandler) {
         lastError = MountError::NoDriver;
@@ -808,7 +798,7 @@ bool DFMBlockDevicePrivate::powerOff()
     }
 
     // construct the options
-    GVariant *gopts = Utils::castFromQVariantMap({});
+    GVariant *gopts = Utils::castFromQVariantMap(opts);
     GError *err = nullptr;
     bool result = udisks_drive_call_power_off_sync(driveHandler, gopts, nullptr, &err);
     if (result) {
@@ -821,14 +811,14 @@ bool DFMBlockDevicePrivate::powerOff()
     return false;
 }
 
-void DFMBlockDevicePrivate::powerOffAsync()
+void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts)
 {
     if (!driveHandler) {
         lastError = MountError::NoDriver;
         qWarning() << "device DO NOT have a driver, cannot poweroff";
         return;
     }
-    GVariant *gopts = Utils::castFromQVariantMap({});
+    GVariant *gopts = Utils::castFromQVariantMap(opts);
     udisks_drive_call_power_off(driveHandler, gopts, nullptr, powerOffAsyncCallback, q);
 }
 

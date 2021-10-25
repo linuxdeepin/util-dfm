@@ -28,6 +28,8 @@
 
 #include <QMap>
 
+typedef struct _GVolumeMonitor                GVolumeMonitor;
+
 DFM_MOUNT_BEGIN_NS
 
 class DFMProtocolDevice;
@@ -47,6 +49,7 @@ public:
     MonitorStatus curStatus = MonitorStatus::Idle;
 
     QMap<QString, DFMProtocolDevice *> devices;
+    GVolumeMonitor *monitor { nullptr };
 };
 
 DFM_MOUNT_END_NS

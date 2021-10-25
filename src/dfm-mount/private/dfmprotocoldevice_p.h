@@ -40,7 +40,6 @@ public:
     void unmountAsync();
     bool rename(const QString &newName);
     void renameAsync(const QString &newName);
-    QUrl accessPoint() const;
     QUrl mountPoint() const;
     QString fileSystem() const;
     long sizeTotal() const;

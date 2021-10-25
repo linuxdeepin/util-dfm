@@ -51,6 +51,7 @@ public:
     QSharedPointer<DFMDevice> createDeviceById(const QString &id) DFM_MNT_OVERRIDE;
 
     QStringList resolveDevice(const QVariantMap &devspec, const QVariantMap &opts);
+    QStringList resolveDeviceNode(const QString &node, const QVariantMap &opts);
     QStringList resolveDeviceOfDrive(const QString &drvObjPath);
 
 private:

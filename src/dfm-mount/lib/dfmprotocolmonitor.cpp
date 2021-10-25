@@ -47,7 +47,7 @@ DFMProtocolMonitor::~DFMProtocolMonitor()
 DFMProtocolMonitorPrivate::DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq)
     : DFMMonitorPrivate (qq)
 {
-
+//    monitor = gvolume
 }
 
 bool DFMProtocolMonitorPrivate::startMonitor()

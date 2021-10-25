@@ -135,7 +135,7 @@ QStringList DFMBlockMonitorPrivate::getDevices()
         if (err)
             g_error_free(err);
     }
-
+    return QStringList();
 }
 
 QSharedPointer<DFMDevice> DFMBlockMonitorPrivate::createDeviceById(const QString &id)
@@ -172,6 +172,14 @@ QStringList DFMBlockMonitorPrivate::resolveDevice(const QVariantMap &devspec, co
             g_error_free(err);
     }
     return {};
+}
+
+QStringList DFMBlockMonitorPrivate::resolveDeviceNode(const QString &node, const QVariantMap &opts)
+{
+    if (node.isEmpty())
+        return QStringList();
+    QVariantMap devSpec {{"path", node}};
+    return resolveDevice(devSpec, opts);
 }
 
 QStringList DFMBlockMonitorPrivate::resolveDeviceOfDrive(const QString &drvObjPath)
@@ -342,12 +350,29 @@ DFMBlockMonitor::~DFMBlockMonitor()
         dp->stopMonitor();
 }
 
+/*!
+ * \brief DFMBlockMonitor::resolveDevice
+ * \param devspec:  currently support keys: path, label and uuid
+ * \param opts:     currently unused in udisks2
+ * \return          the associated device object paths
+ */
 QStringList DFMBlockMonitor::resolveDevice(const QVariantMap &devspec, const QVariantMap &opts)
 {
     auto dp = castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
     return dp ? dp->resolveDevice(devspec, opts) : QStringList();
 }
 
+QStringList DFMBlockMonitor::resolveDeviceNode(const QString &node, const QVariantMap &opts)
+{
+    auto dp = castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    return dp ? dp->resolveDeviceNode(node, opts) : QStringList();
+}
+
+/*!
+ * \brief DFMBlockMonitor::resolveDeviceFromDrive
+ * \param drvObjPath:   object path for drive
+ * \return              the associated block object paths
+ */
 QStringList DFMBlockMonitor::resolveDeviceFromDrive(const QString &drvObjPath)
 {
     auto dp = castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());

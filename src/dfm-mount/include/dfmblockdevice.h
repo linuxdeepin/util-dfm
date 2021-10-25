@@ -45,10 +45,10 @@ private:
     DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent = nullptr);
 
 public:
-    bool eject();
-    void ejectAsync();
-    bool powerOff();
-    void powerOffAsync();
+    bool eject(const QVariantMap &opts = {});
+    void ejectAsync(const QVariantMap &opts = {});
+    bool powerOff(const QVariantMap &opts = {});
+    void powerOffAsync(const QVariantMap &opts = {});
 
     // these are convinience methods
     QStringList mountPoints() const;

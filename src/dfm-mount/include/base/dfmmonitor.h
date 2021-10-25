@@ -39,9 +39,6 @@ class DFMMonitor: public QObject
     Q_OBJECT
 
 public:
-    DFMMonitor(DFMMonitorPrivate *dd, QObject *parent);
-    virtual ~DFMMonitor();
-
     DFM_MNT_VIRTUAL bool startMonitor();
     DFM_MNT_VIRTUAL bool stopMonitor();
     DFM_MNT_VIRTUAL MonitorStatus status() const;
@@ -64,7 +61,16 @@ public:
     void registerGetDevices(const GetDevicesFunc &func);
     void registerCreateDeviceById(const CreateDeviceByIdFunc &func);
 
+protected:
+    DFMMonitor(DFMMonitorPrivate *dd, QObject *parent);
+    virtual ~DFMMonitor();
+
 Q_SIGNALS:
+    // TODO: complete protocol device id.
+    /*!
+     * \brief deviceAdded
+     * \param deviceId  for block devices, this id is block object path in udisks, but for protocol devices, it's not.
+     */
     void deviceAdded(const QString &deviceId);
     void deviceRemoved(const QString &deviceId);
     void mountAdded(const QString &deviceId, const QString &mountPoint);

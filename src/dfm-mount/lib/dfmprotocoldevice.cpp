@@ -45,7 +45,6 @@ DFMProtocolDevice::DFMProtocolDevice(const QString &device, QObject *parent)
     registerUnmountAsync(std::bind(&DFMProtocolDevicePrivate::unmountAsync, dp));
     registerRename(std::bind(&DFMProtocolDevicePrivate::rename, dp, std::placeholders::_1));
     registerRenameAsync(std::bind(&DFMProtocolDevicePrivate::renameAsync, dp, std::placeholders::_1));
-    registerAccessPoint(std::bind(&DFMProtocolDevicePrivate::accessPoint, dp));
     registerMountPoint(std::bind(&DFMProtocolDevicePrivate::mountPoint, dp));
     registerFileSystem(std::bind(&DFMProtocolDevicePrivate::fileSystem, dp));
     registerSizeTotal(std::bind(&DFMProtocolDevicePrivate::sizeTotal, dp));
@@ -109,11 +108,6 @@ void DFMProtocolDevicePrivate::renameAsync(const QString &newName)
         if (ret);
 //            Q_EMIT q->renamed(newName);
     });
-}
-
-QUrl DFMProtocolDevicePrivate::accessPoint() const
-{
-    return QUrl();
 }
 
 QUrl DFMProtocolDevicePrivate::mountPoint() const

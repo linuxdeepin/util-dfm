@@ -72,39 +72,32 @@ void DFMDevice::mountAsync(const QVariantMap &opts)
     return d->mountAsync(opts);
 }
 
-bool DFMDevice::unmount()
+bool DFMDevice::unmount(const QVariantMap &opts)
 {
     Q_ASSERT_X(d->unmount, __PRETTY_FUNCTION__, "not register");
 
-    return d->unmount();
+    return d->unmount(opts);
 }
 
-void DFMDevice::unmountAsync()
+void DFMDevice::unmountAsync(const QVariantMap &opts)
 {
     Q_ASSERT_X(d->unmountAsync, __PRETTY_FUNCTION__, "not register");
 
-    return d->unmountAsync();
+    return d->unmountAsync(opts);
 }
 
-bool DFMDevice::rename(const QString &newName)
+bool DFMDevice::rename(const QString &newName, const QVariantMap &opts)
 {
     Q_ASSERT_X(d->rename, __PRETTY_FUNCTION__, "not register");
 
-    return d->rename(newName);
+    return d->rename(newName, opts);
 }
 
-void DFMDevice::renameAsync(const QString &newName)
+void DFMDevice::renameAsync(const QString &newName, const QVariantMap &opts)
 {
     Q_ASSERT_X(d->renameAsync, __PRETTY_FUNCTION__, "not register");
 
-    return d->renameAsync(newName);
-}
-
-QUrl DFMDevice::accessPoint() const
-{
-    Q_ASSERT_X(d->accessPoint, __PRETTY_FUNCTION__, "not register");
-
-    return d->accessPoint();
+    return d->renameAsync(newName, opts);
 }
 
 QUrl DFMDevice::mountPoint() const
@@ -208,13 +201,6 @@ void DFMDevice::registerRenameAsync(const DFMDevice::RenameAsyncFunc &func)
     Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
 
     d->renameAsync = func;
-}
-
-void DFMDevice::registerAccessPoint(const DFMDevice::AccessPointFunc &func)
-{
-    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
-
-    d->accessPoint = func;
 }
 
 void DFMDevice::registerMountPoint(const DFMDevice::MountPointFunc &func)

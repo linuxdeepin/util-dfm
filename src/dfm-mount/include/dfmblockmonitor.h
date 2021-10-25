@@ -40,6 +40,7 @@ public:
     ~DFMBlockMonitor();
 
     QStringList resolveDevice(const QVariantMap &devspec, const QVariantMap &opts);
+    QStringList resolveDeviceNode(const QString &node, const QVariantMap &opts);
     QStringList resolveDeviceFromDrive(const QString &drvObjPath);
 
 Q_SIGNALS:

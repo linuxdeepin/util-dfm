@@ -36,11 +36,10 @@ public:
     QString path() const DFM_MNT_OVERRIDE;
     QUrl mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
     void mountAsync(const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    bool unmount() DFM_MNT_OVERRIDE;
-    void unmountAsync() DFM_MNT_OVERRIDE;
-    bool rename(const QString &newName) DFM_MNT_OVERRIDE;
-    void renameAsync(const QString &newName) DFM_MNT_OVERRIDE;
-    QUrl accessPoint() const DFM_MNT_OVERRIDE;
+    bool unmount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
+    void unmountAsync(const QVariantMap &opts) DFM_MNT_OVERRIDE;
+    bool rename(const QString &newName, const QVariantMap &opts) DFM_MNT_OVERRIDE;
+    void renameAsync(const QString &newName, const QVariantMap &opts) DFM_MNT_OVERRIDE;
     QUrl mountPoint() const DFM_MNT_OVERRIDE;
     QString fileSystem() const DFM_MNT_OVERRIDE;
     qint64 sizeTotal() const DFM_MNT_OVERRIDE;
@@ -54,10 +53,10 @@ public:
     QVariant getFileSystemProperty(Property name) const;
     QVariant getPartitionProperty(Property name) const;
 
-    bool eject();
-    void ejectAsync();
-    bool powerOff();
-    void powerOffAsync();
+    bool eject(const QVariantMap &opts);
+    void ejectAsync(const QVariantMap &opts);
+    bool powerOff(const QVariantMap &opts);
+    void powerOffAsync(const QVariantMap &opts);
 
 private:
     void init(UDisksClient *cli);
