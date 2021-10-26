@@ -104,12 +104,15 @@ QMap<DeviceType, QStringList> DFMDeviceManagerPrivate::devices(DeviceType type)
     case DeviceType::BlockDevice:
         return getDevsOfType(type);
     }
+
+    return {};
 }
 
 DFMDeviceManager::DFMDeviceManager(QObject *parent)
     : QObject (parent), d(new DFMDeviceManagerPrivate(this))
 {
     registerMonitor<DFMBlockMonitor>(this);
+//    registerMonitor<DFMProtocolMonitor>(this);
 }
 
 DFMDeviceManager::~DFMDeviceManager()

@@ -27,8 +27,16 @@
 
 #include <QtCore/QtGlobal>
 
+#include <functional>
+
 DFM_MOUNT_BEGIN_NS
 
+using DeviceOperateCb = std::function<void (bool, DeviceError)>;
+class CallbackProxy {
+public:
+    CallbackProxy(DeviceOperateCb cb): cb(cb){}
+    DeviceOperateCb cb;
+};
 
 DFM_MOUNT_END_NS
 

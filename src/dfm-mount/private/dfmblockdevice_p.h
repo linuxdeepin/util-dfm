@@ -26,6 +26,8 @@
 #include "dfmblockdevice.h"
 #include "udisks/udisks-generated.h"
 #include "private/dfmdevice_p.h"
+#include "base/dfmmountdefines.h"
+
 DFM_MOUNT_BEGIN_NS
 
 class DFMBlockDevicePrivate final: public DFMDevicePrivate
@@ -34,13 +36,13 @@ public:
     DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq);
 
     QString path() const DFM_MNT_OVERRIDE;
-    QUrl mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void mountAsync(const QVariantMap &opts) DFM_MNT_OVERRIDE;
+    QString mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
+    void mountAsync(const QVariantMap &opts, DeviceOperateCb cb) DFM_MNT_OVERRIDE;
     bool unmount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void unmountAsync(const QVariantMap &opts) DFM_MNT_OVERRIDE;
+    void unmountAsync(const QVariantMap &opts, DeviceOperateCb cb) DFM_MNT_OVERRIDE;
     bool rename(const QString &newName, const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void renameAsync(const QString &newName, const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    QUrl mountPoint() const DFM_MNT_OVERRIDE;
+    void renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb) DFM_MNT_OVERRIDE;
+    QString mountPoint() const DFM_MNT_OVERRIDE;
     QString fileSystem() const DFM_MNT_OVERRIDE;
     qint64 sizeTotal() const DFM_MNT_OVERRIDE;
     qint64 sizeUsage() const DFM_MNT_OVERRIDE;
@@ -54,19 +56,21 @@ public:
     QVariant getPartitionProperty(Property name) const;
 
     bool eject(const QVariantMap &opts);
-    void ejectAsync(const QVariantMap &opts);
+    void ejectAsync(const QVariantMap &opts, DeviceOperateCb cb);
     bool powerOff(const QVariantMap &opts);
-    void powerOffAsync(const QVariantMap &opts);
+    void powerOffAsync(const QVariantMap &opts, DeviceOperateCb cb);
 
 private:
     void init(UDisksClient *cli);
 public:
-    QString             blkObjPath; // path of block device object
-    UDisksBlock         *blockHandler       { nullptr };
-    UDisksFilesystem    *fileSystemHandler  { nullptr };
-    UDisksDrive         *driveHandler       { nullptr };
-    UDisksPartition     *partitionHandler   { nullptr };
-    UDisksEncrypted     *encryptedHandler   { nullptr };
+    QString                 blkObjPath; // path of block device object
+    UDisksBlock             *blockHandler           { nullptr };
+    UDisksFilesystem        *fileSystemHandler      { nullptr };
+    UDisksDrive             *driveHandler           { nullptr };
+    UDisksPartition         *partitionHandler       { nullptr };
+    UDisksEncrypted         *encryptedHandler       { nullptr };
+    UDisksPartitionTable    *partitionTabHandler    { nullptr };
+    UDisksLoop              *loopHandler            { nullptr };
 };
 DFM_MOUNT_END_NS
 

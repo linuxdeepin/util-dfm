@@ -27,6 +27,7 @@
 #include "private/dfmmonitor_p.h"
 
 #include <QMap>
+#include <QSet>
 
 #include <udisks/udisks.h>
 
@@ -45,7 +46,6 @@ public:
 
     bool startMonitor() DFM_MNT_OVERRIDE;
     bool stopMonitor() DFM_MNT_OVERRIDE;
-    MonitorStatus status() const DFM_MNT_OVERRIDE;
     DeviceType monitorObjectType() const DFM_MNT_OVERRIDE;
     QStringList getDevices() DFM_MNT_OVERRIDE;
     QSharedPointer<DFMDevice> createDeviceById(const QString &id) DFM_MNT_OVERRIDE;
@@ -60,13 +60,12 @@ private:
     static void onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *objProxy, GDBusProxy *dbusProxy,
                                   GVariant *property, const gchar *const invalidProperty, gpointer userData);
 
+    void initDevices();
+
 public:
     UDisksClient *client = nullptr;
-    MonitorStatus curStatus = MonitorStatus::Idle;
 
-//    QMap<QString, QStringList> devicesOfDrive;
-    QMap<QString, ulong> connections;
-    static const QMap<QString, Property> propertyName2Property;
+    static QMap<QString, QSet<QString>> blksOfDrive;
 };
 
 DFM_MOUNT_END_NS

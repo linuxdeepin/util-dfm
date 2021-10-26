@@ -24,6 +24,7 @@
 #define DFMBLOCKDEVICE_H
 
 #include "base/dfmdevice.h"
+#include "base/dfmmountdefines.h"
 
 #include <QObject>
 
@@ -46,9 +47,9 @@ private:
 
 public:
     bool eject(const QVariantMap &opts = {});
-    void ejectAsync(const QVariantMap &opts = {});
+    void ejectAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
     bool powerOff(const QVariantMap &opts = {});
-    void powerOffAsync(const QVariantMap &opts = {});
+    void powerOffAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
 
     // these are convinience methods
     QStringList mountPoints() const;
@@ -63,12 +64,13 @@ public:
     bool ejectable() const;
     bool isEncrypted() const;
     bool hasFileSystem() const;
+    bool hasPartitionTable() const;
+    bool isLoopDevice() const;
     bool hintIgnore() const;
+    bool hintSystem() const;
+    // int partitionType() const; // TODO: like DBlockPartition::eType
 
-Q_SIGNALS:
-    void ejected();
-    void powerOffed();
-
+private:
     friend class DFMBlockMonitorPrivate;
 };
 

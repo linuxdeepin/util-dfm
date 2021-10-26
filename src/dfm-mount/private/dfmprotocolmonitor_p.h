@@ -28,9 +28,24 @@
 
 #include <QMap>
 
-typedef struct _GVolumeMonitor                GVolumeMonitor;
+typedef struct _GVolumeMonitor          GVolumeMonitor;
+typedef struct _GDrive                  GDrive;
+typedef struct _GMount                  GMount;
+typedef struct _GVolume                 GVolume;
+typedef void *                          gpointer;
 
 DFM_MOUNT_BEGIN_NS
+
+#define DRIVE_CHANGED       "drive-changed"
+#define DRIVE_CONNECTED     "drive-connected"
+#define DRIVE_DISCONNED     "drive-disconnected"
+#define MOUNT_ADDED         "mount-added"
+#define MOUNT_CHANGED       "mount-changed"
+#define MOUNT_PRE_UNMOUNT   "mount-pre-unmount"
+#define MOUNT_REMOVED       "mount-removed"
+#define VOLUME_ADDED        "volume-added"
+#define VOLUME_CHANGED      "volume-changed"
+#define VOLUME_REMOVED      "volume-removed"
 
 class DFMProtocolDevice;
 class DFMProtocolMonitorPrivate final: public DFMMonitorPrivate
@@ -38,18 +53,31 @@ class DFMProtocolMonitorPrivate final: public DFMMonitorPrivate
 
 public:
     DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq);
-    bool startMonitor();
-    bool stopMonitor();
-    MonitorStatus status() const;
-    DeviceType monitorObjectType() const;
+    ~DFMProtocolMonitorPrivate();
+
+    bool startMonitor() DFM_MNT_OVERRIDE;
+    bool stopMonitor() DFM_MNT_OVERRIDE;
+    DeviceType monitorObjectType() const DFM_MNT_OVERRIDE;
+    QStringList getDevices() DFM_MNT_OVERRIDE;
+    QSharedPointer<DFMDevice> createDevice(const QString &id) DFM_MNT_OVERRIDE;
 
 private:
+    static void onDriveChanged(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
+    static void onDriveConnected(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
+    static void onDriveDisconnected(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
+    static void onMountAdded(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
+    static void onMountChanged(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
+    static void onMountPreUnmount(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
+    static void onMountRemoved(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
+    static void onVolumeAdded(GVolumeMonitor *gVolMonitor, GVolume *volume, gpointer userData);
+    static void onVolumeChanged(GVolumeMonitor *gVolMonitor, GVolume *volume, gpointer userData);
+    static void onVolumeRemoved(GVolumeMonitor *gVolMonitor, GVolume *volume, gpointer userData);
+
+    static bool hasDrive(GMount *mount);
+    static bool hasDrive(GVolume *volume);
 
 public:
-    MonitorStatus curStatus = MonitorStatus::Idle;
-
-    QMap<QString, DFMProtocolDevice *> devices;
-    GVolumeMonitor *monitor { nullptr };
+    GVolumeMonitor *gVolMonitor { nullptr };
 };
 
 DFM_MOUNT_END_NS

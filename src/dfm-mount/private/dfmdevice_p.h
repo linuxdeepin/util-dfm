@@ -55,7 +55,7 @@ public:
     DFMDevice::DeviceTypeFunc deviceType = nullptr;
     DFMDevice::GetPropertyFunc getProperty = nullptr;
 
-    MountError lastError;
+    DeviceError lastError;
 protected:
     DFMDevice *q = nullptr;
 };

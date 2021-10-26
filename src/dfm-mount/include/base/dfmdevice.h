@@ -24,6 +24,7 @@
 #define DFMDEVICE_H
 
 #include "dfmmount_global.h"
+#include "dfmmountdefines.h"
 
 #include <QObject>
 #include <QSharedPointer>
@@ -46,36 +47,41 @@ public:
 
     DFM_MNT_VIRTUAL QString path() const;
 
-    DFM_MNT_VIRTUAL QUrl mount(const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts = {});
+    DFM_MNT_VIRTUAL QString mount(const QVariantMap &opts = {});
+    DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
 
     DFM_MNT_VIRTUAL bool unmount(const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void unmountAsync(const QVariantMap &opts = {});
+    DFM_MNT_VIRTUAL void unmountAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
 
     DFM_MNT_VIRTUAL bool rename(const QString &newName, const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void renameAsync(const QString &newName, const QVariantMap &opts = {});
+    DFM_MNT_VIRTUAL void renameAsync(const QString &newName, const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
 
-    DFM_MNT_VIRTUAL QUrl mountPoint() const;
+    DFM_MNT_VIRTUAL QString mountPoint() const;
     DFM_MNT_VIRTUAL QString fileSystem() const;
     DFM_MNT_VIRTUAL qint64 sizeTotal() const;
+
+    // use these two functions CAUTION!!! for block devices if you invoke just after mount sync, the
+    // mount point of this device cannot be returned correctly, so there is no way to get the useage
+    // via QStorageInfo cause cannot get the mountpoint right away.
+    // already submit an issue to report this: https://github.com/storaged-project/udisks/issues/930
     DFM_MNT_VIRTUAL qint64 sizeFree() const;
     DFM_MNT_VIRTUAL qint64 sizeUsage() const;
 
     DFM_MNT_VIRTUAL DeviceType deviceType() const;
     DFM_MNT_VIRTUAL QVariant getProperty(Property name) const;
-    MountError getLastError() const;
+    DeviceError getLastError() const;
 
 public:
 
     // type definition
     using PathFunc         = std::function<QString ()>;
-    using MountFunc        = std::function<QUrl (const QVariantMap &)>;
-    using MountAsyncFunc   = std::function<void (const QVariantMap &)>;
+    using MountFunc        = std::function<QString (const QVariantMap &)>;
+    using MountAsyncFunc   = std::function<void (const QVariantMap &, DeviceOperateCb)>;
     using UnmountFunc      = std::function<bool (const QVariantMap &)>;
-    using UnmountAsyncFunc = std::function<void (const QVariantMap &)>;
+    using UnmountAsyncFunc = std::function<void (const QVariantMap &, DeviceOperateCb)>;
     using RenameFunc       = std::function<bool (const QString &, const QVariantMap &)>;
-    using RenameAsyncFunc  = std::function<void (const QString &, const QVariantMap &)>;
-    using MountPointFunc   = std::function<QUrl ()>;
+    using RenameAsyncFunc  = std::function<void (const QString &, const QVariantMap &, DeviceOperateCb)>;
+    using MountPointFunc   = std::function<QString ()>;
     using FileSystemFunc   = std::function<QString ()>;
     using SizeTotalFunc    = std::function<qint64 ()>;
     using SizeUsageFunc    = std::function<qint64 ()>;

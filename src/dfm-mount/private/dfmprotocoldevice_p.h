@@ -23,9 +23,9 @@
 #ifndef DFMPROTOCOLDEVICE_P_H
 #define DFMPROTOCOLDEVICE_P_H
 
-#include "dfmprotocoldevice.h"
-#include "udisks/udisks-generated.h"
+#include "base/dfmmountdefines.h"
 #include "private/dfmdevice_p.h"
+#include "dfmprotocoldevice.h"
 
 DFM_MOUNT_BEGIN_NS
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
@@ -34,13 +34,13 @@ public:
     DFMProtocolDevicePrivate(const QString &dev, DFMProtocolDevice *qq);
 
     QString path() const;
-    QUrl mount(const QVariantMap &opts);
-    void mountAsync(const QVariantMap &opts);
+    QString mount(const QVariantMap &opts);
+    void mountAsync(const QVariantMap &opts, DeviceOperateCb cb);
     bool unmount();
-    void unmountAsync();
+    void unmountAsync(const QVariantMap &opts, DeviceOperateCb cb);
     bool rename(const QString &newName);
-    void renameAsync(const QString &newName);
-    QUrl mountPoint() const;
+    void renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb);
+    QString mountPoint() const;
     QString fileSystem() const;
     long sizeTotal() const;
     long sizeUsage() const;

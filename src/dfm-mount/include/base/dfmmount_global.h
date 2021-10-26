@@ -138,7 +138,7 @@ enum class Property : uint16_t {
     ProtoProperty = 800,       // this is invalid but just a placeholder
 };
 
-enum class MountError : uint16_t {
+enum class DeviceError : uint16_t {
     NoError = 0,
     NotMountable,    // which means there is no filesystem interface for block devices.
     AlreadyMounted,

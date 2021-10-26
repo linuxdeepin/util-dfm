@@ -58,18 +58,18 @@ QString DFMDevice::path() const
     return d->path();
 }
 
-QUrl DFMDevice::mount(const QVariantMap &opts)
+QString DFMDevice::mount(const QVariantMap &opts)
 {
     Q_ASSERT_X(d->mount, __PRETTY_FUNCTION__, "not register");
 
     return d->mount(opts);
 }
 
-void DFMDevice::mountAsync(const QVariantMap &opts)
+void DFMDevice::mountAsync(const QVariantMap &opts, DeviceOperateCb cb)
 {
     Q_ASSERT_X(d->mountAsync, __PRETTY_FUNCTION__, "not register");
 
-    return d->mountAsync(opts);
+    return d->mountAsync(opts, cb);
 }
 
 bool DFMDevice::unmount(const QVariantMap &opts)
@@ -79,11 +79,11 @@ bool DFMDevice::unmount(const QVariantMap &opts)
     return d->unmount(opts);
 }
 
-void DFMDevice::unmountAsync(const QVariantMap &opts)
+void DFMDevice::unmountAsync(const QVariantMap &opts, DeviceOperateCb cb)
 {
     Q_ASSERT_X(d->unmountAsync, __PRETTY_FUNCTION__, "not register");
 
-    return d->unmountAsync(opts);
+    return d->unmountAsync(opts, cb);
 }
 
 bool DFMDevice::rename(const QString &newName, const QVariantMap &opts)
@@ -93,14 +93,14 @@ bool DFMDevice::rename(const QString &newName, const QVariantMap &opts)
     return d->rename(newName, opts);
 }
 
-void DFMDevice::renameAsync(const QString &newName, const QVariantMap &opts)
+void DFMDevice::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb)
 {
     Q_ASSERT_X(d->renameAsync, __PRETTY_FUNCTION__, "not register");
 
-    return d->renameAsync(newName, opts);
+    return d->renameAsync(newName, opts, cb);
 }
 
-QUrl DFMDevice::mountPoint() const
+QString DFMDevice::mountPoint() const
 {
     Q_ASSERT_X(d->mountPoint, __PRETTY_FUNCTION__, "not register");
 
@@ -149,7 +149,7 @@ QVariant DFMDevice::getProperty(Property item) const
     return d->getProperty(item);
 }
 
-MountError DFMDevice::getLastError() const
+DeviceError DFMDevice::getLastError() const
 {
     return d->lastError;
 }

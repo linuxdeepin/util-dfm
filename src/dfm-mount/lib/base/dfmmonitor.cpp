@@ -54,6 +54,7 @@ bool DFMMonitor::startMonitor()
 {
     Q_ASSERT_X(d->start, __PRETTY_FUNCTION__, "not register");
 
+    d->monitorStatus = MonitorStatus::Monitoring;
     return d->start();
 }
 
@@ -61,33 +62,32 @@ bool DFMMonitor::stopMonitor()
 {
     Q_ASSERT_X(d->stop, __PRETTY_FUNCTION__, "not register");
 
+    d->monitorStatus = MonitorStatus::Idle;
     return d->stop();
 }
 
 MonitorStatus DFMMonitor::status() const
 {
-    Q_ASSERT_X(d->status, __PRETTY_FUNCTION__, "not register");
-
-    return d->status();
+    return d->monitorStatus;
 }
 
 DeviceType DFMMonitor::monitorObjectType() const
 {
-    Q_ASSERT_X(d->mot, __PRETTY_FUNCTION__, "not register");
+    Q_ASSERT_X(d->monitorObjectType, __PRETTY_FUNCTION__, "not register");
 
-    return d->mot();
+    return d->monitorObjectType();
 }
 
 QStringList DFMMonitor::getDevices() const
 {
-    Q_ASSERT_X(d->mot, __PRETTY_FUNCTION__, "not register");
+    Q_ASSERT_X(d->monitorObjectType, __PRETTY_FUNCTION__, "not register");
 
     return d->getDevices();
 }
 
 QSharedPointer<DFMDevice> DFMMonitor::createDeviceById(const QString &id) const
 {
-    Q_ASSERT_X(d->mot, __PRETTY_FUNCTION__, "not register");
+    Q_ASSERT_X(d->monitorObjectType, __PRETTY_FUNCTION__, "not register");
 
     return d->createDeviceById(id);
 }
@@ -106,18 +106,11 @@ void DFMMonitor::registerStopMonitor(const DFMMonitor::StopMonitorFunc &func)
     d->stop = func;
 }
 
-void DFMMonitor::registerStatus(const DFMMonitor::StatusFunc &func)
-{
-    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
-
-    d->status = func;
-}
-
 void DFMMonitor::registerMonitorObjectType(const DFMMonitor::MonitorObjectTypeFunc &func)
 {
     Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
 
-    d->mot = func;
+    d->monitorObjectType = func;
 }
 
 void DFMMonitor::registerGetDevices(const DFMMonitor::GetDevicesFunc &func)

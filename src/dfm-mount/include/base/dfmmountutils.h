@@ -26,17 +26,16 @@
 #include "dfmmount_global.h"
 
 #include <QVariant>
+#include <QApplication>
+#include <QThread>
 
 typedef struct _GVariant GVariant;
 DFM_MOUNT_BEGIN_NS
 
-
-template<typename FromClass, typename ToClass>
-inline ToClass *castClassFromTo(FromClass *p) {
-    auto pPointer = dynamic_cast<ToClass *>(p);
-//    if (!pPointer)
-//        abort();
-    return pPointer;
+#define warningIfNotInMain() { \
+    if (qApp->thread() != QThread::currentThread()) \
+        qWarning() << "<" << __PRETTY_FUNCTION__ << ">\n"\
+                   << "\t:( this function DOES NOT promise thread safe! please use it CAUTION or use *Async instead."; \
 }
 
 class Utils {
@@ -50,6 +49,18 @@ static GVariant *castFromQVariantMap(const QVariantMap &val);
 static GVariant *castFromQStringList(const QStringList &val);
 
 static GVariant *castFromList(const QList<QVariant> &val);
+
+static QString getNameByProperty(Property type);
+
+static Property getPropertyByName(const QString &name);
+
+template<typename FromClass, typename ToClass>
+static inline ToClass *castClassFromTo(FromClass *p) {
+    auto pPointer = dynamic_cast<ToClass *>(p);
+//    if (!pPointer)
+//        abort();
+    return pPointer;
+}
 };
 
 DFM_MOUNT_END_NS

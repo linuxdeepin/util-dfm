@@ -39,9 +39,10 @@ class DFMMonitor: public QObject
     Q_OBJECT
 
 public:
+    MonitorStatus status() const;
+
     DFM_MNT_VIRTUAL bool startMonitor();
     DFM_MNT_VIRTUAL bool stopMonitor();
-    DFM_MNT_VIRTUAL MonitorStatus status() const;
     DFM_MNT_VIRTUAL DeviceType monitorObjectType() const;
     DFM_MNT_VIRTUAL QStringList getDevices() const;
     DFM_MNT_VIRTUAL QSharedPointer<DFMDevice> createDeviceById(const QString &id) const;
@@ -49,14 +50,12 @@ public:
 public:
     using StartMonitorFunc      = std::function<bool ()>;
     using StopMonitorFunc       = std::function<bool ()>;
-    using StatusFunc            = std::function<MonitorStatus ()>;
     using MonitorObjectTypeFunc = std::function<DeviceType ()>;
     using GetDevicesFunc        = std::function<QStringList ()>;
     using CreateDeviceByIdFunc  = std::function<QSharedPointer<DFMDevice> (const QString &)>;
 
     void registerStartMonitor(const StartMonitorFunc &func);
     void registerStopMonitor(const StopMonitorFunc &func);
-    void registerStatus(const StatusFunc &func);
     void registerMonitorObjectType(const MonitorObjectTypeFunc &func);
     void registerGetDevices(const GetDevicesFunc &func);
     void registerCreateDeviceById(const CreateDeviceByIdFunc &func);
