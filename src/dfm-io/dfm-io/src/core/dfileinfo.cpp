@@ -166,11 +166,11 @@ DFileInfo &DFileInfo::operator=(const DFileInfo &info)
 
 QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
 {
-    *success = false;
-
     if (d->attributeFunc)
         return d->attributeFunc(id, success);
 
+    if(success)
+        *success = false;
     return QVariant();
 }
 
@@ -227,6 +227,13 @@ bool DFileInfo::flush()
     return false;
 }
 
+uint16_t DFileInfo::permissions(DFileInfo::Permission permission)
+{
+    if (d->permissionFunc)
+        return d->permissionFunc(permission);
+    return (uint16_t)DFileInfo::Permission::NoPermission;
+}
+
 void DFileInfo::registerAttribute(const DFileInfo::AttributeFunc &func)
 {
     d->attributeFunc = func;
@@ -262,6 +269,11 @@ void DFileInfo::registerFlush(const DFileInfo::FlushFunc &func)
     d->flushFunc = func;
 }
 
+void DFileInfo::registerPermissions(const DFileInfo::PermissionFunc &func)
+{
+    d->permissionFunc = func;
+}
+
 QUrl DFileInfo::uri() const
 {
     return d->uri;
@@ -270,14 +282,15 @@ QUrl DFileInfo::uri() const
 QString DFileInfo::dump() const
 {
     QString ret;
-    /*QMap<AttributeID, QVariant>::const_iterator iter = d_ptr->attributes.begin();
-    while (iter != d_ptr->attributes.end()) {
-        ret.append(attributeName(iter.key()));
-        ret.append(":");
-        ret.append(iter.value().toString());
-        ret.append("\n");
-        ++iter;
-    }*/
+    for (int i = 0, end = int(DFileInfo::AttributeID::AttributeIDMax); i < end; ++i) {
+        const QVariant &&value = attribute(DFileInfo::AttributeID(i));
+        if (value.isValid()) {
+            ret.append(attributeNames[DFileInfo::AttributeID(i)].c_str());
+            ret.append(":");
+            ret.append(value.toString());
+            ret.append("\n");
+        }
+    }
     return ret;
 }
 

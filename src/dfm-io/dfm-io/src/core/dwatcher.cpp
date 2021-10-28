@@ -46,7 +46,7 @@ DWatcher::DWatcher(const QUrl &uri, QObject *parent)
 
 DWatcher::~DWatcher()
 {
-    
+
 }
 
 QUrl DWatcher::uri() const

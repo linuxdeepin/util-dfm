@@ -53,6 +53,26 @@ public:
         UserType = 0x100
     };
 
+    enum class Permission : uint16_t {
+        NoPermission = 0x0000,
+
+        ExeOther = 0x0001,
+        WriteOther = 0x0002,
+        ReadOther = 0x0004,
+
+        ExeGroup = 0x0010,
+        WriteGroup = 0x0020,
+        ReadGroup = 0x0040,
+
+        ExeUser = 0x0100,
+        WriteUser = 0x0200,
+        ReadUser = 0x0400,
+
+        ExeOwner = 0x1000,
+        WriteOwner = 0x2000,
+        ReadOwner = 0x4000,
+    };
+
     enum class AttributeID : uint16_t {
         StandardType = 0, // uint32
         StandardIsHidden = 1, // boolean
@@ -162,6 +182,8 @@ public:
         StandardParentPath = 616,
         StandardBaseName = 617,
         StandardFileName = 618,
+
+        AttributeIDMax = 999,
     };
 
     using AttributeNameMap = std::unordered_map<DFileInfo::AttributeID, std::string>;
@@ -174,6 +196,8 @@ public:
     using AttributeListFunc = std::function<QList<DFileInfo::AttributeID>()>;
     using ExistsFunc = std::function<bool()>;
     using FlushFunc = std::function<bool()>;
+
+    using PermissionFunc = std::function<uint16_t(Permission)>;
 
 public:
     DFileInfo();
@@ -189,6 +213,7 @@ public:
     DFM_VIRTUAL QList<DFileInfo::AttributeID> attributeIDList() const;
     DFM_VIRTUAL bool exists() const;
     DFM_VIRTUAL bool flush();
+    DFM_VIRTUAL uint16_t permissions(Permission permission = Permission::NoPermission);
 
     // register
     void registerAttribute(const AttributeFunc &func);
@@ -198,6 +223,7 @@ public:
     void registerAttributeList(const AttributeListFunc &func);
     void registerExists(const ExistsFunc &func);
     void registerFlush(const FlushFunc &func);
+    void registerPermissions(const PermissionFunc &func);
 
     QUrl uri() const;
     QString dump() const;

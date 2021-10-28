@@ -53,6 +53,12 @@ public:
     QList<DFileInfo::AttributeID> attributeIDList() const;
     bool exists() const;
     bool flush();
+    uint16_t permissions(DFileInfo::Permission permission = DFileInfo::Permission::NoPermission);
+
+private:
+    uint16_t permissionsAll();
+    uint16_t permissionsFromGio(DFileInfo::Permission permission);
+    uint16_t permissionsFromStat(DFileInfo::Permission permission);
 
 public:
     QMap<DFileInfo::AttributeID, QVariant> attributes;

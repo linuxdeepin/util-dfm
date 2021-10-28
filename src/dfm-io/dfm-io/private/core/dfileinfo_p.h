@@ -70,6 +70,7 @@ public:
     DFileInfo::AttributeListFunc attributeListFunc = nullptr;
     DFileInfo::ExistsFunc existsFunc = nullptr;
     DFileInfo::FlushFunc flushFunc = nullptr;
+    DFileInfo::PermissionFunc permissionFunc = nullptr;
 };
 
 END_IO_NAMESPACE

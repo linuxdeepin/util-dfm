@@ -28,6 +28,8 @@
 
 #include <QDebug>
 
+#include <sys/stat.h>
+
 USING_IO_NAMESPACE
 
 DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
@@ -64,24 +66,23 @@ bool DLocalFileInfoPrivate::init()
 
 QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *success)
 {
-    *success = false;
-
+    QVariant retValue;
     if (attributes.count(id) == 0) {
         if (gfileinfo) {
-            QVariant value;
             if (id > DFileInfo::AttributeID::CustomStart) {
                 const QString &path = q->uri().path();
-                value = DLocalHelper::customAttributeFromPath(path, id);
+                retValue = DLocalHelper::customAttributeFromPath(path, id);
             } else {
-                value = DLocalHelper::attributeFromGFileInfo(gfileinfo, id);
+                retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id);
             }
-            setAttribute(id, value);
-            *success = true;
-            return value;
+            setAttribute(id, retValue);
         }
-        return QVariant();
+        if (success)
+            *success = retValue.isValid();
+        return retValue;
     }
-    *success = true;
+    if (success)
+        *success = true;
     return attributes.value(id);
 }
 
@@ -140,6 +141,131 @@ bool DLocalFileInfoPrivate::flush()
     }
     return true;
 }
+
+uint16_t DLocalFileInfoPrivate::permissions(DFileInfo::Permission permission)
+{
+    if (permission == DFileInfo::Permission::NoPermission) {
+        // 获取全部权限
+        return permissionsAll();
+
+    } else if (permission == DFileInfo::Permission::ExeUser
+               || permission == DFileInfo::Permission::WriteUser
+               || permission == DFileInfo::Permission::ReadUser) {
+        // 获取当前user权限，需要调用gio接口
+        return permissionsFromGio(permission);
+    } else {
+        // 获取单个权限
+        return permissionsFromStat(permission);
+    }
+}
+
+uint16_t DLocalFileInfoPrivate::permissionsAll()
+{
+    uint16_t retValue = 0x0000;
+    // 获取系统默认权限
+    const QUrl &url = q->uri();
+    const char *path = url.toLocalFile().toLocal8Bit().data();
+
+    struct stat buf;
+    stat(path, &buf);
+
+    if ((buf.st_mode & S_IXUSR) == S_IXUSR)
+        retValue |= uint16_t(DFileInfo::Permission::ExeOwner);
+    if ((buf.st_mode & S_IWUSR) == S_IWUSR)
+        retValue |= uint16_t(DFileInfo::Permission::WriteOwner);
+    if ((buf.st_mode & S_IRUSR) == S_IRUSR)
+        retValue |= uint16_t(DFileInfo::Permission::ReadOwner);
+    if ((buf.st_mode & S_IXGRP) == S_IXGRP)
+        retValue |= uint16_t(DFileInfo::Permission::ExeGroup);
+    if ((buf.st_mode & S_IWGRP) == S_IWGRP)
+        retValue |= uint16_t(DFileInfo::Permission::WriteGroup);
+    if ((buf.st_mode & S_IRGRP) == S_IRGRP)
+        retValue |= uint16_t(DFileInfo::Permission::ReadGroup);
+    if ((buf.st_mode & S_IXOTH) == S_IXOTH)
+        retValue |= uint16_t(DFileInfo::Permission::ExeOther);
+    if ((buf.st_mode & S_IWOTH) == S_IWOTH)
+        retValue |= uint16_t(DFileInfo::Permission::WriteOther);
+    if ((buf.st_mode & S_IROTH) == S_IROTH)
+        retValue |= uint16_t(DFileInfo::Permission::ReadOther);
+
+    if (gfileinfo) {
+        if (attribute(DFileInfo::AttributeID::AccessCanExecute).toBool())
+            retValue |= uint16_t(DFileInfo::Permission::ExeUser);
+        if (attribute(DFileInfo::AttributeID::AccessCanWrite).toBool())
+            retValue |= uint16_t(DFileInfo::Permission::WriteUser);
+        if (attribute(DFileInfo::AttributeID::AccessCanRead).toBool())
+            retValue |= uint16_t(DFileInfo::Permission::ReadUser);
+    }
+    return retValue;
+}
+
+uint16_t DLocalFileInfoPrivate::permissionsFromGio(DFileInfo::Permission permission)
+{
+    uint16_t retValue = 0x0000;
+    if (gfileinfo) {
+        if (permission == DFileInfo::Permission::ExeUser) {
+            bool hasRight = attribute(DFileInfo::AttributeID::AccessCanExecute).toBool();
+            retValue = uint16_t(hasRight ? DFileInfo::Permission::ExeUser : DFileInfo::Permission::NoPermission);
+        } else if (permission == DFileInfo::Permission::WriteUser) {
+            bool hasRight = attribute(DFileInfo::AttributeID::AccessCanWrite).toBool();
+            retValue = uint16_t(hasRight ? DFileInfo::Permission::WriteUser : DFileInfo::Permission::NoPermission);
+        } else if (permission == DFileInfo::Permission::ReadUser) {
+            bool hasRight = attribute(DFileInfo::AttributeID::AccessCanRead).toBool();
+            retValue = uint16_t(hasRight ? DFileInfo::Permission::ReadUser : DFileInfo::Permission::NoPermission);
+        }
+    }
+    return retValue;
+}
+
+uint16_t DLocalFileInfoPrivate::permissionsFromStat(DFileInfo::Permission permission)
+{
+    const QUrl &url = q->uri();
+    const char *path = url.toString().toLocal8Bit().data();
+
+    struct stat buf;
+    stat(path, &buf);
+
+    switch (permission) {
+    case DFileInfo::Permission::ExeOwner:
+        if ((buf.st_mode & S_IXUSR) == S_IXUSR)
+            return uint16_t(permission);
+        break;
+    case DFileInfo::Permission::WriteOwner:
+        if ((buf.st_mode & S_IWUSR) == S_IWUSR)
+            return uint16_t(permission);
+        break;
+    case DFileInfo::Permission::ReadOwner:
+        if ((buf.st_mode & S_IRUSR) == S_IRUSR)
+            return uint16_t(permission);
+        break;
+    case DFileInfo::Permission::ExeGroup:
+        if ((buf.st_mode & S_IXGRP) == S_IXGRP)
+            return uint16_t(permission);
+        break;
+    case DFileInfo::Permission::WriteGroup:
+        if ((buf.st_mode & S_IWGRP) == S_IWGRP)
+            return uint16_t(permission);
+        break;
+    case DFileInfo::Permission::ReadGroup:
+        if ((buf.st_mode & S_IRGRP) == S_IRGRP)
+            return uint16_t(permission);
+        break;
+    case DFileInfo::Permission::ExeOther:
+        if ((buf.st_mode & S_IXOTH) == S_IXOTH)
+            return uint16_t(permission);
+        break;
+    case DFileInfo::Permission::WriteOther:
+        if ((buf.st_mode & S_IWOTH) == S_IWOTH)
+            return uint16_t(permission);
+        break;
+    case DFileInfo::Permission::ReadOther:
+        if ((buf.st_mode & S_IROTH) == S_IROTH)
+            return uint16_t(permission);
+        break;
+    default:
+        break;
+    }
+}
 DLocalFileInfo::DLocalFileInfo(const QUrl &uri) : DFileInfo(uri)
     , d(new DLocalFileInfoPrivate(this))
 {
@@ -150,6 +276,7 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri) : DFileInfo(uri)
     registerAttributeList(std::bind(&DLocalFileInfo::attributeIDList, this));
     registerExists(std::bind(&DLocalFileInfo::exists, this));
     registerFlush(std::bind(&DLocalFileInfo::flush, this));
+    registerPermissions(std::bind(&DLocalFileInfo::permissions, this, std::placeholders::_1));
 
     d->init();
 }
@@ -192,4 +319,9 @@ bool DLocalFileInfo::exists() const
 bool DLocalFileInfo::flush()
 {
     return d->flush();
+}
+
+uint16_t DLocalFileInfo::permissions(DFileInfo::Permission permission)
+{
+    return d->permissions(permission);
 }

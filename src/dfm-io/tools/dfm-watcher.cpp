@@ -46,7 +46,7 @@ static void usage()
     err_msg("usage: dfm-watcher uri.");
 }
 
-static bool watcher_dir(const QUrl &url)
+static bool watcher_dir(const QUrl &url, QSharedPointer<DWatcher> &watcher)
 {
     QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
     if (!factory) {
@@ -54,7 +54,7 @@ static bool watcher_dir(const QUrl &url)
         return false;
     }
 
-    QSharedPointer<DWatcher> watcher = factory->createWatcher();
+    watcher = factory->createWatcher();
     if (!watcher) {
         err_msg("watcher create failed.");
         return false;
@@ -101,7 +101,8 @@ int main(int argc, char *argv[])
     if (!url.isValid())
         return 1;
 
-    if (!watcher_dir(url)) {
+    QSharedPointer<DWatcher> watcher = nullptr;
+    if (!watcher_dir(url, watcher)) {
         return 1;
     }
 

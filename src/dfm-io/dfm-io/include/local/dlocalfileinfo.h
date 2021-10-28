@@ -46,6 +46,7 @@ public:
     QList<DFileInfo::AttributeID> attributeIDList() const DFM_OVERRIDE;
     bool exists() const DFM_OVERRIDE;
     bool flush() DFM_OVERRIDE;
+    uint16_t permissions(Permission permission = Permission::NoPermission) DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalFileInfoPrivate> d = nullptr;
