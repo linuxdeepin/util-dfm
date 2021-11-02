@@ -34,6 +34,8 @@
 
 DFM_MOUNT_USE_NS
 
+#define UDISKS_ERR_DOMAIN "udisks-error-quark"
+
 // only for parse the return value of *_DUP_*, do not use it with *_GET_*
 static QString charToQString(char *tmp) {
     if (!tmp)
@@ -63,17 +65,20 @@ static void mountAsyncCallback(GObject *source_object, GAsyncResult *res, gpoint
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
 
+    DeviceError derr = DeviceError::NoError;
     bool result = udisks_filesystem_call_mount_finish(fs, &mountPoint, res, &err);
     if (!result) {
-        // TODO more detailed error handle
-        qDebug() << err->code << err->message;
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            derr = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
         g_error_free(err);
     }
     if (mountPoint)
         g_free(mountPoint);
     CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
     if (proxy) {
-        proxy->cb(result, DeviceError::NoError);
+        proxy->cb(result, derr);
         delete proxy;
     }
 };
@@ -82,16 +87,19 @@ static void unmountAsyncCallback(GObject *source_object, GAsyncResult *res, gpoi
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
 
+    DeviceError derr = DeviceError::NoError;
     GError *err = nullptr;
     bool result = udisks_filesystem_call_unmount_finish(fs, res, &err);
     if (!result) {
-        // TODO more detailed error handle
-        qDebug() << err->code << err->message;
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            derr = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
         g_error_free(err);
     }
     CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
     if (proxy) {
-        proxy->cb(result, DeviceError::NoError);
+        proxy->cb(result, derr);
         delete proxy;
     }
 };
@@ -100,16 +108,19 @@ static void renameAsyncCallback(GObject *source_object, GAsyncResult *res, gpoin
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
 
+    DeviceError derr = DeviceError::NoError;
     GError *err = nullptr;
     bool result = udisks_filesystem_call_set_label_finish(fs, res, &err);
     if (!result) {
-        // TODO more detailed error handle
-        qDebug() << err->code << err->message;
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            derr = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
         g_error_free(err);
     }
     CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
     if (proxy) {
-        proxy->cb(result, DeviceError::NoError);
+        proxy->cb(result, derr);
         delete proxy;
     }
 };
@@ -119,15 +130,18 @@ static void ejectAsyncCallback(GObject *source_object, GAsyncResult *res, gpoint
     Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
 
     GError *err = nullptr;
+    DeviceError derr = DeviceError::NoError;
     bool result = udisks_drive_call_eject_finish(drive, res, &err);
     if (!result) {
-        // TODO more detailed error handle
-        qDebug() << err->code << err->message;
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            derr = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
         g_error_free(err);
     }
     CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
     if (proxy) {
-        proxy->cb(result, DeviceError::NoError);
+        proxy->cb(result, derr);
         delete proxy;
     }
 };
@@ -137,15 +151,18 @@ static void powerOffAsyncCallback(GObject *source_object, GAsyncResult *res, gpo
     Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
 
     GError *err = nullptr;
+    DeviceError derr = DeviceError::NoError;
     bool result = udisks_drive_call_power_off_finish(drive, res, &err);
     if (!result) {
-        // TODO more detailed error handle
-        qDebug() << err->code << err->message;
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            derr = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
         g_error_free(err);
     }
     CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
     if (proxy) {
-        proxy->cb(result, DeviceError::NoError);
+        proxy->cb(result, derr);
         delete proxy;
     }
 };
@@ -319,19 +336,22 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 
     GError *err = nullptr;
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-
     char *mountPoint = nullptr;
     bool mounted = udisks_filesystem_call_mount_sync(fileSystemHandler, gopts, &mountPoint, nullptr, &err);
 
+    if (err) {
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            lastError = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
+        g_error_free(err);
+    }
+
     QString ret;
     if (mounted && mountPoint) {
-        // TODO: we need to complete the SCHEME later
         ret = mountPoint;
         g_free(mountPoint);
-
     }
-    if (err)
-        g_error_free(err);
 
     return ret;
 }
@@ -382,22 +402,20 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
         return true; // since it's not mounted, then this invocation returns true
     }
 
-    // start unmount device sync
-    // construct the options
     GVariant *gopts = Utils::castFromQVariantMap(opts);
     GError *err = nullptr;
-
-    // unmount sync
     bool result = udisks_filesystem_call_unmount_sync(fileSystemHandler, gopts, nullptr, &err);
-    if (result) {
-        if (err)
-            g_error_free(err);
+    if (result)
         return true;
+
+    if (err) {
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            lastError = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
+        g_error_free(err);
     }
 
-    // handle the errors
-    if (err)
-        g_error_free(err);
     return false;
 }
 
@@ -454,15 +472,16 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
     GError *err = nullptr;
 
     bool result = udisks_filesystem_call_set_label_sync(fileSystemHandler, label, gopts, nullptr, &err);
-    if (result) {
-        if (err)
-            g_error_free(err);
+    if (result)
         return true;
-    }
 
-    // TODO: handle error
-    if (err)
+    if (err) {
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            lastError = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
         g_error_free(err);
+    }
     return false;
 }
 
@@ -517,13 +536,17 @@ bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
     GError *err = nullptr;
 
     bool result = udisks_drive_call_eject_sync(driveHandler, gopts, nullptr, &err);
-    if (!result) {
-        // TODO: handle the errors
-        if (err)
-            g_error_free(err);
-        return false;
+    if (result)
+        return true;
+
+    if (err) {
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            lastError = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
+        g_error_free(err);
     }
-    return true;
+    return false;
 }
 
 void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCb cb)
@@ -568,13 +591,16 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
     GVariant *gopts = Utils::castFromQVariantMap(opts);
     GError *err = nullptr;
     bool result = udisks_drive_call_power_off_sync(driveHandler, gopts, nullptr, &err);
-    if (result) {
+    if (result)
         return true;
-    }
 
-    // TODO: handle the errors
-    if (err)
+    if (err) {
+        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0)
+            lastError = static_cast<DeviceError>(err->code + 1);
+        else
+            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
         g_error_free(err);
+    }
     return false;
 }
 

@@ -140,9 +140,35 @@ enum class Property : uint16_t {
 
 enum class DeviceError : uint16_t {
     NoError = 0,
-    NotMountable,    // which means there is no filesystem interface for block devices.
+    Failed,                             // ￬ these errors are transfered from udisks
+    Cancelled,
+    AlreadyCancelled,
+    NotAuthorized,
+    NotAuthorizedCanObtain,
+    NotAuthorizedDismissed,
     AlreadyMounted,
     NotMounted,
+    OptionNotPermitted,
+    MountedByOtherUser,
+    AlreadyUnmounting,
+    NotSupproted,
+    TimedOut,
+    WouldWakeup,
+    DeviceBusy,
+    ScsiDaemonTransportFailed,
+    ScsiHostNotFound,
+    ScsiIDMB,
+    ScsiLoginFailed,
+    ScsiLoginAuthFailed,
+    ScsiLoginFatal,
+    ScsiLogoutFailed,
+    ScsiNoFirmware,
+    ScsiNoObjectsFound,
+    ScsiNotConnected,
+    ScsiTransportFailed,
+    ScsiUnknownDiscoveryType,           // ￪ these errors are transfered from udisks
+
+    NotMountable,                       // ￬ these are by ourselves
     NotEjectable,
     NoDriver,
 };
