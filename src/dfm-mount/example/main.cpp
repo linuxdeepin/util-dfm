@@ -7,11 +7,6 @@
 #include <QDebug>
 #include <QApplication>
 #include <QTimer>
-#include <QThread>
-#include <QEventLoop>
-#include <QtConcurrent>
-
-#include <glib.h>
 
 DFM_MOUNT_USE_NS
 int main(int argc, char **argv) {
@@ -29,17 +24,30 @@ int main(int argc, char **argv) {
         qDebug() << "\t################################################\n\n";
     });
 
-    QSharedPointer<DFMBlockDevice> blkdev;
-    auto monitor = mng->getRegisteredMonitor(DeviceType::BlockDevice);
-    auto dev = monitor->createDeviceById("/org/freedesktop/UDisks2/block_devices/sdb4");
-    blkdev = qobject_cast<QSharedPointer<DFMBlockDevice>>(dev);
-    blkdev->ejectAsync({}, [](bool result, DeviceError err){
-        qDebug() << "eject finished: " << result << static_cast<int>(err);
+    auto monitor = mng->getRegisteredMonitor(DeviceType::BlockDevice).objectCast<DFMBlockMonitor>();
+    auto devicePaths = monitor->resolveDeviceFromDrive("/org/freedesktop/UDisks2/drives/USB_SanDisk_3_2e2Gen1_0101d1edc092e4d140f3228dcdc865e2cd4571a035a163e50463efec5218f0012d10000000000000000000009b350d6e00867700a3558107b528d843");
+    for (const auto &path: devicePaths) {
+        auto blkdev = monitor->createDeviceById(path).objectCast<DFMBlockDevice>();
+        if (!blkdev) continue;
+        blkdev->mount();
+        if (blkdev->lastError() != DeviceError::NoError) {
+            qDebug() << Utils::errorMessage(blkdev->lastError()) << path;
+        }
+    }
+
+    QTimer::singleShot(10000, mng, [&devicePaths, monitor]{
+        for (const auto &path: devicePaths) {
+            auto blkdev = monitor->createDeviceById(path).objectCast<DFMBlockDevice>();
+            if (!blkdev) continue;
+            blkdev->unmount();
+            if (blkdev->lastError() != DeviceError::NoError) {
+                qDebug() << Utils::errorMessage(blkdev->lastError()) << path;
+            }
+        }
     });
-    auto sdb2 = monitor->createDeviceById("/org/freedesktop/UDisks2/block_devices/sdb");
-    sdb2->renameAsync("sdb", {}, [](bool result, DeviceError err) {
-        qDebug() << "rename: " << result << static_cast<int>(err);
-    });
+
+    auto ret = monitor->resolveDeviceNode("/dev/sdb", {});
+    qDebug() << ret;
 
     return app.exec();
 }

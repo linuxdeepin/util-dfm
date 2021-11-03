@@ -104,3 +104,11 @@ set(EXAMPLE_SRCS
 add_executable(${PROJECT_NAME}_example ${EXAMPLE_SRCS})
 target_link_libraries(${PROJECT_NAME}_example ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}_example Qt5::Widgets)
+
+#set(CMAKE_CXX_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+#set(CMAKE_C_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+#set(CMAKE_Ｌ_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+
+#set(CMAKE_CXX_FLAGS "-fsanitize=thread")
+#set(CMAKE_C_FLAGS "-fsanitize=thread")
+#set(CMAKE_Ｌ_FLAGS "-fsanitize=thread")

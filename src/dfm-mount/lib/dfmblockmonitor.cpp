@@ -310,7 +310,7 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
             changes.insert(type, val);
         }
     } else {
-        qDebug() << "property is not dict" << val;
+        qWarning() << "property is not dict" << val;
         return;
     }
 

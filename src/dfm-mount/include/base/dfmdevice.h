@@ -46,16 +46,12 @@ public:
     virtual ~DFMDevice();
 
     DFM_MNT_VIRTUAL QString path() const;
-
     DFM_MNT_VIRTUAL QString mount(const QVariantMap &opts = {});
     DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
-
     DFM_MNT_VIRTUAL bool unmount(const QVariantMap &opts = {});
     DFM_MNT_VIRTUAL void unmountAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
-
     DFM_MNT_VIRTUAL bool rename(const QString &newName, const QVariantMap &opts = {});
     DFM_MNT_VIRTUAL void renameAsync(const QString &newName, const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
-
     DFM_MNT_VIRTUAL QString mountPoint() const;
     DFM_MNT_VIRTUAL QString fileSystem() const;
     DFM_MNT_VIRTUAL qint64 sizeTotal() const;
@@ -69,10 +65,9 @@ public:
 
     DFM_MNT_VIRTUAL DeviceType deviceType() const;
     DFM_MNT_VIRTUAL QVariant getProperty(Property name) const;
-    DeviceError getLastError() const;
+    DeviceError lastError() const;
 
 public:
-
     // type definition
     using PathFunc         = std::function<QString ()>;
     using MountFunc        = std::function<QString (const QVariantMap &)>;

@@ -193,7 +193,7 @@ DFMBlockDevice::DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, 
 
 DFMBlockDevice::~DFMBlockDevice()
 {
-    qDebug() << __FUNCTION__ << "is released";
+    qDebug() << __FUNCTION__ << "is released: " << path();
 }
 
 bool DFMBlockDevice::eject(const QVariantMap &opts)
@@ -323,14 +323,12 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 
     if (!fileSystemHandler) {
         lastError = DeviceError::NotMountable;
-        qWarning() << "device is not mountable";
         return "";
     }
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
         lastError = DeviceError::AlreadyMounted;
-        qWarning() << "device is already mounted at " << mpts;
         return mpts.first();
     }
 
@@ -361,7 +359,6 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCb 
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
         lastError = DeviceError::NotMountable;
-        qWarning() << "device is not mountable: " << q->path();
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -372,7 +369,6 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCb 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
         lastError = DeviceError::AlreadyMounted;
-        qWarning() << "device is already mounted at " << mpts;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -391,14 +387,12 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
 
     if (!fileSystemHandler) {
         lastError = DeviceError::NotMountable;
-        qWarning() << "device is not mountable";
-        return true; // since device is not mountable, then it cannot be mounted
+        return true; // since device is not mountable, so we just return true here
     }
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (mpts.empty()) {
         lastError = DeviceError::NotMounted;
-        qWarning() << "device is not mounted";
         return true; // since it's not mounted, then this invocation returns true
     }
 
@@ -424,7 +418,6 @@ void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateC
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
         lastError = DeviceError::NotMountable;
-        qWarning() << "device is not mountable: " << q->path();
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -435,7 +428,6 @@ void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateC
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (mpts.empty()) {
         lastError = DeviceError::NotMounted;
-        qWarning() << "device is not mounted: " << q->path();
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -455,14 +447,12 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
 
     if (!fileSystemHandler) {
         lastError = DeviceError::NotMountable;
-        qWarning() << "device is not mountable";
         return false;
     }
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
         lastError = DeviceError::AlreadyMounted;
-        qWarning() << "device is mounted, you have to unmount first";
         return false;
     }
 
@@ -490,7 +480,6 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMa
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
         lastError = DeviceError::NotMountable;
-        qWarning() << "device is not mountable: " << q->path();
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -501,7 +490,6 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMa
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
         lastError = DeviceError::AlreadyMounted;
-        qWarning() << "device is mounted, you have to unmount first: " << q->path();
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -521,13 +509,11 @@ bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
     if (!ejectable) {
         lastError = DeviceError::NotEjectable;
-        qWarning() << "device is not ejectable";
         return false;
     }
 
     if (!driveHandler) {
         lastError = DeviceError::NoDriver;
-        qWarning() << "device DO NOT have a driver, cannot eject";
         return false;
     }
 
@@ -555,7 +541,6 @@ void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCb 
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
     if (!ejectable) {
         lastError = DeviceError::NotEjectable;
-        qWarning() << "device is not ejectable: " << q->path();
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -565,7 +550,6 @@ void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCb 
 
     if (!driveHandler) {
         lastError = DeviceError::NoDriver;
-        qWarning() << "device DO NOT have a driver, cannot eject: " << q->path();
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -583,7 +567,6 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
 
     if (!driveHandler) {
         lastError = DeviceError::NoDriver;
-        qWarning() << "device DO NOT have a driver, cannot poweroff";
         return false;
     }
 
@@ -609,7 +592,6 @@ void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperate
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!driveHandler) {
         lastError = DeviceError::NoDriver;
-        qWarning() << "device DO NOT have a driver, cannot poweroff: " << q->path();
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;

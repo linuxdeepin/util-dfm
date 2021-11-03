@@ -231,7 +231,6 @@ GVariant *Utils::castFromList(const QList<QVariant> &val)
     return ret;
 }
 
-
 #define StringPropertyItem(key, val)    std::pair<QString, Property>(key, val)
 #define PropertyStringItem(val, key)    std::pair<Property, QString>(key, val)
 Property Utils::getPropertyByName(const QString &name) {
@@ -372,4 +371,52 @@ QString Utils::getNameByProperty(Property property) {
         PropertyStringItem("IsContained",             Property::PartitionIsContained),
     };
     return datas.value(property, "");
+}
+
+QString Utils::errorMessage(DeviceError err)
+{
+    static const QMap<DeviceError, QString> errors {
+        std::pair<DeviceError, QString>(DeviceError::NoError,                    "No error"),
+        std::pair<DeviceError, QString>(DeviceError::Failed,                     "Failed"),
+        std::pair<DeviceError, QString>(DeviceError::Cancelled,                  "Cancelled"),
+        std::pair<DeviceError, QString>(DeviceError::AlreadyCancelled,           "Already cancelled"),
+        std::pair<DeviceError, QString>(DeviceError::NotAuthorized,              "Not authorized"),
+        std::pair<DeviceError, QString>(DeviceError::NotAuthorizedCanObtain,     "Not authorized can obtain"),
+        std::pair<DeviceError, QString>(DeviceError::NotAuthorizedDismissed,     "Not authorized dismissed"),
+        std::pair<DeviceError, QString>(DeviceError::AlreadyMounted,             "Device is already mounted"),
+        std::pair<DeviceError, QString>(DeviceError::NotMounted,                 "Device is not mounted"),
+        std::pair<DeviceError, QString>(DeviceError::OptionNotPermitted,         "Option is not permitted"),
+        std::pair<DeviceError, QString>(DeviceError::MountedByOtherUser,         "Device is mounted by other user"),
+        std::pair<DeviceError, QString>(DeviceError::AlreadyUnmounting,          "Device is already unmounted"),
+        std::pair<DeviceError, QString>(DeviceError::NotSupproted,               "Not supported operation"),
+        std::pair<DeviceError, QString>(DeviceError::TimedOut,                   "Operation time out"),
+        std::pair<DeviceError, QString>(DeviceError::WouldWakeup,                "Operation would wakeup"),
+        std::pair<DeviceError, QString>(DeviceError::DeviceBusy,                 "Device is busy"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiDaemonTransportFailed,  "SCSI daemon transport failed"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiHostNotFound,           "SCSI host not found"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiIDMB,                   "SCSI IDMB"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiLoginFailed,            "SCSI login failed"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiLoginAuthFailed,        "SCSI login auth failed"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiLoginFatal,             "SCSI login fatal"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiLogoutFailed,           "SCSI logout failed"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiNoFirmware,             "SCSI no firmware found"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiNoObjectsFound,         "SCSI no objects found"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiNotConnected,           "SCSI not connected"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiTransportFailed,        "SCSI transport failed"),
+        std::pair<DeviceError, QString>(DeviceError::ScsiUnknownDiscoveryType,   "SCSI unknown discovery type"),
+        std::pair<DeviceError, QString>(DeviceError::NotMountable,               "Device is not mountable"),
+        std::pair<DeviceError, QString>(DeviceError::NotEjectable,               "Device is not ejectable"),
+        std::pair<DeviceError, QString>(DeviceError::NoDriver,                   "Device do not have a drive"),
+    };
+    return errors.value(err);
+}
+
+QString Utils::errorMessage(MonitorError err)
+{
+    static const QMap<MonitorError, QString> errors {
+        std::pair<MonitorError, QString>(MonitorError::NoError, "No error"),
+        std::pair<MonitorError, QString>(MonitorError::MonitorNotRegister, "Not registered monitor"),
+        std::pair<MonitorError, QString>(MonitorError::MonitorAlreadyRegistered, "Monitor is already registered"),
+    };
+    return errors.value(err);
 }

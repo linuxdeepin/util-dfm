@@ -149,7 +149,7 @@ QVariant DFMDevice::getProperty(Property item) const
     return d->getProperty(item);
 }
 
-DeviceError DFMDevice::getLastError() const
+DeviceError DFMDevice::lastError() const
 {
     return d->lastError;
 }
