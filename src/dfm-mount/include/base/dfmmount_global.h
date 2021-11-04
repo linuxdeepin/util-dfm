@@ -134,6 +134,13 @@ enum class Property : uint16_t {
     PartitionIsContained,
     PartitionPropertyEND,
 
+    EncryptedProperty,
+    EncryptedChildConfiguration,    // variant
+    EncryptedCleartextDevice,       // str
+    EncryptedHintEncryptionType,
+    EncryptedMetadataSize,          // uint64
+    EncryptedPropertyEnd,
+
     // protocol property
     ProtoProperty = 800,       // this is invalid but just a placeholder
 };
@@ -171,6 +178,8 @@ enum class DeviceError : uint16_t {
     NotMountable,                       // ￬ these are by ourselves
     NotEjectable,
     NoDriver,
+    NotEncryptable,
+    NoPartition,
 };
 
 enum class MonitorError: uint16_t {

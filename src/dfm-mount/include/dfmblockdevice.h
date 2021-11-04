@@ -50,6 +50,10 @@ public:
     void ejectAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
     bool powerOff(const QVariantMap &opts = {});
     void powerOffAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
+    bool lock(const QVariantMap &opts = {});
+    void lockAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
+    bool unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts = {});
+    void unlockAsync(const QString &passwd, const QVariantMap &opts = {}, DeviceOperateCbWithInfo cb = nullptr);
 
     // these are convinience methods
     QStringList mountPoints() const;

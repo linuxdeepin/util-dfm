@@ -299,6 +299,10 @@ Property Utils::getPropertyByName(const QString &name) {
         StringPropertyItem("Table",                   Property::PartitionTable),
         StringPropertyItem("IsContainer",             Property::PartitionIsContainer),
         StringPropertyItem("IsContained",             Property::PartitionIsContained),
+        StringPropertyItem("ChildConfiguration",      Property::EncryptedChildConfiguration),
+        StringPropertyItem("CleartextDevice",         Property::EncryptedCleartextDevice),
+        StringPropertyItem("HintEncryptionType",      Property::EncryptedHintEncryptionType),
+        StringPropertyItem("MetadataSize",            Property::EncryptedMetadataSize),
     };
     return datas.value(name, Property::NotInit);
 }
@@ -369,6 +373,10 @@ QString Utils::getNameByProperty(Property property) {
         PropertyStringItem("Table",                   Property::PartitionTable),
         PropertyStringItem("IsContainer",             Property::PartitionIsContainer),
         PropertyStringItem("IsContained",             Property::PartitionIsContained),
+        PropertyStringItem("ChildConfiguration",      Property::EncryptedChildConfiguration),
+        PropertyStringItem("CleartextDevice",         Property::EncryptedCleartextDevice),
+        PropertyStringItem("HintEncryptionType",      Property::EncryptedHintEncryptionType),
+        PropertyStringItem("MetadataSize",            Property::EncryptedMetadataSize),
     };
     return datas.value(property, "");
 }
@@ -407,6 +415,8 @@ QString Utils::errorMessage(DeviceError err)
         std::pair<DeviceError, QString>(DeviceError::NotMountable,               "Device is not mountable"),
         std::pair<DeviceError, QString>(DeviceError::NotEjectable,               "Device is not ejectable"),
         std::pair<DeviceError, QString>(DeviceError::NoDriver,                   "Device do not have a drive"),
+        std::pair<DeviceError, QString>(DeviceError::NotEncryptable,             "Device is not encryptable"),
+        std::pair<DeviceError, QString>(DeviceError::NoPartition,                "Device do not have a partition"),
     };
     return errors.value(err);
 }
@@ -420,3 +430,27 @@ QString Utils::errorMessage(MonitorError err)
     };
     return errors.value(err);
 }
+
+QString Utils::gcharToQString(char *tmp)
+{
+    if (!tmp)
+        return QString();
+    QString ret(tmp);
+    g_free(tmp);
+    tmp = nullptr;
+    return ret;
+}
+
+QStringList Utils::gcharvToQStringList(char **tmp)
+{
+    QStringList ret;
+    int next = 0;
+    while (tmp && tmp[next]) {
+        ret << QString(tmp[next]);
+        next += 1;
+    }
+    g_strfreev(tmp);
+    tmp = nullptr;
+    return ret;
+}
+

@@ -55,7 +55,7 @@ public:
     DFMDevice::DeviceTypeFunc deviceType = nullptr;
     DFMDevice::GetPropertyFunc getProperty = nullptr;
 
-    DeviceError lastError { DeviceError::NoError };
+    mutable DeviceError lastError { DeviceError::NoError };
 protected:
     DFMDevice *q = nullptr;
 };

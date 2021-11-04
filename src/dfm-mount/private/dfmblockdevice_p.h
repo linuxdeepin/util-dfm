@@ -54,14 +54,34 @@ public:
     QVariant getDriveProperty(Property name) const;
     QVariant getFileSystemProperty(Property name) const;
     QVariant getPartitionProperty(Property name) const;
+    QVariant getEncryptedProperty(Property name) const;
 
     bool eject(const QVariantMap &opts);
     void ejectAsync(const QVariantMap &opts, DeviceOperateCb cb);
     bool powerOff(const QVariantMap &opts);
     void powerOffAsync(const QVariantMap &opts, DeviceOperateCb cb);
+    bool lock(const QVariantMap &opts);
+    void lockAsync(const QVariantMap &opts, DeviceOperateCb cb);
+    bool unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts);
+    void unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCbWithInfo cb);
+
 
 private:
     void init(UDisksClient *cli);
+
+    // error report
+    void handleErrorAndRelase(GError *err);
+    static void handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info = QString());
+
+    // async callbacks
+    static void mountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+    static void unmountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+    static void renameAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+    static void ejectAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+    static void powerOffAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+    static void lockAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+    static void unlockAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+
 public:
     QString                 blkObjPath; // path of block device object
     UDisksBlock             *blockHandler           { nullptr };

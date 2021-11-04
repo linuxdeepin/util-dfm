@@ -58,11 +58,23 @@ static QString errorMessage(DeviceError err);
 
 static QString errorMessage(MonitorError err);
 
+/*!
+ * \brief gcharToQString
+ * \param tmp: target char *, which will be free in function, use it caution
+ * \return
+ */
+static QString gcharToQString(char *tmp);
+
+/*!
+ * \brief gcharvToQStringList
+ * \param tmp: target char *, which will be free in function, use it caution
+ * \return
+ */
+static QStringList gcharvToQStringList(char **tmp);
+
 template<typename FromClass, typename ToClass>
 static inline ToClass *castClassFromTo(FromClass *p) {
     auto pPointer = dynamic_cast<ToClass *>(p);
-//    if (!pPointer)
-//        abort();
     return pPointer;
 }
 };
