@@ -332,9 +332,17 @@ bool DFMBlockDevice::hintSystem() const
 }
 
 DFMBlockDevicePrivate::DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq)
-    : DFMDevicePrivate(qq), blkObjPath(blkObjPath)
+    : DFMDevicePrivate(qq), blkObjPath(blkObjPath), client(cli)
 {
-    init(cli);
+    init();
+}
+
+DFMBlockDevicePrivate::~DFMBlockDevicePrivate()
+{
+    if (driveHandler) {
+        g_object_unref(driveHandler);
+        driveHandler = nullptr;
+    }
 }
 
 QString DFMBlockDevicePrivate::path() const
@@ -743,7 +751,7 @@ QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
     // but we shall release the objects by calling g_free for char * or g_strfreev for char ** funcs.
     switch (name) {
     case Property::BlockConfiguration:
-        //        return udisks_block_dup_configuration(blockHandler);
+//                return udisks_block_dup_configuration(blockHandler); TODO
         return "";
     case Property::BlockCryptoBackingDevice: {
         char *tmp = udisks_block_dup_crypto_backing_device(blockHandler);
@@ -1008,12 +1016,13 @@ QVariant DFMBlockDevicePrivate::getEncryptedProperty(Property name) const
     }
 }
 
-void DFMBlockDevicePrivate::init(UDisksClient *cli)
+void DFMBlockDevicePrivate::init()
 {
-    Q_ASSERT_X(cli, __FUNCTION__, "client cannot be null");
-
+    // block until all pending message been recieved.
+    // make sure that we can obtain the handlers if the device is created just recently
+    udisks_client_settle(client);
     std::string str = blkObjPath.toStdString();
-    UDisksObject *blkObj = udisks_client_peek_object(cli, str.c_str());
+    UDisksObject *blkObj = udisks_client_peek_object(client, str.c_str());
     if (!blkObj)
         return;
     blockHandler = udisks_object_peek_block(blkObj);
@@ -1024,9 +1033,7 @@ void DFMBlockDevicePrivate::init(UDisksClient *cli)
     loopHandler = udisks_object_peek_loop(blkObj);
 
     if (blockHandler) {
-        char *drvObjPath = udisks_block_dup_drive(blockHandler);
-        UDisksObject *driveObj = udisks_client_peek_object(cli, drvObjPath);
-        if (driveObj)
-            driveHandler = udisks_object_peek_drive(driveObj);
+        // must be freed with g_object_unref
+        driveHandler = udisks_client_get_drive_for_block(client, blockHandler);
     }
 }

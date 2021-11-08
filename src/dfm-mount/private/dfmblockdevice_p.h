@@ -34,6 +34,7 @@ class DFMBlockDevicePrivate final: public DFMDevicePrivate
 {
 public:
     DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq);
+    ~DFMBlockDevicePrivate();
 
     QString path() const DFM_MNT_OVERRIDE;
     QString mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
@@ -65,9 +66,8 @@ public:
     bool unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts);
     void unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCbWithInfo cb);
 
-
 private:
-    void init(UDisksClient *cli);
+    void init();
 
     // error report
     void handleErrorAndRelase(GError *err);
@@ -84,6 +84,7 @@ private:
 
 public:
     QString                 blkObjPath; // path of block device object
+    UDisksClient            *client                 { nullptr };
     UDisksBlock             *blockHandler           { nullptr };
     UDisksFilesystem        *fileSystemHandler      { nullptr };
     UDisksDrive             *driveHandler           { nullptr };
