@@ -60,16 +60,8 @@ struct Factory {
         return QSharedPointer<DIOFactory>(produce(key, std::forward<U>(u)...));
     }
 
-    inline QScopedPointer<DIOFactory> produceQScoped(const QString& key, U&&... u) {
-        return QScopedPointer<DIOFactory>(produce(key, std::forward<U>(u)...));
-    }
-
     inline std::shared_ptr<DIOFactory> produceShared(const QString& key, U&&... u) {
         return std::shared_ptr<DIOFactory>(produce(key, std::forward<U>(u)...));
-    }
-
-    inline std::unique_ptr<DIOFactory> produceUnique(const QString& key, U&&... u) {
-        return std::unique_ptr<DIOFactory>(produce(key, std::forward<U>(u)...));
     }
 
     inline static Factory<U...>& get() {
@@ -117,18 +109,8 @@ inline QSharedPointer<DFMIO::DIOFactory> produceQSharedIOFactory(const QString &
 }
 
 template<typename... Args>
-inline QScopedPointer<DFMIO::DIOFactory> produceQScopedIOFactory(const QString &key, Args &&... args){
-    return DFMIO::Factory<Args...>::get().produceQScoped(key, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
 inline std::shared_ptr<DFMIO::DIOFactory> produceSharedIOFactory(const QString &key, Args &&... args){
     return DFMIO::Factory<Args...>::get().produceShared(key, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
-inline std::unique_ptr<DFMIO::DIOFactory> produceUniqueIOFactory(const QString &key, Args &&... args){
-    return DFMIO::Factory<Args...>::get().produceUnique(key, std::forward<Args>(args)...);
 }
 
 #endif // DFMIO_REGISTER_H
