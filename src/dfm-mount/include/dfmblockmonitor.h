@@ -33,7 +33,6 @@ class DFMBlockMonitorPrivate;
 class DFMBlockMonitor final : public DFMMonitor
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(DFMBlockMonitor)
 
 public:
     DFMBlockMonitor(QObject *parent = nullptr);

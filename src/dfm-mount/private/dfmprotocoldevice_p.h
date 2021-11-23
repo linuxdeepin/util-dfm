@@ -27,11 +27,13 @@
 #include "private/dfmdevice_p.h"
 #include "dfmprotocoldevice.h"
 
+#include <gio/gio.h>
+
 DFM_MOUNT_BEGIN_NS
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
 {
 public:
-    DFMProtocolDevicePrivate(const QString &dev, DFMProtocolDevice *qq);
+    DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, DFMProtocolDevice *qq);
 
     QString path() const;
     QString mount(const QVariantMap &opts);
@@ -51,7 +53,14 @@ public:
     bool powerOff();
 
 public:
-    QString devDesc; // descriptor of device
+    QString deviceId; // device id, which is a generated uuid
+
+private:
+    GMount      *mountHandler     { nullptr };
+    GVolume     *volumeHandler    { nullptr };
+
+    QString     displayName       {};
+    QString     mountPath         {};
 };
 DFM_MOUNT_END_NS
 

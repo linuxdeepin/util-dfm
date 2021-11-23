@@ -27,6 +27,7 @@
 #include "private/dfmmonitor_p.h"
 
 #include <QMap>
+#include <QDebug>
 
 typedef struct _GVolumeMonitor          GVolumeMonitor;
 typedef struct _GDrive                  GDrive;
@@ -47,6 +48,20 @@ DFM_MOUNT_BEGIN_NS
 #define VOLUME_CHANGED      "volume-changed"
 #define VOLUME_REMOVED      "volume-removed"
 
+struct DeviceCache {
+    QString uuid    {};
+    GMount  *mount  { nullptr };
+    GVolume *volume { nullptr };
+
+    friend QDebug operator << (QDebug debug, const DeviceCache &device) {
+        bool hasMount, hasVolume;
+        hasMount = (device.mount != nullptr);
+        hasVolume = (device.volume != nullptr);
+        debug << QString("{ uuid: %1, mount: %2, volume: %3 }").arg(device.uuid).arg(hasMount).arg(hasVolume);
+        return debug;
+    }
+};
+
 class DFMProtocolDevice;
 class DFMProtocolMonitorPrivate final: public DFMMonitorPrivate
 {
@@ -62,12 +77,15 @@ public:
     QSharedPointer<DFMDevice> createDevice(const QString &id) DFM_MNT_OVERRIDE;
 
 private:
+    void initDeviceList();
+#if 0
     static void onDriveChanged(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
     static void onDriveConnected(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
     static void onDriveDisconnected(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
+    static void onMountPreUnmount(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
+#endif
     static void onMountAdded(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
     static void onMountChanged(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
-    static void onMountPreUnmount(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
     static void onMountRemoved(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
     static void onVolumeAdded(GVolumeMonitor *gVolMonitor, GVolume *volume, gpointer userData);
     static void onVolumeChanged(GVolumeMonitor *gVolMonitor, GVolume *volume, gpointer userData);
@@ -75,6 +93,14 @@ private:
 
     static bool hasDrive(GMount *mount);
     static bool hasDrive(GVolume *volume);
+
+    static QString getMountPoint(GMount *mount);
+
+    QString findDirectMount(const QString &mpt);
+    QString findOrphanVolume(const QString &volId);
+    void removeVolumes(const QString &volId);
+
+    QMap<QString, DeviceCache> devices;
 
 public:
     GVolumeMonitor *gVolMonitor { nullptr };

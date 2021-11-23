@@ -24,8 +24,12 @@
 #define DFMPROTOCOLDEVICE_H
 
 #include "base/dfmdevice.h"
+#include "dfmprotocolmonitor.h"
 
 #include <QObject>
+
+typedef struct _GMount                  GMount;
+typedef struct _GVolume                 GVolume;
 
 DFM_MOUNT_BEGIN_NS
 
@@ -33,11 +37,13 @@ class DFMProtocolDevicePrivate;
 class DFMProtocolDevice final : public DFMDevice
 {
     Q_OBJECT
+    friend class DFMProtocolMonitorPrivate;
 
 public:
-    DFMProtocolDevice(const QString &device, QObject *parent = nullptr);
     ~DFMProtocolDevice();
 
+private:
+    DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, QObject *parent = nullptr);
 };
 
 DFM_MOUNT_END_NS

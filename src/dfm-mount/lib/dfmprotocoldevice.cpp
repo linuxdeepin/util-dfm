@@ -34,8 +34,8 @@
 
 DFM_MOUNT_USE_NS
 
-DFMProtocolDevice::DFMProtocolDevice(const QString &device, QObject *parent)
-    : DFMDevice(new DFMProtocolDevicePrivate(device, this), parent)
+DFMProtocolDevice::DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, QObject *parent)
+    : DFMDevice(new DFMProtocolDevicePrivate(id, vol, mnt, this), parent)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
     if (!dp) {
@@ -62,16 +62,15 @@ DFMProtocolDevice::~DFMProtocolDevice()
 
 }
 
-DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &dev, DFMProtocolDevice *qq)
-    : DFMDevicePrivate(qq), devDesc(dev)
+DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, DFMProtocolDevice *qq)
+    : DFMDevicePrivate(qq), deviceId(id), mountHandler(mnt), volumeHandler(vol)
 {
 
 }
 
 QString DFMProtocolDevicePrivate::path() const
 {
-    // TODO
-    return devDesc;
+    return deviceId;
 }
 
 QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)

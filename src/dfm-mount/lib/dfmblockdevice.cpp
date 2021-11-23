@@ -339,10 +339,17 @@ DFMBlockDevicePrivate::DFMBlockDevicePrivate(UDisksClient *cli, const QString &b
 
 DFMBlockDevicePrivate::~DFMBlockDevicePrivate()
 {
-    if (driveHandler) {
-        g_object_unref(driveHandler);
-        driveHandler = nullptr;
-    }
+    auto gunref = [](void *gobj){
+        g_object_unref(gobj);
+        gobj = nullptr;
+    };
+    gunref(driveHandler);
+    gunref(fileSystemHandler);
+    gunref(blockHandler);
+    gunref(partitionHandler);
+    gunref(encryptedHandler);
+    gunref(partitionTabHandler);
+    gunref(loopHandler);
 }
 
 QString DFMBlockDevicePrivate::path() const
@@ -1025,12 +1032,12 @@ void DFMBlockDevicePrivate::init()
     UDisksObject *blkObj = udisks_client_peek_object(client, str.c_str());
     if (!blkObj)
         return;
-    blockHandler = udisks_object_peek_block(blkObj);
-    fileSystemHandler = udisks_object_peek_filesystem(blkObj);
-    partitionHandler = udisks_object_peek_partition(blkObj);
-    encryptedHandler = udisks_object_peek_encrypted(blkObj);
-    partitionTabHandler = udisks_object_peek_partition_table(blkObj);
-    loopHandler = udisks_object_peek_loop(blkObj);
+    blockHandler = udisks_object_get_block(blkObj);
+    fileSystemHandler = udisks_object_get_filesystem(blkObj);
+    partitionHandler = udisks_object_get_partition(blkObj);
+    encryptedHandler = udisks_object_get_encrypted(blkObj);
+    partitionTabHandler = udisks_object_get_partition_table(blkObj);
+    loopHandler = udisks_object_get_loop(blkObj);
 
     if (blockHandler) {
         // must be freed with g_object_unref

@@ -345,7 +345,7 @@ void DFMBlockMonitorPrivate::initDevices()
         if (!obj)
             continue;
 
-        auto *blkObj = udisks_object_peek_block(obj);
+        auto blkObj = udisks_object_peek_block(obj);
         if (!blkObj)
             continue;
 
