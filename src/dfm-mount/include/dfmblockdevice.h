@@ -72,7 +72,8 @@ public:
     bool isLoopDevice() const;
     bool hintIgnore() const;
     bool hintSystem() const;
-    // int partitionType() const; // TODO: like DBlockPartition::eType
+    PartitionType partitionEType() const;
+    QString partitionType() const;
 
 private:
     friend class DFMBlockMonitorPrivate;

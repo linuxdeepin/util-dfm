@@ -54,6 +54,8 @@ static QString getNameByProperty(Property type);
 
 static Property getPropertyByName(const QString &name);
 
+static PartitionType getPartitionTypeByGuid(const QString &guid);
+
 static QString errorMessage(DeviceError err);
 
 static QString errorMessage(MonitorError err);

@@ -331,6 +331,29 @@ bool DFMBlockDevice::hintSystem() const
     return getProperty(Property::BlockHintSystem).toBool();
 }
 
+PartitionType DFMBlockDevice::partitionEType() const
+{
+    auto typestr = partitionType();
+    if (typestr.isEmpty())
+        return PartitionType::PartitionTypeNotFound;
+    bool ok = false;
+    int type = typestr.toInt(&ok, 16);
+    if (ok) {
+        if (type >= static_cast<int>(PartitionType::MbrEmpty)
+                && type <= static_cast<int>(PartitionType::MbrBBT))
+            return static_cast<PartitionType>(type);
+        else
+            return PartitionType::PartitionTypeNotFound;
+    } else {
+        return Utils::getPartitionTypeByGuid(typestr);
+    }
+}
+
+QString DFMBlockDevice::partitionType() const
+{
+    return getProperty(Property::PartitionType).toString();
+}
+
 DFMBlockDevicePrivate::DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq)
     : DFMDevicePrivate(qq), blkObjPath(blkObjPath), client(cli)
 {
