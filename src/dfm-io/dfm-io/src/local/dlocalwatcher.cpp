@@ -40,10 +40,7 @@ DLocalWatcherPrivate::DLocalWatcherPrivate(DLocalWatcher *q)
 
 DLocalWatcherPrivate::~DLocalWatcherPrivate()
 {
-    if (gmonitor)
-        g_object_unref(gmonitor);
-    if (gfile)
-        g_object_unref(gfile);
+    stop();
 }
 
 void DLocalWatcherPrivate::setWatchType(DWatcher::WatchType type)
@@ -99,6 +96,10 @@ bool DLocalWatcherPrivate::stop()
         }
         g_object_unref(gmonitor);
         gmonitor = nullptr;
+    }
+    if (gfile) {
+        g_object_unref(gfile);
+        gfile = nullptr;
     }
 
     return true;
