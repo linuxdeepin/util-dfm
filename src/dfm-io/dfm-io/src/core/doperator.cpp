@@ -27,12 +27,10 @@ USING_IO_NAMESPACE
 DOperatorPrivate::DOperatorPrivate(DOperator *q)
     : q(q)
 {
-
 }
 
 DOperatorPrivate::~DOperatorPrivate()
 {
-
 }
 
 DOperator::DOperator(const QUrl &uri)
@@ -43,7 +41,6 @@ DOperator::DOperator(const QUrl &uri)
 
 DOperator::~DOperator()
 {
-
 }
 
 QUrl DOperator::uri() const
@@ -139,6 +136,14 @@ bool DOperator::cancel()
     return d->cancelFunc();
 }
 
+DFMIOError DOperator::lastError() const
+{
+    if (!d->lastErrorFunc)
+        return DFMIOError();
+
+    return d->lastErrorFunc();
+}
+
 void DOperator::registerRenameFile(const DOperator::RenameFileFunc &func)
 {
     d->renameFileFunc = func;
@@ -194,10 +199,7 @@ void DOperator::registerCancel(const DOperator::CancelFunc &func)
     d->cancelFunc = func;
 }
 
-DFMIOError DOperator::lastError() const
+void DOperator::registerLastError(const DOperator::LastErrorFunc &func)
 {
-    if (!d)
-        return DFMIOError();
-
-    return d->error;
+    d->lastErrorFunc = func;
 }

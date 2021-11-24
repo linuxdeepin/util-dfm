@@ -52,10 +52,9 @@ public:
     DOperator::SetFileInfoFunc setFileInfoFunc = nullptr;
 
     DOperator::CancelFunc cancelFunc = nullptr;
-
-    DFMIOError error;
+    DOperator::LastErrorFunc lastErrorFunc = nullptr;
 };
 
 END_IO_NAMESPACE
 
-#endif // DOPERATOR_P_H
+#endif   // DOPERATOR_P_H

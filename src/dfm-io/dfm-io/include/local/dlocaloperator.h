@@ -53,6 +53,7 @@ public:
     bool setFileInfo(const DFileInfo &fileInfo) DFM_OVERRIDE;
 
     bool cancel() DFM_OVERRIDE;
+    DFMIOError lastError() const DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalOperatorPrivate> d = nullptr;
@@ -60,4 +61,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DLOCALOPERATOR_H
+#endif   // DLOCALOPERATOR_H

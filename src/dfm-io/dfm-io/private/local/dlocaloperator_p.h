@@ -41,7 +41,7 @@ public:
     explicit DLocalOperatorPrivate(DLocalOperator *q);
     ~DLocalOperatorPrivate();
 
-    bool renameFile (const QString &new_name);
+    bool renameFile(const QString &new_name);
     bool copyFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackfunc func = nullptr, void *userData = nullptr);
     bool moveFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackfunc func = nullptr, void *userData = nullptr);
     bool trashFile();
@@ -52,6 +52,10 @@ public:
     bool createLink(const QUrl &link);
     bool setFileInfo(const DFileInfo &fileInfo);
     bool cancel();
+    DFMIOError lastError();
+
+private:
+    void setError();
 
 private:
     GFile *makeGFile(const QUrl &url);
@@ -59,8 +63,10 @@ private:
 
     DLocalOperator *q = nullptr;
     GCancellable *gcancellable = nullptr;
+
+    DFMIOError error;
 };
 
 END_IO_NAMESPACE
 
-#endif // DLOCALOPERATOR_P_H
+#endif   // DLOCALOPERATOR_P_H

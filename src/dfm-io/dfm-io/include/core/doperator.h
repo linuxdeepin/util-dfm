@@ -51,11 +51,11 @@ public:
         UserFlag = 0x100
     };
 
-    using ProgressCallbackfunc = void(*)(int64_t, int64_t, void *); // current_num_bytes, total_num_bytes, user_data
+    using ProgressCallbackfunc = void (*)(int64_t, int64_t, void *);   // current_num_bytes, total_num_bytes, user_data
 
-    using RenameFileFunc = std::function<bool(const QString&)>;
-    using CopyFileFunc = std::function<bool(const QUrl&, CopyFlag, ProgressCallbackfunc, void *)>;
-    using MoveFileFunc = std::function<bool(const QUrl&, CopyFlag, ProgressCallbackfunc, void *)>;
+    using RenameFileFunc = std::function<bool(const QString &)>;
+    using CopyFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackfunc, void *)>;
+    using MoveFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackfunc, void *)>;
 
     using TrashFileFunc = std::function<bool()>;
     using DeleteFileFunc = std::function<bool()>;
@@ -63,10 +63,11 @@ public:
 
     using TouchFileFunc = std::function<bool()>;
     using MakeDirectoryFunc = std::function<bool()>;
-    using CreateLinkFunc = std::function<bool(const QUrl&)>;
-    using SetFileInfoFunc = std::function<bool(const DFileInfo&)>;
+    using CreateLinkFunc = std::function<bool(const QUrl &)>;
+    using SetFileInfoFunc = std::function<bool(const DFileInfo &)>;
 
     using CancelFunc = std::function<bool()>;
+    using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
     DOperator(const QUrl &uri);
@@ -88,6 +89,7 @@ public:
     DFM_VIRTUAL bool setFileInfo(const DFileInfo &fileInfo);
 
     DFM_VIRTUAL bool cancel();
+    DFM_VIRTUAL DFMIOError lastError() const;
 
     //register
     void registerRenameFile(const RenameFileFunc &func);
@@ -104,8 +106,7 @@ public:
     void registerSetFileInfo(const SetFileInfoFunc &func);
 
     void registerCancel(const CancelFunc &func);
-
-    DFMIOError lastError() const; 
+    void registerLastError(const LastErrorFunc &func);
 
 private:
     QSharedPointer<DOperatorPrivate> d = nullptr;
@@ -113,4 +114,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DOPERATOR_H
+#endif   // DOPERATOR_H

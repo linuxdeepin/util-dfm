@@ -84,6 +84,7 @@ bool DLocalOperatorPrivate::renameFile(const QString &new_name)
     if (gerror)
         g_error_free(gerror);
     g_object_unref(gfile_ret);
+
     return true;
 }
 
@@ -98,7 +99,7 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag
 
     GFile *gfileTarget = nullptr;
     if (DLocalHelper::checkGFileType(gfile_to, G_FILE_TYPE_DIRECTORY)) {
-        char *basename = g_file_get_basename (gfile_from);
+        char *basename = g_file_get_basename(gfile_from);
         gfileTarget = g_file_get_child(gfile_to, basename);
         g_free(basename);
     } else {
@@ -120,14 +121,15 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag
         gcancellable = nullptr;
     }
 
-    if (!ret)
+    if (gerror) {
         setErrorInfo(gerror);
-
-    if (gerror)
         g_error_free(gerror);
+    }
+
     g_object_unref(gfile_from);
     g_object_unref(gfile_to);
     g_object_unref(gfileTarget);
+
     return ret;
 }
 
@@ -155,12 +157,13 @@ bool DLocalOperatorPrivate::moveFile(const QUrl &to, DOperator::CopyFlag flag, D
         gcancellable = nullptr;
     }
 
-    if (!ret)
+    if (gerror) {
         setErrorInfo(gerror);
-    if (gerror)
         g_error_free(gerror);
+    }
     g_object_unref(gfile_from);
     g_object_unref(gfile_to);
+
     return ret;
 }
 
@@ -186,11 +189,12 @@ bool DLocalOperatorPrivate::trashFile()
         gcancellable = nullptr;
     }
 
-    if (!ret)
+    if (gerror) {
         setErrorInfo(gerror);
-    if (gerror)
         g_error_free(gerror);
+    }
     g_object_unref(gfile);
+
     return ret;
 }
 
@@ -216,12 +220,12 @@ bool DLocalOperatorPrivate::deleteFile()
         gcancellable = nullptr;
     }
 
-    if (!ret)
+    if (gerror) {
         setErrorInfo(gerror);
-
-    if (gerror)
         g_error_free(gerror);
+    }
     g_object_unref(gfile);
+
     return ret;
 }
 
@@ -236,14 +240,15 @@ bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackfunc func, vo
     g_object_unref(file);
 
     if (!gfileinfo) {
-        setErrorInfo(gerror);
-        g_error_free(gerror);
+        if (gerror) {
+            setErrorInfo(gerror);
+            g_error_free(gerror);
+        }
         return false;
     }
-    if (gerror)
-        g_error_free(gerror);
 
     const std::string &src_path = g_file_info_get_attribute_byte_string(gfileinfo, G_FILE_ATTRIBUTE_TRASH_ORIG_PATH);
+
     if (src_path.empty()) {
         g_object_unref(gfileinfo);
         return false;
@@ -256,6 +261,7 @@ bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackfunc func, vo
     bool ret = moveFile(url_dest, DOperator::CopyFlag::None, func, userData);
 
     g_object_unref(gfileinfo);
+
     return ret;
 }
 
@@ -390,6 +396,11 @@ bool DLocalOperatorPrivate::cancel()
     return true;
 }
 
+DFMIOError DLocalOperatorPrivate::lastError()
+{
+    return error;
+}
+
 GFile *DLocalOperatorPrivate::makeGFile(const QUrl &url)
 {
     return g_file_new_for_uri(url.toString().toLocal8Bit().data());
@@ -397,13 +408,13 @@ GFile *DLocalOperatorPrivate::makeGFile(const QUrl &url)
 
 void DLocalOperatorPrivate::setErrorInfo(GError *gerror)
 {
-    //error.setCode(DFMIOErrorCode(gerror->code));
+    error.setCode(DFMIOErrorCode(gerror->code));
 
-    qWarning() << QString::fromStdString(gerror->message);
+    qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
-DLocalOperator::DLocalOperator(const QUrl &uri) : DOperator(uri)
-  , d(new DLocalOperatorPrivate(this))
+DLocalOperator::DLocalOperator(const QUrl &uri)
+    : DOperator(uri), d(new DLocalOperatorPrivate(this))
 {
     registerRenameFile(std::bind(&DLocalOperator::renameFile, this, std::placeholders::_1));
     registerCopyFile(std::bind(&DLocalOperator::copyFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
@@ -419,6 +430,7 @@ DLocalOperator::DLocalOperator(const QUrl &uri) : DOperator(uri)
     registerSetFileInfo(std::bind(&DLocalOperator::setFileInfo, this, std::placeholders::_1));
 
     registerCancel(std::bind(&DLocalOperator::cancel, this));
+    registerLastError(std::bind(&DLocalOperator::lastError, this));
 }
 
 DLocalOperator::~DLocalOperator()
@@ -478,4 +490,9 @@ bool DLocalOperator::setFileInfo(const DFileInfo &fileInfo)
 bool DLocalOperator::cancel()
 {
     return d->cancel();
+}
+
+DFMIOError DLocalOperator::lastError() const
+{
+    return d->lastError();
 }
