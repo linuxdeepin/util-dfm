@@ -78,12 +78,7 @@ public:
 
 private:
     void initDeviceList();
-#if 0
-    static void onDriveChanged(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
-    static void onDriveConnected(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
-    static void onDriveDisconnected(GVolumeMonitor *gVolMonitor, GDrive *drive, gpointer userData);
-    static void onMountPreUnmount(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
-#endif
+
     static void onMountAdded(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
     static void onMountChanged(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
     static void onMountRemoved(GVolumeMonitor *gVolMonitor, GMount *mount, gpointer userData);
@@ -94,14 +89,12 @@ private:
     static bool hasDrive(GMount *mount);
     static bool hasDrive(GVolume *volume);
 
-    static QString getMountPoint(GMount *mount);
-
-    QString findDirectMount(const QString &mpt);
+    QString findAssociatedMount(const QString &mpt);
     QString findOrphanVolume(const QString &volId);
-    void removeVolumes(const QString &volId);
+    QStringList removeVolumes(const QString &volId);
 
     QMap<QString, DeviceCache> devices;
-
+    QList<DFMProtocolDevice *> pdevices;
 public:
     GVolumeMonitor *gVolMonitor { nullptr };
 };

@@ -603,6 +603,7 @@ QString Utils::errorMessage(DeviceError err)
         std::pair<DeviceError, QString>(DeviceError::NoDriver,                   "Device do not have a drive"),
         std::pair<DeviceError, QString>(DeviceError::NotEncryptable,             "Device is not encryptable"),
         std::pair<DeviceError, QString>(DeviceError::NoPartition,                "Device do not have a partition"),
+        std::pair<DeviceError, QString>(DeviceError::NoBlock,                    "Device do not have a block"),
     };
     return errors.value(err);
 }

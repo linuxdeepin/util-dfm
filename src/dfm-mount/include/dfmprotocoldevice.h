@@ -44,6 +44,8 @@ public:
 
 private:
     DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, QObject *parent = nullptr);
+    void setVolume(GVolume *);
+    void setMount(GMount *);
 };
 
 DFM_MOUNT_END_NS

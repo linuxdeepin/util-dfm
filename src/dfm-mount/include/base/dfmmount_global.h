@@ -180,6 +180,7 @@ enum class DeviceError : uint16_t {
     NoDriver,
     NotEncryptable,
     NoPartition,
+    NoBlock,
 };
 
 enum class MonitorError : uint16_t {

@@ -144,7 +144,17 @@ QSharedPointer<DFMDevice> DFMBlockMonitorPrivate::createDeviceById(const QString
 {
     if (!getDevices().contains(id))
         return nullptr;
-    return QSharedPointer<DFMDevice>(new DFMBlockDevice(client, id, q));
+    auto blk = new DFMBlockDevice(client, id, q);
+    // for a block device, there must have a block node in dbus, otherwise treat it as a invalid object
+    if (blk->hasBlock()) {
+        QSharedPointer<DFMDevice> ret;
+        ret.reset(blk);
+        return ret;
+    } else {
+        delete blk;
+        blk = nullptr;
+        return QSharedPointer<DFMDevice>(nullptr);
+    }
 }
 
 QStringList DFMBlockMonitorPrivate::resolveDevice(const QVariantMap &devspec, const QVariantMap &opts)

@@ -149,6 +149,13 @@ QVariant DFMDevice::getProperty(Property item) const
     return d->getProperty(item);
 }
 
+QString DFMDevice::displayName() const
+{
+    Q_ASSERT_X(d->displayName, __PRETTY_FUNCTION__, "not register");
+
+    return d->displayName();
+}
+
 DeviceError DFMDevice::lastError() const
 {
     return d->lastError;
@@ -250,4 +257,11 @@ void DFMDevice::registerGetProperty(const DFMDevice::GetPropertyFunc &func)
     Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
 
     d->getProperty = func;
+}
+
+void DFMDevice::registerDisplayName(const DFMDevice::DisplayNameFunc &func)
+{
+    Q_ASSERT_X(func, __PRETTY_FUNCTION__, "not register");
+
+    d->displayName = func;
 }

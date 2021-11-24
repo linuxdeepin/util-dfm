@@ -65,6 +65,8 @@ public:
 
     DFM_MNT_VIRTUAL DeviceType deviceType() const;
     DFM_MNT_VIRTUAL QVariant getProperty(Property name) const;
+    DFM_MNT_VIRTUAL QString displayName() const;
+
     DeviceError lastError() const;
 
 public:
@@ -83,6 +85,7 @@ public:
     using SizeFreeFunc     = std::function<qint64 ()>;
     using DeviceTypeFunc   = std::function<DeviceType ()>;
     using GetPropertyFunc  = std::function<QVariant (Property)>;
+    using DisplayNameFunc  = std::function<QString ()>;
 
     void registerPath(const PathFunc &func);
     void registerMount(const MountFunc &func);
@@ -98,6 +101,7 @@ public:
     void registerSizeFree(const SizeFreeFunc &func);
     void registerDeviceType(const DeviceTypeFunc &func);
     void registerGetProperty(const GetPropertyFunc &func);
+    void registerDisplayName(const DisplayNameFunc &func);
 
 protected:
     QScopedPointer<DFMDevicePrivate> d;

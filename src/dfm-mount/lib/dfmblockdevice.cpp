@@ -26,8 +26,8 @@
 #include "base/dfmmountdefines.h"
 #include "base/dfmmountutils.h"
 
-#include <QFuture>
 #include <QStorageInfo>
+#include <QDebug>
 
 #include <functional>
 #include <udisks/udisks.h>
@@ -142,20 +142,24 @@ DFMBlockDevice::DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, 
         qCritical() << "private pointer not valid" << __PRETTY_FUNCTION__;
         abort();
     }
-    registerPath(std::bind(&DFMBlockDevicePrivate::path, dp));
-    registerMount(std::bind(&DFMBlockDevicePrivate::mount, dp, std::placeholders::_1));
-    registerMountAsync(std::bind(&DFMBlockDevicePrivate::mountAsync, dp, std::placeholders::_1, std::placeholders::_2));
-    registerUnmount(std::bind(&DFMBlockDevicePrivate::unmount, dp, std::placeholders::_1));
-    registerUnmountAsync(std::bind(&DFMBlockDevicePrivate::unmountAsync, dp, std::placeholders::_1, std::placeholders::_2));
-    registerRename(std::bind(&DFMBlockDevicePrivate::rename, dp, std::placeholders::_1, std::placeholders::_2));
-    registerRenameAsync(std::bind(&DFMBlockDevicePrivate::renameAsync, dp, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    registerMountPoint(std::bind(&DFMBlockDevicePrivate::mountPoint, dp));
-    registerFileSystem(std::bind(&DFMBlockDevicePrivate::fileSystem, dp));
-    registerSizeTotal(std::bind(&DFMBlockDevicePrivate::sizeTotal, dp));
-    registerSizeUsage(std::bind(&DFMBlockDevicePrivate::sizeUsage, dp));
-    registerSizeFree(std::bind(&DFMBlockDevicePrivate::sizeFree, dp));
-    registerDeviceType(std::bind(&DFMBlockDevicePrivate::deviceType, dp));
-    registerGetProperty(std::bind(&DFMBlockDevicePrivate::getProperty, dp, std::placeholders::_1));
+
+    using namespace std;
+    using namespace std::placeholders;
+    registerPath(bind(&DFMBlockDevicePrivate::path, dp));
+    registerMount(bind(&DFMBlockDevicePrivate::mount, dp, _1));
+    registerMountAsync(bind(&DFMBlockDevicePrivate::mountAsync, dp, _1, _2));
+    registerUnmount(bind(&DFMBlockDevicePrivate::unmount, dp, _1));
+    registerUnmountAsync(bind(&DFMBlockDevicePrivate::unmountAsync, dp, _1, _2));
+    registerRename(bind(&DFMBlockDevicePrivate::rename, dp, _1, _2));
+    registerRenameAsync(bind(&DFMBlockDevicePrivate::renameAsync, dp, _1, _2, _3));
+    registerMountPoint(bind(&DFMBlockDevicePrivate::mountPoint, dp));
+    registerFileSystem(bind(&DFMBlockDevicePrivate::fileSystem, dp));
+    registerSizeTotal(bind(&DFMBlockDevicePrivate::sizeTotal, dp));
+    registerSizeUsage(bind(&DFMBlockDevicePrivate::sizeUsage, dp));
+    registerSizeFree(bind(&DFMBlockDevicePrivate::sizeFree, dp));
+    registerDeviceType(bind(&DFMBlockDevicePrivate::deviceType, dp));
+    registerGetProperty(bind(&DFMBlockDevicePrivate::getProperty, dp, _1));
+    registerDisplayName(bind(&DFMBlockDevicePrivate::displayName, dp));
 }
 
 DFMBlockDevice::~DFMBlockDevice()
@@ -315,6 +319,12 @@ bool DFMBlockDevice::hasPartitionTable() const
     return dp ? dp->partitionTabHandler != nullptr : false;
 }
 
+bool DFMBlockDevice::hasPartition() const
+{
+    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    return dp ? dp->partitionHandler != nullptr : false;
+}
+
 bool DFMBlockDevice::isLoopDevice() const
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
@@ -354,6 +364,12 @@ QString DFMBlockDevice::partitionType() const
     return getProperty(Property::PartitionType).toString();
 }
 
+bool DFMBlockDevice::hasBlock() const
+{
+    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    return dp ? dp->blockHandler != nullptr : false;
+}
+
 DFMBlockDevicePrivate::DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq)
     : DFMDevicePrivate(qq), blkObjPath(blkObjPath), client(cli)
 {
@@ -363,8 +379,8 @@ DFMBlockDevicePrivate::DFMBlockDevicePrivate(UDisksClient *cli, const QString &b
 DFMBlockDevicePrivate::~DFMBlockDevicePrivate()
 {
     auto gunref = [](void *gobj){
-        g_object_unref(gobj);
-        gobj = nullptr;
+        if (gobj)
+            g_object_unref(gobj);
     };
     gunref(driveHandler);
     gunref(fileSystemHandler);
@@ -770,12 +786,21 @@ QVariant DFMBlockDevicePrivate::getProperty(Property name) const
     else if (name > Property::EncryptedProperty && name < Property::EncryptedPropertyEnd)
         return getEncryptedProperty(name);
 
-    Q_ASSERT_X(0, __FUNCTION__, "the property is not supported for block device");
+    //    Q_ASSERT_X(0, __FUNCTION__, "the property is not supported for block device");
+}
+
+QString DFMBlockDevicePrivate::displayName() const
+{
+    return getProperty(Property::BlockIDLabel).toString();
 }
 
 QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
 {
-    Q_ASSERT_X(blockHandler, __PRETTY_FUNCTION__, "not valid");
+    if (!blockHandler) {
+        qWarning() << "this device do not have a block";
+        lastError = DeviceError::NoBlock;
+        return QVariant();
+    }
 
     // make sure we can safely get the properties in cross-thread cases: so we use DUP rather than GET when DUP can be used.
     // but we shall release the objects by calling g_free for char * or g_strfreev for char ** funcs.
@@ -969,7 +994,7 @@ QVariant DFMBlockDevicePrivate::getFileSystemProperty(Property name) const
 {
     if (!fileSystemHandler) {
         lastError = DeviceError::NotMountable;
-        return QStringList();
+        return QVariant();
     }
 
     switch (name) {
@@ -987,7 +1012,7 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
     if (!partitionHandler) {
         qWarning() << "this device do not have a partition";
         lastError = DeviceError::NoPartition;
-        return "";
+        return QVariant();
     }
 
     switch (name) {
@@ -1029,7 +1054,7 @@ QVariant DFMBlockDevicePrivate::getEncryptedProperty(Property name) const
     if (!encryptedHandler) {
         qWarning() << "this is not an encrypted device";
         lastError = DeviceError::NotEncryptable;
-        return "";
+        return QVariant();
     }
 
     switch (name) {
@@ -1055,6 +1080,7 @@ void DFMBlockDevicePrivate::init()
     UDisksObject *blkObj = udisks_client_peek_object(client, str.c_str());
     if (!blkObj)
         return;
+
     blockHandler = udisks_object_get_block(blkObj);
     fileSystemHandler = udisks_object_get_filesystem(blkObj);
     partitionHandler = udisks_object_get_partition(blkObj);

@@ -50,6 +50,7 @@ public:
     qint64 sizeFree() const DFM_MNT_OVERRIDE;
     DeviceType deviceType() const DFM_MNT_OVERRIDE;
     QVariant getProperty(Property name) const DFM_MNT_OVERRIDE;
+    QString displayName() const DFM_MNT_OVERRIDE;
 
     QVariant getBlockProperty(Property name) const;
     QVariant getDriveProperty(Property name) const;

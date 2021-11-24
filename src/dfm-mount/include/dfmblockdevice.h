@@ -36,6 +36,7 @@ class DFMBlockDevicePrivate;
 class DFMBlockDevice final : public DFMDevice
 {
     Q_OBJECT
+    friend class DFMBlockMonitorPrivate;
 
 public:
     DFMBlockDevice() = delete;
@@ -60,23 +61,25 @@ public:
     QString device() const;
     QString drive() const;
     QString idLabel() const;
+    QStringList mediaCompatibility() const;
     bool removable() const;
     bool optical() const;
     bool opticalBlank() const;
-    QStringList mediaCompatibility() const;
     bool canPowerOff() const;
     bool ejectable() const;
+
     bool isEncrypted() const;
     bool hasFileSystem() const;
     bool hasPartitionTable() const;
+    bool hasPartition() const;
     bool isLoopDevice() const;
+    bool hasBlock() const;
+
     bool hintIgnore() const;
     bool hintSystem() const;
+
     PartitionType partitionEType() const;
     QString partitionType() const;
-
-private:
-    friend class DFMBlockMonitorPrivate;
 };
 
 DFM_MOUNT_END_NS

@@ -23,6 +23,7 @@
 
 #include "dfmprotocolmonitor.h"
 #include "private/dfmprotocolmonitor_p.h"
+#include "private/dfmprotocoldevice_p.h"
 #include "dfmprotocoldevice.h"
 #include "base/dfmmountutils.h"
 
@@ -91,19 +92,6 @@ bool DFMProtocolMonitorPrivate::startMonitor()
     }
 
     ulong handler = 0;
-#if 0// ignore drives which will be handled in DFMBlockMonitor
-    handler = g_signal_connect(gVolMonitor, DRIVE_CHANGED, G_CALLBACK(&DFMProtocolMonitorPrivate::onDriveChanged), this);
-    connections.insert(DRIVE_CHANGED, handler);
-
-    handler = g_signal_connect(gVolMonitor, DRIVE_CONNECTED, G_CALLBACK(&DFMProtocolMonitorPrivate::onDriveConnected), this);
-    connections.insert(DRIVE_CONNECTED, handler);
-
-    handler = g_signal_connect(gVolMonitor, DRIVE_DISCONNED, G_CALLBACK(&DFMProtocolMonitorPrivate::onDriveDisconnected), this);
-    connections.insert(DRIVE_DISCONNED, handler);
-
-    handler = g_signal_connect(gVolMonitor, MOUNT_PRE_UNMOUNT, G_CALLBACK(&DFMProtocolMonitorPrivate::onMountPreUnmount), this);
-    connections.insert(MOUNT_PRE_UNMOUNT, handler);
-#endif
 
     handler = g_signal_connect(gVolMonitor, MOUNT_ADDED, G_CALLBACK(&DFMProtocolMonitorPrivate::onMountAdded), this);
     connections.insert(MOUNT_ADDED, handler);
@@ -152,7 +140,14 @@ QSharedPointer<DFMDevice> DFMProtocolMonitorPrivate::createDevice(const QString 
     if (!devices.contains(id))
         return nullptr;
     const auto &dev = devices.value(id);
-    return QSharedPointer<DFMProtocolDevice>(new DFMProtocolDevice(id, dev.volume, dev.mount, q));
+    auto protocolDev = new DFMProtocolDevice(id, dev.volume, dev.mount, q);
+    QSharedPointer<DFMDevice> ret;
+    ret.reset(protocolDev);
+    pdevices.append(protocolDev);
+    q->connect(protocolDev, &DFMProtocolDevice::destroyed, q, [this, protocolDev](){
+        pdevices.removeAll(protocolDev);
+    });
+    return ret;
 }
 
 void DFMProtocolMonitorPrivate::initDeviceList()
@@ -240,54 +235,12 @@ void DFMProtocolMonitorPrivate::initDeviceList()
     g_list_foreach(vols, static_cast<GFunc>(iterVol), this);
     g_list_free(vols);
 
-    qDebug() << devices;
+//    qDebug() << devices;
 }
-
-#if 0
-void DFMProtocolMonitorPrivate::onDriveChanged(GVolumeMonitor *monitor, GDrive *drive, gpointer userData)
-{
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
-    Q_ASSERT(d);
-    qDebug() << __FUNCTION__;
-
-    char *drvName = g_drive_get_name(drive);
-    qDebug() << "\tdrvName:" << drvName;
-    g_free(drvName);
-
-    // TODO
-}
-
-void DFMProtocolMonitorPrivate::onDriveConnected(GVolumeMonitor *monitor, GDrive *drive, gpointer userData)
-{
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
-    Q_ASSERT(d);
-    qDebug() << __FUNCTION__;
-
-    char *drvName = g_drive_get_name(drive);
-    qDebug() << "\tdrvName:" << drvName;
-    g_free(drvName);
-
-    // TODO
-}
-
-void DFMProtocolMonitorPrivate::onDriveDisconnected(GVolumeMonitor *monitor, GDrive *drive, gpointer userData)
-{
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
-    Q_ASSERT(d);
-    qDebug() << __FUNCTION__;
-
-    char *drvName = g_drive_get_name(drive);
-    qDebug() << "\tdrvName:" << drvName;
-    g_free(drvName);
-
-    // TODO
-}
-#endif
 
 void DFMProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
 {
     Q_UNUSED(monitor);
-
     if (hasDrive(mount)) // don't handle real block devices
         return;
     auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
@@ -295,8 +248,8 @@ void DFMProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mo
 
     qDebug() << __FUNCTION__;
 
-    QString mpt = getMountPoint(mount);
-    auto id = d->findDirectMount(mpt);
+    QString mpt = DFMProtocolDevicePrivate::mountPoint(mount);
+    auto id = d->findAssociatedMount(mpt);
     if (!id.isEmpty()) {
         auto vol = g_mount_get_volume(mount);
         // remove same orphan volume
@@ -306,14 +259,24 @@ void DFMProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mo
         if (!key.isEmpty())
             d->devices.remove(key);
         d->devices[id].volume = vol;
+
+        for (auto dev: d->pdevices) {
+            if (dev->path() == id) {
+                dev->setVolume(vol);
+                qDebug() << "dev's volume settled";
+            }
+        }
+
     } else {
         DeviceCache dev;
         dev.uuid = QUuid::createUuid().toString();
         dev.mount = mount;
         d->devices.insert(dev.uuid, dev);
+
+        Q_EMIT d->q->mountAdded(dev.uuid, mpt);
     }
 
-    qDebug() << "\t    " << d->devices;
+//    qDebug() << "\t    " << d->devices;
 }
 
 void DFMProtocolMonitorPrivate::onMountChanged(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
@@ -325,42 +288,8 @@ void DFMProtocolMonitorPrivate::onMountChanged(GVolumeMonitor *monitor, GMount *
     Q_ASSERT(d);
 
     qDebug() << __FUNCTION__;
-
-    char *mntName = g_mount_get_name(mount);
-    g_free(mntName);
-
-    auto vol = g_mount_get_volume(mount);
-    auto drv = g_mount_get_drive(mount);
-    if (vol)
-        g_object_unref(vol);
-    if (drv)
-        g_object_unref(drv);
 }
-#if 0
-void DFMProtocolMonitorPrivate::onMountPreUnmount(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
-{
-    if (hasDrive(mount)) // don't handle real block devices
-        return;
 
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
-    Q_ASSERT(d);
-    qDebug() << __FUNCTION__;
-    char *mntName = g_mount_get_name(mount);
-    qDebug() << "\tmntName:" << mntName;
-    g_free(mntName);
-
-    auto vol = g_mount_get_volume(mount);
-    auto drv = g_mount_get_drive(mount);
-    qDebug() << "\tmount has volume: " << (vol != nullptr);
-    qDebug() << "\tmount has drive: " << (drv != nullptr);
-    if (vol)
-        g_object_unref(vol);
-    if (drv)
-        g_object_unref(drv);
-
-    // TODO
-}
-#endif
 void DFMProtocolMonitorPrivate::onMountRemoved(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
 {
     Q_UNUSED(monitor);
@@ -375,16 +304,18 @@ void DFMProtocolMonitorPrivate::onMountRemoved(GVolumeMonitor *monitor, GMount *
     qDebug() << "\tmntName:" << mntName;
     g_free(mntName);
 
-    QString mpt = getMountPoint(mount);
-    auto id = d->findDirectMount(mpt);
+    QString mpt = DFMProtocolDevicePrivate::mountPoint(mount);
+    auto id = d->findAssociatedMount(mpt);
     if (!id.isEmpty()) {
         if (d->devices[id].volume)
             d->devices[id].mount = nullptr;
         else
             d->devices.remove(id);
+
+        Q_EMIT d->q->mountRemoved(id);
     }
 
-    qDebug() << "\t    " << d->devices;
+//    qDebug() << "\t    " << d->devices;
 }
 
 void DFMProtocolMonitorPrivate::onVolumeAdded(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
@@ -402,7 +333,9 @@ void DFMProtocolMonitorPrivate::onVolumeAdded(GVolumeMonitor *monitor, GVolume *
     dev.volume = volume;
     d->devices.insert(dev.uuid, dev);
 
-    qDebug() << "\t    " << d->devices;
+    Q_EMIT d->q->deviceAdded(dev.uuid);
+
+//    qDebug() << "\t    " << d->devices;
 }
 
 void DFMProtocolMonitorPrivate::onVolumeChanged(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
@@ -410,15 +343,10 @@ void DFMProtocolMonitorPrivate::onVolumeChanged(GVolumeMonitor *monitor, GVolume
     Q_UNUSED(monitor);
     if (hasDrive(volume)) // don't handle real block devices
         return;
-
     auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
-    qDebug() << __FUNCTION__;
-    char *volName = g_volume_get_name(volume);
-    qDebug() << "\tvolName:" << volName << g_volume_get_identifier(volume, "unix-device");
-    g_free(volName);
 
-    // TODO
+    qDebug() << __FUNCTION__;
 }
 
 void DFMProtocolMonitorPrivate::onVolumeRemoved(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
@@ -432,9 +360,12 @@ void DFMProtocolMonitorPrivate::onVolumeRemoved(GVolumeMonitor *monitor, GVolume
     qDebug() << __FUNCTION__;
 
     char *unixDev = g_volume_get_identifier(volume, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);
-    d->removeVolumes(unixDev);
+    const auto &&removedItems = d->removeVolumes(unixDev);
 
-    qDebug() << "\t    " << d->devices;
+    for (const auto &item: removedItems)
+        Q_EMIT d->q->deviceRemoved(item);
+
+//    qDebug() << "\t    " << d->devices;
 }
 
 bool DFMProtocolMonitorPrivate::hasDrive(GMount *mount)
@@ -463,27 +394,14 @@ bool DFMProtocolMonitorPrivate::hasDrive(GVolume *volume)
     return false;
 }
 
-QString DFMProtocolMonitorPrivate::getMountPoint(GMount *mount)
-{
-    QString mpt;
-    auto mntRoot = g_mount_get_root(mount);
-    if (mntRoot) {
-        char *mntPath = g_file_get_path(mntRoot);
-        mpt = QString(mntPath);
-        g_free(mntPath);
-        g_object_unref(mntRoot);
-    }
-    return mpt;
-}
-
-QString DFMProtocolMonitorPrivate::findDirectMount(const QString &mpt)
+QString DFMProtocolMonitorPrivate::findAssociatedMount(const QString &mpt)
 {
     auto iter = devices.cbegin();
     while (iter != devices.cend()) {
         const auto &dev = iter.value();
         auto mnt = dev.mount;
         if (mnt) {
-            auto mntPath = getMountPoint(mnt);
+            auto mntPath = DFMProtocolDevicePrivate::mountPoint(mnt);
             if (mntPath == mpt)
                 return iter.key();
         }
@@ -505,13 +423,12 @@ QString DFMProtocolMonitorPrivate::findOrphanVolume(const QString &volId)
             }
             g_free(id);
         }
-
         iter += 1;
     }
     return "";
 }
 
-void DFMProtocolMonitorPrivate::removeVolumes(const QString &volId)
+QStringList DFMProtocolMonitorPrivate::removeVolumes(const QString &volId)
 {
     QStringList waitToRemove;
     auto iter = devices.cbegin();
@@ -527,5 +444,6 @@ void DFMProtocolMonitorPrivate::removeVolumes(const QString &volId)
     }
     for (const auto &key: waitToRemove)
         devices.remove(key);
+    return waitToRemove;
 }
 

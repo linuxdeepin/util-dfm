@@ -31,6 +31,11 @@
 
 DFM_MOUNT_BEGIN_NS
 
+// Protocol device mount param key
+#define ParamCancellable        "cancellable"
+#define ParamMountOperation     "operation"
+#define ParamForce              "force"
+
 using DeviceOperateCb = std::function<void (bool, DeviceError)>;
 using DeviceOperateCbWithInfo = std::function<void (bool, DeviceError, QString)>;
 class CallbackProxy {
