@@ -41,135 +41,115 @@ class DFileInfo
 {
 public:
     enum class DFileType : uint16_t {
-        Unknown = 0,                   // File's type is unknown.
-        Regular = 1,                   // File handle represents a regular file.
-        Directory = 2,                 // File handle represents a directory.
-        SymbolicLink = 3,              // File handle represents a symbolic link (Unix systems).
-        Special = 4,                   // File is a "special" file, such as a socket, fifo, block device, or character device.
-        Shortcut = 5,                  // File is a shortcut (Windows systems).
-        Mountable = 6,                 // File is a mountable location.
+        Unknown = 0,   // File's type is unknown.
+        Regular = 1,   // File handle represents a regular file.
+        Directory = 2,   // File handle represents a directory.
+        SymbolicLink = 3,   // File handle represents a symbolic link (Unix systems).
+        Special = 4,   // File is a "special" file, such as a socket, fifo, block device, or character device.
+        Shortcut = 5,   // File is a shortcut (Windows systems).
+        Mountable = 6,   // File is a mountable location.
 
         // Reserved
         UserType = 0x100
     };
 
-    enum class Permission : uint16_t {
-        NoPermission = 0x0000,
-
-        ExeOther = 0x0001,
-        WriteOther = 0x0002,
-        ReadOther = 0x0004,
-
-        ExeGroup = 0x0010,
-        WriteGroup = 0x0020,
-        ReadGroup = 0x0040,
-
-        ExeUser = 0x0100,
-        WriteUser = 0x0200,
-        ReadUser = 0x0400,
-
-        ExeOwner = 0x1000,
-        WriteOwner = 0x2000,
-        ReadOwner = 0x4000,
-    };
-
     enum class AttributeID : uint16_t {
-        StandardType = 0, // uint32
-        StandardIsHidden = 1, // boolean
-        StandardIsBackup = 2, // boolean
-        StandardIsSymlink = 3, // boolean
-        StandardIsVirtual = 4, // boolean
-        StandardIsVolatile = 5, // boolean
-        StandardName = 6, // byte string
-        StandardDisplayName = 7, // string
-        StandardEditName = 8, // string
-        StandardCopyName = 9, // string
-        StandardIcon = 10, // object
-        StandardSymbolicIcon = 11, // object
-        StandardContentType = 12, // string
-        StandardFastContentType = 13, // string
-        StandardSize = 14, // uint64
-        StandardAllocatedSize = 15, // uint64
-        StandardSymlinkTarget = 16, // byte string
-        StandardTargetUri = 17, // string
-        StandardSortOrder = 18, // int32
-        StandardDescription = 19, // string
+        StandardType = 0,   // uint32
+        StandardIsHidden = 1,   // boolean
+        StandardIsBackup = 2,   // boolean
+        StandardIsSymlink = 3,   // boolean
+        StandardIsVirtual = 4,   // boolean
+        StandardIsVolatile = 5,   // boolean
+        StandardName = 6,   // byte string
+        StandardDisplayName = 7,   // string
+        StandardEditName = 8,   // string
+        StandardCopyName = 9,   // string
+        StandardIcon = 10,   // object
+        StandardSymbolicIcon = 11,   // object
+        StandardContentType = 12,   // string
+        StandardFastContentType = 13,   // string
+        StandardSize = 14,   // uint64
+        StandardAllocatedSize = 15,   // uint64
+        StandardSymlinkTarget = 16,   // byte string
+        StandardTargetUri = 17,   // string
+        StandardSortOrder = 18,   // int32
+        StandardDescription = 19,   // string
 
-        EtagValue = 40, // string
+        EtagValue = 40,   // string
 
-        IdFile = 60, // string
-        IdFilesystem = 61, // string
+        IdFile = 60,   // string
+        IdFilesystem = 61,   // string
 
-        AccessCanRead = 100, // boolean
-        AccessCanWrite = 101, // boolean
-        AccessCanExecute = 102, // boolean
-        AccessCanDelete = 103, // boolean
-        AccessCanTrash = 104, // boolean
-        AccessCanRename = 105, // boolean
+        AccessCanRead = 100,   // boolean
+        AccessCanWrite = 101,   // boolean
+        AccessCanExecute = 102,   // boolean
+        AccessCanDelete = 103,   // boolean
+        AccessCanTrash = 104,   // boolean
+        AccessCanRename = 105,   // boolean
 
-        MountableCanMount = 130, // boolean
-        MountableCanUnmount = 131, // boolean
-        MountableCanEject = 132, // boolean
-        MountableUnixDevice = 133, // uint32
-        MountableUnixDeviceFile = 134, // string
-        MountableHalUdi = 135, // string
-        MountableCanPoll = 136, // boolean
-        MountableIsMediaCheckAutomatic = 137, // boolean
-        MountableCanStart = 138, // boolean
-        MountableCanStartDegraded = 139, // boolean
-        MountableCanStop = 140, // boolean
-        MountableStartStopType = 141, // uint32
+        MountableCanMount = 130,   // boolean
+        MountableCanUnmount = 131,   // boolean
+        MountableCanEject = 132,   // boolean
+        MountableUnixDevice = 133,   // uint32
+        MountableUnixDeviceFile = 134,   // string
+        MountableHalUdi = 135,   // string
+        MountableCanPoll = 136,   // boolean
+        MountableIsMediaCheckAutomatic = 137,   // boolean
+        MountableCanStart = 138,   // boolean
+        MountableCanStartDegraded = 139,   // boolean
+        MountableCanStop = 140,   // boolean
+        MountableStartStopType = 141,   // uint32
 
-        TimeModified = 200, // uint64
-        TimeModifiedUsec = 201, // uint32
-        TimeAccess = 202, // uint64
-        TimeAccessUsec = 203, // uint32
-        TimeChanged = 204, // uint64
-        TimeChangedUsec = 205, // uint32
-        TimeCreated = 206, // uint64
-        TimeCreatedUsec = 207, // uint32
+        TimeModified = 200,   // uint64
+        TimeModifiedUsec = 201,   // uint32
+        TimeAccess = 202,   // uint64
+        TimeAccessUsec = 203,   // uint32
+        TimeChanged = 204,   // uint64
+        TimeChangedUsec = 205,   // uint32
+        TimeCreated = 206,   // uint64
+        TimeCreatedUsec = 207,   // uint32
 
-        UnixDevice = 330, // uint32
-        UnixInode = 331, // uint64
-        UnixMode = 332, // uint32
-        UnixNlink = 333, // uint32
-        UnixUID = 334, // uint32
-        UnixGID = 335, // uint32
-        UnixRdev = 336, // uint32
-        UnixBlockSize = 337, // uint32
-        UnixBlocks = 338, // uint64
-        UnixIsMountPoint = 339, // boolean
+        UnixDevice = 330,   // uint32
+        UnixInode = 331,   // uint64
+        UnixMode = 332,   // uint32
+        UnixNlink = 333,   // uint32
+        UnixUID = 334,   // uint32
+        UnixGID = 335,   // uint32
+        UnixRdev = 336,   // uint32
+        UnixBlockSize = 337,   // uint32
+        UnixBlocks = 338,   // uint64
+        UnixIsMountPoint = 339,   // boolean
 
-        DosIsArchive = 360, // boolean
-        DosIsSystem = 361, // boolean
+        DosIsArchive = 360,   // boolean
+        DosIsSystem = 361,   // boolean
 
-        OwnerUser = 300, // string
-        OwnerUserReal = 301, // string
-        OwnerGroup = 302, // string
+        OwnerUser = 300,   // string
+        OwnerUserReal = 301,   // string
+        OwnerGroup = 302,   // string
 
-        ThumbnailPath = 390, // byte string
-        ThumbnailFailed = 391, // boolean
-        ThumbnailIsValid = 392, // boolean
+        ThumbnailPath = 390,   // byte string
+        ThumbnailFailed = 391,   // boolean
+        ThumbnailIsValid = 392,   // boolean
 
-        PreviewIcon = 420, // object
+        PreviewIcon = 420,   // object
 
-        FileSystemSize = 440, // uint64
-        FileSystemFree = 441, // uint64
-        FileSystemUsed = 442, // uint64
-        FileSystemType = 443, // string
-        FileSystemReadOnly = 444, // boolean
-        FileSystemUsePreview = 445, // uint32
-        FileSystemRemote = 446, // boolean
+        FileSystemSize = 440,   // uint64
+        FileSystemFree = 441,   // uint64
+        FileSystemUsed = 442,   // uint64
+        FileSystemType = 443,   // string
+        FileSystemReadOnly = 444,   // boolean
+        FileSystemUsePreview = 445,   // uint32
+        FileSystemRemote = 446,   // boolean
 
-        GvfsBackend = 470, // string
+        GvfsBackend = 470,   // string
 
-        SelinuxContext = 490, // string
+        SelinuxContext = 490,   // string
 
-        TrashItemCount = 510, // uint32
-        TrashDeletionDate = 511, // string
-        TrashOrigPath = 512, // string
+        TrashItemCount = 510,   // uint32
+        TrashDeletionDate = 511,   // string
+        TrashOrigPath = 512,   // string
 
-        RecentModified = 540, // uint64
+        RecentModified = 540,   // uint64
 
         CustomStart = 600,
 
@@ -196,8 +176,7 @@ public:
     using AttributeListFunc = std::function<QList<DFileInfo::AttributeID>()>;
     using ExistsFunc = std::function<bool()>;
     using FlushFunc = std::function<bool()>;
-
-    using PermissionFunc = std::function<uint16_t(Permission)>;
+    using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
     DFileInfo();
@@ -213,7 +192,8 @@ public:
     DFM_VIRTUAL QList<DFileInfo::AttributeID> attributeIDList() const;
     DFM_VIRTUAL bool exists() const;
     DFM_VIRTUAL bool flush();
-    DFM_VIRTUAL uint16_t permissions(Permission permission = Permission::NoPermission);
+
+    DFM_VIRTUAL DFMIOError lastError() const;
 
     // register
     void registerAttribute(const AttributeFunc &func);
@@ -223,12 +203,10 @@ public:
     void registerAttributeList(const AttributeListFunc &func);
     void registerExists(const ExistsFunc &func);
     void registerFlush(const FlushFunc &func);
-    void registerPermissions(const PermissionFunc &func);
+    void registerLastError(const LastErrorFunc &func);
 
     QUrl uri() const;
     QString dump() const;
-
-    DFMIOError lastError() const;
 
 private:
     QSharedPointer<DFileInfoPrivate> d = nullptr;
@@ -236,4 +214,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DFILEINFO_H
+#endif   // DFILEINFO_H

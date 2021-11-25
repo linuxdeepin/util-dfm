@@ -29,16 +29,13 @@
 
 USING_IO_NAMESPACE
 
-
 DFilePrivate::DFilePrivate(DFile *q)
     : q(q)
 {
-
 }
 
 DFilePrivate::~DFilePrivate()
 {
-
 }
 
 DFile::DFile(const QUrl &uri)
@@ -219,6 +216,20 @@ bool DFile::exists()
     return d->existsFunc();
 }
 
+uint16_t DFile::permissions(DFile::Permission permission)
+{
+    if (d->permissionFunc)
+        return d->permissionFunc(permission);
+    return (uint16_t)DFile::Permission::NoPermission;
+}
+
+bool DFile::setPermissions(const uint16_t mode)
+{
+    if (!d->setPermissionsFunc)
+        return false;
+    return d->setPermissionsFunc(mode);
+}
+
 void DFile::registerOpen(const OpenFunc &func)
 {
     d->openFunc = func;
@@ -284,6 +295,21 @@ void DFile::registerExists(const DFile::ExistsFunc &func)
     d->existsFunc = func;
 }
 
+void DFile::registerPermissions(const DFile::PermissionFunc &func)
+{
+    d->permissionFunc = func;
+}
+
+void DFile::registerSetPermissions(const DFile::SetPermissionFunc &func)
+{
+    d->setPermissionsFunc = func;
+}
+
+void DFile::registerLastError(const DFile::LastErrorFunc &func)
+{
+    d->lastErrorFunc = func;
+}
+
 QUrl DFile::uri() const
 {
     return d->uri;
@@ -291,8 +317,8 @@ QUrl DFile::uri() const
 
 DFMIOError DFile::lastError() const
 {
-    if (!d)
+    if (!d->lastErrorFunc)
         return DFMIOError();
 
-    return d->error;
+    return d->lastErrorFunc();
 }

@@ -31,12 +31,10 @@ USING_IO_NAMESPACE
 DEnumeratorPrivate::DEnumeratorPrivate(DEnumerator *q)
     : q(q)
 {
-
 }
 
 DEnumeratorPrivate::~DEnumeratorPrivate()
 {
-
 }
 
 DEnumerator::DEnumerator(const QUrl &uri)
@@ -47,7 +45,6 @@ DEnumerator::DEnumerator(const QUrl &uri)
 
 DEnumerator::~DEnumerator()
 {
-    
 }
 
 bool DEnumerator::hasNext() const
@@ -99,10 +96,15 @@ void DEnumerator::registerFileInfo(const DEnumerator::FileInfoFunc &func)
     d->fileInfoFunc = func;
 }
 
+void DEnumerator::registerLastError(const DEnumerator::LastErrorFunc &func)
+{
+    d->lastErrorFunc = func;
+}
+
 DFMIOError DEnumerator::lastError() const
 {
-    if (!d)
+    if (!d->lastErrorFunc)
         return DFMIOError();
 
-    return d->dfmError;
+    return d->lastErrorFunc();
 }

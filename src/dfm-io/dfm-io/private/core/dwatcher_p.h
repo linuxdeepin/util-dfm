@@ -23,7 +23,6 @@
 #ifndef DWATCHER_P_H
 #define DWATCHER_P_H
 
-#include "error/error.h"
 #include "dfmio_global.h"
 
 #include "core/dfileinfo.h"
@@ -50,12 +49,12 @@ public:
     DWatcher::StopFunc stopFunc = nullptr;
     DWatcher::SetWatchTypeFunc setWatchTypeFunc = nullptr;
     DWatcher::WatchTypeFunc watchTypeFunc = nullptr;
+    DWatcher::LastErrorFunc lastErrorFunc = nullptr;
 
     QList<DFileInfo::AttributeID> ids;
     int timeRate = 200;
-    DFMIOError error;
 };
 
 END_IO_NAMESPACE
 
-#endif // DWATCHER_P_H
+#endif   // DWATCHER_P_H

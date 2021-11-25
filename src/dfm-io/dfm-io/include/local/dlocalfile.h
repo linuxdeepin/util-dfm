@@ -52,6 +52,9 @@ public:
     bool flush() DFM_OVERRIDE;
     qint64 size() DFM_OVERRIDE;
     bool exists() DFM_OVERRIDE;
+    uint16_t permissions(Permission permission = Permission::NoPermission) DFM_OVERRIDE;
+    bool setPermissions(const uint16_t mode) DFM_OVERRIDE;
+    DFMIOError lastError() const DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalFilePrivate> d = nullptr;
@@ -59,4 +62,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DLOCALFILE_H
+#endif   // DLOCALFILE_H

@@ -54,20 +54,28 @@ public:
     bool flush();
     qint64 size();
     bool exists();
+    uint16_t permissions(DFile::Permission permission = DFile::Permission::NoPermission);
+    bool setPermissions(const uint16_t mode);
 
-private:
-    GInputStream* inputStream();
-    GOutputStream* outputStream();
+    GInputStream *inputStream();
+    GOutputStream *outputStream();
+    uint16_t permissionsAll();
+    uint16_t permissionsFromGio();
+    uint16_t permissionsFromStat(DFile::Permission permission);
+
+    DFMIOError lastError();
+    void setErrorInfo(GError *gerror);
 
 public:
     GIOStream *ioStream = nullptr;
     GInputStream *iStream = nullptr;
     GOutputStream *oStream = nullptr;
 
+    DFMIOError error;
 
     DLocalFile *q = nullptr;
 };
 
 END_IO_NAMESPACE
 
-#endif // DLOCALFILE_P_H
+#endif   // DLOCALFILE_P_H

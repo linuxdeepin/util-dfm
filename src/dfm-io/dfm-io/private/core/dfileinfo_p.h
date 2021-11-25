@@ -25,7 +25,6 @@
 
 #include "core/dfileinfo.h"
 #include "dfmio_global.h"
-#include "error/error.h"
 
 #include <QUrl>
 #include <QVariant>
@@ -36,32 +35,28 @@
 
 BEGIN_IO_NAMESPACE
 
-class DFileInfoPrivate: public QSharedData
+class DFileInfoPrivate : public QSharedData
 {
 public:
     inline DFileInfoPrivate(DFileInfo *q)
         : QSharedData(),
           q(q)
     {
-
     }
 
     inline DFileInfoPrivate(const DFileInfoPrivate &copy)
         : QSharedData(copy)
     {
-
     }
 
     inline ~DFileInfoPrivate()
     {
-
     }
 
 public:
     DFileInfo *q = nullptr;
 
     QUrl uri;
-    DFMIOError error;
 
     DFileInfo::AttributeFunc attributeFunc = nullptr;
     DFileInfo::SetAttributeFunc setAttributeFunc = nullptr;
@@ -70,9 +65,9 @@ public:
     DFileInfo::AttributeListFunc attributeListFunc = nullptr;
     DFileInfo::ExistsFunc existsFunc = nullptr;
     DFileInfo::FlushFunc flushFunc = nullptr;
-    DFileInfo::PermissionFunc permissionFunc = nullptr;
+    DFileInfo::LastErrorFunc lastErrorFunc = nullptr;
 };
 
 END_IO_NAMESPACE
 
-#endif // DFILEINFO_P_H
+#endif   // DFILEINFO_P_H

@@ -58,7 +58,7 @@ bool DLocalWatcherPrivate::start(int timeRate)
     // stop first
     stop();
 
-    std::thread thread([&](){
+    std::thread thread([&]() {
         const QUrl &uri = q->uri();
         const QString &fname = uri.url();
 
@@ -74,13 +74,16 @@ bool DLocalWatcherPrivate::start(int timeRate)
 
         g_file_monitor_set_rate_limit(gmonitor, timeRate);
 
-        loop = g_main_loop_new (nullptr, false);
+        loop = g_main_loop_new(nullptr, false);
 
         g_signal_connect(gmonitor, "changed", G_CALLBACK(&DLocalWatcherPrivate::watchCallback), q);
 
-        g_main_loop_run (loop);
-        g_main_loop_unref (loop);
+        g_main_loop_run(loop);
+        g_main_loop_unref(loop);
+
+        return true;
     });
+
     thread.detach();
 
     return true;
@@ -110,15 +113,27 @@ bool DLocalWatcherPrivate::running() const
     return gmonitor != nullptr;
 }
 
+DFMIOError DLocalWatcherPrivate::lastError()
+{
+    return error;
+}
+
+void DLocalWatcherPrivate::setErrorInfo(GError *gerror)
+{
+    error.setCode(DFMIOErrorCode(gerror->code));
+
+    qWarning() << QString::fromLocal8Bit(gerror->message);
+}
+
 void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
-                                       GFile *child,
-                                       GFile *other,
-                                       GFileMonitorEvent event_type,
-                                       gpointer user_data)
+                                         GFile *child,
+                                         GFile *other,
+                                         GFileMonitorEvent event_type,
+                                         gpointer user_data)
 {
     Q_UNUSED(monitor);
 
-    DLocalWatcher *watcher = static_cast<DLocalWatcher*>(user_data);
+    DLocalWatcher *watcher = static_cast<DLocalWatcher *>(user_data);
     if (watcher == nullptr) {
         return;
     }
@@ -167,7 +182,7 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
         watcher->fileRenamed(QUrl(childUrl), QUrl(otherUrl));
         break;
 
-    case G_FILE_MONITOR_EVENT_MOVED:
+    //case G_FILE_MONITOR_EVENT_MOVED:
     default:
         g_assert_not_reached();
         break;
@@ -185,15 +200,15 @@ DWatcher::WatchType DLocalWatcherPrivate::transWatcherType(GFile *gfile, bool *o
     guint32 fileType;
     GError *gerror = nullptr;
 
-    info = g_file_query_info (gfile, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
+    info = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
     if (!info) {
-        qInfo() << "error:" << gerror->message;
+        setErrorInfo(gerror);
         g_error_free(gerror);
 
         return retType;
     }
 
-    fileType = g_file_info_get_attribute_uint32 (info, G_FILE_ATTRIBUTE_STANDARD_TYPE);
+    fileType = g_file_info_get_attribute_uint32(info, G_FILE_ATTRIBUTE_STANDARD_TYPE);
 
     g_object_unref(info);
     retType = (fileType == G_FILE_TYPE_DIRECTORY) ? DWatcher::WatchType::DIR : DWatcher::WatchType::FILE;
@@ -216,12 +231,12 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
 
     GError *gerror = nullptr;
     if (type == DWatcher::WatchType::DIR)
-        gmonitor = g_file_monitor_directory (gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
+        gmonitor = g_file_monitor_directory(gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
     else
-        gmonitor = g_file_monitor (gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
+        gmonitor = g_file_monitor(gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
 
     if (!gmonitor) {
-        qInfo() << "error:" << gerror->message;
+        setErrorInfo(gerror);
         g_error_free(gerror);
 
         return nullptr;
@@ -230,14 +245,14 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
 }
 
 DLocalWatcher::DLocalWatcher(const QUrl &uri, QObject *parent)
-    : DWatcher(uri, parent)
-    , d(new DLocalWatcherPrivate(this))
+    : DWatcher(uri, parent), d(new DLocalWatcherPrivate(this))
 {
     registerSetWatchType(std::bind(&DLocalWatcher::setWatchType, this, std::placeholders::_1));
     registerWatchType(std::bind(&DLocalWatcher::watchType, this));
     registerRunning(std::bind(&DLocalWatcher::running, this));
     registerStart(std::bind(&DLocalWatcher::start, this, std::placeholders::_1));
     registerStop(std::bind(&DLocalWatcher::stop, this));
+    registerLastError(std::bind(&DLocalWatcher::lastError, this));
 }
 
 DLocalWatcher::~DLocalWatcher()
@@ -268,4 +283,9 @@ bool DLocalWatcher::start(int timeRate /*= 200*/)
 bool DLocalWatcher::stop()
 {
     return d->stop();
+}
+
+DFMIOError DLocalWatcher::lastError() const
+{
+    return d->lastError();
 }

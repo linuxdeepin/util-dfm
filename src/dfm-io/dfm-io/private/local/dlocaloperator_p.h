@@ -52,15 +52,13 @@ public:
     bool createLink(const QUrl &link);
     bool setFileInfo(const DFileInfo &fileInfo);
     bool cancel();
+
     DFMIOError lastError();
-
-private:
-    void setError();
-
-private:
-    GFile *makeGFile(const QUrl &url);
     void setErrorInfo(GError *gerror);
 
+    GFile *makeGFile(const QUrl &url);
+
+private:
     DLocalOperator *q = nullptr;
     GCancellable *gcancellable = nullptr;
 

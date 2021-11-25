@@ -29,12 +29,13 @@
 
 #include <QDebug>
 
+#include <sys/stat.h>
+
 USING_IO_NAMESPACE
 
 DLocalFilePrivate::DLocalFilePrivate(DLocalFile *q)
     : q(q)
 {
-
 }
 
 DLocalFilePrivate::~DLocalFilePrivate()
@@ -43,8 +44,8 @@ DLocalFilePrivate::~DLocalFilePrivate()
 
 bool DLocalFilePrivate::open(DFile::OpenFlag mode)
 {
-    const QUrl &uri = q->uri();
-    GFile *gfile = g_file_new_for_uri(uri.toString().toStdString().c_str());
+    const QUrl &&uri = q->uri();
+    GFile *gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
 
     GError *gerror = nullptr;
 
@@ -54,9 +55,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-        iStream = (GInputStream*)g_file_read(gfile, nullptr, &gerror);
+        iStream = (GInputStream *)g_file_read(gfile, nullptr, &gerror);
         if (gerror) {
-            qWarning() << gerror->message;
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
 
@@ -67,14 +68,14 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
         break;
     }
     case DFile::OpenFlag::WriteOnly: {
-        oStream = (GOutputStream*)g_file_replace(gfile,
-                                                 nullptr,
-                                                 false,
-                                                 G_FILE_CREATE_NONE,
-                                                 nullptr,
-                                                 &gerror);
+        oStream = (GOutputStream *)g_file_replace(gfile,
+                                                  nullptr,
+                                                  false,
+                                                  G_FILE_CREATE_NONE,
+                                                  nullptr,
+                                                  &gerror);
         if (gerror) {
-            qWarning() << gerror->message;
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
 
@@ -85,14 +86,14 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
         break;
     }
     case DFile::OpenFlag::ReadWrite: {
-        ioStream = (GIOStream*)g_file_replace_readwrite(gfile,
-                                                        nullptr,
-                                                        false,
-                                                        G_FILE_CREATE_NONE,
-                                                        nullptr,
-                                                        &gerror);
+        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
+                                                         nullptr,
+                                                         false,
+                                                         G_FILE_CREATE_NONE,
+                                                         nullptr,
+                                                         &gerror);
         if (gerror) {
-            qWarning() << gerror->message;
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
 
@@ -104,9 +105,9 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
     }
     case DFile::OpenFlag::Append: {
         // 追加的方式打开
-        oStream = (GOutputStream*)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
+        oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
         if (gerror) {
-            qWarning() << gerror->message;
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
         if (!oStream) {
@@ -117,14 +118,14 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
     }
     case DFile::OpenFlag::Truncate: {
         // 覆盖的方式打开
-        ioStream = (GIOStream*)g_file_replace_readwrite(gfile,
-                                                        nullptr,
-                                                        false,
-                                                        G_FILE_CREATE_NONE,
-                                                        nullptr,
-                                                        &gerror);
+        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
+                                                         nullptr,
+                                                         false,
+                                                         G_FILE_CREATE_NONE,
+                                                         nullptr,
+                                                         &gerror);
         if (gerror) {
-            qWarning() << gerror->message;
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
 
@@ -140,14 +141,14 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-        ioStream = (GIOStream*)g_file_replace_readwrite(gfile,
-                                                        nullptr,
-                                                        false,
-                                                        G_FILE_CREATE_NONE,
-                                                        nullptr,
-                                                        &gerror);
+        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
+                                                         nullptr,
+                                                         false,
+                                                         G_FILE_CREATE_NONE,
+                                                         nullptr,
+                                                         &gerror);
         if (gerror) {
-            qWarning() << gerror->message;
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
 
@@ -163,14 +164,14 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
             g_object_unref(gfile);
             return false;
         }
-        ioStream = (GIOStream*)g_file_replace_readwrite(gfile,
-                                                        nullptr,
-                                                        false,
-                                                        G_FILE_CREATE_NONE,
-                                                        nullptr,
-                                                        &gerror);
+        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
+                                                         nullptr,
+                                                         false,
+                                                         G_FILE_CREATE_NONE,
+                                                         nullptr,
+                                                         &gerror);
         if (gerror) {
-            qWarning() << gerror->message;
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
 
@@ -182,14 +183,14 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
     }
 
     default: {
-        ioStream = (GIOStream*)g_file_replace_readwrite(gfile,
-                                                        nullptr,
-                                                        false,
-                                                        G_FILE_CREATE_NONE,
-                                                        nullptr,
-                                                        &gerror);
+        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
+                                                         nullptr,
+                                                         false,
+                                                         G_FILE_CREATE_NONE,
+                                                         nullptr,
+                                                         &gerror);
         if (gerror) {
-            qWarning() << gerror->message;
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
 
@@ -209,15 +210,15 @@ bool DLocalFilePrivate::open(DFile::OpenFlag mode)
 bool DLocalFilePrivate::close()
 {
     if (iStream) {
-        g_object_unref (iStream);
+        g_object_unref(iStream);
         iStream = nullptr;
     }
     if (oStream) {
-        g_object_unref (oStream);
+        g_object_unref(oStream);
         oStream = nullptr;
     }
     if (ioStream) {
-        g_object_unref (ioStream);
+        g_object_unref(ioStream);
         ioStream = nullptr;
     }
     return true;
@@ -239,7 +240,7 @@ qint64 DLocalFilePrivate::read(char *data, qint64 maxSize)
                                       &gerror);
 
     if (gerror) {
-        qWarning() << gerror->message;
+        setErrorInfo(gerror);
         g_error_free(gerror);
         return -1;
     }
@@ -263,7 +264,7 @@ QByteArray DLocalFilePrivate::read(qint64 maxSize)
                         nullptr,
                         &gerror);
     if (gerror) {
-        qWarning() << gerror->message;
+        setErrorInfo(gerror);
         g_error_free(gerror);
         return QByteArray();
     }
@@ -296,7 +297,7 @@ QByteArray DLocalFilePrivate::readAll()
                                                 &gerror);
         if (!read || gerror) {
             if (gerror) {
-                qWarning() << gerror->message;
+                setErrorInfo(gerror);
                 g_error_free(gerror);
             }
             break;
@@ -323,7 +324,7 @@ qint64 DLocalFilePrivate::write(const char *data, qint64 maxSize)
                                          nullptr,
                                          &gerror);
     if (gerror) {
-        qWarning() << gerror->message;
+        setErrorInfo(gerror);
         g_error_free(gerror);
     }
     return write;
@@ -346,7 +347,7 @@ qint64 DLocalFilePrivate::write(const char *data)
                                              nullptr,
                                              &gerror);
     if (gerror) {
-        qWarning() << gerror->message;
+        setErrorInfo(gerror);
         g_error_free(gerror);
     }
     return write;
@@ -365,13 +366,13 @@ bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
         return -1;
     }
 
-    gboolean canSeek = G_IS_SEEKABLE(inputStream) && g_seekable_can_seek (G_SEEKABLE(inputStream));
+    gboolean canSeek = G_IS_SEEKABLE(inputStream) && g_seekable_can_seek(G_SEEKABLE(inputStream));
     if (!canSeek) {
         qWarning() << "try seek failed.";
         return false;
     }
 
-    GSeekable* seekable = G_SEEKABLE (inputStream);
+    GSeekable *seekable = G_SEEKABLE(inputStream);
     if (!seekable) {
         qWarning() << "try seek failed.";
         return false;
@@ -380,8 +381,7 @@ bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
     bool ret = false;
     GError *gerror = nullptr;
     GSeekType gtype = G_SEEK_CUR;
-    switch (type)
-    {
+    switch (type) {
     case DFile::DFMSeekType::BEGIN:
         gtype = G_SEEK_SET;
         break;
@@ -395,6 +395,7 @@ bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
 
     ret = g_seekable_seek(seekable, pos, gtype, nullptr, &gerror);
     if (gerror) {
+        setErrorInfo(gerror);
         g_error_free(gerror);
     }
 
@@ -409,13 +410,13 @@ qint64 DLocalFilePrivate::pos()
         return -1;
     }
 
-    gboolean canSeek = G_IS_SEEKABLE (inputStream) && g_seekable_can_seek (G_SEEKABLE (inputStream));
+    gboolean canSeek = G_IS_SEEKABLE(inputStream) && g_seekable_can_seek(G_SEEKABLE(inputStream));
     if (!canSeek) {
         qWarning() << "try seek failed.";
         return false;
     }
 
-    GSeekable* seekable = G_SEEKABLE (inputStream);
+    GSeekable *seekable = G_SEEKABLE(inputStream);
     if (!seekable) {
         qWarning() << "try seek failed.";
         return false;
@@ -438,7 +439,7 @@ bool DLocalFilePrivate::flush()
     gboolean ret = g_output_stream_flush(outputStream, nullptr, &gerror);
 
     if (gerror) {
-        qWarning() << gerror->message;
+        setErrorInfo(gerror);
         g_error_free(gerror);
     }
     return ret;
@@ -453,7 +454,7 @@ qint64 DLocalFilePrivate::size()
     GFileInfo *fileInfo = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
 
     if (gerror) {
-        qWarning() << gerror->message;
+        setErrorInfo(gerror);
         g_error_free(gerror);
     }
 
@@ -468,12 +469,171 @@ qint64 DLocalFilePrivate::size()
 
 bool DLocalFilePrivate::exists()
 {
-    const QUrl &uri = q->uri();
-    GFile *gfile = g_file_new_for_uri(uri.toString().toStdString().c_str());
+    const QUrl &&uri = q->uri();
+    GFile *gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
     const bool exists = g_file_query_exists(gfile, nullptr);
 
     g_object_unref(gfile);
     return exists;
+}
+
+uint16_t DLocalFilePrivate::permissions(DFile::Permission permission)
+{
+    if (permission == DFile::Permission::NoPermission) {
+        // 获取全部权限
+        return permissionsAll();
+
+    } else if (permission == DFile::Permission::ExeUser
+               || permission == DFile::Permission::WriteUser
+               || permission == DFile::Permission::ReadUser) {
+        // 获取当前user权限，需要调用gio接口
+        return permissionsFromGio() & uint16_t(permission);
+    } else {
+        // 获取单个权限
+        return permissionsFromStat(permission);
+    }
+}
+
+bool DLocalFilePrivate::setPermissions(const uint16_t mode)
+{
+    const QUrl &&url = q->uri();
+    const char *path = url.toLocalFile().toLocal8Bit().data();
+
+    ::chmod(path, mode);
+
+    return false;
+}
+
+DFMIOError DLocalFilePrivate::lastError()
+{
+    return error;
+}
+
+uint16_t DLocalFilePrivate::permissionsAll()
+{
+    uint16_t retValue = 0x0000;
+    // 获取系统默认权限
+    const QUrl &&url = q->uri();
+    const char *path = url.toLocalFile().toLocal8Bit().data();
+
+    struct stat buf;
+    stat(path, &buf);
+
+    if ((buf.st_mode & S_IXUSR) == S_IXUSR)
+        retValue |= uint16_t(DFile::Permission::ExeOwner);
+    if ((buf.st_mode & S_IWUSR) == S_IWUSR)
+        retValue |= uint16_t(DFile::Permission::WriteOwner);
+    if ((buf.st_mode & S_IRUSR) == S_IRUSR)
+        retValue |= uint16_t(DFile::Permission::ReadOwner);
+    if ((buf.st_mode & S_IXGRP) == S_IXGRP)
+        retValue |= uint16_t(DFile::Permission::ExeGroup);
+    if ((buf.st_mode & S_IWGRP) == S_IWGRP)
+        retValue |= uint16_t(DFile::Permission::WriteGroup);
+    if ((buf.st_mode & S_IRGRP) == S_IRGRP)
+        retValue |= uint16_t(DFile::Permission::ReadGroup);
+    if ((buf.st_mode & S_IXOTH) == S_IXOTH)
+        retValue |= uint16_t(DFile::Permission::ExeOther);
+    if ((buf.st_mode & S_IWOTH) == S_IWOTH)
+        retValue |= uint16_t(DFile::Permission::WriteOther);
+    if ((buf.st_mode & S_IROTH) == S_IROTH)
+        retValue |= uint16_t(DFile::Permission::ReadOther);
+
+    retValue |= permissionsFromGio();
+
+    return retValue;
+}
+
+uint16_t DLocalFilePrivate::permissionsFromGio()
+{
+    uint16_t retValue = 0x0000;
+
+    const QUrl &&url = q->uri();
+    const QString &&path = url.toString();
+
+    GFile *file = g_file_new_for_uri(path.toLocal8Bit().data());
+
+    GError *gerror = nullptr;
+
+    GFileInfo *gfileinfo = g_file_query_info(file, "access::*", G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
+    g_object_unref(file);
+
+    if (gerror) {
+        setErrorInfo(gerror);
+        g_error_free(gerror);
+    }
+
+    if (!gfileinfo)
+        return false;
+
+    if (gfileinfo) {
+        if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-execute"))
+            retValue |= uint16_t(DFile::Permission::ExeUser);
+        if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-write"))
+            retValue |= uint16_t(DFile::Permission::WriteUser);
+        if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-read"))
+            retValue |= uint16_t(DFile::Permission::ReadUser);
+
+        g_object_unref(gfileinfo);
+    }
+    return retValue;
+}
+
+uint16_t DLocalFilePrivate::permissionsFromStat(DFile::Permission permission)
+{
+    const QUrl &url = q->uri();
+    const char *path = url.toString().toLocal8Bit().data();
+
+    struct stat buf;
+    stat(path, &buf);
+
+    switch (permission) {
+    case DFile::Permission::ExeOwner:
+        if ((buf.st_mode & S_IXUSR) == S_IXUSR)
+            return uint16_t(permission);
+        break;
+    case DFile::Permission::WriteOwner:
+        if ((buf.st_mode & S_IWUSR) == S_IWUSR)
+            return uint16_t(permission);
+        break;
+    case DFile::Permission::ReadOwner:
+        if ((buf.st_mode & S_IRUSR) == S_IRUSR)
+            return uint16_t(permission);
+        break;
+    case DFile::Permission::ExeGroup:
+        if ((buf.st_mode & S_IXGRP) == S_IXGRP)
+            return uint16_t(permission);
+        break;
+    case DFile::Permission::WriteGroup:
+        if ((buf.st_mode & S_IWGRP) == S_IWGRP)
+            return uint16_t(permission);
+        break;
+    case DFile::Permission::ReadGroup:
+        if ((buf.st_mode & S_IRGRP) == S_IRGRP)
+            return uint16_t(permission);
+        break;
+    case DFile::Permission::ExeOther:
+        if ((buf.st_mode & S_IXOTH) == S_IXOTH)
+            return uint16_t(permission);
+        break;
+    case DFile::Permission::WriteOther:
+        if ((buf.st_mode & S_IWOTH) == S_IWOTH)
+            return uint16_t(permission);
+        break;
+    case DFile::Permission::ReadOther:
+        if ((buf.st_mode & S_IROTH) == S_IROTH)
+            return uint16_t(permission);
+        break;
+    default:
+        break;
+    }
+    return uint16_t(DFile::Permission::NoPermission);
+}
+
+void DLocalFilePrivate::setErrorInfo(GError *gerror)
+{
+    error.setCode(DFMIOErrorCode(gerror->code));
+
+    qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 GInputStream *DLocalFilePrivate::inputStream()
@@ -508,16 +668,16 @@ GOutputStream *DLocalFilePrivate::outputStream()
     return nullptr;
 }
 
-DLocalFile::DLocalFile(const QUrl &uri) : DFile(uri)
-  , d(new DLocalFilePrivate(this))
+DLocalFile::DLocalFile(const QUrl &uri)
+    : DFile(uri), d(new DLocalFilePrivate(this))
 {
-    using bind_read = qint64(DLocalFile::*)(char *, qint64);
-    using bind_readQ = QByteArray(DLocalFile::*)(qint64);
-    using bind_readAll = QByteArray(DLocalFile::*)();
+    using bind_read = qint64 (DLocalFile::*)(char *, qint64);
+    using bind_readQ = QByteArray (DLocalFile::*)(qint64);
+    using bind_readAll = QByteArray (DLocalFile::*)();
 
-    using bind_write = qint64(DLocalFile::*)(const char *, qint64);
-    using bind_writeAll = qint64(DLocalFile::*)(const char *);
-    using bind_writeQ = qint64(DLocalFile::*)(const QByteArray &);
+    using bind_write = qint64 (DLocalFile::*)(const char *, qint64);
+    using bind_writeAll = qint64 (DLocalFile::*)(const char *);
+    using bind_writeQ = qint64 (DLocalFile::*)(const QByteArray &);
 
     registerOpen(std::bind(&DLocalFile::open, this, std::placeholders::_1));
     registerClose(std::bind(&DLocalFile::close, this));
@@ -532,6 +692,9 @@ DLocalFile::DLocalFile(const QUrl &uri) : DFile(uri)
     registerFlush(std::bind(&DLocalFile::flush, this));
     registerSize(std::bind(&DLocalFile::size, this));
     registerExists(std::bind(&DLocalFile::exists, this));
+    registerPermissions(std::bind(&DLocalFile::permissions, this, std::placeholders::_1));
+    registerSetPermissions(std::bind(&DLocalFile::setPermissions, this, std::placeholders::_1));
+    registerLastError(std::bind(&DLocalFile::lastError, this));
 }
 
 DLocalFile::~DLocalFile()
@@ -602,4 +765,19 @@ qint64 DLocalFile::size()
 bool DLocalFile::exists()
 {
     return d->exists();
+}
+
+uint16_t DLocalFile::permissions(DFile::Permission permission)
+{
+    return d->permissions(permission);
+}
+
+bool DLocalFile::setPermissions(const uint16_t mode)
+{
+    return d->setPermissions(mode);
+}
+
+DFMIOError DLocalFile::lastError() const
+{
+    return d->lastError();
 }

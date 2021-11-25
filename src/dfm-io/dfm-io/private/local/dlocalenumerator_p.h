@@ -44,13 +44,15 @@ public:
     explicit DLocalEnumeratorPrivate(DLocalEnumerator *q);
     ~DLocalEnumeratorPrivate();
 
-    QList<QSharedPointer<DFileInfo>> fileInfoList();
+    void init();
 
+    QList<QSharedPointer<DFileInfo>> fileInfoList();
     bool hasNext();
     QString next() const;
     QSharedPointer<DFileInfo> fileInfo() const;
 
-    void init();
+    DFMIOError lastError();
+    void setErrorInfo(GError *gerror);
 
 public:
     QList<QSharedPointer<DFileInfo>> list_;
@@ -59,9 +61,9 @@ public:
     QSharedPointer<DFileInfo> fileInfoNext = nullptr;
     GFile *fileNext = nullptr;
 
-    DFMIOError dfmError;
+    DFMIOError error;
 };
 
 END_IO_NAMESPACE
 
-#endif // DLOCALENUMERATOR_P_H
+#endif   // DLOCALENUMERATOR_P_H

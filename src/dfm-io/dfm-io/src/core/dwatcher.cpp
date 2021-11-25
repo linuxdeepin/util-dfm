@@ -29,24 +29,20 @@ USING_IO_NAMESPACE
 DWatcherPrivate::DWatcherPrivate(DWatcher *q)
     : q(q)
 {
-
 }
 
 DWatcherPrivate::~DWatcherPrivate()
 {
-
 }
 
 DWatcher::DWatcher(const QUrl &uri, QObject *parent)
-    : QObject(parent)
-    , d(new DWatcherPrivate(this))
+    : QObject(parent), d(new DWatcherPrivate(this))
 {
     d->uri = uri;
 }
 
 DWatcher::~DWatcher()
 {
-
 }
 
 QUrl DWatcher::uri() const
@@ -145,10 +141,15 @@ void DWatcher::registerWatchType(const DWatcher::WatchTypeFunc &func)
     d->watchTypeFunc = func;
 }
 
+void DWatcher::registerLastError(const DWatcher::LastErrorFunc &func)
+{
+    d->lastErrorFunc = func;
+}
+
 DFMIOError DWatcher::lastError() const
 {
-    if (!d)
+    if (!d->lastErrorFunc)
         return DFMIOError();
 
-    return d->error;
+    return d->lastErrorFunc();
 }

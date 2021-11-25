@@ -42,6 +42,7 @@ public:
     bool hasNext() const DFM_OVERRIDE;
     QString next() const DFM_OVERRIDE;
     QSharedPointer<DFileInfo> fileInfo() const DFM_OVERRIDE;
+    DFMIOError lastError() const DFM_OVERRIDE;
 
     QList<QSharedPointer<DFileInfo>> fileInfoList();
 
@@ -51,4 +52,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DLOCALENUMERATOR_H
+#endif   // DLOCALENUMERATOR_H

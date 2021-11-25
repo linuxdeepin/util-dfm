@@ -23,7 +23,6 @@
 #ifndef DOPERATOR_P_H
 #define DOPERATOR_P_H
 
-#include "error.h"
 #include "core/doperator.h"
 
 BEGIN_IO_NAMESPACE

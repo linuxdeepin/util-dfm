@@ -51,6 +51,7 @@ public:
     using StopFunc = std::function<bool()>;
     using SetWatchTypeFunc = std::function<void(WatchType)>;
     using WatchTypeFunc = std::function<WatchType()>;
+    using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
     explicit DWatcher(const QUrl &uri, QObject *parent = nullptr);
@@ -82,14 +83,15 @@ public:
     DFM_VIRTUAL bool start(int timeRate = 200);
     DFM_VIRTUAL bool stop();
 
+    DFM_VIRTUAL DFMIOError lastError() const;
+
     // register
     void registerRunning(const RunningFunc &func);
     void registerStart(const StartFunc &func);
     void registerStop(const StopFunc &func);
     void registerSetWatchType(const SetWatchTypeFunc &func);
     void registerWatchType(const WatchTypeFunc &func);
-
-    DFMIOError lastError() const;
+    void registerLastError(const LastErrorFunc &func);
 
 Q_SIGNALS:
     void fileChanged(const QUrl &uri, const DFileInfo &fileInfo);
@@ -103,4 +105,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DWATCHER_H
+#endif   // DWATCHER_H

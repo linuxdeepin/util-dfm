@@ -24,7 +24,6 @@
 #define DFILE_P_H
 
 #include "core/dfile.h"
-#include "error/error.h"
 
 BEGIN_IO_NAMESPACE
 
@@ -41,7 +40,6 @@ public:
     QUrl uri;
 
     bool isOpen = false;
-    DFMIOError error;
 
     DFile::OpenFunc openFunc = nullptr;
     DFile::CloseFunc closeFunc = nullptr;
@@ -56,8 +54,11 @@ public:
     DFile::FlushFunc flushFunc = nullptr;
     DFile::SizeFunc sizeFunc = nullptr;
     DFile::ExistsFunc existsFunc = nullptr;
+    DFile::PermissionFunc permissionFunc = nullptr;
+    DFile::SetPermissionFunc setPermissionsFunc = nullptr;
+    DFile::LastErrorFunc lastErrorFunc = nullptr;
 };
 
 END_IO_NAMESPACE
 
-#endif // DFILE_P_H
+#endif   // DFILE_P_H

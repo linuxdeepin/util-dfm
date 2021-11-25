@@ -45,6 +45,7 @@ public:
     bool running() const DFM_OVERRIDE;
     bool start(int timeRate = 200) DFM_OVERRIDE;
     bool stop() DFM_OVERRIDE;
+    DFMIOError lastError() const DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalWatcherPrivate> d = nullptr;
@@ -52,4 +53,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DLOCALWATCHER_H
+#endif   // DLOCALWATCHER_H

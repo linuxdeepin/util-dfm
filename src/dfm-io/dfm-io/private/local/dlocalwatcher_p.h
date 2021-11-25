@@ -47,6 +47,9 @@ public:
     bool stop();
     bool running() const;
 
+    DFMIOError lastError();
+    void setErrorInfo(GError *gerror);
+
     static void watchCallback(GFileMonitor *gmonitor, GFile *child, GFile *other, GFileMonitorEvent event_type, gpointer user_data);
 
 private:
@@ -59,9 +62,11 @@ public:
     GFile *gfile = nullptr;
     DWatcher::WatchType type = DWatcher::WatchType::AUTO;
 
+    DFMIOError error;
+
     DLocalWatcher *q = nullptr;
 };
 
 END_IO_NAMESPACE
 
-#endif // DLOCALWATCHER_P_H
+#endif   // DLOCALWATCHER_P_H

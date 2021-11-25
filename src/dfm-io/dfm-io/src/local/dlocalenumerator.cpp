@@ -22,7 +22,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "local/dlocalenumerator_p.h"
 #include "local/dlocalenumerator.h"
 #include "local/dlocalhelper.h"
@@ -60,9 +59,7 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 
     if (nullptr == enumerator) {
         if (gerror) {
-            qWarning() << gerror->message;
-            dfmError.setCode(DFMIOErrorCode(gerror->code));
-
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
         g_object_unref(gfile);
@@ -85,17 +82,14 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
             list_.append(info);
 
         if (gerror) {
-            qWarning() << "error:" << gerror->message;
-            dfmError.setCode(DFMIOErrorCode(gerror->code));
-
+            setErrorInfo(gerror);
             g_error_free(gerror);
             gerror = nullptr;
         }
     }
 
     if (gerror) {
-        qWarning() << gerror->message;
-        dfmError.setCode(DFMIOErrorCode(gerror->code));
+        setErrorInfo(gerror);
         g_error_free(gerror);
     }
     g_object_unref(enumerator);
@@ -123,8 +117,7 @@ bool DLocalEnumeratorPrivate::hasNext()
     }
 
     if (gerror) {
-        qWarning() << gerror->message;
-        dfmError.setCode(DFMIOErrorCode(gerror->code));
+        setErrorInfo(gerror);
         g_error_free(gerror);
     }
     return false;
@@ -143,6 +136,11 @@ QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
     return fileInfoNext;
 }
 
+DFMIOError DLocalEnumeratorPrivate::lastError()
+{
+    return error;
+}
+
 void DLocalEnumeratorPrivate::init()
 {
     GError *gerror = nullptr;
@@ -158,23 +156,28 @@ void DLocalEnumeratorPrivate::init()
 
     if (nullptr == enumerator) {
         if (gerror) {
-            qWarning() << gerror->message;
-            dfmError.setCode(DFMIOErrorCode(gerror->code));
-
+            setErrorInfo(gerror);
             g_error_free(gerror);
         }
     }
     g_object_unref(gfile);
 }
 
+void DLocalEnumeratorPrivate::setErrorInfo(GError *gerror)
+{
+    error.setCode(DFMIOErrorCode(gerror->code));
+
+    qWarning() << QString::fromLocal8Bit(gerror->message);
+}
+
 DLocalEnumerator::DLocalEnumerator(const QUrl &uri)
-    : DEnumerator(uri)
-    , d(new DLocalEnumeratorPrivate(this))
+    : DEnumerator(uri), d(new DLocalEnumeratorPrivate(this))
 {
     registerFileInfoList(std::bind(&DLocalEnumerator::fileInfoList, this));
     registerHasNext(std::bind(&DLocalEnumerator::hasNext, this));
     registerNext(std::bind(&DLocalEnumerator::next, this));
     registerFileInfo(std::bind(&DLocalEnumerator::fileInfo, this));
+    registerLastError(std::bind(&DLocalEnumerator::lastError, this));
 
     d->init();
 }
@@ -198,7 +201,12 @@ QSharedPointer<DFileInfo> DLocalEnumerator::fileInfo() const
     return d->fileInfo();
 }
 
-QList<QSharedPointer<DFileInfo> > DLocalEnumerator::fileInfoList()
+DFMIOError DLocalEnumerator::lastError() const
+{
+    return d->lastError();
+}
+
+QList<QSharedPointer<DFileInfo>> DLocalEnumerator::fileInfoList()
 {
     return d->fileInfoList();
 }

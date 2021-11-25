@@ -25,7 +25,6 @@
 
 #include "dfmio_global.h"
 
-#include "error/error.h"
 #include "core/denumerator.h"
 
 #include <QSharedPointer>
@@ -48,13 +47,13 @@ public:
     DEnumerator::HasNextFunc hasNextFunc = nullptr;
     DEnumerator::NextFunc nextFunc = nullptr;
     DEnumerator::FileInfoFunc fileInfoFunc = nullptr;
+    DEnumerator::LastErrorFunc lastErrorFunc = nullptr;
 
     QUrl uri;
-    DFMIOError dfmError;
 
     DEnumerator::FileInfoListFunc fileInfoListFunc = nullptr;
 };
 
 END_IO_NAMESPACE
 
-#endif // DENUMERATOR_P_H
+#endif   // DENUMERATOR_P_H

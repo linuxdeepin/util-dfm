@@ -44,6 +44,7 @@ public:
     using HasNextFunc = std::function<bool()>;
     using NextFunc = std::function<QString()>;
     using FileInfoFunc = std::function<QSharedPointer<DFileInfo>()>;
+    using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
     DEnumerator(const QUrl &uri);
@@ -52,16 +53,17 @@ public:
     QUrl uri() const;
 
     DFM_VIRTUAL bool hasNext() const;
-    DFM_VIRTUAL QString next() const ;
+    DFM_VIRTUAL QString next() const;
     DFM_VIRTUAL QSharedPointer<DFileInfo> fileInfo() const;
+
+    DFM_VIRTUAL DFMIOError lastError() const;
 
     // register
     void registerFileInfoList(const FileInfoListFunc &func);
     void registerHasNext(const HasNextFunc &func);
     void registerNext(const NextFunc &func);
     void registerFileInfo(const FileInfoFunc &func);
-
-    DFMIOError lastError() const;
+    void registerLastError(const LastErrorFunc &func);
 
 private:
     QSharedPointer<DEnumeratorPrivate> d = nullptr;
@@ -69,4 +71,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DENUMERATOR_H
+#endif   // DENUMERATOR_H
