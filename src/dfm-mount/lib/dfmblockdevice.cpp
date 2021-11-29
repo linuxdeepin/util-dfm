@@ -57,10 +57,10 @@ inline void DFMBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, b
     }
 }
 
-void DFMBlockDevicePrivate::mountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
-    UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
+void DFMBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+    UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
-    CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
+    CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
     char *mountPoint = nullptr;
@@ -71,30 +71,30 @@ void DFMBlockDevicePrivate::mountAsyncCallback(GObject *source_object, GAsyncRes
     }
 };
 
-void DFMBlockDevicePrivate::unmountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
-    UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
+void DFMBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+    UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
-    CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
+    CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
     bool result = udisks_filesystem_call_unmount_finish(fs, res, &err);
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::renameAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
-    UDisksFilesystem *fs = UDISKS_FILESYSTEM(source_object);
+void DFMBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+    UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
-    CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
+    CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
     bool result = udisks_filesystem_call_set_label_finish(fs, res, &err);
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
-    UDisksDrive *drive = UDISKS_DRIVE(source_object);
+void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+    UDisksDrive *drive = UDISKS_DRIVE(sourceObj);
     Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
-    CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
+    CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
     DeviceError derr = DeviceError::NoError;
@@ -102,30 +102,30 @@ void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *source_object, GAsyncRes
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::powerOffAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
-    UDisksDrive *drive = UDISKS_DRIVE(source_object);
+void DFMBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+    UDisksDrive *drive = UDISKS_DRIVE(sourceObj);
     Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
-    CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
+    CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
     bool result = udisks_drive_call_power_off_finish(drive, res, &err);
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::lockAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
-    UDisksEncrypted *encrypted = UDISKS_ENCRYPTED(source_object);
+void DFMBlockDevicePrivate::lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+    UDisksEncrypted *encrypted = UDISKS_ENCRYPTED(sourceObj);
     Q_ASSERT_X(encrypted, __FUNCTION__, "encrypted is not valid");
-    CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
+    CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
     bool result = udisks_encrypted_call_lock_finish(encrypted, res, &err);
     handleErrorAndRelease(proxy, result, err);
 }
 
-void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data) {
-    UDisksEncrypted *encrypted = UDISKS_ENCRYPTED(source_object);
+void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+    UDisksEncrypted *encrypted = UDISKS_ENCRYPTED(sourceObj);
     Q_ASSERT_X(encrypted, __FUNCTION__, "encrypted is not valid");
-    CallbackProxy *proxy = static_cast<CallbackProxy *>(user_data);
+    CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
     char *clearTextDev = nullptr;
@@ -164,7 +164,6 @@ DFMBlockDevice::DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, 
 
 DFMBlockDevice::~DFMBlockDevice()
 {
-    qDebug() << __FUNCTION__ << "is released: " << path();
 }
 
 bool DFMBlockDevice::eject(const QVariantMap &opts)

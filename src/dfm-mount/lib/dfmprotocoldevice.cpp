@@ -29,13 +29,27 @@
 #include <QEventLoop>
 #include <QDebug>
 #include <QTimer>
+#include <QPointer>
 
 #include <functional>
 
 DFM_MOUNT_USE_NS
 
-DFMProtocolDevice::DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, QObject *parent)
-    : DFMDevice(new DFMProtocolDevicePrivate(id, vol, mnt, this), parent)
+namespace  {
+struct CallbackProxyWithData {
+    CallbackProxyWithData() = delete;
+    explicit CallbackProxyWithData(DeviceOperateCb cb)
+        : caller(cb) {}
+    explicit CallbackProxyWithData(DeviceOperateCbWithInfo cb)
+        : caller(cb) {}
+    CallbackProxy caller;
+    QPointer<DFMProtocolDevice> data;
+    DFMProtocolDevicePrivate *d{nullptr};
+};
+}
+
+DFMProtocolDevice::DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, QObject *parent)
+    : DFMDevice(new DFMProtocolDevicePrivate(id, vol, mnt, monitor, this), parent)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
     if (!dp) {
@@ -79,11 +93,10 @@ void DFMProtocolDevice::setMount(GMount *mnt)
 
 DFMProtocolDevice::~DFMProtocolDevice()
 {
-    qDebug() << __FUNCTION__ << "is released...";
 }
 
-DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, DFMProtocolDevice *qq)
-    : DFMDevicePrivate(qq), deviceId(id), mountHandler(mnt), volumeHandler(vol)
+DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, DFMProtocolDevice *qq)
+    : DFMDevicePrivate(qq), deviceId(id), mountHandler(mnt), volumeHandler(vol), volumeMonitor(monitor)
 {
 
 }
@@ -95,9 +108,6 @@ QString DFMProtocolDevicePrivate::path() const
 
 QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
 {
-    if (!opts.contains(ParamCancellable))
-        qWarning() << "Cancellable is not defined, may cause problem";
-
     if (mountHandler) {
         qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
@@ -107,21 +117,27 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
     }
 
     if (volumeHandler) {
-        GCancellable *cancellable { nullptr };
         GMountOperation *operation { nullptr };
-        if (opts.contains(ParamCancellable))
-            cancellable = reinterpret_cast<GCancellable *>((opts.value(ParamCancellable).value<void *>()));
         if (opts.contains(ParamMountOperation))
             operation = reinterpret_cast<GMountOperation *>((opts.value(ParamMountOperation).value<void *>()));
 
         qInfo() << "mutexForVolume prelocked" << __FUNCTION__;
         QMutexLocker locker(&mutexForVolume);
         qInfo() << "mutexForVolume locked" << __FUNCTION__;
+
+        if (!g_volume_can_mount(volumeHandler)) {
+            lastError = DeviceError::NotMountable;
+            return "";
+        }
+
+        g_autoptr(GCancellable) cancellable = g_cancellable_new();
         QScopedPointer<ASyncToSyncHelper> blocker(new ASyncToSyncHelper(this));
-        g_volume_mount(volumeHandler, G_MOUNT_MOUNT_NONE, operation, cancellable, mountAsyncCallback, blocker.data());
+        g_volume_mount(volumeHandler, G_MOUNT_MOUNT_NONE, operation, cancellable, mountWithBlocker, blocker.data());
         auto ret = blocker->exec();
         if (ret == ASyncToSyncHelper::NoError) {
             auto mpt = blocker->result().toString();
+            g_autoptr(GMount) mnt = g_volume_get_mount(volumeHandler);
+            setMount(mnt);
             return mpt;
         } else if (ret == ASyncToSyncHelper::Timeout) {
             if (cancellable)
@@ -135,18 +151,29 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
 
 void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCb cb)
 {
-// TODO
-}
-
-bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
-{
-    GMountUnmountFlags flag;
-    if (opts.contains(ParamForce) && opts.value(ParamForce).toBool())
-        flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_FORCE;
-    else
-        flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_NONE;
-
     if (mountHandler) {
+        qInfo() << "mutexForMount prelock" << __FUNCTION__;
+        QMutexLocker locker(&mutexForMount);
+        qInfo() << "mutexForMount locked" << __FUNCTION__;
+        lastError = DeviceError::AlreadyMounted;
+        cb(true, lastError);
+        return;
+    }
+
+    if (volumeHandler) {
+        qInfo() << "mutexForVolume prelocked" << __FUNCTION__;
+        QMutexLocker locker(&mutexForVolume);
+        qInfo() << "mutexForVolume locked" << __FUNCTION__;
+
+        if (!g_volume_can_mount(volumeHandler)) {
+            lastError = DeviceError::NotMountable;
+            cb(false, lastError);
+            return;
+        }
+
+        if (!opts.contains(ParamCancellable))
+            qWarning() << "Cancellable is not defined, may cause problem";
+
         GCancellable *cancellable { nullptr };
         GMountOperation *operation { nullptr };
         if (opts.contains(ParamCancellable))
@@ -154,40 +181,99 @@ bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
         if (opts.contains(ParamMountOperation))
             operation = reinterpret_cast<GMountOperation *>((opts.value(ParamMountOperation).value<void *>()));
 
+        CallbackProxyWithData *proxy = new CallbackProxyWithData(cb);
+        proxy->data = qobject_cast<DFMProtocolDevice *>(q);
+        proxy->d = this;
+        g_volume_mount(volumeHandler, G_MOUNT_MOUNT_NONE, operation, cancellable, mountWithCallback, proxy);
+    }
+}
+
+bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
+{
+    if (!mountHandler) {
+        lastError = DeviceError::NotMounted;
+        return true;
+    } else {
+        GMountOperation *operation { nullptr };
+        if (opts.contains(ParamMountOperation))
+            operation = reinterpret_cast<GMountOperation *>((opts.value(ParamMountOperation).value<void *>()));
+
+        GMountUnmountFlags flag;
+        if (opts.contains(ParamForce) && opts.value(ParamForce).toBool())
+            flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_FORCE;
+        else
+            flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_NONE;
+
         qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
         qInfo() << "mutexForMount locked" << __FUNCTION__;
+
+        g_autoptr(GCancellable) cancellable = g_cancellable_new();
         QScopedPointer<ASyncToSyncHelper> blocker(new ASyncToSyncHelper(this));
-        g_mount_unmount_with_operation(mountHandler, flag, operation, cancellable, unmountAsyncCallback, blocker.data());
+        g_mount_unmount_with_operation(mountHandler, flag, operation, cancellable, unmountWithBlocker, blocker.data());
         auto ret = blocker->exec();
         if (ret == ASyncToSyncHelper::NoError) {
             return true;
         } else if (ret == ASyncToSyncHelper::Timeout) {
             lastError = DeviceError::TimedOut;
+            g_cancellable_cancel(cancellable);
             return false;
         }
     }
-    lastError = DeviceError::NotMounted;
     return false;
 }
 
 void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCb cb)
 {
-// TODO
+    if (!mountHandler) {
+        lastError = DeviceError::NotMounted;
+        cb(true, lastError);
+        return;
+    } else {
+        GCancellable *cancellable { nullptr };
+        GMountOperation *operation { nullptr };
+        if (opts.contains(ParamCancellable))
+            cancellable = reinterpret_cast<GCancellable *>((opts.value(ParamCancellable).value<void *>()));
+        if (opts.contains(ParamMountOperation))
+            operation = reinterpret_cast<GMountOperation *>((opts.value(ParamMountOperation).value<void *>()));
+
+        GMountUnmountFlags flag;
+        if (opts.contains(ParamForce) && opts.value(ParamForce).toBool())
+            flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_FORCE;
+        else
+            flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_NONE;
+
+        qInfo() << "mutexForMount prelock" << __FUNCTION__;
+        QMutexLocker locker(&mutexForMount);
+        qInfo() << "mutexForMount locked" << __FUNCTION__;
+
+        CallbackProxyWithData *proxy = new CallbackProxyWithData(cb);
+        proxy->data = qobject_cast<DFMProtocolDevice *>(q);
+        proxy->d = this;
+        g_mount_unmount_with_operation(mountHandler, flag, operation, cancellable, unmountWithCallback, proxy);
+    }
 }
 
 bool DFMProtocolDevicePrivate::rename(const QString &newName)
-{// TODO
+{
+    Q_UNUSED(newName);
+    qWarning() << "not supported operation" << __FUNCTION__;
     return false;
 }
 
 void DFMProtocolDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb)
 {
-// TODO
+    Q_UNUSED(newName);
+    Q_UNUSED(opts);
+    Q_UNUSED(cb);
+    qWarning() << "not supported operation" << __FUNCTION__;
 }
 
 QString DFMProtocolDevicePrivate::mountPoint() const
 {
+    qInfo() << "mutexForMount prelock" << __FUNCTION__;
+    QMutexLocker locker(&mutexForMount);
+    qInfo() << "mutexForMount locked" << __FUNCTION__;
     if (mountHandler)
         return mountPoint(mountHandler);
     return QString();
@@ -195,31 +281,26 @@ QString DFMProtocolDevicePrivate::mountPoint() const
 
 QString DFMProtocolDevicePrivate::fileSystem() const
 {
-    // TODO
-    return QString();
+    return getAttr(Type).toString();
 }
 
 long DFMProtocolDevicePrivate::sizeTotal() const
 {
-    // TODO
-    return 0;
+    return getAttr(Total).value<long>();
 }
 
 long DFMProtocolDevicePrivate::sizeUsage() const
 {
-    // TODO
-    return 0;
+    return sizeTotal() - sizeFree();
 }
 
 long DFMProtocolDevicePrivate::sizeFree() const
 {
-    // TODO
-    return 0;
+    return getAttr(Free).value<long>();
 }
 
 DeviceType DFMProtocolDevicePrivate::deviceType() const
 {
-    // TODO
     return DeviceType::ProtocolDevice;
 }
 
@@ -229,9 +310,8 @@ QString DFMProtocolDevicePrivate::displayName() const
         qInfo() << "mutexForVolume prelock" << __FUNCTION__;
         QMutexLocker volLocker(&mutexForVolume);
         qInfo() << "mutexForVolume locked" << __FUNCTION__;
-        char *displayName = g_volume_get_name(volumeHandler);
+        g_autofree char *displayName = g_volume_get_name(volumeHandler);
         QString name(displayName);
-        g_free(displayName);
         return name;
     }
 
@@ -239,9 +319,8 @@ QString DFMProtocolDevicePrivate::displayName() const
         qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker mntLocker(&mutexForMount);
         qInfo() << "mutexForMount locked" << __FUNCTION__;
-        char *displayName = g_mount_get_name(mountHandler);
+        g_autofree char *displayName = g_mount_get_name(mountHandler);
         QString name(displayName);
-        g_free(displayName);
         return name;
     }
 
@@ -251,59 +330,161 @@ QString DFMProtocolDevicePrivate::displayName() const
 
 bool DFMProtocolDevicePrivate::eject()
 {
-    // TODO
+    qWarning() << "not supported operation" << __FUNCTION__;
     return false;
 }
 
 bool DFMProtocolDevicePrivate::powerOff()
 {
-    // TODO
+    qWarning() << "not supported operation" << __FUNCTION__;
     return false;
 }
 
 QString DFMProtocolDevicePrivate::mountPoint(GMount *mount)
 {
     QString mpt;
-    auto mntRoot = g_mount_get_root(mount);
+    g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
     if (mntRoot) {
-        char *mntPath = g_file_get_path(mntRoot);
+        g_autofree char *mntPath = g_file_get_path(mntRoot);
         mpt = QString(mntPath);
-        g_free(mntPath);
-        g_object_unref(mntRoot);
     }
     return mpt;
 }
 
-void DFMProtocolDevicePrivate::mountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data)
+QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type) const
 {
-    auto helper = static_cast<ASyncToSyncHelper *>(user_data);
-    auto vol = reinterpret_cast<GVolume *>(source_object);
+    const char *attr = nullptr;
+    switch (type) {
+    case Total:
+        attr = G_FILE_ATTRIBUTE_FILESYSTEM_SIZE;
+        break;
+    case Usage:
+        attr = G_FILE_ATTRIBUTE_FILESYSTEM_USED;
+        break;
+    case Free:
+        attr = G_FILE_ATTRIBUTE_FILESYSTEM_FREE;
+        break;
+    case Type:
+        attr = G_FILE_ATTRIBUTE_FILESYSTEM_TYPE;
+    }
+
+    if (!mountHandler) {
+        lastError = DeviceError::NotMounted;
+        return QVariant();
+    }
+
+    qInfo() << "mutexForMount prelock" << __FUNCTION__;
+    QMutexLocker mntLocker(&mutexForMount);
+    qInfo() << "mutexForMount locked" << __FUNCTION__;
+    auto mnt = mountPoint(mountHandler);
+    mntLocker.unlock();
+
+    g_autoptr(GFile) location = g_mount_get_root(mountHandler);
+    QString errMsg;
+    if (location) {
+        g_autoptr(GCancellable) cancellable = g_cancellable_new();
+        QSharedPointer<QTimer> timer(new QTimer);
+        QObject::connect(timer.data(), &QTimer::timeout, q, [ = ]{
+           lastError = DeviceError::TimedOut;
+           g_cancellable_cancel(cancellable);
+        });
+        timer->setSingleShot(true);
+        timer->start(timeout);
+
+        int retry = 50;
+        while (retry) {
+            GError *err { nullptr };
+            g_autoptr(GFileInfo) info = g_file_query_filesystem_info(location, attr, cancellable, &err);
+            if (info) {
+                QVariant ret;
+                if (type < Type) {
+                    auto size = g_file_info_get_attribute_uint64(info, attr);
+                    ret.setValue<long>(static_cast<long>(size));
+                    return ret;
+                } else if (type == Type) {
+                    auto fs = g_file_info_get_attribute_string(info, attr);
+                    ret.setValue<QString>(fs);
+                    return ret;
+                }
+            }
+            if (err) {
+                errMsg = err->message;
+                g_error_free(err);
+                if (errMsg.contains("was not provided by any .service files"))
+                    break;
+                retry -= 1;
+                QThread::msleep(50);
+            }
+        }
+    }
+    qDebug() << "get attribute" << attr << "failed: " << errMsg;
+    return QVariant();
+}
+
+static bool mountDone(GObject *sourceObj, GAsyncResult *res, DeviceError &derr) {
+    auto vol = reinterpret_cast<GVolume *>(sourceObj);
 
     QString mpt;
     GError *err { nullptr };
     bool ret = g_volume_mount_finish(vol, res, &err);
-    auto mount = g_volume_get_mount(vol);
-    if (mount) {
-        mpt = mountPoint(mount);
-        g_object_unref(mount);
-    }
     if (err) {
         // TODO: handle error
+        derr = DeviceError::NoError;
+        qDebug() << "mount failed" << err->message;
         g_error_free(err);
     }
 
+    return ret;
+}
+
+void DFMProtocolDevicePrivate::mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker)
+{
+    DeviceError err;
+    auto &&ret = mountDone(sourceObj, res, err);
+    auto helper = static_cast<ASyncToSyncHelper *>(blocker);
     if (helper) {
         auto code = ret ? ASyncToSyncHelper::NoError : ASyncToSyncHelper::Failed;
-        helper->caller()->setMount(mount);
-        helper->setResult(mpt);
+        if (ret) {
+            auto volume = reinterpret_cast<GVolume *>(sourceObj);
+            if (volume) {
+                auto mount = g_volume_get_mount(volume);
+                if (mount) {
+                    helper->setResult(mountPoint(mount));
+                    g_object_unref(mount);
+                }
+            }
+        }
         helper->exit(code);
     }
 }
 
-void DFMProtocolDevicePrivate::unmountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data)
+void DFMProtocolDevicePrivate::mountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy)
 {
-    auto helper = static_cast<ASyncToSyncHelper *>(user_data);
-    auto mnt = reinterpret_cast<GMount *>(source_object);
+    DeviceError err;
+    auto &&ret = mountDone(sourceObj, res, err);
+    auto proxy = static_cast<CallbackProxyWithData *>(cbProxy);
+    if (proxy) {
+        auto volume = reinterpret_cast<GVolume *>(sourceObj);
+        if (volume) {
+            auto mount = g_volume_get_mount(volume);
+            if (proxy->data) {
+                proxy->d->setMount(mount);
+            }
+            if (mount)
+                g_object_unref(mount);
+        }
+
+        if (proxy->caller.cb) {
+            proxy->caller.cb(ret, err);
+        }
+
+        delete proxy;
+    }
+}
+
+void DFMProtocolDevicePrivate::unmountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker)
+{
+    auto mnt = reinterpret_cast<GMount *>(sourceObj);
 
     GError *err { nullptr };
     bool ret = g_mount_unmount_with_operation_finish(mnt, res, &err);
@@ -312,6 +493,7 @@ void DFMProtocolDevicePrivate::unmountAsyncCallback(GObject *source_object, GAsy
         g_error_free(err);
     }
 
+    auto helper = static_cast<ASyncToSyncHelper *>(blocker);
     if (helper) {
         auto code = ret ? ASyncToSyncHelper::NoError : ASyncToSyncHelper::Failed;
         helper->setResult(ret);
@@ -319,8 +501,32 @@ void DFMProtocolDevicePrivate::unmountAsyncCallback(GObject *source_object, GAsy
     }
 }
 
+void DFMProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy)
+{
+    auto mnt = reinterpret_cast<GMount *>(sourceObj);
+
+    GError *err { nullptr };
+    DeviceError derr = DeviceError::NoError;
+    bool ret = g_mount_unmount_with_operation_finish(mnt, res, &err);
+    if (err) {
+        // TODO
+        g_error_free(err);
+    }
+
+    auto proxy = static_cast<CallbackProxyWithData *>(cbProxy);
+    if (proxy) {
+        if (proxy->data) {
+            proxy->d->mountHandler = nullptr;
+        }
+        if (proxy->caller.cb) {
+            proxy->caller.cb(ret, derr);
+        }
+        delete proxy;
+    }
+}
+
 ASyncToSyncHelper::ASyncToSyncHelper(DFMProtocolDevicePrivate *dev)
-    : deviced(dev) {
+{
     blocker = new QEventLoop();
 
     timer.reset(new QTimer());

@@ -30,6 +30,7 @@
 
 typedef struct _GMount                  GMount;
 typedef struct _GVolume                 GVolume;
+typedef struct _GVolumeMonitor          GVolumeMonitor;
 
 DFM_MOUNT_BEGIN_NS
 
@@ -43,7 +44,7 @@ public:
     ~DFMProtocolDevice();
 
 private:
-    DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, QObject *parent = nullptr);
+    DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, QObject *parent = nullptr);
     void setVolume(GVolume *);
     void setMount(GMount *);
 };

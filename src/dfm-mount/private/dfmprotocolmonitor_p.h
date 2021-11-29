@@ -57,7 +57,7 @@ struct DeviceCache {
         bool hasMount, hasVolume;
         hasMount = (device.mount != nullptr);
         hasVolume = (device.volume != nullptr);
-        debug << QString("{ uuid: %1, mount: %2, volume: %3 }").arg(device.uuid).arg(hasMount).arg(hasVolume);
+        debug << QString("{ mpt: %1, mount: %2, volume: %3 }").arg(device.uuid).arg(hasMount).arg(hasVolume);
         return debug;
     }
 };
@@ -75,6 +75,7 @@ public:
     DeviceType monitorObjectType() const DFM_MNT_OVERRIDE;
     QStringList getDevices() DFM_MNT_OVERRIDE;
     QSharedPointer<DFMDevice> createDevice(const QString &id) DFM_MNT_OVERRIDE;
+    QSharedPointer<DFMDevice> createDeviceByMount();
 
 private:
     void initDeviceList();
@@ -95,6 +96,8 @@ private:
 
     QMap<QString, DeviceCache> devices;
     QList<DFMProtocolDevice *> pdevices;
+
+    void printDevices();
 public:
     GVolumeMonitor *gVolMonitor { nullptr };
 };

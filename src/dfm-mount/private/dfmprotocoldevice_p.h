@@ -55,18 +55,16 @@ public:
     }
     inline void         exit(int code)              { blocker->exit(code); }
     inline void         setTimeout(int msec)        { timer->setInterval(msec); }
-    inline DFMProtocolDevicePrivate *caller()       { return deviced; }
 
 private:
     QVariant                    ret;
     QEventLoop                  *blocker    { nullptr };
-    DFMProtocolDevicePrivate    *deviced    { nullptr };
     QScopedPointer<QTimer>      timer       { nullptr };
 };
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
 {
 public:
-    DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, DFMProtocolDevice *qq);
+    DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, DFMProtocolDevice *qq);
 
     QString path() const;
     QString mount(const QVariantMap &opts);
@@ -88,6 +86,11 @@ public:
 
     static QString mountPoint(GMount *mnt);
 
+    enum FsAttr {
+        Total, Usage, Free, Type
+    };
+    QVariant getAttr(FsAttr type) const;
+
     inline void setMount(GMount *mount) {
         QMutexLocker locker(&mutexForMount);
         mountHandler = mount;
@@ -101,14 +104,20 @@ public:
     QString deviceId; // device id, which is a generated uuid
 
 private:
-    static void mountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
-    static void unmountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+    static void mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker);
+    static void mountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy);
+
+    static void unmountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker);
+    static void unmountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy);
 
 private:
     mutable QMutex  mutexForMount;
     mutable QMutex  mutexForVolume;
     GMount          *mountHandler     { nullptr };
     GVolume         *volumeHandler    { nullptr };
+    GVolumeMonitor  *volumeMonitor    { nullptr };
+
+    int timeout { 25000 };
 };
 DFM_MOUNT_END_NS
 

@@ -75,13 +75,13 @@ private:
     static void handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info = QString());
 
     // async callbacks
-    static void mountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
-    static void unmountAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
-    static void renameAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
-    static void ejectAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
-    static void powerOffAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
-    static void lockAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
-    static void unlockAsyncCallback(GObject *source_object, GAsyncResult *res, gpointer user_data);
+    static void mountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
+    static void unmountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
+    static void renameAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
+    static void ejectAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
+    static void powerOffAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
+    static void lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
+    static void unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
 
 public:
     QString                 blkObjPath; // path of block device object
