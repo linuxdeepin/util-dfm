@@ -36,7 +36,8 @@ DFM_MOUNT_USE_NS
 
 #define UDISKS_ERR_DOMAIN "udisks-error-quark"
 
-inline void DFMBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info) {
+inline void DFMBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info)
+{
     DeviceError err = DeviceError::NoError;
     if (!result) {
         if (strcmp(g_quark_to_string(gerr->domain), UDISKS_ERR_DOMAIN) == 0) {
@@ -57,7 +58,8 @@ inline void DFMBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, b
     }
 }
 
-void DFMBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+void DFMBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+{
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
@@ -65,13 +67,14 @@ void DFMBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult 
     GError *err = nullptr;
     char *mountPoint = nullptr;
     bool result = udisks_filesystem_call_mount_finish(fs, &mountPoint, res, &err);
-    handleErrorAndRelease(proxy, result, err); // ignore mount point, which will be notified by onPropertyChanged
+    handleErrorAndRelease(proxy, result, err);   // ignore mount point, which will be notified by onPropertyChanged
     if (mountPoint) {
         g_free(mountPoint);
     }
 };
 
-void DFMBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+void DFMBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+{
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
@@ -81,7 +84,8 @@ void DFMBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResul
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+void DFMBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+{
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
@@ -91,7 +95,8 @@ void DFMBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+{
     UDisksDrive *drive = UDISKS_DRIVE(sourceObj);
     Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
@@ -102,7 +107,8 @@ void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult 
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+void DFMBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+{
     UDisksDrive *drive = UDISKS_DRIVE(sourceObj);
     Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
@@ -112,7 +118,8 @@ void DFMBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResu
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+void DFMBlockDevicePrivate::lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+{
     UDisksEncrypted *encrypted = UDISKS_ENCRYPTED(sourceObj);
     Q_ASSERT_X(encrypted, __FUNCTION__, "encrypted is not valid");
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
@@ -122,7 +129,8 @@ void DFMBlockDevicePrivate::lockAsyncCallback(GObject *sourceObj, GAsyncResult *
     handleErrorAndRelease(proxy, result, err);
 }
 
-void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData) {
+void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+{
     UDisksEncrypted *encrypted = UDISKS_ENCRYPTED(sourceObj);
     Q_ASSERT_X(encrypted, __FUNCTION__, "encrypted is not valid");
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
@@ -349,7 +357,7 @@ PartitionType DFMBlockDevice::partitionEType() const
     int type = typestr.toInt(&ok, 16);
     if (ok) {
         if (type >= static_cast<int>(PartitionType::MbrEmpty)
-                && type <= static_cast<int>(PartitionType::MbrBBT))
+            && type <= static_cast<int>(PartitionType::MbrBBT))
             return static_cast<PartitionType>(type);
         else
             return PartitionType::PartitionTypeNotFound;
@@ -377,7 +385,7 @@ DFMBlockDevicePrivate::DFMBlockDevicePrivate(UDisksClient *cli, const QString &b
 
 DFMBlockDevicePrivate::~DFMBlockDevicePrivate()
 {
-    auto gunref = [](void *gobj){
+    auto gunref = [](void *gobj) {
         if (gobj)
             g_object_unref(gobj);
     };
@@ -457,13 +465,13 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
 
     if (!fileSystemHandler) {
         lastError = DeviceError::NotMountable;
-        return true; // since device is not mountable, so we just return true here
+        return true;   // since device is not mountable, so we just return true here
     }
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (mpts.empty()) {
         lastError = DeviceError::NotMounted;
-        return true; // since it's not mounted, then this invocation returns true
+        return true;   // since it's not mounted, then this invocation returns true
     }
 
     GVariant *gopts = Utils::castFromQVariantMap(opts);
@@ -805,7 +813,7 @@ QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
     // but we shall release the objects by calling g_free for char * or g_strfreev for char ** funcs.
     switch (name) {
     case Property::BlockConfiguration:
-//                return udisks_block_dup_configuration(blockHandler); TODO
+        //                return udisks_block_dup_configuration(blockHandler); TODO
         return "";
     case Property::BlockCryptoBackingDevice: {
         char *tmp = udisks_block_dup_crypto_backing_device(blockHandler);

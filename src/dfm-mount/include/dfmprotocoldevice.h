@@ -28,9 +28,9 @@
 
 #include <QObject>
 
-typedef struct _GMount                  GMount;
-typedef struct _GVolume                 GVolume;
-typedef struct _GVolumeMonitor          GVolumeMonitor;
+typedef struct _GMount GMount;
+typedef struct _GVolume GVolume;
+typedef struct _GVolumeMonitor GVolumeMonitor;
 
 DFM_MOUNT_BEGIN_NS
 
@@ -43,6 +43,8 @@ class DFMProtocolDevice final : public DFMDevice
 public:
     ~DFMProtocolDevice();
 
+    void setOperatorTimeout(int msecs);
+
 private:
     DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, QObject *parent = nullptr);
     void setVolume(GVolume *);
@@ -51,4 +53,4 @@ private:
 
 DFM_MOUNT_END_NS
 
-#endif // DFMPROTOCOLDEVICE_H
+#endif   // DFMPROTOCOLDEVICE_H

@@ -32,53 +32,56 @@
 typedef struct _GVariant GVariant;
 DFM_MOUNT_BEGIN_NS
 
-#define warningIfNotInMain() { \
-    if (qApp->thread() != QThread::currentThread()) \
-        qWarning() << "<" << __PRETTY_FUNCTION__ << ">\n"\
-                   << "\t:( this function DOES NOT promise thread safe! please use it CAUTION or use *Async instead."; \
-}
+#define warningIfNotInMain()                                                                                               \
+    {                                                                                                                      \
+        if (qApp->thread() != QThread::currentThread())                                                                    \
+            qWarning() << "<" << __PRETTY_FUNCTION__ << ">\n"                                                              \
+                       << "\t:( this function DOES NOT promise thread safe! please use it CAUTION or use *Async instead."; \
+    }
 
-class Utils {
+class Utils
+{
 public:
-static QVariant castFromGVariant(GVariant *val);
+    static QVariant castFromGVariant(GVariant *val);
 
-static GVariant *castFromQVariant(const QVariant &val);
+    static GVariant *castFromQVariant(const QVariant &val);
 
-static GVariant *castFromQVariantMap(const QVariantMap &val);
+    static GVariant *castFromQVariantMap(const QVariantMap &val);
 
-static GVariant *castFromQStringList(const QStringList &val);
+    static GVariant *castFromQStringList(const QStringList &val);
 
-static GVariant *castFromList(const QList<QVariant> &val);
+    static GVariant *castFromList(const QList<QVariant> &val);
 
-static QString getNameByProperty(Property type);
+    static QString getNameByProperty(Property type);
 
-static Property getPropertyByName(const QString &name);
+    static Property getPropertyByName(const QString &name);
 
-static PartitionType getPartitionTypeByGuid(const QString &guid);
+    static PartitionType getPartitionTypeByGuid(const QString &guid);
 
-static QString errorMessage(DeviceError err);
+    static QString errorMessage(DeviceError err);
 
-static QString errorMessage(MonitorError err);
+    static QString errorMessage(MonitorError err);
 
-/*!
+    /*!
  * \brief gcharToQString
  * \param tmp: target char *, which will be free in function, use it caution
  * \return
  */
-static QString gcharToQString(char *tmp);
+    static QString gcharToQString(char *tmp);
 
-/*!
+    /*!
  * \brief gcharvToQStringList
  * \param tmp: target char *, which will be free in function, use it caution
  * \return
  */
-static QStringList gcharvToQStringList(char **tmp);
+    static QStringList gcharvToQStringList(char **tmp);
 
-template<typename FromClass, typename ToClass>
-static inline ToClass *castClassFromTo(FromClass *p) {
-    auto pPointer = dynamic_cast<ToClass *>(p);
-    return pPointer;
-}
+    template<typename FromClass, typename ToClass>
+    static inline ToClass *castClassFromTo(FromClass *p)
+    {
+        auto pPointer = dynamic_cast<ToClass *>(p);
+        return pPointer;
+    }
 };
 
 DFM_MOUNT_END_NS

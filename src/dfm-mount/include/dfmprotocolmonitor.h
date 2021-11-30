@@ -29,7 +29,7 @@
 
 DFM_MOUNT_BEGIN_NS
 class DFMProtocolMonitorPrivate;
-class DFMProtocolMonitor: public DFMMonitor
+class DFMProtocolMonitor : public DFMMonitor
 {
     Q_OBJECT
 
@@ -39,4 +39,4 @@ public:
 };
 DFM_MOUNT_END_NS
 
-#endif // DFMBLOCKMONITOR_H
+#endif   // DFMBLOCKMONITOR_H

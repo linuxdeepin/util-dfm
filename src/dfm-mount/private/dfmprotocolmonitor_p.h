@@ -29,31 +29,33 @@
 #include <QMap>
 #include <QDebug>
 
-typedef struct _GVolumeMonitor          GVolumeMonitor;
-typedef struct _GDrive                  GDrive;
-typedef struct _GMount                  GMount;
-typedef struct _GVolume                 GVolume;
-typedef void *                          gpointer;
+typedef struct _GVolumeMonitor GVolumeMonitor;
+typedef struct _GDrive GDrive;
+typedef struct _GMount GMount;
+typedef struct _GVolume GVolume;
+typedef void *gpointer;
 
 DFM_MOUNT_BEGIN_NS
 
-#define DRIVE_CHANGED       "drive-changed"
-#define DRIVE_CONNECTED     "drive-connected"
-#define DRIVE_DISCONNED     "drive-disconnected"
-#define MOUNT_ADDED         "mount-added"
-#define MOUNT_CHANGED       "mount-changed"
-#define MOUNT_PRE_UNMOUNT   "mount-pre-unmount"
-#define MOUNT_REMOVED       "mount-removed"
-#define VOLUME_ADDED        "volume-added"
-#define VOLUME_CHANGED      "volume-changed"
-#define VOLUME_REMOVED      "volume-removed"
+#define DRIVE_CHANGED "drive-changed"
+#define DRIVE_CONNECTED "drive-connected"
+#define DRIVE_DISCONNED "drive-disconnected"
+#define MOUNT_ADDED "mount-added"
+#define MOUNT_CHANGED "mount-changed"
+#define MOUNT_PRE_UNMOUNT "mount-pre-unmount"
+#define MOUNT_REMOVED "mount-removed"
+#define VOLUME_ADDED "volume-added"
+#define VOLUME_CHANGED "volume-changed"
+#define VOLUME_REMOVED "volume-removed"
 
-struct DeviceCache {
-    QString uuid    {};
-    GMount  *mount  { nullptr };
+struct DeviceCache
+{
+    QString uuid {};
+    GMount *mount { nullptr };
     GVolume *volume { nullptr };
 
-    friend QDebug operator << (QDebug debug, const DeviceCache &device) {
+    friend QDebug operator<<(QDebug debug, const DeviceCache &device)
+    {
         bool hasMount, hasVolume;
         hasMount = (device.mount != nullptr);
         hasVolume = (device.volume != nullptr);
@@ -63,7 +65,7 @@ struct DeviceCache {
 };
 
 class DFMProtocolDevice;
-class DFMProtocolMonitorPrivate final: public DFMMonitorPrivate
+class DFMProtocolMonitorPrivate final : public DFMMonitorPrivate
 {
 
 public:
@@ -98,10 +100,11 @@ private:
     QList<DFMProtocolDevice *> pdevices;
 
     void printDevices();
+
 public:
     GVolumeMonitor *gVolMonitor { nullptr };
 };
 
 DFM_MOUNT_END_NS
 
-#endif // DFMProtocolMONITOR_P_H
+#endif   // DFMProtocolMONITOR_P_H

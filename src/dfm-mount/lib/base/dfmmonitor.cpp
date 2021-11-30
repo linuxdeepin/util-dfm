@@ -31,23 +31,19 @@ DFM_MOUNT_USE_NS
 DFMMOUNT::DFMMonitorPrivate::DFMMonitorPrivate(DFMMonitor *qq)
     : q(qq)
 {
-
 }
 
 DFMMonitorPrivate::~DFMMonitorPrivate()
 {
-
 }
 
 DFMMonitor::DFMMonitor(DFMMonitorPrivate *dd, QObject *parent)
     : QObject(parent), d(dd)
 {
-
 }
 
 DFMMonitor::~DFMMonitor()
 {
-
 }
 
 bool DFMMonitor::startMonitor()
@@ -126,4 +122,3 @@ void DFMMonitor::registerCreateDeviceById(const DFMMonitor::CreateDeviceByIdFunc
 
     d->createDeviceById = func;
 }
-

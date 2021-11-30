@@ -35,34 +35,39 @@
 #include <gio/gio.h>
 
 DFM_MOUNT_BEGIN_NS
-class ASyncToSyncHelper {
+class ASyncToSyncHelper
+{
 public:
     enum {
         NoError,
         Failed,
         Timeout,
     };
-    explicit ASyncToSyncHelper(DFMProtocolDevicePrivate *dev);
+    explicit ASyncToSyncHelper(int timeout);
     ~ASyncToSyncHelper();
     ASyncToSyncHelper(const ASyncToSyncHelper &) = delete;
-    ASyncToSyncHelper& operator=(const ASyncToSyncHelper &) = delete;
+    ASyncToSyncHelper &operator=(const ASyncToSyncHelper &) = delete;
 
-    inline QVariant     result()                    { return ret; }
-    inline void         setResult(QVariant result)  { ret = result; }
-    inline int          exec()                      {
+    inline QVariant result() { return ret; }
+    inline void setResult(QVariant result) { ret = result; }
+    inline int exec()
+    {
         timer->start();
         return blocker->exec();
     }
-    inline void         exit(int code)              { blocker->exit(code); }
-    inline void         setTimeout(int msec)        { timer->setInterval(msec); }
+    inline void exit(int code) { blocker->exit(code); }
+    inline void setTimeout(int msec) { timer->setInterval(msec); }
 
 private:
-    QVariant                    ret;
-    QEventLoop                  *blocker    { nullptr };
-    QScopedPointer<QTimer>      timer       { nullptr };
+    QVariant ret;
+    QEventLoop *blocker { nullptr };
+    QScopedPointer<QTimer> timer { nullptr };
 };
+
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
 {
+    friend class DFMProtocolDevice;
+
 public:
     DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, DFMProtocolDevice *qq);
 
@@ -87,21 +92,26 @@ public:
     static QString mountPoint(GMount *mnt);
 
     enum FsAttr {
-        Total, Usage, Free, Type
+        Total,
+        Usage,
+        Free,
+        Type
     };
     QVariant getAttr(FsAttr type) const;
 
-    inline void setMount(GMount *mount) {
+    inline void setMount(GMount *mount)
+    {
         QMutexLocker locker(&mutexForMount);
         mountHandler = mount;
     }
-    inline void setVolume(GVolume *volume) {
+    inline void setVolume(GVolume *volume)
+    {
         QMutexLocker locker(&mutexForVolume);
         volumeHandler = volume;
     }
 
 public:
-    QString deviceId; // device id, which is a generated uuid
+    QString deviceId;   // device id, which is a generated uuid
 
 private:
     static void mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker);
@@ -111,14 +121,14 @@ private:
     static void unmountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy);
 
 private:
-    mutable QMutex  mutexForMount;
-    mutable QMutex  mutexForVolume;
-    GMount          *mountHandler     { nullptr };
-    GVolume         *volumeHandler    { nullptr };
-    GVolumeMonitor  *volumeMonitor    { nullptr };
+    mutable QMutex mutexForMount;
+    mutable QMutex mutexForVolume;
+    GMount *mountHandler { nullptr };
+    GVolume *volumeHandler { nullptr };
+    GVolumeMonitor *volumeMonitor { nullptr };
 
     int timeout { 25000 };
 };
 DFM_MOUNT_END_NS
 
-#endif // DFMPROTOCOLDEVICE_P_H
+#endif   // DFMPROTOCOLDEVICE_P_H

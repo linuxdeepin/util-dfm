@@ -39,11 +39,11 @@ public:
     DFMMonitorPrivate(DFMMonitor *qq);
     virtual ~DFMMonitorPrivate();
 
-    DFMMonitor::StartMonitorFunc start                  = nullptr;
-    DFMMonitor::StopMonitorFunc stop                    = nullptr;
+    DFMMonitor::StartMonitorFunc start = nullptr;
+    DFMMonitor::StopMonitorFunc stop = nullptr;
     DFMMonitor::MonitorObjectTypeFunc monitorObjectType = nullptr;
-    DFMMonitor::GetDevicesFunc getDevices               = nullptr;
-    DFMMonitor::CreateDeviceByIdFunc createDeviceById   = nullptr;
+    DFMMonitor::GetDevicesFunc getDevices = nullptr;
+    DFMMonitor::CreateDeviceByIdFunc createDeviceById = nullptr;
 
     DFMMonitor *q = nullptr;
     // for saving gsignals connections, key: singal_name, value: the handler returned by g_signal_connect
@@ -53,4 +53,4 @@ public:
 
 DFM_MOUNT_END_NS
 
-#endif // DFMMONITORPRIVATE_H
+#endif   // DFMMONITORPRIVATE_H

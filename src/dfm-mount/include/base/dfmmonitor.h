@@ -34,7 +34,7 @@ DFM_MOUNT_BEGIN_NS
 
 class DFMDevice;
 class DFMMonitorPrivate;
-class DFMMonitor: public QObject
+class DFMMonitor : public QObject
 {
     Q_OBJECT
 
@@ -48,11 +48,11 @@ public:
     DFM_MNT_VIRTUAL QSharedPointer<DFMDevice> createDeviceById(const QString &id) const;
 
 public:
-    using StartMonitorFunc      = std::function<bool ()>;
-    using StopMonitorFunc       = std::function<bool ()>;
-    using MonitorObjectTypeFunc = std::function<DeviceType ()>;
-    using GetDevicesFunc        = std::function<QStringList ()>;
-    using CreateDeviceByIdFunc  = std::function<QSharedPointer<DFMDevice> (const QString &)>;
+    using StartMonitorFunc = std::function<bool()>;
+    using StopMonitorFunc = std::function<bool()>;
+    using MonitorObjectTypeFunc = std::function<DeviceType()>;
+    using GetDevicesFunc = std::function<QStringList()>;
+    using CreateDeviceByIdFunc = std::function<QSharedPointer<DFMDevice>(const QString &)>;
 
     void registerStartMonitor(const StartMonitorFunc &func);
     void registerStopMonitor(const StopMonitorFunc &func);
@@ -82,4 +82,4 @@ protected:
 
 DFM_MOUNT_END_NS
 
-#endif // DFMMONITOR_H
+#endif   // DFMMONITOR_H

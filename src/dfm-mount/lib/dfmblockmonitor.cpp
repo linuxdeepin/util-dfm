@@ -36,13 +36,13 @@
 
 DFM_MOUNT_USE_NS
 
-#define UDISKS_BLOCK_PATH_PREFIX    "/org/freedesktop/UDisks2/block_devices/"
-#define UDISKS_DRIVE_PATH_PREFIX    "/org/freedesktop/UDisks2/drives/"
+#define UDISKS_BLOCK_PATH_PREFIX "/org/freedesktop/UDisks2/block_devices/"
+#define UDISKS_DRIVE_PATH_PREFIX "/org/freedesktop/UDisks2/drives/"
 
 QMap<QString, QSet<QString>> DFMBlockMonitorPrivate::blksOfDrive = {};
 
 DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
-    : DFMMonitorPrivate (qq)
+    : DFMMonitorPrivate(qq)
 {
     GError *err = nullptr;
     client = udisks_client_new_sync(nullptr, &err);
@@ -190,7 +190,7 @@ QStringList DFMBlockMonitorPrivate::resolveDeviceNode(const QString &node, const
 {
     if (node.isEmpty())
         return QStringList();
-    QVariantMap devSpec {{"path", node}};
+    QVariantMap devSpec { { "path", node } };
     return resolveDevice(devSpec, opts);
 }
 
@@ -202,7 +202,7 @@ QStringList DFMBlockMonitorPrivate::resolveDeviceOfDrive(const QString &drvObjPa
 void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
 {
     Q_UNUSED(mng);
-    DFMBlockMonitor *q = static_cast<DFMBlockMonitor*>(userData);
+    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
     Q_ASSERT(q);
 
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
@@ -246,7 +246,7 @@ void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObjec
 {
     Q_UNUSED(mng);
 
-    DFMBlockMonitor *q = static_cast<DFMBlockMonitor*>(userData);
+    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
     Q_ASSERT(q);
 
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
@@ -288,13 +288,13 @@ void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObjec
 }
 
 void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *dbusObjProxy, GDBusProxy *dbusProxy,
-                                               GVariant *property, const gchar * const invalidProperty, gpointer userData)
+                                               GVariant *property, const gchar *const invalidProperty, gpointer userData)
 {
     Q_UNUSED(mngClient);
     Q_UNUSED(dbusObjProxy);
     Q_UNUSED(invalidProperty);
 
-    DFMBlockMonitor *q = static_cast<DFMBlockMonitor*>(userData);
+    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
     Q_ASSERT(q);
 
     // get the changed object path: "/org/freedesktop/UDisks2/block_devices/sdb1"
@@ -334,14 +334,14 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
         Q_EMIT mpts.isEmpty() ? q->mountRemoved(objPath) : q->mountAdded(objPath, mpts.first());
     }
     if (changes.contains(Property::BlockIDLabel)) {
-        ; // TODO emit idLabel changed
+        ;   // TODO emit idLabel changed
     }
 
     if (isBlockChanged)
         Q_EMIT q->propertyChanged(objPath, changes);
     else {
         QSet<QString> blks = blksOfDrive.value(objPath);
-        for (const auto &blk: blks)
+        for (const auto &blk : blks)
             Q_EMIT q->propertyChanged(blk, changes);
     }
 }
@@ -349,7 +349,7 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
 void DFMBlockMonitorPrivate::initDevices()
 {
     auto lst = getDevices();
-    for (const auto &blk: lst) {
+    for (const auto &blk : lst) {
         std::string str = blk.toStdString();
         UDisksObject *obj = udisks_client_peek_object(client, str.c_str());
         if (!obj)
@@ -366,7 +366,7 @@ void DFMBlockMonitorPrivate::initDevices()
 }
 
 DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
-    : DFMMonitor (new DFMBlockMonitorPrivate(this), parent)
+    : DFMMonitor(new DFMBlockMonitorPrivate(this), parent)
 {
     auto dp = Utils::castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
     if (!dp) {
@@ -415,4 +415,3 @@ QStringList DFMBlockMonitor::resolveDeviceFromDrive(const QString &drvObjPath)
     auto dp = Utils::castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
     return dp ? dp->resolveDeviceOfDrive(drvObjPath) : QStringList();
 }
-

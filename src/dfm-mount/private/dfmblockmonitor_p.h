@@ -33,12 +33,12 @@
 
 DFM_MOUNT_BEGIN_NS
 
-#define OBJECT_ADDED        "object-added"
-#define OBJECT_REMOVED      "object-removed"
-#define PROPERTY_CHANGED    "interface-proxy-properties-changed"
+#define OBJECT_ADDED "object-added"
+#define OBJECT_REMOVED "object-removed"
+#define PROPERTY_CHANGED "interface-proxy-properties-changed"
 
 class DFMBlockDevice;
-class DFMBlockMonitorPrivate final: public DFMMonitorPrivate
+class DFMBlockMonitorPrivate final : public DFMMonitorPrivate
 {
 public:
     DFMBlockMonitorPrivate(DFMBlockMonitor *qq);
@@ -70,4 +70,4 @@ public:
 
 DFM_MOUNT_END_NS
 
-#endif // DFMBLOCKMONITOR_P_H
+#endif   // DFMBLOCKMONITOR_P_H

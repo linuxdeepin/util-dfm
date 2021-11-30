@@ -35,8 +35,9 @@
 
 DFM_MOUNT_USE_NS
 
-namespace  {
-struct CallbackProxyWithData {
+namespace {
+struct CallbackProxyWithData
+{
     CallbackProxyWithData() = delete;
     explicit CallbackProxyWithData(DeviceOperateCb cb)
         : caller(cb) {}
@@ -44,7 +45,7 @@ struct CallbackProxyWithData {
         : caller(cb) {}
     CallbackProxy caller;
     QPointer<DFMProtocolDevice> data;
-    DFMProtocolDevicePrivate *d{nullptr};
+    DFMProtocolDevicePrivate *d { nullptr };
 };
 }
 
@@ -65,7 +66,7 @@ DFMProtocolDevice::DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mn
     registerUnmountAsync(bind(&DFMProtocolDevicePrivate::unmountAsync, dp, _1, _2));
     registerRename(bind(&DFMProtocolDevicePrivate::rename, dp, _1));
     registerRenameAsync(bind(&DFMProtocolDevicePrivate::renameAsync, dp, _1, _2, _3));
-    auto mountPointOfClass = static_cast<QString(DFMProtocolDevicePrivate::*)()const>(&DFMProtocolDevicePrivate::mountPoint);
+    auto mountPointOfClass = static_cast<QString (DFMProtocolDevicePrivate::*)() const>(&DFMProtocolDevicePrivate::mountPoint);
     registerMountPoint(bind(mountPointOfClass, dp));
     registerFileSystem(bind(&DFMProtocolDevicePrivate::fileSystem, dp));
     registerSizeTotal(bind(&DFMProtocolDevicePrivate::sizeTotal, dp));
@@ -95,10 +96,16 @@ DFMProtocolDevice::~DFMProtocolDevice()
 {
 }
 
+void DFMProtocolDevice::setOperatorTimeout(int msecs)
+{
+    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    if (dp)
+        dp->timeout = msecs;
+}
+
 DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, DFMProtocolDevice *qq)
     : DFMDevicePrivate(qq), deviceId(id), mountHandler(mnt), volumeHandler(vol), volumeMonitor(monitor)
 {
-
 }
 
 QString DFMProtocolDevicePrivate::path() const
@@ -131,7 +138,7 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
         }
 
         g_autoptr(GCancellable) cancellable = g_cancellable_new();
-        QScopedPointer<ASyncToSyncHelper> blocker(new ASyncToSyncHelper(this));
+        QScopedPointer<ASyncToSyncHelper> blocker(new ASyncToSyncHelper(timeout));
         g_volume_mount(volumeHandler, G_MOUNT_MOUNT_NONE, operation, cancellable, mountWithBlocker, blocker.data());
         auto ret = blocker->exec();
         if (ret == ASyncToSyncHelper::NoError) {
@@ -209,7 +216,7 @@ bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
         qInfo() << "mutexForMount locked" << __FUNCTION__;
 
         g_autoptr(GCancellable) cancellable = g_cancellable_new();
-        QScopedPointer<ASyncToSyncHelper> blocker(new ASyncToSyncHelper(this));
+        QScopedPointer<ASyncToSyncHelper> blocker(new ASyncToSyncHelper(timeout));
         g_mount_unmount_with_operation(mountHandler, flag, operation, cancellable, unmountWithBlocker, blocker.data());
         auto ret = blocker->exec();
         if (ret == ASyncToSyncHelper::NoError) {
@@ -384,9 +391,9 @@ QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type
     if (location) {
         g_autoptr(GCancellable) cancellable = g_cancellable_new();
         QSharedPointer<QTimer> timer(new QTimer);
-        QObject::connect(timer.data(), &QTimer::timeout, q, [ = ]{
-           lastError = DeviceError::TimedOut;
-           g_cancellable_cancel(cancellable);
+        QObject::connect(timer.data(), &QTimer::timeout, q, [=] {
+            lastError = DeviceError::TimedOut;
+            g_cancellable_cancel(cancellable);
         });
         timer->setSingleShot(true);
         timer->start(timeout);
@@ -421,7 +428,8 @@ QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type
     return QVariant();
 }
 
-static bool mountDone(GObject *sourceObj, GAsyncResult *res, DeviceError &derr) {
+static bool mountDone(GObject *sourceObj, GAsyncResult *res, DeviceError &derr)
+{
     auto vol = reinterpret_cast<GVolume *>(sourceObj);
 
     QString mpt;
@@ -525,19 +533,20 @@ void DFMProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncRes
     }
 }
 
-ASyncToSyncHelper::ASyncToSyncHelper(DFMProtocolDevicePrivate *dev)
+ASyncToSyncHelper::ASyncToSyncHelper(int timeout)
 {
     blocker = new QEventLoop();
 
     timer.reset(new QTimer());
-    timer->setInterval(25000);
+    timer->setInterval(timeout);
     timer->setSingleShot(true);
-    QObject::connect(timer.data(), &QTimer::timeout, blocker, [this]{
+    QObject::connect(timer.data(), &QTimer::timeout, blocker, [this] {
         blocker->exit(Timeout);
     });
 }
 
-ASyncToSyncHelper::~ASyncToSyncHelper() {
+ASyncToSyncHelper::~ASyncToSyncHelper()
+{
     if (blocker) {
         blocker->exit();
         delete blocker;

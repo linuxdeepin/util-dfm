@@ -34,27 +34,28 @@ public:
     DFMDevicePrivate(DFMDevice *qq);
     virtual ~DFMDevicePrivate();
 
-    DFMDevice::PathFunc         path            { nullptr };
-    DFMDevice::MountFunc        mount           { nullptr };
-    DFMDevice::MountAsyncFunc   mountAsync      { nullptr };
-    DFMDevice::UnmountFunc      unmount         { nullptr };
-    DFMDevice::UnmountAsyncFunc unmountAsync    { nullptr };
-    DFMDevice::RenameFunc       rename          { nullptr };
-    DFMDevice::RenameAsyncFunc  renameAsync     { nullptr };
-    DFMDevice::MountPointFunc   mountPoint      { nullptr };
-    DFMDevice::FileSystemFunc   fileSystem      { nullptr };
-    DFMDevice::SizeTotalFunc    sizeTotal       { nullptr };
-    DFMDevice::SizeUsageFunc    sizeUsage       { nullptr };
-    DFMDevice::SizeFreeFunc     sizeFree        { nullptr };
-    DFMDevice::DeviceTypeFunc   deviceType      { nullptr };
-    DFMDevice::GetPropertyFunc  getProperty     { nullptr };
-    DFMDevice::DisplayNameFunc  displayName     { nullptr };
+    DFMDevice::PathFunc path { nullptr };
+    DFMDevice::MountFunc mount { nullptr };
+    DFMDevice::MountAsyncFunc mountAsync { nullptr };
+    DFMDevice::UnmountFunc unmount { nullptr };
+    DFMDevice::UnmountAsyncFunc unmountAsync { nullptr };
+    DFMDevice::RenameFunc rename { nullptr };
+    DFMDevice::RenameAsyncFunc renameAsync { nullptr };
+    DFMDevice::MountPointFunc mountPoint { nullptr };
+    DFMDevice::FileSystemFunc fileSystem { nullptr };
+    DFMDevice::SizeTotalFunc sizeTotal { nullptr };
+    DFMDevice::SizeUsageFunc sizeUsage { nullptr };
+    DFMDevice::SizeFreeFunc sizeFree { nullptr };
+    DFMDevice::DeviceTypeFunc deviceType { nullptr };
+    DFMDevice::GetPropertyFunc getProperty { nullptr };
+    DFMDevice::DisplayNameFunc displayName { nullptr };
 
-    mutable DeviceError         lastError       { DeviceError::NoError };
+    mutable DeviceError lastError { DeviceError::NoError };
+
 protected:
     DFMDevice *q = nullptr;
 };
 
 DFM_MOUNT_END_NS
 
-#endif // DFMDEVICEPRIVATE_H
+#endif   // DFMDEVICEPRIVATE_H

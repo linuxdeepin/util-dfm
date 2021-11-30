@@ -37,7 +37,7 @@
 DFM_MOUNT_BEGIN_NS
 
 class DFMDevicePrivate;
-class DFMDevice: public QObject
+class DFMDevice : public QObject
 {
     Q_OBJECT
 
@@ -71,21 +71,21 @@ public:
 
 public:
     // type definition
-    using PathFunc         = std::function<QString ()>;
-    using MountFunc        = std::function<QString (const QVariantMap &)>;
-    using MountAsyncFunc   = std::function<void (const QVariantMap &, DeviceOperateCb)>;
-    using UnmountFunc      = std::function<bool (const QVariantMap &)>;
-    using UnmountAsyncFunc = std::function<void (const QVariantMap &, DeviceOperateCb)>;
-    using RenameFunc       = std::function<bool (const QString &, const QVariantMap &)>;
-    using RenameAsyncFunc  = std::function<void (const QString &, const QVariantMap &, DeviceOperateCb)>;
-    using MountPointFunc   = std::function<QString ()>;
-    using FileSystemFunc   = std::function<QString ()>;
-    using SizeTotalFunc    = std::function<qint64 ()>;
-    using SizeUsageFunc    = std::function<qint64 ()>;
-    using SizeFreeFunc     = std::function<qint64 ()>;
-    using DeviceTypeFunc   = std::function<DeviceType ()>;
-    using GetPropertyFunc  = std::function<QVariant (Property)>;
-    using DisplayNameFunc  = std::function<QString ()>;
+    using PathFunc = std::function<QString()>;
+    using MountFunc = std::function<QString(const QVariantMap &)>;
+    using MountAsyncFunc = std::function<void(const QVariantMap &, DeviceOperateCb)>;
+    using UnmountFunc = std::function<bool(const QVariantMap &)>;
+    using UnmountAsyncFunc = std::function<void(const QVariantMap &, DeviceOperateCb)>;
+    using RenameFunc = std::function<bool(const QString &, const QVariantMap &)>;
+    using RenameAsyncFunc = std::function<void(const QString &, const QVariantMap &, DeviceOperateCb)>;
+    using MountPointFunc = std::function<QString()>;
+    using FileSystemFunc = std::function<QString()>;
+    using SizeTotalFunc = std::function<qint64()>;
+    using SizeUsageFunc = std::function<qint64()>;
+    using SizeFreeFunc = std::function<qint64()>;
+    using DeviceTypeFunc = std::function<DeviceType()>;
+    using GetPropertyFunc = std::function<QVariant(Property)>;
+    using DisplayNameFunc = std::function<QString()>;
 
     void registerPath(const PathFunc &func);
     void registerMount(const MountFunc &func);
@@ -108,4 +108,4 @@ protected:
 };
 DFM_MOUNT_END_NS
 
-#endif // DFMDEVICE_H
+#endif   // DFMDEVICE_H

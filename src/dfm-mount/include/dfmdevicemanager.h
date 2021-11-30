@@ -39,7 +39,7 @@ public:
     static DFMDeviceManager *instance();
 
     template<class DFMSubMonitor, typename... ConstructArgs>
-    bool registerMonitor(ConstructArgs&&...);
+    bool registerMonitor(ConstructArgs &&...);
     QSharedPointer<DFMMonitor> getRegisteredMonitor(DeviceType type) const;
     bool startMonitorWatch();
     bool stopMonitorWatch();
@@ -55,15 +55,13 @@ Q_SIGNALS:
     void unmounted(const QString &deviceKey, DeviceType type);
     void propertyChanged(const QString &deviceKey, const QMap<Property, QVariant> &changes, DeviceType type);
 
-
 private:
     DFMDeviceManager(QObject *parent = nullptr);
     ~DFMDeviceManager();
 
     QScopedPointer<DFMDeviceManagerPrivate> d;
-
 };
 
 DFM_MOUNT_END_NS
 
-#endif // DFMDEVICEMANAGER_H
+#endif   // DFMDEVICEMANAGER_H

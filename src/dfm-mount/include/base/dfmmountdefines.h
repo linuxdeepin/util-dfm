@@ -32,20 +32,23 @@
 DFM_MOUNT_BEGIN_NS
 
 // Protocol device mount param key
-#define ParamCancellable        "cancellable"
-#define ParamMountOperation     "operation"
-#define ParamForce              "force"
+#define ParamCancellable "cancellable"
+#define ParamMountOperation "operation"
+#define ParamForce "force"
 
-using DeviceOperateCb = std::function<void (bool, DeviceError)>;
-using DeviceOperateCbWithInfo = std::function<void (bool, DeviceError, QString)>;
-class CallbackProxy {
+using DeviceOperateCb = std::function<void(bool, DeviceError)>;
+using DeviceOperateCbWithInfo = std::function<void(bool, DeviceError, QString)>;
+class CallbackProxy
+{
 public:
-    CallbackProxy(DeviceOperateCb cb): cb(cb){}
-    CallbackProxy(DeviceOperateCbWithInfo cb): cbWithInfo(cb){}
+    CallbackProxy(DeviceOperateCb cb)
+        : cb(cb) {}
+    CallbackProxy(DeviceOperateCbWithInfo cb)
+        : cbWithInfo(cb) {}
     DeviceOperateCb cb { nullptr };
     DeviceOperateCbWithInfo cbWithInfo { nullptr };
 };
 
 DFM_MOUNT_END_NS
 
-#endif // DFMMOUNTDEFINES_H
+#endif   // DFMMOUNTDEFINES_H

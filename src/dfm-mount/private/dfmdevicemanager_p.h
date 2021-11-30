@@ -37,7 +37,7 @@ public:
     DFMDeviceManagerPrivate(DFMDeviceManager *qq);
 
     template<typename DFMSubMonitor, typename... ConstructArgs>
-    bool registerMonitor(ConstructArgs&&... args);
+    bool registerMonitor(ConstructArgs &&... args);
     QSharedPointer<DFMMonitor> getRegisteredMonitor(DeviceType type) const;
     bool startMonitor();
     bool stopMonitor();
@@ -51,4 +51,4 @@ public:
 
 DFM_MOUNT_END_NS
 
-#endif // DFMDEVICEMANAGERPRIVATE_H
+#endif   // DFMDEVICEMANAGERPRIVATE_H

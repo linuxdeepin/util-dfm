@@ -30,7 +30,7 @@
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMBlockDevicePrivate final: public DFMDevicePrivate
+class DFMBlockDevicePrivate final : public DFMDevicePrivate
 {
 public:
     DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq);
@@ -84,16 +84,16 @@ private:
     static void unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
 
 public:
-    QString                 blkObjPath; // path of block device object
-    UDisksClient            *client                 { nullptr };
-    UDisksBlock             *blockHandler           { nullptr };
-    UDisksFilesystem        *fileSystemHandler      { nullptr };
-    UDisksDrive             *driveHandler           { nullptr };
-    UDisksPartition         *partitionHandler       { nullptr };
-    UDisksEncrypted         *encryptedHandler       { nullptr };
-    UDisksPartitionTable    *partitionTabHandler    { nullptr };
-    UDisksLoop              *loopHandler            { nullptr };
+    QString blkObjPath;   // path of block device object
+    UDisksClient *client { nullptr };
+    UDisksBlock *blockHandler { nullptr };
+    UDisksFilesystem *fileSystemHandler { nullptr };
+    UDisksDrive *driveHandler { nullptr };
+    UDisksPartition *partitionHandler { nullptr };
+    UDisksEncrypted *encryptedHandler { nullptr };
+    UDisksPartitionTable *partitionTabHandler { nullptr };
+    UDisksLoop *loopHandler { nullptr };
 };
 DFM_MOUNT_END_NS
 
-#endif // DFMBLOCKDEVICE_P_H
+#endif   // DFMBLOCKDEVICE_P_H

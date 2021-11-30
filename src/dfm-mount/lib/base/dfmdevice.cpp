@@ -32,23 +32,19 @@ DFM_MOUNT_USE_NS
 DFMMOUNT::DFMDevicePrivate::DFMDevicePrivate(DFMDevice *qq)
     : q(qq)
 {
-
 }
 
 DFMDevicePrivate::~DFMDevicePrivate()
 {
-
 }
 
 DFMDevice::DFMDevice(DFMDevicePrivate *dd, QObject *parent)
-    : QObject (parent), d(dd)
+    : QObject(parent), d(dd)
 {
-
 }
 
 DFMDevice::~DFMDevice()
 {
-
 }
 
 QString DFMDevice::path() const
