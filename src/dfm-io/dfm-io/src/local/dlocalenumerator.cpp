@@ -41,15 +41,15 @@ DLocalEnumeratorPrivate::DLocalEnumeratorPrivate(DLocalEnumerator *q)
 
 DLocalEnumeratorPrivate::~DLocalEnumeratorPrivate()
 {
-    g_object_unref(enumerator);
+    clean();
 }
 
 QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 {
-    GFileEnumerator *enumerator = nullptr;
-    GError *gerror = nullptr;
+    g_autoptr(GFileEnumerator) enumerator = nullptr;
+    g_autoptr(GError) gerror = nullptr;
 
-    GFile *gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
 
     enumerator = g_file_enumerate_children(gfile,
                                            "*",
@@ -60,12 +60,9 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
     if (nullptr == enumerator) {
         if (gerror) {
             setErrorInfo(gerror);
-            g_error_free(gerror);
         }
-        g_object_unref(gfile);
         return list_;
     }
-    g_object_unref(gfile);
 
     GFile *gfileIn = nullptr;
     GFileInfo *gfileInfoIn = nullptr;
@@ -83,57 +80,203 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 
         if (gerror) {
             setErrorInfo(gerror);
-            g_error_free(gerror);
             gerror = nullptr;
         }
     }
 
     if (gerror) {
         setErrorInfo(gerror);
-        g_error_free(gerror);
     }
-    g_object_unref(enumerator);
 
     return list_;
 }
 
 bool DLocalEnumeratorPrivate::hasNext()
 {
-    GError *gerror = nullptr;
-    GFileInfo *gfileInfoIn = nullptr;
+    if (stackEnumerator.isEmpty())
+        return false;
 
-    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfoIn, &fileNext, nullptr, &gerror);
+    // sub dir enumerator
+    if (enumSubDir && dfileInfoNext && gfileNext && dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsDir).toBool()) {
+        bool showDir = true;
+        if (dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsSymlink).toBool()) {
+            // is symlink, need enumSymlink
+            showDir = enumLinks;
+        }
+        if (showDir) {
+            g_autoptr(GError) gerror = nullptr;
+            GFileEnumerator *genumerator = g_file_enumerate_children(gfileNext,
+                                                                     "*",
+                                                                     G_FILE_QUERY_INFO_NONE,
+                                                                     nullptr,
+                                                                     &gerror);
+            if (nullptr == genumerator) {
+                if (gerror) {
+                    setErrorInfo(gerror);
+                }
+            } else {
+                stackEnumerator.push_back(genumerator);
+            }
+        }
+    }
+
+    GFileEnumerator *enumerator = stackEnumerator.top();
+
+    g_autoptr(GError) gerror = nullptr;
+    GFileInfo *gfileInfo = nullptr;
+
+    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfileNext, nullptr, &gerror);
     if (hasNext) {
 
-        if (!gfileInfoIn)
-            return false;
+        if (!gfileInfo) {
+            GFileEnumerator *enumeratorPop = stackEnumerator.pop();
+            g_object_unref(enumeratorPop);
+            return this->hasNext();
+        }
 
-        char *uri = g_file_get_uri(fileNext);
+        g_autofree char *uri = g_file_get_uri(gfileNext);
+        dfileInfoNext = DLocalHelper::getFileInfoByUri(uri);
 
-        fileInfoNext = DLocalHelper::getFileInfoByUri(uri);
-        g_free(uri);
+        if (!checkFilter())
+            return this->hasNext();
 
         return true;
     }
 
     if (gerror) {
         setErrorInfo(gerror);
-        g_error_free(gerror);
     }
     return false;
 }
 
 QString DLocalEnumeratorPrivate::next() const
 {
-    char *gpath = g_file_get_path(fileNext);
-    QString qsPath = QString::fromLocal8Bit(gpath);
-    g_free(gpath);
-    return qsPath;
+    g_autofree char *gpath = g_file_get_path(gfileNext);
+    return QString::fromLocal8Bit(gpath);
 }
 
 QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
 {
-    return fileInfoNext;
+    return dfileInfoNext;
+}
+
+bool DLocalEnumeratorPrivate::checkFilter()
+{
+    if (!dfileInfoNext)
+        return false;
+
+    const bool isDir = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsDir).toBool();
+    if ((dirFilters & DEnumerator::DirFilter::AllDirs) == kDirFilterAllDirs) {   // all dir, no apply filters rules
+        if (isDir)
+            return true;
+    }
+
+    // dir filter
+    bool ret = true;
+
+    const bool readable = dfileInfoNext->attribute(DFileInfo::AttributeID::AccessCanRead).toBool();
+    const bool writable = dfileInfoNext->attribute(DFileInfo::AttributeID::AccessCanWrite).toBool();
+    const bool executable = dfileInfoNext->attribute(DFileInfo::AttributeID::AccessCanExecute).toBool();
+
+    auto checkRWE = [&]() -> bool {
+        if ((dirFilters & DEnumerator::DirFilter::Readable) == kDirFilterReadable) {
+            if (!readable)
+                return false;
+        }
+        if ((dirFilters & DEnumerator::DirFilter::Writable) == kDirFilterWritable) {
+            if (!writable)
+                return false;
+        }
+        if ((dirFilters & DEnumerator::DirFilter::Executable) == kDirFilterExecutable) {
+            if (!executable)
+                return false;
+        }
+        return true;
+    };
+
+    if ((dirFilters & DEnumerator::DirFilter::AllEntries) == kDirFilterAllEntries
+        || ((dirFilters & DEnumerator::DirFilter::Dirs) && (dirFilters & DEnumerator::DirFilter::Files))) {
+        // 判断读写执行
+        if (!checkRWE())
+            ret = false;
+    } else if ((dirFilters & DEnumerator::DirFilter::Dirs) == kDirFilterDirs) {
+        if (!isDir) {
+            ret = false;
+        } else {
+            // 判断读写执行
+            if (!checkRWE())
+                ret = false;
+        }
+    } else if ((dirFilters & DEnumerator::DirFilter::Files) == kDirFilterFiles) {
+        const bool isFile = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsFile).toBool();
+        if (!isFile) {
+            ret = false;
+        } else {
+            // 判断读写执行
+            if (!checkRWE())
+                ret = false;
+        }
+    }
+
+    if ((dirFilters & DEnumerator::DirFilter::NoSymLinks) == kDirFilterNoSymLinks) {
+        const bool isSymlinks = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsSymlink).toBool();
+        if (isSymlinks)
+            ret = false;
+    }
+
+    const QString &fileInfoName = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardName).toString();
+    const bool showHidden = (dirFilters & DEnumerator::DirFilter::Hidden) == kDirFilterHidden;
+    if (!showHidden) {   // hide files
+        bool isHidden = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsHidden).toBool();
+        // linux use .hidden files to record hidden files info
+        const QString &parentPath = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardParentPath).toString();
+        if (!isHidden)
+            isHidden = isHiddenFile(parentPath, fileInfoName);
+        if (isHidden)
+            ret = false;
+    }
+
+    // filter name
+    const bool caseSensitive = (dirFilters & DEnumerator::DirFilter::CaseSensitive) == kDirFilterCaseSensitive;
+    if (nameFilters.contains(fileInfoName, caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive))
+        ret = false;
+
+    const bool showDot = !((dirFilters & DEnumerator::DirFilter::NoDotAndDotDot) == kDirFilterNoDotAndDotDot) && !((dirFilters & DEnumerator::DirFilter::NoDot) == kDirFilterNoDot);
+    const bool showDotDot = !((dirFilters & DEnumerator::DirFilter::NoDotAndDotDot) == kDirFilterNoDotAndDotDot) && !((dirFilters & DEnumerator::DirFilter::NoDotDot) == kDirFilterNoDotDot);
+    if (!showDot && fileInfoName == ".")
+        ret = false;
+    if (!showDotDot && fileInfoName == "..")
+        ret = false;
+
+    return ret;
+}
+
+bool DLocalEnumeratorPrivate::isHiddenFile(const QString &parentPath, const QString &name)
+{
+    if (hiddenFiles.count(parentPath) > 0) {
+        return hiddenFiles.value(parentPath).contains(name);
+    }
+
+    bool ret = false;
+
+    const QString &hiddenPath = parentPath.endsWith("/") ? (parentPath + ".hidden") : (parentPath + "/.hidden");
+
+    g_autoptr(GFile) gfile = g_file_new_for_path(hiddenPath.toLocal8Bit().data());
+    g_autofree char *contents = nullptr;
+    g_autoptr(GError) gerror = nullptr;
+    gsize len = 0;
+    bool succ = g_file_load_contents(gfile, nullptr, &contents, &len, nullptr, &gerror);
+    if (succ) {
+        if (contents && len > 0) {
+            const QSet<QString> &hiddens = QSet<QString>::fromList(QString::fromLocal8Bit(contents).split('\n', QString::SkipEmptyParts));
+            ret = hiddens.contains(name);
+            hiddenFiles.insert(parentPath, std::move(hiddens));
+        }
+    } else {
+        setErrorInfo(gerror);
+    }
+
+    return ret;
 }
 
 DFMIOError DLocalEnumeratorPrivate::lastError()
@@ -143,24 +286,25 @@ DFMIOError DLocalEnumeratorPrivate::lastError()
 
 void DLocalEnumeratorPrivate::init()
 {
-    GError *gerror = nullptr;
+    const QString &&uriPath = q->uri().toString();
 
-    const QString &uriPath = q->uri().toString();
-    GFile *gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+    g_autoptr(GError) gerror = nullptr;
 
-    enumerator = g_file_enumerate_children(gfile,
-                                           "*",
-                                           G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-                                           nullptr,
-                                           &gerror);
+    g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
 
-    if (nullptr == enumerator) {
+    GFileEnumerator *genumerator = g_file_enumerate_children(gfile,
+                                                             "*",
+                                                             G_FILE_QUERY_INFO_NONE,
+                                                             nullptr,
+                                                             &gerror);
+
+    if (nullptr == genumerator) {
         if (gerror) {
             setErrorInfo(gerror);
-            g_error_free(gerror);
         }
+    } else {
+        stackEnumerator.push_back(genumerator);
     }
-    g_object_unref(gfile);
 }
 
 void DLocalEnumeratorPrivate::setErrorInfo(GError *gerror)
@@ -170,8 +314,20 @@ void DLocalEnumeratorPrivate::setErrorInfo(GError *gerror)
     qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
-DLocalEnumerator::DLocalEnumerator(const QUrl &uri)
-    : DEnumerator(uri), d(new DLocalEnumeratorPrivate(this))
+void DLocalEnumeratorPrivate::clean()
+{
+    if (!stackEnumerator.isEmpty()) {
+        while (1) {
+            GFileEnumerator *enumerator = stackEnumerator.pop();
+            g_object_unref(enumerator);
+            if (stackEnumerator.isEmpty())
+                break;
+        }
+    }
+}
+
+DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilters, DirFilters filters, IteratorFlags flags)
+    : DEnumerator(uri, nameFilters, filters, flags), d(new DLocalEnumeratorPrivate(this))
 {
     registerFileInfoList(std::bind(&DLocalEnumerator::fileInfoList, this));
     registerHasNext(std::bind(&DLocalEnumerator::hasNext, this));
@@ -180,6 +336,13 @@ DLocalEnumerator::DLocalEnumerator(const QUrl &uri)
     registerLastError(std::bind(&DLocalEnumerator::lastError, this));
 
     d->init();
+
+    d->nameFilters = nameFilters;
+    d->dirFilters = filters;
+    d->iteratorFlags = flags;
+
+    d->enumSubDir = d->iteratorFlags & DEnumerator::IteratorFlag::Subdirectories;
+    d->enumLinks = d->iteratorFlags & DEnumerator::IteratorFlag::FollowSymlinks;
 }
 
 DLocalEnumerator::~DLocalEnumerator()

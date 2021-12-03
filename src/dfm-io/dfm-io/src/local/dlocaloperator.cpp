@@ -105,6 +105,7 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag
     } else {
         gfileTarget = makeGFile(urlTo);
     }
+    g_object_unref(gfile_to);
 
     if (gcancellable) {
         g_object_unref(gcancellable);
@@ -127,7 +128,6 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag
     }
 
     g_object_unref(gfile_from);
-    g_object_unref(gfile_to);
     g_object_unref(gfileTarget);
 
     return ret;

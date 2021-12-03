@@ -50,6 +50,9 @@ public:
     DEnumerator::LastErrorFunc lastErrorFunc = nullptr;
 
     QUrl uri;
+    QStringList nameFilters;
+    DEnumerator::DirFilters dirFilters = DEnumerator::DirFilter::NoFilter;
+    DEnumerator::IteratorFlags iteratorFlags = DEnumerator::IteratorFlag::NoIteratorFlags;
 
     DEnumerator::FileInfoListFunc fileInfoListFunc = nullptr;
 };

@@ -1,12 +1,11 @@
 /*
  * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
  *
- * Author:     dengkeyun<dengkeyun@uniontech.com>
+ * Author:     zhangsheng<zhangsheng@uniontech.com>
  *
  * Maintainer: max-lv<lvwujun@uniontech.com>
- *             xushitong<xushitong@uniontech.com>
- *             zhangsheng<zhangsheng@uniontech.com>
  *             lanxuesong<lanxuesong@uniontech.com>
+ *             xushitong<xushitong@uniontech.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +40,7 @@ public:
 
     QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
     QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
-    QSharedPointer<DEnumerator> createEnumerator() const DFM_OVERRIDE;
+    QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(), DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter, DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::NoIteratorFlags) const DFM_OVERRIDE;
     QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
     QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
 
@@ -51,4 +50,4 @@ private:
 
 END_IO_NAMESPACE
 
-#endif // DLOCALIOFACTORY_H
+#endif   // DLOCALIOFACTORY_H

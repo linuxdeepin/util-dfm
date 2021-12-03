@@ -1,12 +1,11 @@
 /*
  * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
  *
- * Author:     dengkeyun<dengkeyun@uniontech.com>
+ * Author:     zhangsheng<zhangsheng@uniontech.com>
  *
  * Maintainer: max-lv<lvwujun@uniontech.com>
- *             xushitong<xushitong@uniontech.com>
- *             zhangsheng<zhangsheng@uniontech.com>
  *             lanxuesong<lanxuesong@uniontech.com>
+ *             xushitong<xushitong@uniontech.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +35,7 @@ class DLocalEnumeratorPrivate;
 class DLocalEnumerator : public DEnumerator
 {
 public:
-    explicit DLocalEnumerator(const QUrl &uri);
+    explicit DLocalEnumerator(const QUrl &uri, const QStringList &nameFilters = QStringList(), DirFilters filters = DirFilter::NoFilter, IteratorFlags flags = IteratorFlag::NoIteratorFlags);
     ~DLocalEnumerator();
 
     bool hasNext() const DFM_OVERRIDE;

@@ -29,12 +29,10 @@ USING_IO_NAMESPACE
 DIOFactoryPrivate::DIOFactoryPrivate(DIOFactory *q)
     : q(q)
 {
-
 }
 
 DIOFactoryPrivate::~DIOFactoryPrivate()
 {
-
 }
 
 DIOFactory::DIOFactory(const QUrl &uri)
@@ -45,7 +43,6 @@ DIOFactory::DIOFactory(const QUrl &uri)
 
 DIOFactory::~DIOFactory()
 {
-
 }
 
 void DIOFactory::setUri(const QUrl &uri)
@@ -80,12 +77,12 @@ DFM_VIRTUAL QSharedPointer<DFile> DIOFactory::createFile() const
     return d->createFileFunc();
 }
 
-DFM_VIRTUAL QSharedPointer<DEnumerator> DIOFactory::createEnumerator() const
+DFM_VIRTUAL QSharedPointer<DEnumerator> DIOFactory::createEnumerator(const QStringList &nameFilters, DEnumerator::DirFilters filters, DEnumerator::IteratorFlags flags) const
 {
     if (!d->createEnumeratorFunc)
         return nullptr;
 
-    return d->createEnumeratorFunc();
+    return d->createEnumeratorFunc(nameFilters, filters, flags);
 }
 
 DFM_VIRTUAL QSharedPointer<DWatcher> DIOFactory::createWatcher() const

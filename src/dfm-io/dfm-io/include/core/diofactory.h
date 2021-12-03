@@ -24,7 +24,7 @@
 #define DIOFACTORY_H
 
 #include "dfmio_global.h"
-
+#include "denumerator.h"
 #include "error/error.h"
 
 #include <QSharedPointer>
@@ -45,7 +45,7 @@ class DIOFactory
 public:
     using CreateFileInfoFunc = std::function<QSharedPointer<DFileInfo>()>;
     using CreateFileFunc = std::function<QSharedPointer<DFile>()>;
-    using CreateEnumeratorFunc = std::function<QSharedPointer<DEnumerator>()>;
+    using CreateEnumeratorFunc = std::function<QSharedPointer<DEnumerator>(const QStringList &nameFilters, DEnumerator::DirFilters filters, DEnumerator::IteratorFlags flags)>;
     using CreateWatcherFunc = std::function<QSharedPointer<DWatcher>()>;
     using CreateOperatorFunc = std::function<QSharedPointer<DOperator>()>;
 
@@ -57,7 +57,7 @@ public:
 
     DFM_VIRTUAL QSharedPointer<DFileInfo> createFileInfo() const;
     DFM_VIRTUAL QSharedPointer<DFile> createFile() const;
-    DFM_VIRTUAL QSharedPointer<DEnumerator> createEnumerator() const;
+    DFM_VIRTUAL QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(), DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter, DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::NoIteratorFlags) const;
     DFM_VIRTUAL QSharedPointer<DWatcher> createWatcher() const;
     DFM_VIRTUAL QSharedPointer<DOperator> createOperator() const;
 
@@ -83,5 +83,4 @@ private:
 
 END_IO_NAMESPACE
 
-
-#endif // DIOFACTORY_H
+#endif   // DIOFACTORY_H

@@ -37,10 +37,13 @@ DEnumeratorPrivate::~DEnumeratorPrivate()
 {
 }
 
-DEnumerator::DEnumerator(const QUrl &uri)
+DEnumerator::DEnumerator(const QUrl &uri, const QStringList &nameFilters, DEnumerator::DirFilters filters, DEnumerator::IteratorFlags flags)
     : d(new DEnumeratorPrivate(this))
 {
     d->uri = uri;
+    d->nameFilters = nameFilters;
+    d->dirFilters = filters;
+    d->iteratorFlags = flags;
 }
 
 DEnumerator::~DEnumerator()
@@ -63,10 +66,22 @@ QString DEnumerator::next() const
 
 QUrl DEnumerator::uri() const
 {
-    if (!d)
-        return QUrl();
-
     return d->uri;
+}
+
+QStringList DEnumerator::nameFilters() const
+{
+    return d->nameFilters;
+}
+
+DEnumerator::DirFilters DEnumerator::dirFilters()
+{
+    return d->dirFilters;
+}
+
+DEnumerator::IteratorFlags DEnumerator::iteratorFlags() const
+{
+    return d->iteratorFlags;
 }
 
 QSharedPointer<DFileInfo> DEnumerator::fileInfo() const

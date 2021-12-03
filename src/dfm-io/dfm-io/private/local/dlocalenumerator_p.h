@@ -31,6 +31,9 @@
 #include <gio/gio.h>
 
 #include <QList>
+#include <QMap>
+#include <QSet>
+#include <QStack>
 #include <QSharedPointer>
 
 BEGIN_IO_NAMESPACE
@@ -50,16 +53,26 @@ public:
     bool hasNext();
     QString next() const;
     QSharedPointer<DFileInfo> fileInfo() const;
+    bool checkFilter();
+    bool isHiddenFile(const QString &parentPath, const QString &name);
 
     DFMIOError lastError();
     void setErrorInfo(GError *gerror);
+    void clean();
 
 public:
     QList<QSharedPointer<DFileInfo>> list_;
     DLocalEnumerator *q = nullptr;
-    GFileEnumerator *enumerator = nullptr;
-    QSharedPointer<DFileInfo> fileInfoNext = nullptr;
-    GFile *fileNext = nullptr;
+    QStack<GFileEnumerator *> stackEnumerator;
+    QSharedPointer<DFileInfo> dfileInfoNext = nullptr;
+    GFile *gfileNext = nullptr;
+    bool enumSubDir = false;
+    bool enumLinks = false;
+
+    QMap<QString, QSet<QString>> hiddenFiles;
+    QStringList nameFilters;
+    DEnumerator::DirFilters dirFilters = DEnumerator::DirFilter::NoFilter;
+    DEnumerator::IteratorFlags iteratorFlags = DEnumerator::IteratorFlag::NoIteratorFlags;
 
     DFMIOError error;
 };

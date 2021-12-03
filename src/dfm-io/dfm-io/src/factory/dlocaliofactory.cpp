@@ -59,11 +59,11 @@ QSharedPointer<DFile> DLocalIOFactoryPrivate::createFile() const
     return QSharedPointer<DLocalFile>(new DLocalFile(uri));
 }
 
-QSharedPointer<DEnumerator> DLocalIOFactoryPrivate::createEnumerator() const
+QSharedPointer<DEnumerator> DLocalIOFactoryPrivate::createEnumerator(const QStringList &nameFilters, DEnumerator::DirFilters filters, DEnumerator::IteratorFlags flags) const
 {
     const QUrl &uri = q->uri();
 
-    return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri));
+    return QSharedPointer<DLocalEnumerator>(new DLocalEnumerator(uri, nameFilters, filters, flags));
 }
 
 QSharedPointer<DWatcher> DLocalIOFactoryPrivate::createWatcher() const
@@ -81,14 +81,13 @@ QSharedPointer<DOperator> DLocalIOFactoryPrivate::createOperator() const
 }
 
 DLocalIOFactory::DLocalIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DLocalIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DLocalIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DLocalIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DLocalIOFactory::createFile, this));
     registerCreateWatcher(std::bind(&DLocalIOFactory::createWatcher, this));
     registerCreateOperator(std::bind(&DLocalIOFactory::createOperator, this));
-    registerCreateEnumerator(std::bind(&DLocalIOFactory::createEnumerator, this));
+    registerCreateEnumerator(std::bind(&DLocalIOFactory::createEnumerator, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
 DLocalIOFactory::~DLocalIOFactory()
@@ -105,9 +104,9 @@ QSharedPointer<DFile> DLocalIOFactory::createFile() const
     return d->createFile();
 }
 
-QSharedPointer<DEnumerator> DLocalIOFactory::createEnumerator() const
+QSharedPointer<DEnumerator> DLocalIOFactory::createEnumerator(const QStringList &nameFilters, DEnumerator::DirFilters filters, DEnumerator::IteratorFlags flags) const
 {
-    return d->createEnumerator();
+    return d->createEnumerator(nameFilters, filters, flags);
 }
 
 QSharedPointer<DWatcher> DLocalIOFactory::createWatcher() const

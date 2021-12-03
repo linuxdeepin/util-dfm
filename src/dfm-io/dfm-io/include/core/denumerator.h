@@ -32,6 +32,27 @@
 
 #include <functional>
 
+const uint16_t kDirFilterNofilter = 0x000;
+const uint16_t kDirFilterDirs = 0x001;
+const uint16_t kDirFilterFiles = 0x002;
+const uint16_t kDirFilterDrives = 0x004;
+const uint16_t kDirFilterAllEntries = 0x001 | 0x002 | 0x004;
+const uint16_t kDirFilterNoSymLinks = 0x008;
+
+const uint16_t kDirFilterReadable = 0x010;
+const uint16_t kDirFilterWritable = 0x020;
+const uint16_t kDirFilterExecutable = 0x040;
+const uint16_t kDirFilterModified = 0x080;
+
+const uint16_t kDirFilterHidden = 0x100;
+const uint16_t kDirFilterSystem = 0x200;
+const uint16_t kDirFilterAllDirs = 0x400;
+const uint16_t kDirFilterCaseSensitive = 0x800;
+
+const uint16_t kDirFilterNoDot = 0x2000;
+const uint16_t kDirFilterNoDotDot = 0x4000;
+const uint16_t kDirFilterNoDotAndDotDot = 0x2000 | 0x4000;
+
 BEGIN_IO_NAMESPACE
 
 class DEnumeratorPrivate;
@@ -40,6 +61,37 @@ class DFileInfo;
 class DEnumerator
 {
 public:
+    enum class DirFilter : uint16_t {
+        NoFilter = kDirFilterNofilter,   // no filter
+        Dirs = kDirFilterDirs,   // List directories that match the filters.
+        Files = kDirFilterFiles,   // List files.
+        Drives = kDirFilterDrives,   // List disk drives (ignored under Unix).
+        AllEntries = kDirFilterAllEntries,   // List directories, files, drives and symlinks (this does not list broken symlinks unless you specify System).
+        NoSymLinks = kDirFilterNoSymLinks,   // Do not list symbolic links (ignored by operating systems that don't support symbolic links).
+
+        Readable = kDirFilterReadable,   // List files for which the application has read access. The Readable value needs to be combined with Dirs or Files.
+        Writable = kDirFilterWritable,   // List files for which the application has write access. The Writable value needs to be combined with Dirs or Files.
+        Executable = kDirFilterExecutable,   // List files for which the application has execute access. The Executable value needs to be combined with Dirs or Files.
+        Modified = kDirFilterModified,   // Only list files that have been modified (ignored on Unix).
+
+        Hidden = kDirFilterHidden,   // List hidden files (on Unix, files starting with a ".").
+        System = kDirFilterSystem,   // List system files (on Unix, FIFOs, sockets and device files are included; on Windows, .lnk files are included)
+        AllDirs = kDirFilterAllDirs,   // List all directories; i.e. don't apply the filters to directory names.
+        CaseSensitive = kDirFilterCaseSensitive,   // The filter should be case sensitive.
+
+        NoDot = kDirFilterNoDot,   // Do not list the special entry ".".
+        NoDotDot = kDirFilterNoDotDot,   // Do not list the special entry "..".
+        NoDotAndDotDot = kDirFilterNoDotAndDotDot,   // Do not list the special entries "." and "..".
+    };
+    Q_DECLARE_FLAGS(DirFilters, DirFilter)
+
+    enum class IteratorFlag : uint8_t {
+        NoIteratorFlags = 0x0,   // The default value, representing no flags. The iterator will return entries for the assigned path.
+        FollowSymlinks = 0x1,   // When combined with Subdirectories, this flag enables iterating through all subdirectories of the assigned path, following all symbolic links. Symbolic link loops (e.g., "link" => "." or "link" => "..") are automatically detected and ignored.
+        Subdirectories = 0x2,   // List entries inside all subdirectories as well.
+    };
+    Q_DECLARE_FLAGS(IteratorFlags, IteratorFlag)
+
     using FileInfoListFunc = std::function<QList<QSharedPointer<DFileInfo>>()>;
     using HasNextFunc = std::function<bool()>;
     using NextFunc = std::function<QString()>;
@@ -47,10 +99,14 @@ public:
     using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
-    DEnumerator(const QUrl &uri);
+    DEnumerator(const QUrl &uri, const QStringList &nameFilters = QStringList(), DirFilters filters = DirFilter::NoFilter, IteratorFlags flags = IteratorFlag::NoIteratorFlags);
+
     virtual ~DEnumerator();
 
     QUrl uri() const;
+    QStringList nameFilters() const;
+    DirFilters dirFilters();
+    IteratorFlags iteratorFlags() const;
 
     DFM_VIRTUAL bool hasNext() const;
     DFM_VIRTUAL QString next() const;
@@ -68,6 +124,9 @@ public:
 private:
     QSharedPointer<DEnumeratorPrivate> d = nullptr;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(DEnumerator::DirFilters);
+Q_DECLARE_OPERATORS_FOR_FLAGS(DEnumerator::IteratorFlags);
 
 END_IO_NAMESPACE
 
