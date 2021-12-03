@@ -383,29 +383,46 @@ bool DLocalFilePrivate::exists()
     return exists;
 }
 
-uint16_t DLocalFilePrivate::permissions(DFile::Permission permission)
+DFile::Permissions DLocalFilePrivate::permissions()
 {
-    if (permission == DFile::Permission::NoPermission) {
-        // 获取全部权限
-        return permissionsAll();
+    DFile::Permissions retValue = DFile::Permission::NoPermission;
+    // 获取系统默认权限
+    const QUrl &&url = q->uri();
+    const char *path = url.toLocalFile().toLocal8Bit().data();
 
-    } else if (permission == DFile::Permission::ExeUser
-               || permission == DFile::Permission::WriteUser
-               || permission == DFile::Permission::ReadUser) {
-        // 获取当前user权限，需要调用gio接口
-        return permissionsFromGio() & uint16_t(permission);
-    } else {
-        // 获取单个权限
-        return permissionsFromStat(permission);
-    }
+    struct stat buf;
+    stat(path, &buf);
+
+    if ((buf.st_mode & S_IXUSR) == S_IXUSR)
+        retValue |= DFile::Permission::ExeOwner;
+    if ((buf.st_mode & S_IWUSR) == S_IWUSR)
+        retValue |= DFile::Permission::WriteOwner;
+    if ((buf.st_mode & S_IRUSR) == S_IRUSR)
+        retValue |= DFile::Permission::ReadOwner;
+    if ((buf.st_mode & S_IXGRP) == S_IXGRP)
+        retValue |= DFile::Permission::ExeGroup;
+    if ((buf.st_mode & S_IWGRP) == S_IWGRP)
+        retValue |= DFile::Permission::WriteGroup;
+    if ((buf.st_mode & S_IRGRP) == S_IRGRP)
+        retValue |= DFile::Permission::ReadGroup;
+    if ((buf.st_mode & S_IXOTH) == S_IXOTH)
+        retValue |= DFile::Permission::ExeOther;
+    if ((buf.st_mode & S_IWOTH) == S_IWOTH)
+        retValue |= DFile::Permission::WriteOther;
+    if ((buf.st_mode & S_IROTH) == S_IROTH)
+        retValue |= DFile::Permission::ReadOther;
+
+    retValue |= permissionsFromGio();
+
+    return retValue;
 }
 
-bool DLocalFilePrivate::setPermissions(const uint16_t mode)
+bool DLocalFilePrivate::setPermissions(DFile::Permissions permission)
 {
     const QUrl &&url = q->uri();
     const char *path = url.toLocalFile().toLocal8Bit().data();
 
-    ::chmod(path, mode);
+    ::chmod(path, permission);
 
     return false;
 }
@@ -415,124 +432,38 @@ DFMIOError DLocalFilePrivate::lastError()
     return error;
 }
 
-uint16_t DLocalFilePrivate::permissionsAll()
+DFile::Permissions DLocalFilePrivate::permissionsFromGio()
 {
-    uint16_t retValue = 0x0000;
-    // 获取系统默认权限
-    const QUrl &&url = q->uri();
-    const char *path = url.toLocalFile().toLocal8Bit().data();
-
-    struct stat buf;
-    stat(path, &buf);
-
-    if ((buf.st_mode & S_IXUSR) == S_IXUSR)
-        retValue |= uint16_t(DFile::Permission::ExeOwner);
-    if ((buf.st_mode & S_IWUSR) == S_IWUSR)
-        retValue |= uint16_t(DFile::Permission::WriteOwner);
-    if ((buf.st_mode & S_IRUSR) == S_IRUSR)
-        retValue |= uint16_t(DFile::Permission::ReadOwner);
-    if ((buf.st_mode & S_IXGRP) == S_IXGRP)
-        retValue |= uint16_t(DFile::Permission::ExeGroup);
-    if ((buf.st_mode & S_IWGRP) == S_IWGRP)
-        retValue |= uint16_t(DFile::Permission::WriteGroup);
-    if ((buf.st_mode & S_IRGRP) == S_IRGRP)
-        retValue |= uint16_t(DFile::Permission::ReadGroup);
-    if ((buf.st_mode & S_IXOTH) == S_IXOTH)
-        retValue |= uint16_t(DFile::Permission::ExeOther);
-    if ((buf.st_mode & S_IWOTH) == S_IWOTH)
-        retValue |= uint16_t(DFile::Permission::WriteOther);
-    if ((buf.st_mode & S_IROTH) == S_IROTH)
-        retValue |= uint16_t(DFile::Permission::ReadOther);
-
-    retValue |= permissionsFromGio();
-
-    return retValue;
-}
-
-uint16_t DLocalFilePrivate::permissionsFromGio()
-{
-    uint16_t retValue = 0x0000;
+    DFile::Permissions retValue = DFile::Permission::NoPermission;
 
     const QUrl &&url = q->uri();
     const QString &&path = url.toString();
 
     GFile *file = g_file_new_for_uri(path.toLocal8Bit().data());
 
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
 
     GFileInfo *gfileinfo = g_file_query_info(file, "access::*", G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
     g_object_unref(file);
 
     if (gerror) {
         setErrorInfo(gerror);
-        g_error_free(gerror);
     }
 
     if (!gfileinfo)
-        return false;
+        return retValue;
 
     if (gfileinfo) {
         if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-execute"))
-            retValue |= uint16_t(DFile::Permission::ExeUser);
+            retValue |= DFile::Permission::ExeUser;
         if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-write"))
-            retValue |= uint16_t(DFile::Permission::WriteUser);
+            retValue |= DFile::Permission::WriteUser;
         if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-read"))
-            retValue |= uint16_t(DFile::Permission::ReadUser);
+            retValue |= DFile::Permission::ReadUser;
 
         g_object_unref(gfileinfo);
     }
     return retValue;
-}
-
-uint16_t DLocalFilePrivate::permissionsFromStat(DFile::Permission permission)
-{
-    const QUrl &url = q->uri();
-    const char *path = url.toString().toLocal8Bit().data();
-
-    struct stat buf;
-    stat(path, &buf);
-
-    switch (permission) {
-    case DFile::Permission::ExeOwner:
-        if ((buf.st_mode & S_IXUSR) == S_IXUSR)
-            return uint16_t(permission);
-        break;
-    case DFile::Permission::WriteOwner:
-        if ((buf.st_mode & S_IWUSR) == S_IWUSR)
-            return uint16_t(permission);
-        break;
-    case DFile::Permission::ReadOwner:
-        if ((buf.st_mode & S_IRUSR) == S_IRUSR)
-            return uint16_t(permission);
-        break;
-    case DFile::Permission::ExeGroup:
-        if ((buf.st_mode & S_IXGRP) == S_IXGRP)
-            return uint16_t(permission);
-        break;
-    case DFile::Permission::WriteGroup:
-        if ((buf.st_mode & S_IWGRP) == S_IWGRP)
-            return uint16_t(permission);
-        break;
-    case DFile::Permission::ReadGroup:
-        if ((buf.st_mode & S_IRGRP) == S_IRGRP)
-            return uint16_t(permission);
-        break;
-    case DFile::Permission::ExeOther:
-        if ((buf.st_mode & S_IXOTH) == S_IXOTH)
-            return uint16_t(permission);
-        break;
-    case DFile::Permission::WriteOther:
-        if ((buf.st_mode & S_IWOTH) == S_IWOTH)
-            return uint16_t(permission);
-        break;
-    case DFile::Permission::ReadOther:
-        if ((buf.st_mode & S_IROTH) == S_IROTH)
-            return uint16_t(permission);
-        break;
-    default:
-        break;
-    }
-    return uint16_t(DFile::Permission::NoPermission);
 }
 
 void DLocalFilePrivate::setErrorInfo(GError *gerror)
@@ -638,7 +569,7 @@ DLocalFile::DLocalFile(const QUrl &uri)
     registerFlush(std::bind(&DLocalFile::flush, this));
     registerSize(std::bind(&DLocalFile::size, this));
     registerExists(std::bind(&DLocalFile::exists, this));
-    registerPermissions(std::bind(&DLocalFile::permissions, this, std::placeholders::_1));
+    registerPermissions(std::bind(&DLocalFile::permissions, this));
     registerSetPermissions(std::bind(&DLocalFile::setPermissions, this, std::placeholders::_1));
     registerLastError(std::bind(&DLocalFile::lastError, this));
 }
@@ -713,14 +644,14 @@ bool DLocalFile::exists()
     return d->exists();
 }
 
-uint16_t DLocalFile::permissions(DFile::Permission permission)
+DFile::Permissions DLocalFile::permissions()
 {
-    return d->permissions(permission);
+    return d->permissions();
 }
 
-bool DLocalFile::setPermissions(const uint16_t mode)
+bool DLocalFile::setPermissions(DFile::Permissions permission)
 {
-    return d->setPermissions(mode);
+    return d->setPermissions(permission);
 }
 
 DFMIOError DLocalFile::lastError() const

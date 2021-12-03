@@ -52,8 +52,8 @@ public:
     bool flush() DFM_OVERRIDE;
     qint64 size() DFM_OVERRIDE;
     bool exists() DFM_OVERRIDE;
-    uint16_t permissions(Permission permission = Permission::NoPermission) DFM_OVERRIDE;
-    bool setPermissions(const uint16_t mode) DFM_OVERRIDE;
+    Permissions permissions() DFM_OVERRIDE;
+    bool setPermissions(Permissions permission) DFM_OVERRIDE;
     DFMIOError lastError() const DFM_OVERRIDE;
 
 private:

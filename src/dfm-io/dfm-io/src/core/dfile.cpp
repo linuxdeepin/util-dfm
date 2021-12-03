@@ -216,18 +216,18 @@ bool DFile::exists()
     return d->existsFunc();
 }
 
-uint16_t DFile::permissions(DFile::Permission permission)
+DFile::Permissions DFile::permissions()
 {
     if (d->permissionFunc)
-        return d->permissionFunc(permission);
-    return (uint16_t)DFile::Permission::NoPermission;
+        return d->permissionFunc();
+    return DFile::Permission::NoPermission;
 }
 
-bool DFile::setPermissions(const uint16_t mode)
+bool DFile::setPermissions(DFile::Permissions permission)
 {
     if (!d->setPermissionsFunc)
         return false;
-    return d->setPermissionsFunc(mode);
+    return d->setPermissionsFunc(permission);
 }
 
 void DFile::registerOpen(const OpenFunc &func)

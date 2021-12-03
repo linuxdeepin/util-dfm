@@ -90,6 +90,7 @@ public:
         WriteOwner = 0x2000,
         ReadOwner = 0x4000,
     };
+    Q_DECLARE_FLAGS(Permissions, Permission)
 
     // interface
     using OpenFunc = std::function<bool(OpenFlags)>;
@@ -109,8 +110,8 @@ public:
     using SizeFunc = std::function<qint64()>;
     using ExistsFunc = std::function<bool()>;
 
-    using PermissionFunc = std::function<uint16_t(Permission)>;
-    using SetPermissionFunc = std::function<bool(uint16_t)>;
+    using PermissionFunc = std::function<Permissions()>;
+    using SetPermissionFunc = std::function<bool(Permissions)>;
     using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
@@ -134,8 +135,8 @@ public:
     DFM_VIRTUAL qint64 size();
     DFM_VIRTUAL bool exists();
 
-    DFM_VIRTUAL uint16_t permissions(Permission permission = Permission::NoPermission);
-    DFM_VIRTUAL bool setPermissions(const uint16_t mode);
+    DFM_VIRTUAL Permissions permissions();
+    DFM_VIRTUAL bool setPermissions(Permissions permission);
 
     DFM_VIRTUAL DFMIOError lastError() const;
 
@@ -165,6 +166,7 @@ private:
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(DFile::OpenFlags);
+Q_DECLARE_OPERATORS_FOR_FLAGS(DFile::Permissions);
 
 END_IO_NAMESPACE
 
