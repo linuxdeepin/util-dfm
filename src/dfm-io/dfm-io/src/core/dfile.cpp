@@ -48,7 +48,7 @@ DFile::~DFile()
 {
 }
 
-DFM_VIRTUAL bool DFile::open(DFile::OpenFlag mode)
+DFM_VIRTUAL bool DFile::open(DFile::OpenFlags mode)
 {
     if (!d->openFunc)
         return false;
@@ -313,6 +313,11 @@ void DFile::registerLastError(const DFile::LastErrorFunc &func)
 QUrl DFile::uri() const
 {
     return d->uri;
+}
+
+bool DFile::isOpen()
+{
+    return d->isOpen;
 }
 
 DFMIOError DFile::lastError() const

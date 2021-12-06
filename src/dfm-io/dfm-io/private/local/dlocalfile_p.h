@@ -41,7 +41,7 @@ public:
     explicit DLocalFilePrivate(DLocalFile *q);
     ~DLocalFilePrivate();
 
-    bool open(DFile::OpenFlag mode);
+    bool open(DFile::OpenFlags mode);
     bool close();
     qint64 read(char *data, qint64 maxSize);
     QByteArray read(qint64 maxSize);
@@ -65,6 +65,8 @@ public:
 
     DFMIOError lastError();
     void setErrorInfo(GError *gerror);
+
+    bool checkOpenFlags(DFile::OpenFlags *mode);
 
 public:
     GIOStream *ioStream = nullptr;

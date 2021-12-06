@@ -39,7 +39,7 @@ public:
     explicit DLocalFile(const QUrl &uri);
     virtual ~DLocalFile();
 
-    bool open(DFile::OpenFlag mode) DFM_OVERRIDE;
+    bool open(DFile::OpenFlags mode) DFM_OVERRIDE;
     bool close() DFM_OVERRIDE;
     qint64 read(char *data, qint64 maxSize) DFM_OVERRIDE;
     QByteArray read(qint64 maxSize) DFM_OVERRIDE;

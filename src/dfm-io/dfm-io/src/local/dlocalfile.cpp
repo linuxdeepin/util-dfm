@@ -42,169 +42,75 @@ DLocalFilePrivate::~DLocalFilePrivate()
 {
 }
 
-bool DLocalFilePrivate::open(DFile::OpenFlag mode)
+bool DLocalFilePrivate::open(DFile::OpenFlags mode)
 {
+    if (q->isOpen()) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+
+        qWarning() << "File already open";
+        return false;
+    }
+
+    // check mode
+    if (!checkOpenFlags(&mode)) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        return false;
+    }
+
     const QUrl &&uri = q->uri();
-    GFile *gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
+    g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
+    g_autoptr(GError) gerror = nullptr;
 
-    GError *gerror = nullptr;
-
-    switch (mode) {
-    case DFile::OpenFlag::ReadOnly: {
+    if ((mode & DFile::OpenFlag::ReadOnly) == 0x0001) {
         if (!exists()) {
-            g_object_unref(gfile);
             return false;
         }
         iStream = (GInputStream *)g_file_read(gfile, nullptr, &gerror);
-        if (gerror) {
+        if (gerror)
             setErrorInfo(gerror);
-            g_error_free(gerror);
-        }
 
         if (!iStream) {
-            g_object_unref(gfile);
             return false;
         }
-        break;
-    }
-    case DFile::OpenFlag::WriteOnly: {
+        return true;
+    } else if ((mode & DFile::OpenFlag::WriteOnly) == 0x0002) {
         oStream = (GOutputStream *)g_file_replace(gfile,
                                                   nullptr,
                                                   false,
                                                   G_FILE_CREATE_NONE,
                                                   nullptr,
                                                   &gerror);
-        if (gerror) {
+        if (gerror)
             setErrorInfo(gerror);
-            g_error_free(gerror);
-        }
 
         if (!oStream) {
-            g_object_unref(gfile);
             return false;
         }
-        break;
-    }
-    case DFile::OpenFlag::ReadWrite: {
-        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
-                                                         nullptr,
-                                                         false,
-                                                         G_FILE_CREATE_NONE,
-                                                         nullptr,
-                                                         &gerror);
-        if (gerror) {
-            setErrorInfo(gerror);
-            g_error_free(gerror);
-        }
-
-        if (!ioStream) {
-            g_object_unref(gfile);
-            return false;
-        }
-        break;
-    }
-    case DFile::OpenFlag::Append: {
-        // 追加的方式打开
+        return true;
+    } else if ((mode & DFile::OpenFlag::Append) == 0x0004) {
         oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
-        if (gerror) {
+        if (gerror)
             setErrorInfo(gerror);
-            g_error_free(gerror);
-        }
+
         if (!oStream) {
-            g_object_unref(gfile);
             return false;
         }
-        break;
-    }
-    case DFile::OpenFlag::Truncate: {
-        // 覆盖的方式打开
+        return true;
+    } else {
         ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
                                                          nullptr,
                                                          false,
                                                          G_FILE_CREATE_NONE,
                                                          nullptr,
                                                          &gerror);
-        if (gerror) {
+        if (gerror)
             setErrorInfo(gerror);
-            g_error_free(gerror);
-        }
 
         if (!ioStream) {
-            g_object_unref(gfile);
             return false;
         }
-        break;
+        return true;
     }
-    case DFile::OpenFlag::NewOnly: {
-        // 仅新建方式打开，已经存在会报错
-        if (exists()) {
-            g_object_unref(gfile);
-            return false;
-        }
-        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
-                                                         nullptr,
-                                                         false,
-                                                         G_FILE_CREATE_NONE,
-                                                         nullptr,
-                                                         &gerror);
-        if (gerror) {
-            setErrorInfo(gerror);
-            g_error_free(gerror);
-        }
-
-        if (!ioStream) {
-            g_object_unref(gfile);
-            return false;
-        }
-        break;
-    }
-    case DFile::OpenFlag::ExistingOnly: {
-        // 仅已存在的方式打开，不存在会报错
-        if (!exists()) {
-            g_object_unref(gfile);
-            return false;
-        }
-        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
-                                                         nullptr,
-                                                         false,
-                                                         G_FILE_CREATE_NONE,
-                                                         nullptr,
-                                                         &gerror);
-        if (gerror) {
-            setErrorInfo(gerror);
-            g_error_free(gerror);
-        }
-
-        if (!ioStream) {
-            g_object_unref(gfile);
-            return false;
-        }
-        break;
-    }
-
-    default: {
-        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
-                                                         nullptr,
-                                                         false,
-                                                         G_FILE_CREATE_NONE,
-                                                         nullptr,
-                                                         &gerror);
-        if (gerror) {
-            setErrorInfo(gerror);
-            g_error_free(gerror);
-        }
-
-        if (!ioStream) {
-            g_object_unref(gfile);
-            return false;
-        }
-        break;
-    }
-    }
-
-    g_object_unref(gfile);
-
-    return true;
 }
 
 bool DLocalFilePrivate::close()
@@ -636,6 +542,46 @@ void DLocalFilePrivate::setErrorInfo(GError *gerror)
     qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
+bool DLocalFilePrivate::checkOpenFlags(DFile::OpenFlags *modeIn)
+{
+    DFile::OpenFlags &mode = *modeIn;
+
+    if (mode & (DFile::OpenFlag::Append | DFile::OpenFlag::NewOnly))
+        mode |= DFile::OpenFlag::WriteOnly;
+
+    if ((mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::WriteOnly)) == 0) {
+        qWarning("DFile::open: File access not specified.");
+        return false;
+    }
+    if ((mode & DFile::OpenFlag::NewOnly) && (mode & DFile::OpenFlag::ExistingOnly)) {
+        qWarning("NewOnly and ExistingOnly are mutually exclusive");
+        return false;
+    }
+    if ((mode & DFile::OpenFlag::ExistingOnly) && !(mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::WriteOnly))) {
+        qWarning("ExistingOnly must be specified alongside ReadOnly, WriteOnly, or ReadWrite");
+        return false;
+    }
+
+    // WriteOnly implies Truncate when ReadOnly, Append, and NewOnly are not set.
+    if ((mode & DFile::OpenFlag::WriteOnly) && !(mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::Append | DFile::OpenFlag::NewOnly)))
+        mode |= DFile::OpenFlag::Truncate;
+
+    if (mode & DFile::OpenFlag::NewOnly) {
+        if (exists()) {
+            qWarning("Open flag is NewOnly, but target file already exists");
+            return false;
+        }
+    }
+    if (mode & DFile::OpenFlag::ExistingOnly) {
+        if (!exists()) {
+            qWarning("Open flag is ExistingOnly, but target file not exists");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 GInputStream *DLocalFilePrivate::inputStream()
 {
     if (iStream)
@@ -702,7 +648,7 @@ DLocalFile::~DLocalFile()
     close();
 }
 
-bool DLocalFile::open(DFile::OpenFlag mode)
+bool DLocalFile::open(DFile::OpenFlags mode)
 {
     return d->open(mode);
 }

@@ -53,6 +53,7 @@ public:
 
         CustomStart = 0x0100,
     };
+    Q_DECLARE_FLAGS(OpenFlags, OpenFlag)
 
     enum class CopyFlag : uint8_t {
         copyNone,   // No flags set.
@@ -91,7 +92,7 @@ public:
     };
 
     // interface
-    using OpenFunc = std::function<bool(OpenFlag)>;
+    using OpenFunc = std::function<bool(OpenFlags)>;
     using CloseFunc = std::function<bool()>;
     // read
     using ReadFunc = std::function<qint64(char *, qint64)>;
@@ -116,7 +117,7 @@ public:
     DFile(const QUrl &uri);
     virtual ~DFile();
 
-    DFM_VIRTUAL bool open(OpenFlag mode);
+    DFM_VIRTUAL bool open(OpenFlags mode);
     DFM_VIRTUAL bool close();
 
     DFM_VIRTUAL qint64 read(char *data, qint64 maxSize);
@@ -157,10 +158,13 @@ public:
     void registerLastError(const LastErrorFunc &func);
 
     QUrl uri() const;
+    bool isOpen();
 
 private:
     QSharedPointer<DFilePrivate> d = nullptr;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(DFile::OpenFlags);
 
 END_IO_NAMESPACE
 
