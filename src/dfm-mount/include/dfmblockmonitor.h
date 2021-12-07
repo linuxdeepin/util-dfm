@@ -47,6 +47,8 @@ Q_SIGNALS:
     void driveRemoved(const QString &drvObjPath);
     void fileSystemAdded(const QString &blkObjPath);
     void fileSystemRemoved(const QString &blkObjPath);
+    void blockLocked(const QString &blkObjPath);
+    void blockUnlocked(const QString &blkObjPath, const QString &clearDevObjPath);
 };
 DFM_MOUNT_END_NS
 

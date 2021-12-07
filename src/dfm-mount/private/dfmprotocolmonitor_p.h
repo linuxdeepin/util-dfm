@@ -48,23 +48,6 @@ DFM_MOUNT_BEGIN_NS
 #define VOLUME_CHANGED "volume-changed"
 #define VOLUME_REMOVED "volume-removed"
 
-struct DeviceCache
-{
-    QString uuid {};
-    GMount *mount { nullptr };
-    GVolume *volume { nullptr };
-
-    friend QDebug operator<<(QDebug debug, const DeviceCache &device)
-    {
-        bool hasMount, hasVolume;
-        hasMount = (device.mount != nullptr);
-        hasVolume = (device.volume != nullptr);
-        debug << QString("{ mpt: %1, mount: %2, volume: %3 }").arg(device.uuid).arg(hasMount).arg(hasVolume);
-        return debug;
-    }
-};
-
-class DFMProtocolDevice;
 class DFMProtocolMonitorPrivate final : public DFMMonitorPrivate
 {
 
@@ -92,14 +75,9 @@ private:
     static bool hasDrive(GMount *mount);
     static bool hasDrive(GVolume *volume);
 
-    QString findAssociatedMount(const QString &mpt);
-    QString findOrphanVolume(const QString &volId);
-    QStringList removeVolumes(const QString &volId);
+    static bool isOrphanMount(GMount *mount);
 
-    QMap<QString, DeviceCache> devices;
-    QList<DFMProtocolDevice *> pdevices;
-
-    void printDevices();
+    QSet<QString> cachedDevices;
 
 public:
     GVolumeMonitor *gVolMonitor { nullptr };

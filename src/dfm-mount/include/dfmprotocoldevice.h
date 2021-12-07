@@ -28,8 +28,6 @@
 
 #include <QObject>
 
-typedef struct _GMount GMount;
-typedef struct _GVolume GVolume;
 typedef struct _GVolumeMonitor GVolumeMonitor;
 
 DFM_MOUNT_BEGIN_NS
@@ -46,9 +44,11 @@ public:
     void setOperatorTimeout(int msecs);
 
 private:
-    DFMProtocolDevice(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, QObject *parent = nullptr);
-    void setVolume(GVolume *);
-    void setMount(GMount *);
+    DFMProtocolDevice(const QString &id, GVolumeMonitor *monitor, QObject *parent = nullptr);
+
+private Q_SLOTS:
+    void mounted(const QString &id);
+    void unmounted(const QString &id);
 };
 
 DFM_MOUNT_END_NS

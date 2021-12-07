@@ -767,7 +767,7 @@ qint64 DFMBlockDevicePrivate::sizeFree() const
     auto mpts = q->getProperty(Property::FileSystemMountPoint).toStringList();
     if (mpts.isEmpty()) {
         //        lastError = MountError::NotMounted;
-        qWarning() << "need to mount first to get the availabel size";
+        qWarning() << __FUNCTION__ << "NOT MOUNTED: " << blkObjPath;
         return 0;
     }
     auto mpt = mpts.first();
@@ -804,7 +804,7 @@ QString DFMBlockDevicePrivate::displayName() const
 QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
 {
     if (!blockHandler) {
-        qWarning() << "this device do not have a block";
+        qWarning() << __FUNCTION__ << "NO BLOCK: " << blkObjPath;
         lastError = DeviceError::NoBlock;
         return QVariant();
     }
@@ -903,7 +903,7 @@ QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
 QVariant DFMBlockDevicePrivate::getDriveProperty(Property name) const
 {
     if (!driveHandler) {
-        qWarning() << "this device do not have a physical drive";
+        qWarning() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
         lastError = DeviceError::NoDriver;
         return "";
     }
@@ -1017,7 +1017,7 @@ QVariant DFMBlockDevicePrivate::getFileSystemProperty(Property name) const
 QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
 {
     if (!partitionHandler) {
-        qWarning() << "this device do not have a partition";
+        qWarning() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
         lastError = DeviceError::NoPartition;
         return QVariant();
     }
@@ -1059,7 +1059,7 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
 QVariant DFMBlockDevicePrivate::getEncryptedProperty(Property name) const
 {
     if (!encryptedHandler) {
-        qWarning() << "this is not an encrypted device";
+        qWarning() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
         lastError = DeviceError::NotEncryptable;
         return QVariant();
     }

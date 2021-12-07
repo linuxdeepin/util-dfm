@@ -37,6 +37,8 @@
 DFM_MOUNT_BEGIN_NS
 class ASyncToSyncHelper
 {
+    Q_DISABLE_COPY(ASyncToSyncHelper)
+
 public:
     enum {
         NoError,
@@ -45,8 +47,6 @@ public:
     };
     explicit ASyncToSyncHelper(int timeout);
     ~ASyncToSyncHelper();
-    ASyncToSyncHelper(const ASyncToSyncHelper &) = delete;
-    ASyncToSyncHelper &operator=(const ASyncToSyncHelper &) = delete;
 
     inline QVariant result() { return ret; }
     inline void setResult(QVariant result) { ret = result; }
@@ -69,7 +69,8 @@ class DFMProtocolDevicePrivate final : public DFMDevicePrivate
     friend class DFMProtocolDevice;
 
 public:
-    DFMProtocolDevicePrivate(const QString &id, GVolume *vol, GMount *mnt, GVolumeMonitor *monitor, DFMProtocolDevice *qq);
+    DFMProtocolDevicePrivate(const QString &id, GVolumeMonitor *monitor, DFMProtocolDevice *qq);
+    ~DFMProtocolDevicePrivate();
 
     QString path() const;
     QString mount(const QVariantMap &opts);
@@ -99,19 +100,8 @@ public:
     };
     QVariant getAttr(FsAttr type) const;
 
-    inline void setMount(GMount *mount)
-    {
-        QMutexLocker locker(&mutexForMount);
-        mountHandler = mount;
-    }
-    inline void setVolume(GVolume *volume)
-    {
-        QMutexLocker locker(&mutexForVolume);
-        volumeHandler = volume;
-    }
-
 public:
-    QString deviceId;   // device id, which is a generated uuid
+    QString deviceId;
 
 private:
     static void mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker);
@@ -122,7 +112,6 @@ private:
 
 private:
     mutable QMutex mutexForMount;
-    mutable QMutex mutexForVolume;
     GMount *mountHandler { nullptr };
     GVolume *volumeHandler { nullptr };
     GVolumeMonitor *volumeMonitor { nullptr };

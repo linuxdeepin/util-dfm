@@ -79,8 +79,6 @@ DFMProtocolMonitorPrivate::~DFMProtocolMonitorPrivate()
     if (gVolMonitor)
         g_object_unref(gVolMonitor);
     gVolMonitor = nullptr;
-
-    devices.clear();
 }
 
 bool DFMProtocolMonitorPrivate::startMonitor()
@@ -131,21 +129,21 @@ DeviceType DFMProtocolMonitorPrivate::monitorObjectType() const
 
 QStringList DFMProtocolMonitorPrivate::getDevices()
 {
-    return devices.keys();
+    return cachedDevices.toList();
 }
 
 QSharedPointer<DFMDevice> DFMProtocolMonitorPrivate::createDevice(const QString &id)
 {
-    if (!devices.contains(id))
+    if (!cachedDevices.contains(id))
         return nullptr;
-    const auto &dev = devices.value(id);
-    auto protocolDev = new DFMProtocolDevice(id, dev.volume, dev.mount, gVolMonitor, q);
+    auto dev = new DFMProtocolDevice(id, gVolMonitor, nullptr);
+
+    // for updating the mounthandler of device, if the device exists.
+    QObject::connect(q, &DFMProtocolMonitor::mountAdded, dev, &DFMProtocolDevice::mounted);
+    QObject::connect(q, &DFMProtocolMonitor::mountRemoved, dev, &DFMProtocolDevice::unmounted);
+
     QSharedPointer<DFMDevice> ret;
-    ret.reset(protocolDev);
-    pdevices.append(protocolDev);
-    q->connect(protocolDev, &DFMProtocolDevice::destroyed, q, [this, protocolDev]() {
-        pdevices.removeAll(protocolDev);
-    });
+    ret.reset(dev);
     return ret;
 }
 
@@ -172,38 +170,6 @@ void DFMProtocolMonitorPrivate::initDeviceList()
      * so, we need to gather both phones and virtual devices and ignore block devices which will be gathered in DFMBlockMonitor.
      * */
 
-    /* and I also found that, for phone mounts, the devices I got from g_volume_monitor_get_mounts cannot associate with a volume,
-     * they are all orphan, but when the monitor is start, a new mount which has the same `mountpoint` is added and has a volume.
-     * I think this is a kind of mechanism helps us to link the orphan mount to a specific volume.
-     * */
-
-    // second, find those orphan mounts
-    GList *mnts = g_volume_monitor_get_mounts(gVolMonitor);
-    auto iterMnt = [](gpointer pMnt, gpointer userData) {
-        auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
-        Q_ASSERT(d);
-
-        GMount *mnt = static_cast<GMount *>(pMnt);
-        if (!mnt) return;
-        g_autoptr(GVolume) vol = g_mount_get_volume(mnt);
-        if (vol) {   // ignore it
-            g_object_unref(mnt);
-            return;
-        }
-
-        // TODO: cannot bind an iphone AFC mount with its volume, it does not emit a mountAdded signal when monitor start.
-        // nemo/nautilus... show volume and mount seperated. seems like an upstream issue or designed so.
-
-        DeviceCache dev;
-        dev.uuid = QUuid::createUuid().toString();
-        dev.mount = mnt;
-        d->devices.insert(dev.uuid, dev);
-
-        g_object_unref(mnt);
-    };
-    g_list_foreach(mnts, static_cast<GFunc>(iterMnt), this);
-    g_list_free(mnts);
-
     // first, get all volumes which do not have a GDrive.
     GList *vols = g_volume_monitor_get_volumes(gVolMonitor);
     auto iterVol = [](gpointer pVol, gpointer userData) {
@@ -214,38 +180,47 @@ void DFMProtocolMonitorPrivate::initDeviceList()
         if (!vol) return;
 
         g_autoptr(GDrive) drv = g_volume_get_drive(vol);
-        if (drv) {   // ignore blocks
-            g_object_unref(vol);
+        if (drv)   // ignore blocks
             return;
-        }
 
-        g_autoptr(GFile) willMountAt = g_volume_get_activation_root(vol);
-        if (willMountAt) {
-            g_autofree char *cpath = g_file_get_path(willMountAt);
-            QString mpt(cpath);
-
-            auto existMountKey = d->findAssociatedMount(mpt);
-            if (!existMountKey.isEmpty()) {
-                d->devices[existMountKey].volume = vol;
-            } else {
-                DeviceCache dev;
-                dev.uuid = QUuid::createUuid().toString();
-                dev.volume = vol;
-                d->devices.insert(dev.uuid, dev);
-            }
+        g_autoptr(GFile) activationRoot = g_volume_get_activation_root(vol);
+        if (activationRoot) {
+            g_autofree char *curi = g_file_get_uri(activationRoot);
+            d->cachedDevices.insert(curi);
         } else {
-            DeviceCache dev;
-            dev.uuid = QUuid::createUuid().toString();
-            dev.volume = vol;
-            d->devices.insert(dev.uuid, dev);
+            g_autofree char *volId = g_volume_get_identifier(vol, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);
+            qWarning() << "protocol: cannot get the root of " << volId;
         }
-
-        g_object_unref(vol);
     };
     g_list_foreach(vols, static_cast<GFunc>(iterVol), this);
-    g_list_free(vols);
+    g_list_free_full(vols, g_object_unref);
 
-    //    printDevices();
+    // second, find those orphan mounts
+    GList *mnts = g_volume_monitor_get_mounts(gVolMonitor);
+    auto iterMnt = [](gpointer pMnt, gpointer userData) {
+        auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+        Q_ASSERT(d);
+
+        GMount *mnt = static_cast<GMount *>(pMnt);
+        if (!mnt) return;
+        g_autoptr(GVolume) vol = g_mount_get_volume(mnt);
+        if (vol)   // only find orphan mounts
+            return;
+
+        // TODO: cannot bind an iphone AFC mount with its volume, it does not emit a mountAdded signal when monitor start.
+        // nemo/nautilus... show volume and mount seperated. seems like an upstream issue or designed so.
+
+        g_autoptr(GFile) root = g_mount_get_root(mnt);
+        if (root) {
+            g_autofree char *curi = g_file_get_uri(root);
+            d->cachedDevices.insert(curi);
+        } else {
+            g_autofree char *cname = g_mount_get_name(mnt);
+            qWarning() << "protocol: cannot get the root of " << cname;
+        }
+    };
+    g_list_foreach(mnts, static_cast<GFunc>(iterMnt), this);
+    g_list_free_full(mnts, g_object_unref);
 }
 
 void DFMProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
@@ -256,35 +231,14 @@ void DFMProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mo
     auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
-    g_autofree char *mntName = g_mount_get_name(mount);
-    qDebug() << __FUNCTION__ << mntName;
-
-    QString mpt = DFMProtocolDevicePrivate::mountPoint(mount);
-    auto id = d->findAssociatedMount(mpt);
-    if (!id.isEmpty()) {
-        g_autoptr(GVolume) vol = g_mount_get_volume(mount);
-        // remove same orphan volume
-        g_autofree char *volId = g_volume_get_identifier(vol, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);
-        auto key = d->findOrphanVolume(volId);
-        if (!key.isEmpty())
-            d->devices.remove(key);
-        d->devices[id].volume = vol;
-
-        for (auto dev : d->pdevices) {
-            if (dev->path() == id) {
-                dev->setVolume(vol);
-                qDebug() << "dev's volume settled";
-            }
-        }
-        //        d->printDevices();
+    auto mpt = DFMProtocolDevicePrivate::mountPoint(mount);
+    g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
+    if (mntRoot) {
+        g_autofree char *curi = g_file_get_uri(mntRoot);
+        d->cachedDevices.insert(curi);
+        Q_EMIT d->q->mountAdded(curi, mpt);
     } else {
-        DeviceCache dev;
-        dev.uuid = QUuid::createUuid().toString();
-        dev.mount = mount;
-        d->devices.insert(dev.uuid, dev);
-        //        d->printDevices();
-
-        Q_EMIT d->q->mountAdded(dev.uuid, mpt);
+        qWarning() << "protocol: cannot get the root of " << mpt;
     }
 }
 
@@ -307,21 +261,16 @@ void DFMProtocolMonitorPrivate::onMountRemoved(GVolumeMonitor *monitor, GMount *
     auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
-    g_autofree char *mntName = g_mount_get_name(mount);
-    qDebug() << __FUNCTION__ << mntName;
-
-    QString mpt = DFMProtocolDevicePrivate::mountPoint(mount);
-    auto id = d->findAssociatedMount(mpt);
-    if (!id.isEmpty()) {
-        if (d->devices[id].volume)
-            d->devices[id].mount = nullptr;
-        else
-            d->devices.remove(id);
-
-        Q_EMIT d->q->mountRemoved(id);
+    auto mpt = DFMProtocolDevicePrivate::mountPoint(mount);
+    g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
+    if (mntRoot) {
+        g_autofree char *curi = g_file_get_uri(mntRoot);
+        if (isOrphanMount(mount))
+            d->cachedDevices.remove(curi);
+        Q_EMIT d->q->mountRemoved(curi);
+    } else {
+        qWarning() << "protocol: cannot get the root of " << mpt;
     }
-
-    //    d->printDevices();
 }
 
 void DFMProtocolMonitorPrivate::onVolumeAdded(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
@@ -332,17 +281,14 @@ void DFMProtocolMonitorPrivate::onVolumeAdded(GVolumeMonitor *monitor, GVolume *
     auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
-    g_autofree char *volName = g_volume_get_name(volume);
-    qDebug() << __FUNCTION__ << volName;
-
-    DeviceCache dev;
-    dev.uuid = QUuid::createUuid().toString();
-    dev.volume = volume;
-    d->devices.insert(dev.uuid, dev);
-
-    Q_EMIT d->q->deviceAdded(dev.uuid);
-
-    //    d->printDevices();
+    g_autoptr(GFile) activationRoot = g_volume_get_activation_root(volume);
+    if (activationRoot) {
+        g_autofree char *curi = g_file_get_uri(activationRoot);
+        d->cachedDevices.insert(curi);
+        Q_EMIT d->q->deviceAdded(curi);
+    } else {
+        qWarning() << "protocol: cannot get the root of " << volume;
+    }
 }
 
 void DFMProtocolMonitorPrivate::onVolumeChanged(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
@@ -364,16 +310,14 @@ void DFMProtocolMonitorPrivate::onVolumeRemoved(GVolumeMonitor *monitor, GVolume
     auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
-    g_autofree char *volName = g_volume_get_name(volume);
-    qDebug() << __FUNCTION__ << volName;
-
-    g_autofree char *unixDev = g_volume_get_identifier(volume, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);
-    const auto &&removedItems = d->removeVolumes(unixDev);
-
-    for (const auto &item : removedItems)
-        Q_EMIT d->q->deviceRemoved(item);
-
-    //    d->printDevices();
+    g_autoptr(GFile) activationRoot = g_volume_get_activation_root(volume);
+    if (activationRoot) {
+        g_autofree char *curi = g_file_get_uri(activationRoot);
+        d->cachedDevices.remove(curi);
+        Q_EMIT d->q->deviceRemoved(curi);
+    } else {
+        qWarning() << "protocol: cannot get the root of " << volume;
+    }
 }
 
 bool DFMProtocolMonitorPrivate::hasDrive(GMount *mount)
@@ -392,78 +336,30 @@ bool DFMProtocolMonitorPrivate::hasDrive(GVolume *volume)
     return drv ? true : false;
 }
 
-QString DFMProtocolMonitorPrivate::findAssociatedMount(const QString &mpt)
+bool DFMProtocolMonitorPrivate::isOrphanMount(GMount *mount)
 {
-    auto iter = devices.cbegin();
-    while (iter != devices.cend()) {
-        const auto &dev = iter.value();
-        auto mnt = dev.mount;
-        if (mnt) {
-            auto mntPath = DFMProtocolDevicePrivate::mountPoint(mnt);
-            if (mntPath == mpt)
-                return iter.key();
+    g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
+    g_autofree char *curi = g_file_get_uri(mntRoot);
+    QString uri(curi);
+    if (uri.startsWith("smb") || uri.startsWith("ftp") || uri.startsWith("sftp"))
+        return true;
+
+    bool isOrphan = true;
+    g_autoptr(GVolumeMonitor) monitor = g_volume_monitor_get();
+    GList *vols = g_volume_monitor_get_volumes(monitor);
+    while (vols) {
+        auto *vol = reinterpret_cast<GVolume *>(vols->data);
+        g_autoptr(GFile) volRoot = g_volume_get_activation_root(vol);
+        if (volRoot) {
+            g_autofree char *volUri = g_file_get_uri(volRoot);
+            if (g_strcmp0(curi, volUri) == 0) {
+                isOrphan = false;
+                break;
+            }
         }
-        iter += 1;
+        vols = vols->next;
     }
-    return "";
-}
+    g_list_free_full(vols, g_object_unref);
 
-QString DFMProtocolMonitorPrivate::findOrphanVolume(const QString &volId)
-{
-    auto iter = devices.cbegin();
-    while (iter != devices.cend()) {
-        const auto &dev = iter.value();
-        if (dev.mount == nullptr && dev.volume) {
-            g_autofree char *id = g_volume_get_identifier(dev.volume, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);
-            if (QString(id) == volId)
-                return iter.key();
-        }
-        iter += 1;
-    }
-    return "";
-}
-
-QStringList DFMProtocolMonitorPrivate::removeVolumes(const QString &volId)
-{
-    QStringList waitToRemove;
-    auto iter = devices.cbegin();
-    while (iter != devices.cend()) {
-        const auto &dev = iter.value();
-        if (dev.volume) {
-            char *id = g_volume_get_identifier(dev.volume, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);
-            if (volId == QString(id))
-                waitToRemove << dev.uuid;
-            g_free(id);
-        }
-        iter += 1;
-    }
-    for (const auto &key : waitToRemove)
-        devices.remove(key);
-    return waitToRemove;
-}
-
-void DFMProtocolMonitorPrivate::printDevices()
-{
-    auto iter = devices.cbegin();
-    while (iter != devices.cend()) {
-        const auto &dev = iter.value();
-        auto mnt = dev.mount;
-        auto vol = dev.volume;
-        QString volName, mntName, mntPath;
-        if (vol) {
-            g_autofree char *cname = g_volume_get_name(vol);
-            volName = QString(cname);
-        }
-        if (mnt) {
-            g_autofree char *cname = g_mount_get_name(mnt);
-            mntName = QString(cname);
-            mntPath = DFMProtocolDevicePrivate::mountPoint(mnt);
-        }
-
-        qDebug() << "\t" << iter.key() << ", volName: " << volName << ", mntName: " << mntName
-                 << ", mount at: " << mntPath;
-
-        iter += 1;
-    }
-    qDebug() << "\n\n";
+    return isOrphan;
 }

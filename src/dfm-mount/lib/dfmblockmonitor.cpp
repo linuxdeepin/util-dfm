@@ -144,7 +144,7 @@ QSharedPointer<DFMDevice> DFMBlockMonitorPrivate::createDeviceById(const QString
 {
     if (!getDevices().contains(id))
         return nullptr;
-    auto blk = new DFMBlockDevice(client, id, q);
+    auto blk = new DFMBlockDevice(client, id, nullptr);
     // for a block device, there must have a block node in dbus, otherwise treat it as a invalid object
     if (blk->hasBlock()) {
         QSharedPointer<DFMDevice> ret;
@@ -229,6 +229,12 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
 
         QString drvPath(udisks_block_get_drive(block));
         blksOfDrive[drvPath].insert(objPath);
+
+        g_autofree char *encryptedShell = udisks_block_dup_crypto_backing_device(block);
+        if (strcmp(encryptedShell, "/") != 0) {
+            Q_EMIT q->blockUnlocked(encryptedShell, objPath);
+            qDebug() << "unlocked: " << encryptedShell << "-->" << objPath;
+        }
     }
     if (fileSystem) {
         qDebug() << "filesystem added: " << objPath << ", filesystem: " << fileSystem;
@@ -274,6 +280,12 @@ void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObjec
         QString drvPath(udisks_block_get_drive(block));
         if (blksOfDrive.contains(QString(drvPath)))
             blksOfDrive[drvPath].remove(objPath);
+
+        g_autofree char *encryptedShell = udisks_block_dup_crypto_backing_device(block);
+        if (strcmp(encryptedShell, "/") != 0) {
+            Q_EMIT q->blockLocked(objPath);
+            qDebug() << "locked: " << objPath << "removed, " << encryptedShell << "locked";
+        }
     }
     if (fileSystem) {
         qDebug() << "filesystem removed: " << objPath;
