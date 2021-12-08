@@ -38,6 +38,14 @@ DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
 
 DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
 {
+    if (gfileinfo) {
+        g_object_unref(gfileinfo);
+        gfileinfo = nullptr;
+    }
+    if (gfile) {
+        g_object_unref(gfile);
+        gfile = nullptr;
+    }
 }
 
 bool DLocalFileInfoPrivate::init()
@@ -45,12 +53,11 @@ bool DLocalFileInfoPrivate::init()
     const QUrl &url = q->uri();
     const QString &path = url.toString();
 
-    GFile *file = g_file_new_for_uri(path.toLocal8Bit().data());
+    GFile *gfile = g_file_new_for_uri(path.toLocal8Bit().data());
 
     GError *gerror = nullptr;
 
-    GFileInfo *gfileinfo = g_file_query_info(file, "*", G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
-    g_object_unref(file);
+    GFileInfo *gfileinfo = g_file_query_info(gfile, "*", G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
 
     if (gerror) {
         setErrorInfo(gerror);
@@ -60,6 +67,7 @@ bool DLocalFileInfoPrivate::init()
     if (!gfileinfo)
         return false;
 
+    this->gfile = gfile;
     this->gfileinfo = gfileinfo;
     return true;
 }
@@ -134,12 +142,18 @@ bool DLocalFileInfoPrivate::exists() const
 
 bool DLocalFileInfoPrivate::flush()
 {
+    bool ret = true;
     auto it = attributes.constBegin();
     while (it != attributes.constEnd()) {
-        DLocalHelper::setAttributeByGFileInfo(gfileinfo, it.key(), it.value());
+        g_autoptr(GError) gerror = nullptr;
+        bool succ = DLocalHelper::setAttributeByGFile(gfile, it.key(), it.value(), &gerror);
+        if (!succ)
+            ret = false;
+        if (gerror)
+            setErrorInfo(gerror);
         ++it;
     }
-    return true;
+    return ret;
 }
 
 DFMIOError DLocalFileInfoPrivate::lastError()

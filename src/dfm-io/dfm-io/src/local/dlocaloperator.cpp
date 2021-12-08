@@ -369,20 +369,19 @@ bool DLocalOperatorPrivate::createLink(const QUrl &link)
 
 bool DLocalOperatorPrivate::setFileInfo(const DFileInfo &fileInfo)
 {
-    GError *gerror = nullptr;
-
     const QUrl &uri = q->uri();
-    GFile *gfile = makeGFile(uri);
+    g_autoptr(GFile) gfile = makeGFile(uri);
 
-    GFileInfo *file_info = DLocalHelper::getFileInfoFromDFileInfo(fileInfo);
-    bool ret = g_file_set_attributes_from_info(gfile, file_info, GFileQueryInfoFlags::G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS, nullptr, &gerror);
-    if (!ret)
-        setErrorInfo(gerror);
+    bool ret = true;
+    for (const auto &[key, value] : DFileInfo::attributeNames) {
+        g_autoptr(GError) gerror = nullptr;
+        bool succ = DLocalHelper::setAttributeByGFile(gfile, key, fileInfo.attribute(key, nullptr), &gerror);
+        if (!succ)
+            ret = false;
+        if (gerror)
+            setErrorInfo(gerror);
+    }
 
-    if (gerror)
-        g_error_free(gerror);
-    g_object_unref(file_info);
-    g_object_unref(gfile);
     return ret;
 }
 

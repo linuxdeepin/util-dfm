@@ -122,6 +122,8 @@ DFileInfo::AttributeNameMap DFileInfo::attributeNames = {
     { DFileInfo::AttributeID::TrashOrigPath, "trash::orig-path" },   // G_FILE_ATTRIBUTE_TRASH_ORIG_PATH
 
     { DFileInfo::AttributeID::RecentModified, "recent::modified" },   // G_FILE_ATTRIBUTE_RECENT_MODIFIED
+    { DFileInfo::AttributeID::ExtendWordSize, "xattr::word-size" },   // user extend attr
+    { DFileInfo::AttributeID::ExtendMediaDuration, "xattr::media-duration" },   // user extend attr
 
     { DFileInfo::AttributeID::CustomStart, "custom-start" },
 
@@ -273,10 +275,10 @@ QUrl DFileInfo::uri() const
 QString DFileInfo::dump() const
 {
     QString ret;
-    for (int i = 0, end = int(DFileInfo::AttributeID::AttributeIDMax); i < end; ++i) {
-        const QVariant &&value = attribute(DFileInfo::AttributeID(i));
+    for (const auto &[id, key] : attributeNames) {
+        const QVariant &&value = attribute(id);
         if (value.isValid()) {
-            ret.append(attributeNames[DFileInfo::AttributeID(i)].c_str());
+            ret.append(attributeNames[id].c_str());
             ret.append(":");
             ret.append(value.toString());
             ret.append("\n");

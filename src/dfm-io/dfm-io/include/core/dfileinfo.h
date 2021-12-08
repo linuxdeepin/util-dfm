@@ -151,6 +151,9 @@ public:
 
         RecentModified = 540,   // uint64
 
+        ExtendWordSize = 550,   // uint32
+        ExtendMediaDuration = 551,   // uint32, ms
+
         CustomStart = 600,
 
         StandardIsFile = 610,

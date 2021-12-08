@@ -59,6 +59,7 @@ public:
 
 public:
     QMap<DFileInfo::AttributeID, QVariant> attributes;
+    GFile *gfile = nullptr;
     GFileInfo *gfileinfo = nullptr;
 
     DFMIOError error;
