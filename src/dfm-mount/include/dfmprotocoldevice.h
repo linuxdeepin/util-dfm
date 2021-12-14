@@ -32,6 +32,19 @@ typedef struct _GVolumeMonitor GVolumeMonitor;
 
 DFM_MOUNT_BEGIN_NS
 
+struct MountPassInfo
+{
+    QString userName {};
+    QString passwd {};
+    QString domain {};
+    bool anonymous { false };
+    int savePasswd { 0 };   // 0 for never save, 1 for current session, and 2 for save permanently
+};
+
+//typedef struct _GVolumeMonitor GVolumeMonitor;
+typedef MountPassInfo (*GetMountPassInfo)(const QString &message, const QString &userDefault, const QString &domainDefault, const QString &errMsg);
+typedef void (*MountResult)(bool ok, QString errMsg);
+
 class DFMProtocolDevicePrivate;
 class DFMProtocolDevice final : public DFMDevice
 {
@@ -40,6 +53,7 @@ class DFMProtocolDevice final : public DFMDevice
 
 public:
     ~DFMProtocolDevice();
+    static void mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, MountResult mountResult);
 
     void setOperatorTimeout(int msecs);
 

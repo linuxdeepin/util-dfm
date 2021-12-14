@@ -110,6 +110,10 @@ private:
     static void unmountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker);
     static void unmountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy);
 
+    static void mountNetworkDeviceAskPasswd(GMountOperation *self, gchar *message, gchar *default_user, gchar *default_domain,
+                                            GAskPasswordFlags flags, gpointer user_data);
+    static void mountNetworkDeviceCallback(GObject *srcObj, GAsyncResult *res, gpointer userData);
+
 private:
     mutable QMutex mutexForMount;
     GMount *mountHandler { nullptr };

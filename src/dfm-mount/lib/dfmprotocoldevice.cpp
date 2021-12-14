@@ -120,6 +120,48 @@ DFMProtocolDevice::~DFMProtocolDevice()
 {
 }
 
+struct AskPasswdHelper
+{
+    GetMountPassInfo callback { nullptr };
+    bool callOnceFlag { false };
+    bool anonymous { false };
+};
+struct FinalizeHelper
+{
+    AskPasswdHelper *askPasswd { nullptr };
+    MountResult cb;
+};
+/*!
+ * \brief DFMProtocolDevice::mountNetworkDevice
+ * \param address       remote link address like 'smb://1.2.3.4/sharefolder/
+ * \param getPassInfo   an passwd-asking dialog should be exec in this function, and return a struct object which contains the passwd
+ * \param mountResult   when mount finished, this function will be invoked.
+ */
+void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, MountResult mountResult)
+{
+    GFile_autoptr file = g_file_new_for_uri(address.toStdString().c_str());
+    if (!file) {
+        qWarning() << "protocol: cannot generate location for" << address;
+        return;
+    }
+
+    AskPasswdHelper *helper = new AskPasswdHelper();
+    helper->callback = getPassInfo;
+    helper->callOnceFlag = false;   // make sure the signal will not emit continuously when validate failed.
+
+    GMountOperation_autoptr op = g_mount_operation_new();
+    g_signal_connect(op, "ask_password", G_CALLBACK(DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd), helper);
+
+    FinalizeHelper *finalizeHelper = new FinalizeHelper;
+    finalizeHelper->askPasswd = helper;
+    finalizeHelper->cb = mountResult;
+
+    // a timout machinism TODO(xust)
+    GCancellable_autoptr cancellable = g_cancellable_new();
+    g_file_mount_enclosing_volume(file, G_MOUNT_MOUNT_NONE, op, cancellable,
+                                  &DFMProtocolDevicePrivate::mountNetworkDeviceCallback, finalizeHelper);
+}
+
 void DFMProtocolDevice::setOperatorTimeout(int msecs)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
@@ -589,6 +631,67 @@ void DFMProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncRes
         }
         delete proxy;
     }
+}
+
+void DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd(GMountOperation *self, gchar *message, gchar *userDefault,
+                                                           gchar *domainDefault, GAskPasswordFlags flags, gpointer userData)
+{
+    auto helper = reinterpret_cast<AskPasswdHelper *>(userData);
+    if (!helper) {
+        helper->callback("", "", "", "null ptr error");
+        g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
+        return;
+    }
+
+    if (!helper->callOnceFlag) {
+        helper->callOnceFlag = true;
+    } else {
+        if (helper->anonymous)
+            helper->callback("", "", "", "anonymous is not allowed");
+        else
+            helper->callback("", "", "", "wrong password");
+        g_mount_operation_reply(self, G_MOUNT_OPERATION_UNHANDLED);
+        return;
+    }
+
+    auto mountInfo = helper->callback(message, userDefault, domainDefault, "");
+    if (mountInfo.anonymous) {
+        if (!(flags & GAskPasswordFlags::G_ASK_PASSWORD_ANONYMOUS_SUPPORTED)) {
+            helper->callback("", "", "", "anonymous is not allowed");
+            g_mount_operation_reply(self, G_MOUNT_OPERATION_UNHANDLED);
+            return;
+        }
+        helper->anonymous = true;
+        g_mount_operation_set_anonymous(self, true);
+    } else {
+        if (flags & G_ASK_PASSWORD_NEED_DOMAIN)
+            g_mount_operation_set_domain(self, mountInfo.domain.toStdString().c_str());
+        if (flags & G_ASK_PASSWORD_NEED_USERNAME)
+            g_mount_operation_set_username(self, mountInfo.userName.toStdString().c_str());
+        if (flags & G_ASK_PASSWORD_NEED_PASSWORD)
+            g_mount_operation_set_password(self, mountInfo.passwd.toStdString().c_str());
+        g_mount_operation_set_password_save(self, GPasswordSave(mountInfo.savePasswd));
+    }
+    g_mount_operation_reply(self, G_MOUNT_OPERATION_HANDLED);
+}
+
+void DFMProtocolDevicePrivate::mountNetworkDeviceCallback(GObject *srcObj, GAsyncResult *res, gpointer userData)
+{
+    auto finalize = reinterpret_cast<FinalizeHelper *>(userData);
+    if (!finalize)
+        return;
+
+    auto file = reinterpret_cast<GFile *>(srcObj);
+    GError_autoptr err = nullptr;
+    bool ok = g_file_mount_enclosing_volume_finish(file, res, &err);
+    if (!ok) {
+        qDebug() << "protocol: mount network device failed: " << err->message;
+    }
+    QString errMsg = err ? err->message : "";
+    finalize->cb(ok, errMsg);
+
+    delete finalize->askPasswd;
+    delete finalize;
 }
 
 ASyncToSyncHelper::ASyncToSyncHelper(int timeout)
