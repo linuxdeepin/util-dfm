@@ -30,6 +30,8 @@
 #include <QThread>
 
 typedef struct _GVariant GVariant;
+typedef struct _GError GError;
+
 DFM_MOUNT_BEGIN_NS
 
 #define warningIfNotInMain()                                                                                               \
@@ -57,6 +59,8 @@ public:
     static Property getPropertyByName(const QString &name);
 
     static PartitionType getPartitionTypeByGuid(const QString &guid);
+
+    static DeviceError castFromGError(const GError *const err);
 
     static QString errorMessage(DeviceError err);
 

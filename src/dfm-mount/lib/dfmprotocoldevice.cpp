@@ -120,17 +120,6 @@ DFMProtocolDevice::~DFMProtocolDevice()
 {
 }
 
-struct AskPasswdHelper
-{
-    GetMountPassInfo callback { nullptr };
-    bool callOnceFlag { false };
-    bool anonymous { false };
-};
-struct FinalizeHelper
-{
-    AskPasswdHelper *askPasswd { nullptr };
-    MountResult cb;
-};
 /*!
  * \brief DFMProtocolDevice::mountNetworkDevice
  * \param address       remote link address like 'smb://1.2.3.4/sharefolder/
@@ -145,6 +134,17 @@ void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassI
         return;
     }
 
+    // TODO(xust) after mounted, unmount by dfm, then call this function again, the mntPath could be obtain still,
+    // may be a bug in gio.
+    //    g_autofree char *mntPath = g_file_get_path(file);
+    //    if (mntPath) {
+    //        qDebug() << "protocol: network device has been mounted already: " << address << mntPath;
+    //        if (mountResult) {
+    //            mountResult(true, DeviceError::UserErrorAlreadyMounted);
+    //        }
+    //        return;
+    //    }
+
     AskPasswdHelper *helper = new AskPasswdHelper();
     helper->callback = getPassInfo;
     helper->callOnceFlag = false;   // make sure the signal will not emit continuously when validate failed.
@@ -154,7 +154,7 @@ void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassI
 
     FinalizeHelper *finalizeHelper = new FinalizeHelper;
     finalizeHelper->askPasswd = helper;
-    finalizeHelper->cb = mountResult;
+    finalizeHelper->callback = mountResult;
 
     // a timout machinism TODO(xust)
     GCancellable_autoptr cancellable = g_cancellable_new();
@@ -222,7 +222,7 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
         qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
         qInfo() << "mutexForMount locked" << __FUNCTION__;
-        lastError = DeviceError::AlreadyMounted;
+        lastError = DeviceError::UserErrorAlreadyMounted;
         return mountPoint(mountHandler);
     }
 
@@ -236,7 +236,7 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
         //        qInfo() << "mutexForVolume locked" << __FUNCTION__;
 
         if (!g_volume_can_mount(volumeHandler)) {
-            lastError = DeviceError::NotMountable;
+            lastError = DeviceError::UserErrorNotMountable;
             return "";
         }
 
@@ -252,10 +252,10 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
         } else if (ret == ASyncToSyncHelper::Timeout) {
             if (cancellable)
                 g_cancellable_cancel(cancellable);
-            lastError = DeviceError::TimedOut;
+            lastError = DeviceError::UserErrorTimedOut;
         }
     }
-    lastError = DeviceError::NotMountable;
+    lastError = DeviceError::UserErrorNotMountable;
     return "";
 }
 
@@ -265,14 +265,14 @@ void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperate
         qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
         qInfo() << "mutexForMount locked" << __FUNCTION__;
-        lastError = DeviceError::AlreadyMounted;
+        lastError = DeviceError::UserErrorAlreadyMounted;
         cb(true, lastError);
         return;
     }
 
     if (volumeHandler) {
         if (!g_volume_can_mount(volumeHandler)) {
-            lastError = DeviceError::NotMountable;
+            lastError = DeviceError::UserErrorNotMountable;
             cb(false, lastError);
             return;
         }
@@ -297,7 +297,7 @@ void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperate
 bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
 {
     if (!mountHandler) {
-        lastError = DeviceError::NotMounted;
+        lastError = DeviceError::UserErrorNotMounted;
         return true;
     } else {
         GMountOperation *operation { nullptr };
@@ -317,7 +317,7 @@ bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
         if (ret == ASyncToSyncHelper::NoError) {
             return true;
         } else if (ret == ASyncToSyncHelper::Timeout) {
-            lastError = DeviceError::TimedOut;
+            lastError = DeviceError::UserErrorTimedOut;
             g_cancellable_cancel(cancellable);
             return false;
         }
@@ -328,7 +328,7 @@ bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
 void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCb cb)
 {
     if (!mountHandler) {
-        lastError = DeviceError::NotMounted;
+        lastError = DeviceError::UserErrorNotMounted;
         cb(true, lastError);
         return;
     } else {
@@ -423,7 +423,7 @@ QString DFMProtocolDevicePrivate::displayName() const
         return name;
     }
 
-    lastError = DeviceError::NotMountable;
+    lastError = DeviceError::UserErrorNotMountable;
     return "";
 }
 
@@ -468,7 +468,7 @@ QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type
     }
 
     if (!mountHandler) {
-        lastError = DeviceError::NotMounted;
+        lastError = DeviceError::UserErrorNotMounted;
         return QVariant();
     }
 
@@ -484,7 +484,7 @@ QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type
         g_autoptr(GCancellable) cancellable = g_cancellable_new();
         QSharedPointer<QTimer> timer(new QTimer);
         QObject::connect(timer.data(), &QTimer::timeout, q, [=] {
-            lastError = DeviceError::TimedOut;
+            lastError = DeviceError::UserErrorTimedOut;
             g_cancellable_cancel(cancellable);
         });
         timer->setSingleShot(true);
@@ -514,6 +514,7 @@ QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type
                 }
             }
             if (err) {
+                lastError = Utils::castFromGError(err);
                 errMsg = err->message;
                 g_error_free(err);
                 if (errMsg.contains("was not provided by any .service files"))
@@ -535,8 +536,7 @@ static bool mountDone(GObject *sourceObj, GAsyncResult *res, DeviceError &derr)
     GError *err { nullptr };
     bool ret = g_volume_mount_finish(vol, res, &err);
     if (err) {
-        // TODO: handle error
-        derr = DeviceError::NoError;
+        derr = Utils::castFromGError(err);
         qDebug() << "mount failed" << err->message;
         g_error_free(err);
     }
@@ -637,8 +637,8 @@ void DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd(GMountOperation *self
                                                            gchar *domainDefault, GAskPasswordFlags flags, gpointer userData)
 {
     auto helper = reinterpret_cast<AskPasswdHelper *>(userData);
-    if (!helper) {
-        helper->callback("", "", "", "null ptr error");
+    if (!helper || !helper->callback) {
+        helper->err = DeviceError::UserErrorFailed;
         g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
         return;
     }
@@ -647,17 +647,18 @@ void DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd(GMountOperation *self
         helper->callOnceFlag = true;
     } else {
         if (helper->anonymous)
-            helper->callback("", "", "", "anonymous is not allowed");
+            helper->err = DeviceError::UserErrorNetworkAnonymousNotAllowed;
         else
-            helper->callback("", "", "", "wrong password");
+            helper->err = DeviceError::UserErrorNetworkWrongPasswd;
         g_mount_operation_reply(self, G_MOUNT_OPERATION_UNHANDLED);
         return;
     }
 
-    auto mountInfo = helper->callback(message, userDefault, domainDefault, "");
+    auto mountInfo = helper->callback(message, userDefault, domainDefault);
     if (mountInfo.anonymous) {
-        if (!(flags & GAskPasswordFlags::G_ASK_PASSWORD_ANONYMOUS_SUPPORTED)) {
-            helper->callback("", "", "", "anonymous is not allowed");
+        // the flags seem to always be 31(0b11111)
+        if (!(flags & G_ASK_PASSWORD_ANONYMOUS_SUPPORTED)) {
+            helper->err = DeviceError::UserErrorNetworkAnonymousNotAllowed;
             g_mount_operation_reply(self, G_MOUNT_OPERATION_UNHANDLED);
             return;
         }
@@ -681,14 +682,15 @@ void DFMProtocolDevicePrivate::mountNetworkDeviceCallback(GObject *srcObj, GAsyn
     if (!finalize)
         return;
 
+    DeviceError derr = finalize->askPasswd->err;
     auto file = reinterpret_cast<GFile *>(srcObj);
     GError_autoptr err = nullptr;
     bool ok = g_file_mount_enclosing_volume_finish(file, res, &err);
     if (!ok) {
-        qDebug() << "protocol: mount network device failed: " << err->message;
+        derr = Utils::castFromGError(err);
     }
-    QString errMsg = err ? err->message : "";
-    finalize->cb(ok, errMsg);
+    if (finalize->callback)
+        finalize->callback(ok, derr);
 
     delete finalize->askPasswd;
     delete finalize;

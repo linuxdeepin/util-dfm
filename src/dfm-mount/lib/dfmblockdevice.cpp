@@ -34,17 +34,11 @@
 
 DFM_MOUNT_USE_NS
 
-#define UDISKS_ERR_DOMAIN "udisks-error-quark"
-
 inline void DFMBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info)
 {
     DeviceError err = DeviceError::NoError;
     if (!result) {
-        if (strcmp(g_quark_to_string(gerr->domain), UDISKS_ERR_DOMAIN) == 0) {
-            err = static_cast<DeviceError>(gerr->code + 1);
-        } else {
-            qDebug() << __FUNCTION__ << gerr->code << gerr->message << g_quark_to_string(gerr->domain);
-        }
+        err = Utils::castFromGError(gerr);
         g_error_free(gerr);
     }
 
@@ -408,13 +402,13 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
     warningIfNotInMain();
 
     if (!fileSystemHandler) {
-        lastError = DeviceError::NotMountable;
+        lastError = DeviceError::UserErrorNotMountable;
         return "";
     }
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = DeviceError::AlreadyMounted;
+        lastError = DeviceError::UDisksErrorAlreadyMounted;
         return mpts.first();
     }
 
@@ -436,7 +430,7 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCb 
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
-        lastError = DeviceError::NotMountable;
+        lastError = DeviceError::UserErrorNotMountable;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -446,7 +440,7 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCb 
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = DeviceError::AlreadyMounted;
+        lastError = DeviceError::UDisksErrorAlreadyMounted;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -464,13 +458,13 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
     warningIfNotInMain();
 
     if (!fileSystemHandler) {
-        lastError = DeviceError::NotMountable;
+        lastError = DeviceError::UserErrorNotMountable;
         return true;   // since device is not mountable, so we just return true here
     }
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (mpts.empty()) {
-        lastError = DeviceError::NotMounted;
+        lastError = DeviceError::UDisksErrorNotMounted;
         return true;   // since it's not mounted, then this invocation returns true
     }
 
@@ -488,7 +482,7 @@ void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateC
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
-        lastError = DeviceError::NotMountable;
+        lastError = DeviceError::UserErrorNotMountable;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -498,7 +492,7 @@ void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateC
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (mpts.empty()) {
-        lastError = DeviceError::NotMounted;
+        lastError = DeviceError::UDisksErrorNotMounted;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -517,13 +511,13 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
     warningIfNotInMain();
 
     if (!fileSystemHandler) {
-        lastError = DeviceError::NotMountable;
+        lastError = DeviceError::UserErrorNotMountable;
         return false;
     }
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = DeviceError::AlreadyMounted;
+        lastError = DeviceError::UDisksErrorAlreadyMounted;
         return false;
     }
 
@@ -544,7 +538,7 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMa
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
-        lastError = DeviceError::NotMountable;
+        lastError = DeviceError::UserErrorNotMountable;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -554,7 +548,7 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMa
 
     QStringList mpts = getProperty(Property::FileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = DeviceError::AlreadyMounted;
+        lastError = DeviceError::UDisksErrorAlreadyMounted;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -573,12 +567,12 @@ bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
 
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
     if (!ejectable) {
-        lastError = DeviceError::NotEjectable;
+        lastError = DeviceError::UserErrorNotEjectable;
         return false;
     }
 
     if (!driveHandler) {
-        lastError = DeviceError::NoDriver;
+        lastError = DeviceError::UserErrorNoDriver;
         return false;
     }
 
@@ -599,7 +593,7 @@ void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCb 
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
     if (!ejectable) {
-        lastError = DeviceError::NotEjectable;
+        lastError = DeviceError::UserErrorNotEjectable;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -608,7 +602,7 @@ void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCb 
     }
 
     if (!driveHandler) {
-        lastError = DeviceError::NoDriver;
+        lastError = DeviceError::UserErrorNoDriver;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -625,7 +619,7 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
     warningIfNotInMain();
 
     if (!driveHandler) {
-        lastError = DeviceError::NoDriver;
+        lastError = DeviceError::UserErrorNoDriver;
         return false;
     }
 
@@ -644,7 +638,7 @@ void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperate
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!driveHandler) {
-        lastError = DeviceError::NoDriver;
+        lastError = DeviceError::UserErrorNoDriver;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -660,7 +654,7 @@ bool DFMBlockDevicePrivate::lock(const QVariantMap &opts)
     warningIfNotInMain();
 
     if (!encryptedHandler) {
-        lastError = DeviceError::NotEncryptable;
+        lastError = DeviceError::UserErrorNotEncryptable;
         return false;
     }
 
@@ -678,7 +672,7 @@ void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCb c
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!encryptedHandler) {
-        lastError = DeviceError::NotEncryptable;
+        lastError = DeviceError::UserErrorNotEncryptable;
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -695,7 +689,7 @@ bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev,
     warningIfNotInMain();
 
     if (!encryptedHandler) {
-        lastError = DeviceError::NotEncryptable;
+        lastError = DeviceError::UserErrorNotEncryptable;
         return false;
     }
 
@@ -717,7 +711,7 @@ void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!encryptedHandler) {
-        lastError = DeviceError::NotEncryptable;
+        lastError = DeviceError::UserErrorNotEncryptable;
         if (proxy) {
             proxy->cbWithInfo(false, lastError, QString());
             delete proxy;
@@ -732,11 +726,7 @@ void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap
 inline void DFMBlockDevicePrivate::handleErrorAndRelase(GError *err)
 {
     if (err) {
-        if (strcmp(g_quark_to_string(err->domain), UDISKS_ERR_DOMAIN) == 0) {
-            lastError = static_cast<DeviceError>(err->code + 1);
-        } else {
-            qDebug() << __FUNCTION__ << err->code << err->message << g_quark_to_string(err->domain);
-        }
+        lastError = Utils::castFromGError(err);
         g_error_free(err);
     }
 }
@@ -805,7 +795,7 @@ QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
 {
     if (!blockHandler) {
         qWarning() << __FUNCTION__ << "NO BLOCK: " << blkObjPath;
-        lastError = DeviceError::NoBlock;
+        lastError = DeviceError::UserErrorNoBlock;
         return QVariant();
     }
 
@@ -904,7 +894,7 @@ QVariant DFMBlockDevicePrivate::getDriveProperty(Property name) const
 {
     if (!driveHandler) {
         qWarning() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
-        lastError = DeviceError::NoDriver;
+        lastError = DeviceError::UserErrorNoDriver;
         return "";
     }
     switch (name) {
@@ -1000,7 +990,7 @@ QVariant DFMBlockDevicePrivate::getDriveProperty(Property name) const
 QVariant DFMBlockDevicePrivate::getFileSystemProperty(Property name) const
 {
     if (!fileSystemHandler) {
-        lastError = DeviceError::NotMountable;
+        lastError = DeviceError::UserErrorNotMountable;
         return QVariant();
     }
 
@@ -1018,7 +1008,7 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
 {
     if (!partitionHandler) {
         qWarning() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
-        lastError = DeviceError::NoPartition;
+        lastError = DeviceError::UserErrorNoPartition;
         return QVariant();
     }
 
@@ -1060,7 +1050,7 @@ QVariant DFMBlockDevicePrivate::getEncryptedProperty(Property name) const
 {
     if (!encryptedHandler) {
         qWarning() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
-        lastError = DeviceError::NotEncryptable;
+        lastError = DeviceError::UserErrorNotEncryptable;
         return QVariant();
     }
 

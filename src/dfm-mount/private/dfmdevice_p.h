@@ -28,6 +28,17 @@
 
 DFM_MOUNT_BEGIN_NS
 
+class CallbackProxy
+{
+public:
+    CallbackProxy(DeviceOperateCb cb)
+        : cb(cb) {}
+    CallbackProxy(DeviceOperateCbWithInfo cb)
+        : cbWithInfo(cb) {}
+    DeviceOperateCb cb { nullptr };
+    DeviceOperateCbWithInfo cbWithInfo { nullptr };
+};
+
 class DFMDevicePrivate
 {
 public:

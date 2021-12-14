@@ -64,6 +64,20 @@ private:
     QScopedPointer<QTimer> timer { nullptr };
 };
 
+struct AskPasswdHelper
+{
+    GetMountPassInfo callback { nullptr };
+    bool callOnceFlag { false };
+    bool anonymous { false };
+    DeviceError err { DeviceError::NoError };
+};
+
+struct FinalizeHelper
+{
+    AskPasswdHelper *askPasswd { nullptr };
+    MountResult callback;
+};
+
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
 {
     friend class DFMProtocolDevice;

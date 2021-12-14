@@ -38,12 +38,11 @@ struct MountPassInfo
     QString passwd {};
     QString domain {};
     bool anonymous { false };
-    int savePasswd { 0 };   // 0 for never save, 1 for current session, and 2 for save permanently
+    NetworkMountPasswdSaveMode savePasswd { NetworkMountPasswdSaveMode::NeverSavePasswd };
 };
 
-//typedef struct _GVolumeMonitor GVolumeMonitor;
-typedef MountPassInfo (*GetMountPassInfo)(const QString &message, const QString &userDefault, const QString &domainDefault, const QString &errMsg);
-typedef void (*MountResult)(bool ok, QString errMsg);
+using GetMountPassInfo = std::function<MountPassInfo(const QString &message, const QString &userDefault, const QString &domainDefault)>;
+using MountResult = std::function<void(bool ok, DeviceError err)>;
 
 class DFMProtocolDevicePrivate;
 class DFMProtocolDevice final : public DFMDevice

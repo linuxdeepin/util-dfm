@@ -38,16 +38,6 @@ DFM_MOUNT_BEGIN_NS
 
 using DeviceOperateCb = std::function<void(bool, DeviceError)>;
 using DeviceOperateCbWithInfo = std::function<void(bool, DeviceError, QString)>;
-class CallbackProxy
-{
-public:
-    CallbackProxy(DeviceOperateCb cb)
-        : cb(cb) {}
-    CallbackProxy(DeviceOperateCbWithInfo cb)
-        : cbWithInfo(cb) {}
-    DeviceOperateCb cb { nullptr };
-    DeviceOperateCbWithInfo cbWithInfo { nullptr };
-};
 
 DFM_MOUNT_END_NS
 
