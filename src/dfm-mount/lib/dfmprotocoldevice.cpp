@@ -120,6 +120,37 @@ DFMProtocolDevice::~DFMProtocolDevice()
 {
 }
 
+QStringList DFMProtocolDevice::deviceIcons() const
+{
+    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    if (!dp)
+        return {};
+    if (!dp->deviceIcons.isEmpty())
+        return dp->deviceIcons;
+
+    GIcon_autoptr icon { nullptr };
+    if (dp->volumeHandler) {
+        icon = g_volume_get_icon(dp->volumeHandler);
+    } else if (dp->mountHandler) {
+        icon = g_mount_get_icon(dp->mountHandler);
+    } else {
+        return {};
+    }
+
+    if (icon) {
+        g_autofree char *cname = g_icon_to_string(icon);
+        if (cname) {
+            // iconName: . GThemedIcon drive-removable-media drive-removable drive drive-removable-media-symbolic drive-removable-symbolic drive-symbolic
+            QString iconNames(cname);
+            iconNames.remove(". GThemedIcon");
+            auto iconLst = iconNames.split(" ", QString::SkipEmptyParts);
+            dp->deviceIcons = iconLst;
+            return iconLst;
+        }
+    }
+    return {};
+}
+
 /*!
  * \brief DFMProtocolDevice::mountNetworkDevice
  * \param address       remote link address like 'smb://1.2.3.4/sharefolder/

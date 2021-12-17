@@ -52,6 +52,7 @@ class DFMProtocolDevice final : public DFMDevice
 
 public:
     ~DFMProtocolDevice();
+    QStringList deviceIcons() const;
     static void mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, MountResult mountResult);
 
     void setOperatorTimeout(int msecs);

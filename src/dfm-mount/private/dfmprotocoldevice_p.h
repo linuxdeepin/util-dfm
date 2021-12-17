@@ -114,9 +114,6 @@ public:
     };
     QVariant getAttr(FsAttr type) const;
 
-public:
-    QString deviceId;
-
 private:
     static void mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker);
     static void mountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy);
@@ -129,6 +126,9 @@ private:
     static void mountNetworkDeviceCallback(GObject *srcObj, GAsyncResult *res, gpointer userData);
 
 private:
+    QString deviceId;
+    QStringList deviceIcons;
+
     mutable QMutex mutexForMount;
     GMount *mountHandler { nullptr };
     GVolume *volumeHandler { nullptr };
