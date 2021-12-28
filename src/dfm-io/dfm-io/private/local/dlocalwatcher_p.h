@@ -60,7 +60,7 @@ public:
     GFileMonitor *gmonitor = nullptr;
     GMainLoop *loop = nullptr;
     GFile *gfile = nullptr;
-    DWatcher::WatchType type = DWatcher::WatchType::AUTO;
+    DWatcher::WatchType type = DWatcher::WatchType::kAuto;
 
     DFMIOError error;
 

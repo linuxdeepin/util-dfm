@@ -86,9 +86,9 @@ public:
     Q_DECLARE_FLAGS(DirFilters, DirFilter)
 
     enum class IteratorFlag : uint8_t {
-        NoIteratorFlags = 0x0,   // The default value, representing no flags. The iterator will return entries for the assigned path.
-        FollowSymlinks = 0x1,   // When combined with Subdirectories, this flag enables iterating through all subdirectories of the assigned path, following all symbolic links. Symbolic link loops (e.g., "link" => "." or "link" => "..") are automatically detected and ignored.
-        Subdirectories = 0x2,   // List entries inside all subdirectories as well.
+        NoIteratorFlags = 0x00,   // The default value, representing no flags. The iterator will return entries for the assigned path.
+        FollowSymlinks = 0x01,   // When combined with Subdirectories, this flag enables iterating through all subdirectories of the assigned path, following all symbolic links. Symbolic link loops (e.g., "link" => "." or "link" => "..") are automatically detected and ignored.
+        Subdirectories = 0x02,   // List entries inside all subdirectories as well.
     };
     Q_DECLARE_FLAGS(IteratorFlags, IteratorFlag)
 

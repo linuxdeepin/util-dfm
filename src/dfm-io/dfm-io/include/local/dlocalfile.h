@@ -41,12 +41,15 @@ public:
 
     bool open(DFile::OpenFlags mode) DFM_OVERRIDE;
     bool close() DFM_OVERRIDE;
+
     qint64 read(char *data, qint64 maxSize) DFM_OVERRIDE;
     QByteArray read(qint64 maxSize) DFM_OVERRIDE;
     QByteArray readAll() DFM_OVERRIDE;
+
     qint64 write(const char *data, qint64 len) DFM_OVERRIDE;
     qint64 write(const char *data) DFM_OVERRIDE;
     qint64 write(const QByteArray &byteArray) DFM_OVERRIDE;
+
     bool seek(qint64 pos, DFile::DFMSeekType type = DFMSeekType::BEGIN) DFM_OVERRIDE;
     qint64 pos() DFM_OVERRIDE;
     bool flush() DFM_OVERRIDE;
@@ -54,6 +57,7 @@ public:
     bool exists() DFM_OVERRIDE;
     Permissions permissions() DFM_OVERRIDE;
     bool setPermissions(Permissions permission) DFM_OVERRIDE;
+
     DFMIOError lastError() const DFM_OVERRIDE;
 
 private:

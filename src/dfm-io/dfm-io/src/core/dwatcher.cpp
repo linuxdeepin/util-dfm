@@ -86,7 +86,7 @@ void DWatcher::setWatchType(DWatcher::WatchType type)
 DWatcher::WatchType DWatcher::watchType() const
 {
     if (!d->watchTypeFunc)
-        return DWatcher::WatchType::AUTO;
+        return DWatcher::WatchType::kAuto;
 
     return d->watchTypeFunc();
 }

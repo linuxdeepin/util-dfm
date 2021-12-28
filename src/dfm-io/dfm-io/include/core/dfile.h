@@ -56,19 +56,19 @@ public:
     Q_DECLARE_FLAGS(OpenFlags, OpenFlag)
 
     enum class CopyFlag : uint8_t {
-        copyNone,   // No flags set.
-        copyOverwrite,   // Overwrite any existing files.
-        copyBackup,   // Make a backup of any existing files.
-        copyNofollowSymlinks,   // Don’t follow symlinks.
-        copyAllMetadata,   // Copy all file metadata instead of just default set used for copy.
-        copyNoFallbackForMove,   // Don’t use copy and delete fallback if native move not supported.
-        copyTargetDefaultPerms,   // Leaves target file with default perms, instead of setting the source file perms.
+        copyNone = 0x00,   // No flags set.
+        copyOverwrite = 0x01,   // Overwrite any existing files.
+        copyBackup = 0x02,   // Make a backup of any existing files.
+        copyNofollowSymlinks = 0x03,   // Don’t follow symlinks.
+        copyAllMetadata = 0x04,   // Copy all file metadata instead of just default set used for copy.
+        copyNoFallbackForMove = 0x05,   // Don’t use copy and delete fallback if native move not supported.
+        copyTargetDefaultPerms = 0x06,   // Leaves target file with default perms, instead of setting the source file perms.
     };
 
     enum class DFMSeekType : uint8_t {
-        BEGIN = 0,
-        CURRENT = 1,
-        END = 2
+        BEGIN = 0x00,
+        CURRENT = 0x01,
+        END = 0x02
     };
 
     enum class Permission : uint16_t {

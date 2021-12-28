@@ -41,9 +41,9 @@ class DWatcher : public QObject
     Q_OBJECT
 public:
     enum class WatchType : uint8_t {
-        AUTO = 0x0000,
-        DIR = 0x0001,
-        FILE = 0x0002,
+        kAuto = 0x00,
+        kDir = 0x01,
+        kFile = 0x02,
     };
 
     using RunningFunc = std::function<bool()>;
@@ -59,11 +59,6 @@ public:
 
     QUrl uri() const;
 
-    /**
-     * @brief a non-negative integer with the limit in milliseconds to poll for changes
-     * @param
-     * @return
-     */
     void setTimeRate(int msec);
     int timeRate() const;
 
@@ -71,11 +66,6 @@ public:
     void addWatchAttributeID(const DFileInfo::AttributeID &id);
     QList<DFileInfo::AttributeID> watchAttributeIDList() const;
 
-    /**
-     * @brief 设置监控方式
-     * @param
-     * @return
-     */
     DFM_VIRTUAL void setWatchType(WatchType type);
     DFM_VIRTUAL WatchType watchType() const;
 

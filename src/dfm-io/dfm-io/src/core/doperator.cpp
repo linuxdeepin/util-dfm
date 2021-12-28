@@ -56,20 +56,46 @@ DFM_VIRTUAL bool DOperator::renameFile(const QString &newName)
     return d->renameFileFunc(newName);
 }
 
-DFM_VIRTUAL bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackfunc func, void *userData)
+DFM_VIRTUAL bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
     if (!d->copyFileFunc)
         return false;
 
-    return d->copyFileFunc(destUri, flag, func, userData);
+    return d->copyFileFunc(destUri, flag, func, progressCallbackData);
 }
 
-DFM_VIRTUAL bool DOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackfunc func, void *userData)
+DFM_VIRTUAL bool DOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
     if (!d->moveFileFunc)
         return false;
 
-    return d->moveFileFunc(destUri, flag, func, userData);
+    return d->moveFileFunc(destUri, flag, func, progressCallbackData);
+}
+
+DFM_VIRTUAL void DOperator::renameFileAsync(const QString &newName, int ioPriority, FileOperateCallbackFunc func, void *progressCallbackData)
+{
+    if (!d->renameFileFuncAsync)
+        return;
+
+    d->renameFileFuncAsync(newName, ioPriority, func, progressCallbackData);
+}
+
+DFM_VIRTUAL void DOperator::copyFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc progressfunc, void *progressCallbackData,
+                                          int ioPriority, FileOperateCallbackFunc operatefunc, void *userData)
+{
+    if (!d->copyFileFuncAsync)
+        return;
+
+    d->copyFileFuncAsync(destUri, flag, progressfunc, progressCallbackData, ioPriority, operatefunc, userData);
+}
+
+DFM_VIRTUAL void DOperator::moveFileAsync(const QUrl &destUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+                                          int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    if (!d->moveFileFuncAsync)
+        return;
+
+    d->moveFileFuncAsync(destUri, flag, func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
 DFM_VIRTUAL bool DOperator::trashFile()
@@ -88,12 +114,36 @@ DFM_VIRTUAL bool DOperator::deleteFile()
     return d->deleteFileFunc();
 }
 
-DFM_VIRTUAL bool DOperator::restoreFile(ProgressCallbackfunc func, void *userData)
+DFM_VIRTUAL bool DOperator::restoreFile(ProgressCallbackFunc func, void *progressCallbackData)
 {
     if (!d->restoreFileFunc)
         return false;
 
-    return d->restoreFileFunc(func, userData);
+    return d->restoreFileFunc(func, progressCallbackData);
+}
+
+DFM_VIRTUAL void DOperator::trashFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    if (!d->trashFileFuncAsync)
+        return;
+
+    d->trashFileFuncAsync(ioPriority, operatefunc, userData);
+}
+
+DFM_VIRTUAL void DOperator::deleteFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    if (!d->deleteFileFuncAsync)
+        return;
+
+    d->deleteFileFuncAsync(ioPriority, operatefunc, userData);
+}
+
+DFM_VIRTUAL void DOperator::restoreFileAsync(DOperator::ProgressCallbackFunc func, void *progressCallbackData, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    if (!d->restoreFileFuncAsync)
+        return;
+
+    d->restoreFileFuncAsync(func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
 DFM_VIRTUAL bool DOperator::touchFile()
@@ -118,6 +168,30 @@ DFM_VIRTUAL bool DOperator::createLink(const QUrl &link)
         return false;
 
     return d->createLinkFunc(link);
+}
+
+DFM_VIRTUAL void DOperator::touchFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    if (!d->touchFileFuncAsync)
+        return;
+
+    d->touchFileFuncAsync(ioPriority, operatefunc, userData);
+}
+
+DFM_VIRTUAL void DOperator::makeDirectoryAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    if (!d->makeDirectoryFuncAsync)
+        return;
+
+    d->makeDirectoryFuncAsync(ioPriority, operatefunc, userData);
+}
+
+DFM_VIRTUAL void DOperator::createLinkAsync(const QUrl &link, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    if (!d->createLinkFuncAsync)
+        return;
+
+    d->createLinkFuncAsync(link, ioPriority, operatefunc, userData);
 }
 
 DFM_VIRTUAL bool DOperator::setFileInfo(const DFileInfo &fileInfo)
@@ -159,6 +233,21 @@ void DOperator::registerMoveFile(const DOperator::MoveFileFunc &func)
     d->moveFileFunc = func;
 }
 
+void DOperator::registerRenameFileAsync(const DOperator::RenameFileFuncAsync &func)
+{
+    d->renameFileFuncAsync = func;
+}
+
+void DOperator::registerCopyFileAsync(const DOperator::CopyFileFuncAsync &func)
+{
+    d->copyFileFuncAsync = func;
+}
+
+void DOperator::registerMoveFileAsync(const DOperator::MoveFileFuncAsync &func)
+{
+    d->moveFileFuncAsync = func;
+}
+
 void DOperator::registerTrashFile(const DOperator::TrashFileFunc &func)
 {
     d->trashFileFunc = func;
@@ -174,6 +263,21 @@ void DOperator::registerRestoreFile(const DOperator::RestoreFileFunc &func)
     d->restoreFileFunc = func;
 }
 
+void DOperator::registerTrashFileAsync(const DOperator::TrashFileFuncAsync &func)
+{
+    d->trashFileFuncAsync = func;
+}
+
+void DOperator::registerDeleteFileAsync(const DOperator::DeleteFileFuncAsync &func)
+{
+    d->deleteFileFuncAsync = func;
+}
+
+void DOperator::registerRestoreFileAsync(const DOperator::RestoreFileFuncAsync &func)
+{
+    d->restoreFileFuncAsync = func;
+}
+
 void DOperator::registerTouchFile(const DOperator::TouchFileFunc &func)
 {
     d->touchFileFunc = func;
@@ -187,6 +291,21 @@ void DOperator::registerMakeDirectory(const DOperator::MakeDirectoryFunc &func)
 void DOperator::registerCreateLink(const DOperator::CreateLinkFunc &func)
 {
     d->createLinkFunc = func;
+}
+
+void DOperator::registerTouchFileAsync(const DOperator::TouchFileFuncAsync &func)
+{
+    d->touchFileFuncAsync = func;
+}
+
+void DOperator::registerMakeDirectoryAsync(const DOperator::MakeDirectoryFuncAsync &func)
+{
+    d->makeDirectoryFuncAsync = func;
+}
+
+void DOperator::registerCreateLinkAsync(const DOperator::CreateLinkFuncAsync &func)
+{
+    d->createLinkFuncAsync = func;
 }
 
 void DOperator::registerSetFileInfo(const DOperator::SetFileInfoFunc &func)

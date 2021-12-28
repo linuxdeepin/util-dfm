@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
  *
  * Author:     dengkeyun<dengkeyun@uniontech.com>
@@ -42,8 +42,7 @@ DLocalOperatorPrivate::DLocalOperatorPrivate(DLocalOperator *q)
 
 DLocalOperatorPrivate::~DLocalOperatorPrivate()
 {
-    if (gcancellable)
-        g_object_unref(gcancellable);
+    freeCancellable(gcancellable);
 }
 
 bool DLocalOperatorPrivate::renameFile(const QString &new_name)
@@ -57,20 +56,13 @@ bool DLocalOperatorPrivate::renameFile(const QString &new_name)
 
     GFile *gfile = makeGFile(url);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (!gcancellable)
-        gcancellable = g_cancellable_new();
+    gcancellable = g_cancellable_new();
 
     GFile *gfile_ret = g_file_set_display_name(gfile, name, gcancellable, &gerror);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
     g_object_unref(gfile);
     g_free(name);
@@ -88,7 +80,7 @@ bool DLocalOperatorPrivate::renameFile(const QString &new_name)
     return true;
 }
 
-bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag, DOperator::ProgressCallbackfunc func, void *userData)
+bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
 {
     GError *gerror = nullptr;
 
@@ -107,20 +99,13 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag
     }
     g_object_unref(gfile_to);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (!gcancellable)
-        gcancellable = g_cancellable_new();
+    gcancellable = g_cancellable_new();
 
-    bool ret = g_file_copy(gfile_from, gfileTarget, GFileCopyFlags(flag), gcancellable, func, userData, &gerror);
+    bool ret = g_file_copy(gfile_from, gfileTarget, GFileCopyFlags(flag), gcancellable, func, progressCallbackData, &gerror);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
     if (gerror) {
         setErrorInfo(gerror);
@@ -133,103 +118,161 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag
     return ret;
 }
 
-bool DLocalOperatorPrivate::moveFile(const QUrl &to, DOperator::CopyFlag flag, DOperator::ProgressCallbackfunc func, void *userData)
+bool DLocalOperatorPrivate::moveFile(const QUrl &to, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
 {
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
 
     const QUrl &from = q->uri();
-    GFile *gfile_from = makeGFile(from);
+    g_autoptr(GFile) gfile_from = makeGFile(from);
 
-    GFile *gfile_to = makeGFile(to);
+    g_autoptr(GFile) gfile_to = makeGFile(to);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (!gcancellable)
-        gcancellable = g_cancellable_new();
+    gcancellable = g_cancellable_new();
 
-    bool ret = g_file_move(gfile_from, gfile_to, GFileCopyFlags(flag), gcancellable, func, userData, &gerror);
+    bool ret = g_file_move(gfile_from, gfile_to, GFileCopyFlags(flag), gcancellable, func, progressCallbackData, &gerror);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (gerror) {
+    if (gerror)
         setErrorInfo(gerror);
-        g_error_free(gerror);
-    }
-    g_object_unref(gfile_from);
-    g_object_unref(gfile_to);
 
     return ret;
 }
 
-bool DLocalOperatorPrivate::trashFile()
+typedef struct
 {
-    GError *gerror = nullptr;
+    DOperator::FileOperateCallbackFunc callback;
+    gpointer user_data;
+} OperateFileOp;
 
-    const QUrl &uri = q->uri();
-    GFile *gfile = makeGFile(uri);
+void RenameCallback(GObject *source_object,
+                    GAsyncResult *res,
+                    gpointer user_data)
+{
+    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
+    GFile *gfile = (GFile *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    GFile *gfileRet = g_file_set_display_name_finish(gfile, res, &gerror);
+    g_object_unref(gfileRet);
+    if (data->callback)
+        data->callback(!gerror, user_data);
+}
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
+void DLocalOperatorPrivate::renameFileAsync(const QString &newName, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    const QUrl &url = q->uri();
+
+    // name must deep copy, otherwise name freed and crash
+    g_autofree gchar *gname = g_strdup(newName.toLocal8Bit().data());
+
+    g_autoptr(GFile) gfile = makeGFile(url);
+
+    freeCancellable(gcancellable);
+
+    gcancellable = g_cancellable_new();
+
+    OperateFileOp *data = g_new0(OperateFileOp, 1);
+    data->callback = operatefunc;
+    data->user_data = userData;
+
+    g_file_set_display_name_async(gfile, gname, ioPriority, gcancellable, RenameCallback, data);
+}
+
+void CopyCallback(GObject *source_object,
+                  GAsyncResult *res,
+                  gpointer user_data)
+{
+    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
+    GFile *gfile = (GFile *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    gboolean succ = g_file_copy_finish(gfile, res, &gerror);
+    if (data->callback)
+        data->callback(succ, user_data);
+}
+
+void DLocalOperatorPrivate::copyFileAsync(const QUrl &urlTo, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+                                          int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    const QUrl &urlFrom = q->uri();
+
+    g_autoptr(GFile) gfile_from = makeGFile(urlFrom);
+    g_autoptr(GFile) gfile_to = makeGFile(urlTo);
+
+    g_autoptr(GFile) gfileTarget = nullptr;
+    if (DLocalHelper::checkGFileType(gfile_to, G_FILE_TYPE_DIRECTORY)) {
+        g_autofree char *basename = g_file_get_basename(gfile_from);
+        gfileTarget = g_file_get_child(gfile_to, basename);
+    } else {
+        gfileTarget = makeGFile(urlTo);
     }
 
-    if (!gcancellable)
-        gcancellable = g_cancellable_new();
+    freeCancellable(gcancellable);
+
+    gcancellable = g_cancellable_new();
+
+    OperateFileOp *data = g_new0(OperateFileOp, 1);
+    data->callback = operatefunc;
+    data->user_data = userData;
+
+    g_file_copy_async(gfile_from, gfileTarget, GFileCopyFlags(flag), ioPriority, gcancellable, func, progressCallbackData, CopyCallback, data);
+}
+
+void DLocalOperatorPrivate::moveFileAsync(const QUrl &to, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc progressFunc, void *progressData,
+                                          int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    Q_UNUSED(ioPriority)
+    Q_UNUSED(operatefunc)
+    Q_UNUSED(userData)
+
+    // TODO(lanxs) gio no move async func
+    moveFile(to, flag, progressFunc, progressData);
+}
+
+bool DLocalOperatorPrivate::trashFile()
+{
+    g_autoptr(GError) gerror = nullptr;
+
+    const QUrl &uri = q->uri();
+    g_autoptr(GFile) gfile = makeGFile(uri);
+
+    freeCancellable(gcancellable);
+
+    gcancellable = g_cancellable_new();
 
     bool ret = g_file_trash(gfile, gcancellable, &gerror);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (gerror) {
+    if (gerror)
         setErrorInfo(gerror);
-        g_error_free(gerror);
-    }
-    g_object_unref(gfile);
 
     return ret;
 }
 
 bool DLocalOperatorPrivate::deleteFile()
 {
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
 
     const QUrl &uri = q->uri();
-    GFile *gfile = makeGFile(uri);
+    g_autoptr(GFile) gfile = makeGFile(uri);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (!gcancellable)
-        gcancellable = g_cancellable_new();
+    gcancellable = g_cancellable_new();
 
     bool ret = g_file_delete(gfile, gcancellable, &gerror);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (gerror) {
+    if (gerror)
         setErrorInfo(gerror);
-        g_error_free(gerror);
-    }
-    g_object_unref(gfile);
 
     return ret;
 }
 
-bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackfunc func, void *userData)
+bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackFunc func, void *progressCallbackData)
 {
     GError *gerror = nullptr;
 
@@ -258,76 +301,120 @@ bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackfunc func, vo
     url_dest.setPath(QString::fromStdString(src_path.c_str()));
     url_dest.setScheme(QString("file"));
 
-    bool ret = moveFile(url_dest, DOperator::CopyFlag::None, func, userData);
+    bool ret = moveFile(url_dest, DOperator::CopyFlag::None, func, progressCallbackData);
 
     g_object_unref(gfileinfo);
 
     return ret;
 }
 
+void TrashCallback(GObject *source_object,
+                   GAsyncResult *res,
+                   gpointer user_data)
+{
+    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
+    GFile *gfile = (GFile *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    bool succ = g_file_trash_finish(gfile, res, &gerror);
+    if (data->callback)
+        data->callback(succ, user_data);
+}
+
+void DLocalOperatorPrivate::trashFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    const QUrl &uri = q->uri();
+    g_autoptr(GFile) gfile = makeGFile(uri);
+
+    freeCancellable(gcancellable);
+
+    gcancellable = g_cancellable_new();
+
+    OperateFileOp *data = g_new0(OperateFileOp, 1);
+    data->callback = operatefunc;
+    data->user_data = userData;
+
+    g_file_trash_async(gfile, ioPriority, gcancellable, TrashCallback, data);
+}
+
+void DeleteCallback(GObject *source_object,
+                    GAsyncResult *res,
+                    gpointer user_data)
+{
+    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
+    GFile *gfile = (GFile *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    bool succ = g_file_delete_finish(gfile, res, &gerror);
+    if (data->callback)
+        data->callback(succ, user_data);
+}
+
+void DLocalOperatorPrivate::deleteFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    const QUrl &uri = q->uri();
+    g_autoptr(GFile) gfile = makeGFile(uri);
+
+    freeCancellable(gcancellable);
+
+    gcancellable = g_cancellable_new();
+
+    OperateFileOp *data = g_new0(OperateFileOp, 1);
+    data->callback = operatefunc;
+    data->user_data = userData;
+
+    g_file_delete_async(gfile, ioPriority, gcancellable, DeleteCallback, data);
+}
+
+void DLocalOperatorPrivate::restoreFileAsync(DOperator::ProgressCallbackFunc progressFunc, void *progressData,
+                                             int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    // TODO(lanxs)
+    Q_UNUSED(ioPriority)
+    Q_UNUSED(operatefunc)
+    Q_UNUSED(userData)
+    restoreFile(progressFunc, progressData);
+}
+
 bool DLocalOperatorPrivate::touchFile()
 {
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
 
     const QUrl &uri = q->uri();
-    GFile *gfile = makeGFile(uri);
+    g_autoptr(GFile) gfile = makeGFile(uri);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (!gcancellable)
-        gcancellable = g_cancellable_new();
+    gcancellable = g_cancellable_new();
 
     // if file exist, return failed
-    GFileOutputStream *stream = g_file_create(gfile, GFileCreateFlags::G_FILE_CREATE_REPLACE_DESTINATION, gcancellable, &gerror);
+    g_autoptr(GFileOutputStream) stream = g_file_create(gfile, GFileCreateFlags::G_FILE_CREATE_REPLACE_DESTINATION, gcancellable, &gerror);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
-
-    if (stream)
-        g_object_unref(stream);
-    else
-        setErrorInfo(gerror);
+    freeCancellable(gcancellable);
 
     if (gerror)
-        g_error_free(gerror);
-    g_object_unref(gfile);
+        setErrorInfo(gerror);
+
     return stream != nullptr;
 }
 
 bool DLocalOperatorPrivate::makeDirectory()
 {
     // only create direct path
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
 
     const QUrl &uri = q->uri();
-    GFile *gfile = makeGFile(uri);
+    g_autoptr(GFile) gfile = makeGFile(uri);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (!gcancellable)
-        gcancellable = g_cancellable_new();
+    gcancellable = g_cancellable_new();
 
     bool ret = g_file_make_directory(gfile, gcancellable, &gerror);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
-
-    if (!ret)
-        setErrorInfo(gerror);
+    freeCancellable(gcancellable);
 
     if (gerror)
-        g_error_free(gerror);
-    g_object_unref(gfile);
+        setErrorInfo(gerror);
+
     return ret;
 }
 
@@ -341,20 +428,13 @@ bool DLocalOperatorPrivate::createLink(const QUrl &link)
     const QString &qstr = link.path();
     const char *symlink_value = qstr.toLocal8Bit().data();
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
-    if (!gcancellable)
-        gcancellable = g_cancellable_new();
+    gcancellable = g_cancellable_new();
 
     bool ret = g_file_make_symbolic_link(gfile, symlink_value, gcancellable, &gerror);
 
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
+    freeCancellable(gcancellable);
 
     if (!ret) {
         setErrorInfo(gerror);
@@ -365,6 +445,74 @@ bool DLocalOperatorPrivate::createLink(const QUrl &link)
     g_object_unref(gfile);
 
     return ret;
+}
+
+void TouchCallback(GObject *source_object,
+                   GAsyncResult *res,
+                   gpointer user_data)
+{
+    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
+    GFile *gfile = (GFile *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    g_autoptr(GFileOutputStream) stream = g_file_create_finish(gfile, res, &gerror);
+    if (data->callback)
+        data->callback(!stream, user_data);
+}
+
+void DLocalOperatorPrivate::touchFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    g_autoptr(GError) gerror = nullptr;
+
+    const QUrl &uri = q->uri();
+    g_autoptr(GFile) gfile = makeGFile(uri);
+
+    freeCancellable(gcancellable);
+
+    gcancellable = g_cancellable_new();
+
+    OperateFileOp *data = g_new0(OperateFileOp, 1);
+    data->callback = operatefunc;
+    data->user_data = userData;
+
+    g_file_create_async(gfile, GFileCreateFlags::G_FILE_CREATE_REPLACE_DESTINATION, ioPriority, gcancellable, TouchCallback, data);
+}
+
+void MakeDirCallback(GObject *source_object,
+                     GAsyncResult *res,
+                     gpointer user_data)
+{
+    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
+    GFile *gfile = (GFile *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    bool succ = g_file_make_directory_finish(gfile, res, &gerror);
+    if (data->callback)
+        data->callback(succ, user_data);
+}
+
+void DLocalOperatorPrivate::makeDirectoryAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    // only create direct path
+    const QUrl &uri = q->uri();
+    g_autoptr(GFile) gfile = makeGFile(uri);
+
+    freeCancellable(gcancellable);
+
+    gcancellable = g_cancellable_new();
+
+    OperateFileOp *data = g_new0(OperateFileOp, 1);
+    data->callback = operatefunc;
+    data->user_data = userData;
+
+    g_file_make_directory_async(gfile, ioPriority, gcancellable, MakeDirCallback, data);
+}
+
+void DLocalOperatorPrivate::createLinkAsync(const QUrl &link, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    // TODO(lanxs)
+    Q_UNUSED(ioPriority)
+    Q_UNUSED(operatefunc)
+    Q_UNUSED(userData)
+    createLink(link);
 }
 
 bool DLocalOperatorPrivate::setFileInfo(const DFileInfo &fileInfo)
@@ -405,6 +553,14 @@ GFile *DLocalOperatorPrivate::makeGFile(const QUrl &url)
     return g_file_new_for_uri(url.toString().toLocal8Bit().data());
 }
 
+void DLocalOperatorPrivate::freeCancellable(GCancellable *gcancellable)
+{
+    if (gcancellable) {
+        g_object_unref(gcancellable);
+        gcancellable = nullptr;
+    }
+}
+
 void DLocalOperatorPrivate::setErrorInfo(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
@@ -415,21 +571,32 @@ void DLocalOperatorPrivate::setErrorInfo(GError *gerror)
 DLocalOperator::DLocalOperator(const QUrl &uri)
     : DOperator(uri), d(new DLocalOperatorPrivate(this))
 {
-    registerRenameFile(std::bind(&DLocalOperator::renameFile, this, std::placeholders::_1));
-    registerCopyFile(std::bind(&DLocalOperator::copyFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-    registerMoveFile(std::bind(&DLocalOperator::moveFile, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+    registerRenameFile(bind_field(this, &DLocalOperator::renameFile));
+    registerCopyFile(bind_field(this, &DLocalOperator::copyFile));
+    registerMoveFile(bind_field(this, &DLocalOperator::moveFile));
+    registerRenameFileAsync(bind_field(this, &DLocalOperator::renameFileAsync));
+    registerCopyFileAsync(bind_field(this, &DLocalOperator::copyFileAsync));
+    registerCopyFileAsync(bind_field(this, &DLocalOperator::copyFileAsync));
+    registerMoveFileAsync(bind_field(this, &DLocalOperator::moveFileAsync));
 
-    registerTrashFile(std::bind(&DLocalOperator::trashFile, this));
-    registerDeleteFile(std::bind(&DLocalOperator::deleteFile, this));
-    registerRestoreFile(std::bind(&DLocalOperator::restoreFile, this, std::placeholders::_1, std::placeholders::_2));
+    registerTrashFile(bind_field(this, &DLocalOperator::trashFile));
+    registerDeleteFile(bind_field(this, &DLocalOperator::deleteFile));
+    registerRestoreFile(bind_field(this, &DLocalOperator::restoreFile));
+    registerTrashFileAsync(bind_field(this, &DLocalOperator::trashFileAsync));
+    registerDeleteFileAsync(bind_field(this, &DLocalOperator::deleteFileAsync));
+    registerRestoreFileAsync(bind_field(this, &DLocalOperator::restoreFileAsync));
 
-    registerTouchFile(std::bind(&DLocalOperator::touchFile, this));
-    registerMakeDirectory(std::bind(&DLocalOperator::makeDirectory, this));
-    registerCreateLink(std::bind(&DLocalOperator::createLink, this, std::placeholders::_1));
-    registerSetFileInfo(std::bind(&DLocalOperator::setFileInfo, this, std::placeholders::_1));
+    registerTouchFile(bind_field(this, &DLocalOperator::touchFile));
+    registerMakeDirectory(bind_field(this, &DLocalOperator::makeDirectory));
+    registerCreateLink(bind_field(this, &DLocalOperator::createLink));
+    registerTouchFileAsync(bind_field(this, &DLocalOperator::touchFileAsync));
+    registerMakeDirectoryAsync(bind_field(this, &DLocalOperator::makeDirectoryAsync));
+    registerCreateLinkAsync(bind_field(this, &DLocalOperator::createLinkAsync));
 
-    registerCancel(std::bind(&DLocalOperator::cancel, this));
-    registerLastError(std::bind(&DLocalOperator::lastError, this));
+    registerSetFileInfo(bind_field(this, &DLocalOperator::setFileInfo));
+
+    registerCancel(bind_field(this, &DLocalOperator::cancel));
+    registerLastError(bind_field(this, &DLocalOperator::lastError));
 }
 
 DLocalOperator::~DLocalOperator()
@@ -441,14 +608,31 @@ bool DLocalOperator::renameFile(const QString &newName)
     return d->renameFile(newName);
 }
 
-bool DLocalOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackfunc func, void *userData)
+bool DLocalOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
-    return d->copyFile(destUri, flag, func, userData);
+    return d->copyFile(destUri, flag, func, progressCallbackData);
 }
 
-bool DLocalOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackfunc func, void *userData)
+bool DLocalOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
-    return d->moveFile(destUri, flag, func, userData);
+    return d->moveFile(destUri, flag, func, progressCallbackData);
+}
+
+void DLocalOperator::renameFileAsync(const QString &newName, int ioPriority, FileOperateCallbackFunc func, void *userData)
+{
+    d->renameFileAsync(newName, ioPriority, func, userData);
+}
+
+void DLocalOperator::copyFileAsync(const QUrl &destUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+                                   int ioPriority, FileOperateCallbackFunc operatefunc, void *userData)
+{
+    d->copyFileAsync(destUri, flag, func, progressCallbackData, ioPriority, operatefunc, userData);
+}
+
+void DLocalOperator::moveFileAsync(const QUrl &destUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+                                   int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    d->moveFileAsync(destUri, flag, func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
 bool DLocalOperator::trashFile()
@@ -461,9 +645,25 @@ bool DLocalOperator::deleteFile()
     return d->deleteFile();
 }
 
-bool DLocalOperator::restoreFile(ProgressCallbackfunc func, void *userData)
+bool DLocalOperator::restoreFile(ProgressCallbackFunc func, void *progressCallbackData)
 {
-    return d->restoreFile(func, userData);
+    return d->restoreFile(func, progressCallbackData);
+}
+
+void DLocalOperator::trashFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    d->trashFileAsync(ioPriority, operatefunc, userData);
+}
+
+void DLocalOperator::deleteFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    return d->deleteFileAsync(ioPriority, operatefunc, userData);
+}
+
+void DLocalOperator::restoreFileAsync(DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+                                      int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    d->restoreFileAsync(func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
 bool DLocalOperator::touchFile()
@@ -479,6 +679,21 @@ bool DLocalOperator::makeDirectory()
 bool DLocalOperator::createLink(const QUrl &link)
 {
     return d->createLink(link);
+}
+
+void DLocalOperator::touchFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+{
+    d->touchFileAsync(ioPriority, operatefunc, userData);
+}
+
+void DLocalOperator::makeDirectoryAsync(int ioPriority, DOperator::FileOperateCallbackFunc operateFunc, void *userData)
+{
+    d->makeDirectoryAsync(ioPriority, operateFunc, userData);
+}
+
+void DLocalOperator::createLinkAsync(const QUrl &link, int ioPriority, DOperator::FileOperateCallbackFunc operateFunc, void *userData)
+{
+    d->createLinkAsync(link, ioPriority, operateFunc, userData);
 }
 
 bool DLocalOperator::setFileInfo(const DFileInfo &fileInfo)

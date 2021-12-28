@@ -42,14 +42,29 @@ public:
     ~DLocalOperatorPrivate();
 
     bool renameFile(const QString &new_name);
-    bool copyFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackfunc func = nullptr, void *userData = nullptr);
-    bool moveFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackfunc func = nullptr, void *userData = nullptr);
+    bool copyFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    bool moveFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    void renameFileAsync(const QString &newName, int ioPriority = 0, DOperator::FileOperateCallbackFunc func = nullptr, void *userData = nullptr);
+    void copyFileAsync(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
+                       int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    void moveFileAsync(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
+                       int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+
     bool trashFile();
     bool deleteFile();
-    bool restoreFile(DOperator::ProgressCallbackfunc func = nullptr, void *userData = nullptr);
+    bool restoreFile(DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    void trashFileAsync(int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    void deleteFileAsync(int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    void restoreFileAsync(DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
+                          int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+
     bool touchFile();
     bool makeDirectory();
     bool createLink(const QUrl &link);
+    void touchFileAsync(int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    void makeDirectoryAsync(int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    void createLinkAsync(const QUrl &link, int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+
     bool setFileInfo(const DFileInfo &fileInfo);
     bool cancel();
 
@@ -57,6 +72,7 @@ public:
     void setErrorInfo(GError *gerror);
 
     GFile *makeGFile(const QUrl &url);
+    void freeCancellable(GCancellable *gcancellable);
 
 private:
     DLocalOperator *q = nullptr;

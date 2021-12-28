@@ -39,7 +39,7 @@ class DFileInfo;
 class DOperator
 {
 public:
-    enum class CopyFlag : uint16_t {
+    enum class CopyFlag : uint8_t {
         None = 0,
         Overwrite = 1,
         Backup = 2,
@@ -48,22 +48,33 @@ public:
         NofallbackForMove = 5,
         TargetDefaultPerms = 6,
 
-        UserFlag = 0x100
+        UserFlag = 0x10
     };
 
-    using ProgressCallbackfunc = void (*)(int64_t, int64_t, void *);   // current_num_bytes, total_num_bytes, user_data
+    using ProgressCallbackFunc = void (*)(int64_t, int64_t, void *);   // current_num_bytes, total_num_bytes, user_data
+    using FileOperateCallbackFunc = void (*)(bool, void *);
 
     using RenameFileFunc = std::function<bool(const QString &)>;
-    using CopyFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackfunc, void *)>;
-    using MoveFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackfunc, void *)>;
+    using RenameFileFuncAsync = std::function<void(const QString &, int, FileOperateCallbackFunc, void *)>;
+    using CopyFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackFunc, void *)>;
+    using CopyFileFuncAsync = std::function<void(const QUrl &, CopyFlag, ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
+    using MoveFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackFunc, void *)>;
+    using MoveFileFuncAsync = std::function<void(const QUrl &, CopyFlag, ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
 
     using TrashFileFunc = std::function<bool()>;
+    using TrashFileFuncAsync = std::function<void(int, FileOperateCallbackFunc, void *)>;
     using DeleteFileFunc = std::function<bool()>;
-    using RestoreFileFunc = std::function<bool(ProgressCallbackfunc, void *)>;
+    using DeleteFileFuncAsync = std::function<void(int, FileOperateCallbackFunc, void *)>;
+    using RestoreFileFunc = std::function<bool(ProgressCallbackFunc, void *)>;
+    using RestoreFileFuncAsync = std::function<void(ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
 
     using TouchFileFunc = std::function<bool()>;
+    using TouchFileFuncAsync = std::function<void(int, FileOperateCallbackFunc, void *)>;
     using MakeDirectoryFunc = std::function<bool()>;
+    using MakeDirectoryFuncAsync = std::function<void(int, FileOperateCallbackFunc, void *)>;
     using CreateLinkFunc = std::function<bool(const QUrl &)>;
+    using CreateLinkFuncAsync = std::function<void(const QUrl &, int, FileOperateCallbackFunc, void *)>;
+
     using SetFileInfoFunc = std::function<bool(const DFileInfo &)>;
 
     using CancelFunc = std::function<bool()>;
@@ -76,16 +87,32 @@ public:
     QUrl uri() const;
 
     DFM_VIRTUAL bool renameFile(const QString &newName);
-    DFM_VIRTUAL bool copyFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackfunc func = nullptr, void *userData = nullptr);
-    DFM_VIRTUAL bool moveFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackfunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL bool copyFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    DFM_VIRTUAL bool moveFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    // async
+    DFM_VIRTUAL void renameFileAsync(const QString &newName, int ioPriority = 0, FileOperateCallbackFunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void copyFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc progressfunc = nullptr, void *progressCallbackData = nullptr,
+                                   int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void moveFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
+                                   int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
 
     DFM_VIRTUAL bool trashFile();
     DFM_VIRTUAL bool deleteFile();
-    DFM_VIRTUAL bool restoreFile(ProgressCallbackfunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL bool restoreFile(ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    // async
+    DFM_VIRTUAL void trashFileAsync(int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void deleteFileAsync(int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void restoreFileAsync(ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
+                                      int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
 
     DFM_VIRTUAL bool touchFile();
     DFM_VIRTUAL bool makeDirectory();
     DFM_VIRTUAL bool createLink(const QUrl &link);
+    // async
+    DFM_VIRTUAL void touchFileAsync(int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void makeDirectoryAsync(int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void createLinkAsync(const QUrl &link, int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
+
     DFM_VIRTUAL bool setFileInfo(const DFileInfo &fileInfo);
 
     DFM_VIRTUAL bool cancel();
@@ -95,14 +122,24 @@ public:
     void registerRenameFile(const RenameFileFunc &func);
     void registerCopyFile(const CopyFileFunc &func);
     void registerMoveFile(const MoveFileFunc &func);
+    void registerRenameFileAsync(const RenameFileFuncAsync &func);
+    void registerCopyFileAsync(const CopyFileFuncAsync &func);
+    void registerMoveFileAsync(const MoveFileFuncAsync &func);
 
     void registerTrashFile(const TrashFileFunc &func);
     void registerDeleteFile(const DeleteFileFunc &func);
     void registerRestoreFile(const RestoreFileFunc &func);
+    void registerTrashFileAsync(const TrashFileFuncAsync &func);
+    void registerDeleteFileAsync(const DeleteFileFuncAsync &func);
+    void registerRestoreFileAsync(const RestoreFileFuncAsync &func);
 
     void registerTouchFile(const TouchFileFunc &func);
     void registerMakeDirectory(const MakeDirectoryFunc &func);
     void registerCreateLink(const CreateLinkFunc &func);
+    void registerTouchFileAsync(const TouchFileFuncAsync &func);
+    void registerMakeDirectoryAsync(const MakeDirectoryFuncAsync &func);
+    void registerCreateLinkAsync(const CreateLinkFuncAsync &func);
+
     void registerSetFileInfo(const SetFileInfoFunc &func);
 
     void registerCancel(const CancelFunc &func);

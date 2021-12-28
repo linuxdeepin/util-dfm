@@ -191,7 +191,7 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
 
 DWatcher::WatchType DLocalWatcherPrivate::transWatcherType(GFile *gfile, bool *ok)
 {
-    DWatcher::WatchType retType = DWatcher::WatchType::AUTO;
+    DWatcher::WatchType retType = DWatcher::WatchType::kAuto;
 
     if (!gfile)
         return retType;
@@ -211,7 +211,7 @@ DWatcher::WatchType DLocalWatcherPrivate::transWatcherType(GFile *gfile, bool *o
     fileType = g_file_info_get_attribute_uint32(info, G_FILE_ATTRIBUTE_STANDARD_TYPE);
 
     g_object_unref(info);
-    retType = (fileType == G_FILE_TYPE_DIRECTORY) ? DWatcher::WatchType::DIR : DWatcher::WatchType::FILE;
+    retType = (fileType == G_FILE_TYPE_DIRECTORY) ? DWatcher::WatchType::kDir : DWatcher::WatchType::kFile;
 
     if (ok)
         *ok = true;
@@ -222,7 +222,7 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
 {
     if (!gfile)
         return nullptr;
-    if (type == DWatcher::WatchType::AUTO) {
+    if (type == DWatcher::WatchType::kAuto) {
         bool ok = false;
         type = transWatcherType(gfile, &ok);
         if (!ok)
@@ -230,7 +230,7 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
     }
 
     GError *gerror = nullptr;
-    if (type == DWatcher::WatchType::DIR)
+    if (type == DWatcher::WatchType::kDir)
         gmonitor = g_file_monitor_directory(gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
     else
         gmonitor = g_file_monitor(gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
