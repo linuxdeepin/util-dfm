@@ -283,7 +283,7 @@ void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObjec
 
         g_autofree char *encryptedShell = udisks_block_dup_crypto_backing_device(block);
         if (strcmp(encryptedShell, "/") != 0) {
-            Q_EMIT q->blockLocked(objPath);
+            Q_EMIT q->blockLocked(encryptedShell);
             qDebug() << "locked: " << objPath << "removed, " << encryptedShell << "locked";
         }
     }
