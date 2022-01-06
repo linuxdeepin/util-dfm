@@ -54,7 +54,6 @@ public:
     QString next() const;
     QSharedPointer<DFileInfo> fileInfo() const;
     bool checkFilter();
-    bool isHiddenFile(const QString &parentPath, const QString &name);
 
     DFMIOError lastError();
     void setErrorInfo(GError *gerror);

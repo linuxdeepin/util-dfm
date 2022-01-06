@@ -228,10 +228,6 @@ bool DLocalEnumeratorPrivate::checkFilter()
     const bool showHidden = (dirFilters & DEnumerator::DirFilter::Hidden) == kDirFilterHidden;
     if (!showHidden) {   // hide files
         bool isHidden = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsHidden).toBool();
-        // linux use .hidden files to record hidden files info
-        const QString &parentPath = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardParentPath).toString();
-        if (!isHidden)
-            isHidden = isHiddenFile(parentPath, fileInfoName);
         if (isHidden)
             ret = false;
     }
@@ -247,34 +243,6 @@ bool DLocalEnumeratorPrivate::checkFilter()
         ret = false;
     if (!showDotDot && fileInfoName == "..")
         ret = false;
-
-    return ret;
-}
-
-bool DLocalEnumeratorPrivate::isHiddenFile(const QString &parentPath, const QString &name)
-{
-    if (hiddenFiles.count(parentPath) > 0) {
-        return hiddenFiles.value(parentPath).contains(name);
-    }
-
-    bool ret = false;
-
-    const QString &hiddenPath = parentPath.endsWith("/") ? (parentPath + ".hidden") : (parentPath + "/.hidden");
-
-    g_autoptr(GFile) gfile = g_file_new_for_path(hiddenPath.toLocal8Bit().data());
-    g_autofree char *contents = nullptr;
-    g_autoptr(GError) gerror = nullptr;
-    gsize len = 0;
-    bool succ = g_file_load_contents(gfile, nullptr, &contents, &len, nullptr, &gerror);
-    if (succ) {
-        if (contents && len > 0) {
-            const QSet<QString> &hiddens = QSet<QString>::fromList(QString::fromLocal8Bit(contents).split('\n', QString::SkipEmptyParts));
-            ret = hiddens.contains(name);
-            hiddenFiles.insert(parentPath, std::move(hiddens));
-        }
-    } else {
-        setErrorInfo(gerror);
-    }
 
     return ret;
 }
