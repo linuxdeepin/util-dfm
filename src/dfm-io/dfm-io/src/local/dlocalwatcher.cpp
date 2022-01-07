@@ -29,8 +29,6 @@
 
 #include <QDebug>
 
-#include <thread>
-
 USING_IO_NAMESPACE
 
 DLocalWatcherPrivate::DLocalWatcherPrivate(DLocalWatcher *q)
@@ -57,42 +55,28 @@ bool DLocalWatcherPrivate::start(int timeRate)
     // stop first
     stop();
 
-    std::thread thread([&]() {
-        const QUrl &uri = q->uri();
-        const QString &fname = uri.url();
+    const QUrl &uri = q->uri();
+    const QString &url = uri.url();
 
-        gfile = g_file_new_for_uri(fname.toLocal8Bit().data());
+    gfile = g_file_new_for_uri(url.toLocal8Bit().data());
 
-        gmonitor = createMonitor(gfile, type);
+    gmonitor = createMonitor(gfile, type);
 
-        if (!gmonitor) {
-            g_object_unref(gfile);
+    if (!gmonitor) {
+        g_object_unref(gfile);
+        gfile = nullptr;
 
-            return false;
-        }
+        return false;
+    }
 
-        g_file_monitor_set_rate_limit(gmonitor, timeRate);
+    g_file_monitor_set_rate_limit(gmonitor, timeRate);
 
-        loop = g_main_loop_new(nullptr, false);
-
-        g_signal_connect(gmonitor, "changed", G_CALLBACK(&DLocalWatcherPrivate::watchCallback), q);
-
-        g_main_loop_run(loop);
-        g_main_loop_unref(loop);
-        loop = nullptr;
-
-        return true;
-    });
-
-    thread.detach();
+    g_signal_connect(gmonitor, "changed", G_CALLBACK(&DLocalWatcherPrivate::watchCallback), q);
 
     return true;
 }
 bool DLocalWatcherPrivate::stop()
 {
-    if (loop) {
-        g_main_loop_quit(loop);
-    }
     if (gmonitor) {
         if (!g_file_monitor_cancel(gmonitor)) {
             qInfo() << "cancel file monitor failed.";
@@ -134,20 +118,18 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
     Q_UNUSED(monitor);
 
     DLocalWatcher *watcher = static_cast<DLocalWatcher *>(user_data);
-    if (watcher == nullptr) {
+    if (nullptr == watcher) {
         return;
     }
 
     QString childUrl;
     QString otherUrl;
 
-    gchar *child_str = g_file_get_uri(child);
+    g_autofree gchar *child_str = g_file_get_uri(child);
     childUrl = QString::fromLocal8Bit(child_str);
-    g_free(child_str);
     if (other) {
-        gchar *other_str = g_file_get_uri(other);
+        g_autofree gchar *other_str = g_file_get_uri(other);
         otherUrl = QString::fromLocal8Bit(other_str);
-        g_free(other_str);
     }
 
     switch (event_type) {
@@ -177,8 +159,6 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
         watcher->fileDeleted(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_RENAMED:
-        //watcher->fileDeleted(QUrl(childUrl), DFileInfo());
-        //watcher->fileAdded(QUrl(otherUrl), DFileInfo());
         watcher->fileRenamed(QUrl(childUrl), QUrl(otherUrl));
         break;
 
@@ -196,21 +176,19 @@ DWatcher::WatchType DLocalWatcherPrivate::transWatcherType(GFile *gfile, bool *o
     if (!gfile)
         return retType;
 
-    GFileInfo *info = nullptr;
+    g_autoptr(GFileInfo) gfileinfo = nullptr;
     guint32 fileType;
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
 
-    info = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
-    if (!info) {
+    gfileinfo = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
+    if (!gfileinfo) {
         setErrorInfo(gerror);
-        g_error_free(gerror);
 
         return retType;
     }
 
-    fileType = g_file_info_get_attribute_uint32(info, G_FILE_ATTRIBUTE_STANDARD_TYPE);
+    fileType = g_file_info_get_attribute_uint32(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_TYPE);
 
-    g_object_unref(info);
     retType = (fileType == G_FILE_TYPE_DIRECTORY) ? DWatcher::WatchType::kDir : DWatcher::WatchType::kFile;
 
     if (ok)
@@ -229,7 +207,7 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
             return nullptr;
     }
 
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
     if (type == DWatcher::WatchType::kDir)
         gmonitor = g_file_monitor_directory(gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
     else
@@ -237,7 +215,6 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
 
     if (!gmonitor) {
         setErrorInfo(gerror);
-        g_error_free(gerror);
 
         return nullptr;
     }
