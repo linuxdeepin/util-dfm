@@ -521,7 +521,7 @@ bool DLocalOperatorPrivate::setFileInfo(const DFileInfo &fileInfo)
     g_autoptr(GFile) gfile = makeGFile(uri);
 
     bool ret = true;
-    for (const auto &[key, value] : DFileInfo::attributeNames) {
+    for (const auto &[key, value] : DFileInfo::attributeInfoMap) {
         g_autoptr(GError) gerror = nullptr;
         bool succ = DLocalHelper::setAttributeByGFile(gfile, key, fileInfo.attribute(key, nullptr), &gerror);
         if (!succ)

@@ -169,8 +169,8 @@ public:
         AttributeIDMax = 999,
     };
 
-    using AttributeNameMap = std::unordered_map<DFileInfo::AttributeID, std::string>;
-    static AttributeNameMap attributeNames;
+    using AttributeInfoMap = std::unordered_map<DFileInfo::AttributeID, std::tuple<std::string, QVariant>>;
+    static AttributeInfoMap attributeInfoMap;
 
     using AttributeFunc = std::function<QVariant(DFileInfo::AttributeID, bool *)>;
     using SetAttributeFunc = std::function<bool(DFileInfo::AttributeID, const QVariant &)>;

@@ -494,8 +494,8 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
 
 std::string DLocalHelper::attributeStringById(DFileInfo::AttributeID id)
 {
-    if (DFileInfo::attributeNames.count(id) > 0) {
-        const std::string &value = DFileInfo::attributeNames.at(id);
+    if (DFileInfo::attributeInfoMap.count(id) > 0) {
+        const std::string &value = std::get<0>(DFileInfo::attributeInfoMap.at(id));
         return value;
     }
     return "";

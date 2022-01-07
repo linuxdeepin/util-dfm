@@ -25,117 +25,117 @@
 
 USING_IO_NAMESPACE
 
-DFileInfo::AttributeNameMap DFileInfo::attributeNames = {
-    { DFileInfo::AttributeID::StandardType, "standard::type" },   // G_FILE_ATTRIBUTE_STANDARD_TYPE
-    { DFileInfo::AttributeID::StandardIsHidden, "standard::is-hidden" },   // G_FILE_ATTRIBUTE_STANDARD_IS_HIDDEN
-    { DFileInfo::AttributeID::StandardIsBackup, "standard::is-backup" },   // G_FILE_ATTRIBUTE_STANDARD_IS_BACKUP
-    { DFileInfo::AttributeID::StandardIsSymlink, "standard::is-symlink" },   // G_FILE_ATTRIBUTE_STANDARD_IS_SYMLINK
-    { DFileInfo::AttributeID::StandardIsVirtual, "standard::is-virtual" },   // G_FILE_ATTRIBUTE_STANDARD_IS_VIRTUAL
-    { DFileInfo::AttributeID::StandardIsVolatile, "standard::is-volatile" },   // G_FILE_ATTRIBUTE_STANDARD_IS_VOLATILE
-    { DFileInfo::AttributeID::StandardName, "standard::name" },   // G_FILE_ATTRIBUTE_STANDARD_NAME
-    { DFileInfo::AttributeID::StandardDisplayName, "standard::display-name" },   // G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME
-    { DFileInfo::AttributeID::StandardEditName, "standard::edit-name" },   // G_FILE_ATTRIBUTE_STANDARD_EDIT_NAME
-    { DFileInfo::AttributeID::StandardCopyName, "standard::copy-name" },   // G_FILE_ATTRIBUTE_STANDARD_COPY_NAME
-    { DFileInfo::AttributeID::StandardIcon, "standard::icon" },   // G_FILE_ATTRIBUTE_STANDARD_ICON
-    { DFileInfo::AttributeID::StandardSymbolicIcon, "standard::symbolic-icon" },   // G_FILE_ATTRIBUTE_STANDARD_SYMBOLIC_ICON
-    { DFileInfo::AttributeID::StandardContentType, "standard::content-type" },   // G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE
-    { DFileInfo::AttributeID::StandardFastContentType, "standard::fast-content-type" },   // G_FILE_ATTRIBUTE_STANDARD_FAST_CONTENT_TYPE
-    { DFileInfo::AttributeID::StandardSize, "standard::size" },   // G_FILE_ATTRIBUTE_STANDARD_SIZE
-    { DFileInfo::AttributeID::StandardAllocatedSize, "standard::allocated-size" },   // G_FILE_ATTRIBUTE_STANDARD_ALLOCATED_SIZE
-    { DFileInfo::AttributeID::StandardSymlinkTarget, "standard::symlink-target" },   // G_FILE_ATTRIBUTE_STANDARD_SYMLINK_TARGET
-    { DFileInfo::AttributeID::StandardTargetUri, "standard::target-uri" },   // G_FILE_ATTRIBUTE_STANDARD_TARGET_URI
-    { DFileInfo::AttributeID::StandardSortOrder, "standard::sort-order" },   // G_FILE_ATTRIBUTE_STANDARD_SORT_ORDER
-    { DFileInfo::AttributeID::StandardDescription, "standard::description" },   // G_FILE_ATTRIBUTE_STANDARD_DESCRIPTION
+DFileInfo::AttributeInfoMap DFileInfo::attributeInfoMap = {
+    { DFileInfo::AttributeID::StandardType, std::make_tuple<std::string, QVariant>("standard::type", 0) },   // G_FILE_ATTRIBUTE_STANDARD_TYPE
+    { DFileInfo::AttributeID::StandardIsHidden, std::make_tuple<std::string, QVariant>("standard::is-hidden", false) },   // G_FILE_ATTRIBUTE_STANDARD_IS_HIDDEN
+    { DFileInfo::AttributeID::StandardIsBackup, std::make_tuple<std::string, QVariant>("standard::is-backup", false) },   // G_FILE_ATTRIBUTE_STANDARD_IS_BACKUP
+    { DFileInfo::AttributeID::StandardIsSymlink, std::make_tuple<std::string, QVariant>("standard::is-symlink", false) },   // G_FILE_ATTRIBUTE_STANDARD_IS_SYMLINK
+    { DFileInfo::AttributeID::StandardIsVirtual, std::make_tuple<std::string, QVariant>("standard::is-virtual", false) },   // G_FILE_ATTRIBUTE_STANDARD_IS_VIRTUAL
+    { DFileInfo::AttributeID::StandardIsVolatile, std::make_tuple<std::string, QVariant>("standard::is-volatile", false) },   // G_FILE_ATTRIBUTE_STANDARD_IS_VOLATILE
+    { DFileInfo::AttributeID::StandardName, std::make_tuple<std::string, QVariant>("standard::name", "") },   // G_FILE_ATTRIBUTE_STANDARD_NAME
+    { DFileInfo::AttributeID::StandardDisplayName, std::make_tuple<std::string, QVariant>("standard::display-name", "") },   // G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME
+    { DFileInfo::AttributeID::StandardEditName, std::make_tuple<std::string, QVariant>("standard::edit-name", "") },   // G_FILE_ATTRIBUTE_STANDARD_EDIT_NAME
+    { DFileInfo::AttributeID::StandardCopyName, std::make_tuple<std::string, QVariant>("standard::copy-name", "") },   // G_FILE_ATTRIBUTE_STANDARD_COPY_NAME
+    { DFileInfo::AttributeID::StandardIcon, std::make_tuple<std::string, QVariant>("standard::icon", 0) },   // G_FILE_ATTRIBUTE_STANDARD_ICON
+    { DFileInfo::AttributeID::StandardSymbolicIcon, std::make_tuple<std::string, QVariant>("standard::symbolic-icon", 0) },   // G_FILE_ATTRIBUTE_STANDARD_SYMBOLIC_ICON
+    { DFileInfo::AttributeID::StandardContentType, std::make_tuple<std::string, QVariant>("standard::content-type", "") },   // G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE
+    { DFileInfo::AttributeID::StandardFastContentType, std::make_tuple<std::string, QVariant>("standard::fast-content-type", "") },   // G_FILE_ATTRIBUTE_STANDARD_FAST_CONTENT_TYPE
+    { DFileInfo::AttributeID::StandardSize, std::make_tuple<std::string, QVariant>("standard::size", 0) },   // G_FILE_ATTRIBUTE_STANDARD_SIZE
+    { DFileInfo::AttributeID::StandardAllocatedSize, std::make_tuple<std::string, QVariant>("standard::allocated-size", 0) },   // G_FILE_ATTRIBUTE_STANDARD_ALLOCATED_SIZE
+    { DFileInfo::AttributeID::StandardSymlinkTarget, std::make_tuple<std::string, QVariant>("standard::symlink-target", "") },   // G_FILE_ATTRIBUTE_STANDARD_SYMLINK_TARGET
+    { DFileInfo::AttributeID::StandardTargetUri, std::make_tuple<std::string, QVariant>("standard::target-uri", "") },   // G_FILE_ATTRIBUTE_STANDARD_TARGET_URI
+    { DFileInfo::AttributeID::StandardSortOrder, std::make_tuple<std::string, QVariant>("standard::sort-order", 0) },   // G_FILE_ATTRIBUTE_STANDARD_SORT_ORDER
+    { DFileInfo::AttributeID::StandardDescription, std::make_tuple<std::string, QVariant>("standard::description", "") },   // G_FILE_ATTRIBUTE_STANDARD_DESCRIPTION
 
-    { DFileInfo::AttributeID::EtagValue, "etag::value" },   // G_FILE_ATTRIBUTE_ETAG_VALUE
+    { DFileInfo::AttributeID::EtagValue, std::make_tuple<std::string, QVariant>("etag::value", "") },   // G_FILE_ATTRIBUTE_ETAG_VALUE
 
-    { DFileInfo::AttributeID::IdFile, "id::file" },   // G_FILE_ATTRIBUTE_ID_FILE
-    { DFileInfo::AttributeID::IdFilesystem, "id::filesystem" },   // G_FILE_ATTRIBUTE_ID_FILESYSTEM
+    { DFileInfo::AttributeID::IdFile, std::make_tuple<std::string, QVariant>("id::file", "") },   // G_FILE_ATTRIBUTE_ID_FILE
+    { DFileInfo::AttributeID::IdFilesystem, std::make_tuple<std::string, QVariant>("id::filesystem", "") },   // G_FILE_ATTRIBUTE_ID_FILESYSTEM
 
-    { DFileInfo::AttributeID::AccessCanRead, "access::can-read" },   // G_FILE_ATTRIBUTE_ACCESS_CAN_READ
-    { DFileInfo::AttributeID::AccessCanWrite, "access::can-write" },   // G_FILE_ATTRIBUTE_ACCESS_CAN_WRITE
-    { DFileInfo::AttributeID::AccessCanExecute, "access::can-execute" },   // G_FILE_ATTRIBUTE_ACCESS_CAN_EXECUTE
-    { DFileInfo::AttributeID::AccessCanDelete, "access::can-delete" },   // G_FILE_ATTRIBUTE_ACCESS_CAN_DELETE
-    { DFileInfo::AttributeID::AccessCanTrash, "access::can-trash" },   // G_FILE_ATTRIBUTE_ACCESS_CAN_TRASH
-    { DFileInfo::AttributeID::AccessCanRename, "access::can-rename" },   // G_FILE_ATTRIBUTE_ACCESS_CAN_RENAME
+    { DFileInfo::AttributeID::AccessCanRead, std::make_tuple<std::string, QVariant>("access::can-read", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_READ
+    { DFileInfo::AttributeID::AccessCanWrite, std::make_tuple<std::string, QVariant>("access::can-write", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_WRITE
+    { DFileInfo::AttributeID::AccessCanExecute, std::make_tuple<std::string, QVariant>("access::can-execute", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_EXECUTE
+    { DFileInfo::AttributeID::AccessCanDelete, std::make_tuple<std::string, QVariant>("access::can-delete", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_DELETE
+    { DFileInfo::AttributeID::AccessCanTrash, std::make_tuple<std::string, QVariant>("access::can-trash", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_TRASH
+    { DFileInfo::AttributeID::AccessCanRename, std::make_tuple<std::string, QVariant>("access::can-rename", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_RENAME
 
-    { DFileInfo::AttributeID::MountableCanMount, "mountable::can-mount" },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_MOUNT
-    { DFileInfo::AttributeID::MountableCanUnmount, "mountable::can-unmount" },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_UNMOUNT
-    { DFileInfo::AttributeID::MountableCanEject, "mountable::can-eject" },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_EJECT
-    { DFileInfo::AttributeID::MountableUnixDevice, "mountable::unix-device" },   // G_FILE_ATTRIBUTE_MOUNTABLE_UNIX_DEVICE
-    { DFileInfo::AttributeID::MountableUnixDeviceFile, "mountable::unix-device-file" },   // G_FILE_ATTRIBUTE_MOUNTABLE_UNIX_DEVICE_FILE
-    { DFileInfo::AttributeID::MountableHalUdi, "mountable::hal-udi" },   // G_FILE_ATTRIBUTE_MOUNTABLE_HAL_UDI
-    { DFileInfo::AttributeID::MountableCanPoll, "mountable::can-poll" },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_POLL
-    { DFileInfo::AttributeID::MountableIsMediaCheckAutomatic, "mountable::is-media-check-automatic" },   // G_FILE_ATTRIBUTE_MOUNTABLE_IS_MEDIA_CHECK_AUTOMATIC
-    { DFileInfo::AttributeID::MountableCanStart, "mountable::can-start" },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_START
-    { DFileInfo::AttributeID::MountableCanStartDegraded, "mountable::can-start-degraded" },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_START_DEGRADED
-    { DFileInfo::AttributeID::MountableCanStop, "mountable::can-stop" },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_STOP
-    { DFileInfo::AttributeID::MountableStartStopType, "mountable::start-stop-type" },   // G_FILE_ATTRIBUTE_MOUNTABLE_START_STOP_TYPE
+    { DFileInfo::AttributeID::MountableCanMount, std::make_tuple<std::string, QVariant>("mountable::can-mount", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_MOUNT
+    { DFileInfo::AttributeID::MountableCanUnmount, std::make_tuple<std::string, QVariant>("mountable::can-unmount", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_UNMOUNT
+    { DFileInfo::AttributeID::MountableCanEject, std::make_tuple<std::string, QVariant>("mountable::can-eject", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_EJECT
+    { DFileInfo::AttributeID::MountableUnixDevice, std::make_tuple<std::string, QVariant>("mountable::unix-device", 0) },   // G_FILE_ATTRIBUTE_MOUNTABLE_UNIX_DEVICE
+    { DFileInfo::AttributeID::MountableUnixDeviceFile, std::make_tuple<std::string, QVariant>("mountable::unix-device-file", "") },   // G_FILE_ATTRIBUTE_MOUNTABLE_UNIX_DEVICE_FILE
+    { DFileInfo::AttributeID::MountableHalUdi, std::make_tuple<std::string, QVariant>("mountable::hal-udi", "") },   // G_FILE_ATTRIBUTE_MOUNTABLE_HAL_UDI
+    { DFileInfo::AttributeID::MountableCanPoll, std::make_tuple<std::string, QVariant>("mountable::can-poll", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_POLL
+    { DFileInfo::AttributeID::MountableIsMediaCheckAutomatic, std::make_tuple<std::string, QVariant>("mountable::is-media-check-automatic", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_IS_MEDIA_CHECK_AUTOMATIC
+    { DFileInfo::AttributeID::MountableCanStart, std::make_tuple<std::string, QVariant>("mountable::can-start", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_START
+    { DFileInfo::AttributeID::MountableCanStartDegraded, std::make_tuple<std::string, QVariant>("mountable::can-start-degraded", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_START_DEGRADED
+    { DFileInfo::AttributeID::MountableCanStop, std::make_tuple<std::string, QVariant>("mountable::can-stop", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_STOP
+    { DFileInfo::AttributeID::MountableStartStopType, std::make_tuple<std::string, QVariant>("mountable::start-stop-type", 0) },   // G_FILE_ATTRIBUTE_MOUNTABLE_START_STOP_TYPE
 
-    { DFileInfo::AttributeID::TimeModified, "time::modified" },   // G_FILE_ATTRIBUTE_TIME_MODIFIED
-    { DFileInfo::AttributeID::TimeModifiedUsec, "time::modified-usec" },   // G_FILE_ATTRIBUTE_TIME_MODIFIED_USEC
-    { DFileInfo::AttributeID::TimeAccess, "time::access" },   // G_FILE_ATTRIBUTE_TIME_ACCESS
-    { DFileInfo::AttributeID::TimeAccessUsec, "time::access-usec" },   // G_FILE_ATTRIBUTE_TIME_ACCESS_USEC
-    { DFileInfo::AttributeID::TimeChanged, "time::changed" },   // G_FILE_ATTRIBUTE_TIME_CHANGED
-    { DFileInfo::AttributeID::TimeChangedUsec, "time::changed-usec" },   // G_FILE_ATTRIBUTE_TIME_CHANGED_USEC
-    { DFileInfo::AttributeID::TimeCreated, "time::created" },   // G_FILE_ATTRIBUTE_TIME_CREATED
-    { DFileInfo::AttributeID::TimeCreatedUsec, "time::created-usec" },   // G_FILE_ATTRIBUTE_TIME_CREATED_USEC
+    { DFileInfo::AttributeID::TimeModified, std::make_tuple<std::string, QVariant>("time::modified", 0) },   // G_FILE_ATTRIBUTE_TIME_MODIFIED
+    { DFileInfo::AttributeID::TimeModifiedUsec, std::make_tuple<std::string, QVariant>("time::modified-usec", 0) },   // G_FILE_ATTRIBUTE_TIME_MODIFIED_USEC
+    { DFileInfo::AttributeID::TimeAccess, std::make_tuple<std::string, QVariant>("time::access", 0) },   // G_FILE_ATTRIBUTE_TIME_ACCESS
+    { DFileInfo::AttributeID::TimeAccessUsec, std::make_tuple<std::string, QVariant>("time::access-usec", 0) },   // G_FILE_ATTRIBUTE_TIME_ACCESS_USEC
+    { DFileInfo::AttributeID::TimeChanged, std::make_tuple<std::string, QVariant>("time::changed", 0) },   // G_FILE_ATTRIBUTE_TIME_CHANGED
+    { DFileInfo::AttributeID::TimeChangedUsec, std::make_tuple<std::string, QVariant>("time::changed-usec", 0) },   // G_FILE_ATTRIBUTE_TIME_CHANGED_USEC
+    { DFileInfo::AttributeID::TimeCreated, std::make_tuple<std::string, QVariant>("time::created", 0) },   // G_FILE_ATTRIBUTE_TIME_CREATED
+    { DFileInfo::AttributeID::TimeCreatedUsec, std::make_tuple<std::string, QVariant>("time::created-usec", 0) },   // G_FILE_ATTRIBUTE_TIME_CREATED_USEC
 
-    { DFileInfo::AttributeID::UnixDevice, "unix::device" },   // G_FILE_ATTRIBUTE_UNIX_DEVICE
-    { DFileInfo::AttributeID::UnixInode, "unix::inode" },   // G_FILE_ATTRIBUTE_UNIX_INODE
-    { DFileInfo::AttributeID::UnixMode, "unix::mode" },   // G_FILE_ATTRIBUTE_UNIX_MODE
-    { DFileInfo::AttributeID::UnixNlink, "unix::nlink" },   // G_FILE_ATTRIBUTE_UNIX_NLINK
-    { DFileInfo::AttributeID::UnixUID, "unix::uid" },   // G_FILE_ATTRIBUTE_UNIX_UID
-    { DFileInfo::AttributeID::UnixGID, "unix::gid" },   // G_FILE_ATTRIBUTE_UNIX_GID
-    { DFileInfo::AttributeID::UnixRdev, "unix::rdev" },   // G_FILE_ATTRIBUTE_UNIX_RDEV
-    { DFileInfo::AttributeID::UnixBlockSize, "unix::block-size" },   // G_FILE_ATTRIBUTE_UNIX_BLOCK_SIZE
-    { DFileInfo::AttributeID::UnixBlocks, "unix::blocks" },   // G_FILE_ATTRIBUTE_UNIX_BLOCKS
-    { DFileInfo::AttributeID::UnixIsMountPoint, "unix::is-mountpoint" },   // G_FILE_ATTRIBUTE_UNIX_IS_MOUNTPOINT
+    { DFileInfo::AttributeID::UnixDevice, std::make_tuple<std::string, QVariant>("unix::device", 0) },   // G_FILE_ATTRIBUTE_UNIX_DEVICE
+    { DFileInfo::AttributeID::UnixInode, std::make_tuple<std::string, QVariant>("unix::inode", 0) },   // G_FILE_ATTRIBUTE_UNIX_INODE
+    { DFileInfo::AttributeID::UnixMode, std::make_tuple<std::string, QVariant>("unix::mode", 0) },   // G_FILE_ATTRIBUTE_UNIX_MODE
+    { DFileInfo::AttributeID::UnixNlink, std::make_tuple<std::string, QVariant>("unix::nlink", 0) },   // G_FILE_ATTRIBUTE_UNIX_NLINK
+    { DFileInfo::AttributeID::UnixUID, std::make_tuple<std::string, QVariant>("unix::uid", 0) },   // G_FILE_ATTRIBUTE_UNIX_UID
+    { DFileInfo::AttributeID::UnixGID, std::make_tuple<std::string, QVariant>("unix::gid", 0) },   // G_FILE_ATTRIBUTE_UNIX_GID
+    { DFileInfo::AttributeID::UnixRdev, std::make_tuple<std::string, QVariant>("unix::rdev", 0) },   // G_FILE_ATTRIBUTE_UNIX_RDEV
+    { DFileInfo::AttributeID::UnixBlockSize, std::make_tuple<std::string, QVariant>("unix::block-size", 0) },   // G_FILE_ATTRIBUTE_UNIX_BLOCK_SIZE
+    { DFileInfo::AttributeID::UnixBlocks, std::make_tuple<std::string, QVariant>("unix::blocks", 0) },   // G_FILE_ATTRIBUTE_UNIX_BLOCKS
+    { DFileInfo::AttributeID::UnixIsMountPoint, std::make_tuple<std::string, QVariant>("unix::is-mountpoint", false) },   // G_FILE_ATTRIBUTE_UNIX_IS_MOUNTPOINT
 
-    { DFileInfo::AttributeID::DosIsArchive, "dos::is-archive" },   // G_FILE_ATTRIBUTE_DOS_IS_ARCHIVE
-    { DFileInfo::AttributeID::DosIsSystem, "dos::is-system" },   // G_FILE_ATTRIBUTE_DOS_IS_SYSTEM
+    { DFileInfo::AttributeID::DosIsArchive, std::make_tuple<std::string, QVariant>("dos::is-archive", false) },   // G_FILE_ATTRIBUTE_DOS_IS_ARCHIVE
+    { DFileInfo::AttributeID::DosIsSystem, std::make_tuple<std::string, QVariant>("dos::is-system", false) },   // G_FILE_ATTRIBUTE_DOS_IS_SYSTEM
 
-    { DFileInfo::AttributeID::OwnerUser, "owner::user" },   // G_FILE_ATTRIBUTE_OWNER_USER
-    { DFileInfo::AttributeID::OwnerUserReal, "owner::user-real" },   // G_FILE_ATTRIBUTE_OWNER_USER_REAL
-    { DFileInfo::AttributeID::OwnerGroup, "owner::group" },   // G_FILE_ATTRIBUTE_OWNER_GROUP
+    { DFileInfo::AttributeID::OwnerUser, std::make_tuple<std::string, QVariant>("owner::user", "") },   // G_FILE_ATTRIBUTE_OWNER_USER
+    { DFileInfo::AttributeID::OwnerUserReal, std::make_tuple<std::string, QVariant>("owner::user-real", "") },   // G_FILE_ATTRIBUTE_OWNER_USER_REAL
+    { DFileInfo::AttributeID::OwnerGroup, std::make_tuple<std::string, QVariant>("owner::group", "") },   // G_FILE_ATTRIBUTE_OWNER_GROUP
 
-    { DFileInfo::AttributeID::ThumbnailPath, "thumbnail::path" },   // G_FILE_ATTRIBUTE_THUMBNAIL_PATH
-    { DFileInfo::AttributeID::ThumbnailFailed, "thumbnail::failed" },   // G_FILE_ATTRIBUTE_THUMBNAILING_FAILED
-    { DFileInfo::AttributeID::ThumbnailIsValid, "thumbnail::is-valid" },   // G_FILE_ATTRIBUTE_THUMBNAIL_IS_VALID
+    { DFileInfo::AttributeID::ThumbnailPath, std::make_tuple<std::string, QVariant>("thumbnail::path", "") },   // G_FILE_ATTRIBUTE_THUMBNAIL_PATH
+    { DFileInfo::AttributeID::ThumbnailFailed, std::make_tuple<std::string, QVariant>("thumbnail::failed", false) },   // G_FILE_ATTRIBUTE_THUMBNAILING_FAILED
+    { DFileInfo::AttributeID::ThumbnailIsValid, std::make_tuple<std::string, QVariant>("thumbnail::is-valid", false) },   // G_FILE_ATTRIBUTE_THUMBNAIL_IS_VALID
 
-    { DFileInfo::AttributeID::PreviewIcon, "preview::icon" },   // G_FILE_ATTRIBUTE_PREVIEW_ICON
+    { DFileInfo::AttributeID::PreviewIcon, std::make_tuple<std::string, QVariant>("preview::icon", 0) },   // G_FILE_ATTRIBUTE_PREVIEW_ICON
 
-    { DFileInfo::AttributeID::FileSystemSize, "filesystem::size" },   // G_FILE_ATTRIBUTE_FILESYSTEM_SIZE
-    { DFileInfo::AttributeID::FileSystemFree, "filesystem::free" },   // G_FILE_ATTRIBUTE_FILESYSTEM_FREE
-    { DFileInfo::AttributeID::FileSystemUsed, "filesystem::used" },   // G_FILE_ATTRIBUTE_FILESYSTEM_USED
-    { DFileInfo::AttributeID::FileSystemType, "filesystem::type" },   // G_FILE_ATTRIBUTE_FILESYSTEM_TYPE
-    { DFileInfo::AttributeID::FileSystemReadOnly, "filesystem::readonly" },   // G_FILE_ATTRIBUTE_FILESYSTEM_READONLY
-    { DFileInfo::AttributeID::FileSystemUsePreview, "filesystem::use-preview" },   // G_FILE_ATTRIBUTE_FILESYSTEM_USE_PREVIEW
-    { DFileInfo::AttributeID::FileSystemRemote, "filesystem::remote" },   // G_FILE_ATTRIBUTE_FILESYSTEM_REMOTE
+    { DFileInfo::AttributeID::FileSystemSize, std::make_tuple<std::string, QVariant>("filesystem::size", 0) },   // G_FILE_ATTRIBUTE_FILESYSTEM_SIZE
+    { DFileInfo::AttributeID::FileSystemFree, std::make_tuple<std::string, QVariant>("filesystem::free", 0) },   // G_FILE_ATTRIBUTE_FILESYSTEM_FREE
+    { DFileInfo::AttributeID::FileSystemUsed, std::make_tuple<std::string, QVariant>("filesystem::used", 0) },   // G_FILE_ATTRIBUTE_FILESYSTEM_USED
+    { DFileInfo::AttributeID::FileSystemType, std::make_tuple<std::string, QVariant>("filesystem::type", "") },   // G_FILE_ATTRIBUTE_FILESYSTEM_TYPE
+    { DFileInfo::AttributeID::FileSystemReadOnly, std::make_tuple<std::string, QVariant>("filesystem::readonly", false) },   // G_FILE_ATTRIBUTE_FILESYSTEM_READONLY
+    { DFileInfo::AttributeID::FileSystemUsePreview, std::make_tuple<std::string, QVariant>("filesystem::use-preview", 0) },   // G_FILE_ATTRIBUTE_FILESYSTEM_USE_PREVIEW
+    { DFileInfo::AttributeID::FileSystemRemote, std::make_tuple<std::string, QVariant>("filesystem::remote", false) },   // G_FILE_ATTRIBUTE_FILESYSTEM_REMOTE
 
-    { DFileInfo::AttributeID::GvfsBackend, "gvfs::backend" },   // G_FILE_ATTRIBUTE_GVFS_BACKEND
+    { DFileInfo::AttributeID::GvfsBackend, std::make_tuple<std::string, QVariant>("gvfs::backend", "") },   // G_FILE_ATTRIBUTE_GVFS_BACKEND
 
-    { DFileInfo::AttributeID::SelinuxContext, "selinux::context" },   // G_FILE_ATTRIBUTE_SELINUX_CONTEXT
+    { DFileInfo::AttributeID::SelinuxContext, std::make_tuple<std::string, QVariant>("selinux::context", "") },   // G_FILE_ATTRIBUTE_SELINUX_CONTEXT
 
-    { DFileInfo::AttributeID::TrashItemCount, "trash::item-count" },   // G_FILE_ATTRIBUTE_TRASH_ITEM_COUNT
-    { DFileInfo::AttributeID::TrashDeletionDate, "trash::deletion-date" },   // G_FILE_ATTRIBUTE_TRASH_DELETION_DATE
-    { DFileInfo::AttributeID::TrashOrigPath, "trash::orig-path" },   // G_FILE_ATTRIBUTE_TRASH_ORIG_PATH
+    { DFileInfo::AttributeID::TrashItemCount, std::make_tuple<std::string, QVariant>("trash::item-count", 0) },   // G_FILE_ATTRIBUTE_TRASH_ITEM_COUNT
+    { DFileInfo::AttributeID::TrashDeletionDate, std::make_tuple<std::string, QVariant>("trash::deletion-date", "") },   // G_FILE_ATTRIBUTE_TRASH_DELETION_DATE
+    { DFileInfo::AttributeID::TrashOrigPath, std::make_tuple<std::string, QVariant>("trash::orig-path", "") },   // G_FILE_ATTRIBUTE_TRASH_ORIG_PATH
 
-    { DFileInfo::AttributeID::RecentModified, "recent::modified" },   // G_FILE_ATTRIBUTE_RECENT_MODIFIED
-    { DFileInfo::AttributeID::ExtendWordSize, "xattr::word-size" },   // user extend attr
-    { DFileInfo::AttributeID::ExtendMediaDuration, "xattr::media-duration" },   // user extend attr
+    { DFileInfo::AttributeID::RecentModified, std::make_tuple<std::string, QVariant>("recent::modified", 0) },   // G_FILE_ATTRIBUTE_RECENT_MODIFIED
+    { DFileInfo::AttributeID::ExtendWordSize, std::make_tuple<std::string, QVariant>("xattr::word-size", 0) },   // user extend attr
+    { DFileInfo::AttributeID::ExtendMediaDuration, std::make_tuple<std::string, QVariant>("xattr::media-duration", 0) },   // user extend attr
 
-    { DFileInfo::AttributeID::CustomStart, "custom-start" },
+    { DFileInfo::AttributeID::CustomStart, std::make_tuple<std::string, QVariant>("custom-start", 0) },
 
-    { DFileInfo::AttributeID::StandardIsFile, "standard::is-file" },
-    { DFileInfo::AttributeID::StandardIsDir, "standard::is-dir" },
-    { DFileInfo::AttributeID::StandardIsRoot, "standard::is-root" },
-    { DFileInfo::AttributeID::StandardSuffix, "standard::suffix" },
-    { DFileInfo::AttributeID::StandardCompleteSuffix, "standard::complete-suffix" },
-    { DFileInfo::AttributeID::StandardFilePath, "standard::file-path" },
-    { DFileInfo::AttributeID::StandardParentPath, "standard::parent-path" },
-    { DFileInfo::AttributeID::StandardBaseName, "standard::base-name" },
-    { DFileInfo::AttributeID::StandardFileName, "standard::file-name" },
+    { DFileInfo::AttributeID::StandardIsFile, std::make_tuple<std::string, QVariant>("standard::is-file", false) },
+    { DFileInfo::AttributeID::StandardIsDir, std::make_tuple<std::string, QVariant>("standard::is-dir", false) },
+    { DFileInfo::AttributeID::StandardIsRoot, std::make_tuple<std::string, QVariant>("standard::is-root", false) },
+    { DFileInfo::AttributeID::StandardSuffix, std::make_tuple<std::string, QVariant>("standard::suffix", "") },
+    { DFileInfo::AttributeID::StandardCompleteSuffix, std::make_tuple<std::string, QVariant>("standard::complete-suffix", "") },
+    { DFileInfo::AttributeID::StandardFilePath, std::make_tuple<std::string, QVariant>("standard::file-path", "") },
+    { DFileInfo::AttributeID::StandardParentPath, std::make_tuple<std::string, QVariant>("standard::parent-path", "") },
+    { DFileInfo::AttributeID::StandardBaseName, std::make_tuple<std::string, QVariant>("standard::base-name", "") },
+    { DFileInfo::AttributeID::StandardFileName, std::make_tuple<std::string, QVariant>("standard::file-name", "") },
 };
 
 DFileInfo::DFileInfo()
@@ -171,7 +171,7 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
 
     if (success)
         *success = false;
-    return QVariant();
+    return std::get<1>(DFileInfo::attributeInfoMap.at(id));
 }
 
 bool DFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
@@ -275,10 +275,10 @@ QUrl DFileInfo::uri() const
 QString DFileInfo::dump() const
 {
     QString ret;
-    for (const auto &[id, key] : attributeNames) {
+    for (const auto &[id, key] : attributeInfoMap) {
         const QVariant &&value = attribute(id);
         if (value.isValid()) {
-            ret.append(attributeNames[id].c_str());
+            ret.append(std::get<0>(attributeInfoMap.at(id)).c_str());
             ret.append(":");
             ret.append(value.toString());
             ret.append("\n");

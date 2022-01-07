@@ -40,7 +40,6 @@ DLocalWatcherPrivate::DLocalWatcherPrivate(DLocalWatcher *q)
 
 DLocalWatcherPrivate::~DLocalWatcherPrivate()
 {
-    stop();
 }
 
 void DLocalWatcherPrivate::setWatchType(DWatcher::WatchType type)
@@ -80,6 +79,7 @@ bool DLocalWatcherPrivate::start(int timeRate)
 
         g_main_loop_run(loop);
         g_main_loop_unref(loop);
+        loop = nullptr;
 
         return true;
     });

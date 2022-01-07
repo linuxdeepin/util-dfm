@@ -87,6 +87,8 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
         }
         if (success)
             *success = retValue.isValid();
+        if (!retValue.isValid())
+            retValue = std::get<1>(DFileInfo::attributeInfoMap.at(id));
         return retValue;
     }
     if (success)
