@@ -133,12 +133,11 @@ QList<DFileInfo::AttributeID> DLocalFileInfoPrivate::attributeIDList() const
 bool DLocalFileInfoPrivate::exists() const
 {
     const QUrl &url = q->uri();
-    const QString &path = url.toString();
+    const QString &uri = url.toString();
 
-    GFile *gfile = g_file_new_for_path(path.toLocal8Bit().data());
+    g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toLocal8Bit().data());
     const bool exists = g_file_query_exists(gfile, nullptr);
 
-    g_object_unref(gfile);
     return exists;
 }
 
