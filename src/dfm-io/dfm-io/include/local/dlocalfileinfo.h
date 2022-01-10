@@ -46,6 +46,7 @@ public:
     QList<DFileInfo::AttributeID> attributeIDList() const DFM_OVERRIDE;
     bool exists() const DFM_OVERRIDE;
     bool flush() DFM_OVERRIDE;
+    DFile::Permissions permissions() DFM_OVERRIDE;
     DFMIOError lastError() const DFM_OVERRIDE;
 
 private:

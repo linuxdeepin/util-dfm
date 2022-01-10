@@ -279,7 +279,7 @@ void DLocalEnumeratorPrivate::setErrorInfo(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
 
-    qWarning() << QString::fromLocal8Bit(gerror->message);
+    //qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 void DLocalEnumeratorPrivate::clean()

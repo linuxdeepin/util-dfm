@@ -33,6 +33,36 @@
 USING_IO_NAMESPACE
 
 namespace LocalFunc {
+
+bool isFile(const QString &path)
+{
+    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_REGULAR);
+    g_object_unref(file);
+    return ret;
+}
+
+bool isDir(const QString &path)
+{
+    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_DIRECTORY);
+    g_object_unref(file);
+    return ret;
+}
+
+bool isSymlink(const QString &path)
+{
+    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_SYMBOLIC_LINK);
+    g_object_unref(file);
+    return ret;
+}
+
+bool isRoot(const QString &path)
+{
+    return path == "/";
+}
+
 QString fileName(const QString &path)
 {
     int pos = path.lastIndexOf("/");
@@ -56,6 +86,10 @@ QString baseName(const QString &path)
 
 QString suffix(const QString &path)
 {
+    // path
+    if (isDir(path))
+        return "";
+
     const QString &fullName = fileName(path);
 
     int pos2 = fullName.lastIndexOf(".");
@@ -112,35 +146,6 @@ QString parentPath(const QString &path)
 
     return retPath;
 }
-
-bool isFile(const QString &path)
-{
-    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
-    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_REGULAR);
-    g_object_unref(file);
-    return ret;
-}
-
-bool isDir(const QString &path)
-{
-    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
-    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_DIRECTORY);
-    g_object_unref(file);
-    return ret;
-}
-
-bool isSymlink(const QString &path)
-{
-    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
-    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_SYMBOLIC_LINK);
-    g_object_unref(file);
-    return ret;
-}
-
-bool isRoot(const QString &path)
-{
-    return path == "/";
-}
 }
 
 QSharedPointer<DFileInfo> DLocalHelper::getFileInfo(const QString &uri)
@@ -168,7 +173,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     const std::string &key = DLocalHelper::attributeStringById(id);
     bool hasAttr = g_file_info_has_attribute(gfileinfo, key.c_str());
     if (!hasAttr) {
-        qWarning() << "fileinfo has not attr: " << QString::fromLocal8Bit(key.c_str());
+        //qWarning() << "fileinfo has not attr: " << QString::fromLocal8Bit(key.c_str());
         return QVariant();
     }
 
@@ -331,14 +336,14 @@ QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::A
 bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, const QVariant &value, GError **gerror)
 {
     if (!gfile) {
-        qWarning() << "gfile is invalid";
+        //qWarning() << "gfile is invalid";
         return false;
     }
 
     // check has attribute
     const std::string &key = DLocalHelper::attributeStringById(id);
     if (key.empty()) {
-        qWarning() << "fileinfo has not attr: " << QString::fromLocal8Bit(key.c_str());
+        //qWarning() << "fileinfo has not attr: " << QString::fromLocal8Bit(key.c_str());
         return false;
     }
 
@@ -365,7 +370,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         g_file_set_attribute_uint32(gfile, key.c_str(), value.toUInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             const auto *url = g_file_get_uri(gfile);
-            qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
 
             return false;
         }
@@ -376,7 +381,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         g_file_set_attribute_int32(gfile, key.c_str(), value.toInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             const auto *url = g_file_get_uri(gfile);
-            qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
         return true;
@@ -397,7 +402,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         g_file_set_attribute_uint64(gfile, key.c_str(), value.toULongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             const auto *url = g_file_get_uri(gfile);
-            qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
         return true;
@@ -432,7 +437,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         g_file_set_attribute(gfile, key.c_str(), G_FILE_ATTRIBUTE_TYPE_BOOLEAN, gpValue, G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             const auto *url = g_file_get_uri(gfile);
-            qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
         return true;
@@ -444,7 +449,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         g_file_set_attribute_byte_string(gfile, key.c_str(), value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             const auto *url = g_file_get_uri(gfile);
-            qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
         return true;
@@ -473,7 +478,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         g_file_set_attribute_string(gfile, key.c_str(), value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             const auto *url = g_file_get_uri(gfile);
-            qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
         return true;

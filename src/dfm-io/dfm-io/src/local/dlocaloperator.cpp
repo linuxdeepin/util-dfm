@@ -556,7 +556,7 @@ GFile *DLocalOperatorPrivate::makeGFile(const QUrl &url)
 void DLocalOperatorPrivate::freeCancellable(GCancellable *gcancellable)
 {
     if (gcancellable) {
-        g_object_unref(gcancellable);
+        g_cancellable_reset(gcancellable);
         gcancellable = nullptr;
     }
 }
@@ -565,7 +565,7 @@ void DLocalOperatorPrivate::setErrorInfo(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
 
-    qWarning() << QString::fromLocal8Bit(gerror->message);
+    //qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 DLocalOperator::DLocalOperator(const QUrl &uri)

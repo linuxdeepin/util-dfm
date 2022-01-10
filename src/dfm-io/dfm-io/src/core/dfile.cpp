@@ -29,6 +29,8 @@
 
 USING_IO_NAMESPACE
 
+// TODO(lanxs) deal all warning
+
 DFilePrivate::DFilePrivate(DFile *q)
     : q(q)
 {
@@ -79,7 +81,7 @@ DFM_VIRTUAL qint64 DFile::read(char *data, qint64 maxSize)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Need open file first!";
+        //qWarning() << "Need open file first!";
         return -1;
     }
 
@@ -92,7 +94,7 @@ QByteArray DFile::read(qint64 maxSize)
         return QByteArray();
 
     if (!d->isOpen) {
-        qWarning() << "Need open file first!";
+        //qWarning() << "Need open file first!";
         return QByteArray();
     }
 
@@ -105,7 +107,7 @@ QByteArray DFile::readAll()
         return QByteArray();
 
     if (!d->isOpen) {
-        qWarning() << "Need open file first!";
+        //qWarning() << "Need open file first!";
         return QByteArray();
     }
 
@@ -118,7 +120,7 @@ DFM_VIRTUAL qint64 DFile::write(const char *data, qint64 len)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Need open file first!";
+        //qWarning() << "Need open file first!";
         return -1;
     }
 
@@ -131,7 +133,7 @@ qint64 DFile::write(const char *data)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Need open file first!";
+        //qWarning() << "Need open file first!";
         return -1;
     }
 
@@ -144,7 +146,7 @@ qint64 DFile::write(const QByteArray &byteArray)
         return -1;
 
     if (!d->isOpen) {
-        qWarning() << "Need open file first!";
+        //qWarning() << "Need open file first!";
         return -1;
     }
 
@@ -156,11 +158,6 @@ DFM_VIRTUAL bool DFile::seek(qint64 pos, DFMSeekType type)
     if (!d->seekFunc)
         return -1;
 
-    if (!d->isOpen) {
-        qWarning() << "Need open file first!";
-        return -1;
-    }
-
     return d->seekFunc(pos, type);
 }
 
@@ -168,11 +165,6 @@ DFM_VIRTUAL qint64 DFile::pos()
 {
     if (!d->posFunc)
         return -1;
-
-    if (!d->isOpen) {
-        qWarning() << "Need open file first!";
-        return -1;
-    }
 
     return d->posFunc();
 }
@@ -182,11 +174,6 @@ bool DFile::flush()
     if (!d->flushFunc)
         return -1;
 
-    if (!d->isOpen) {
-        qWarning() << "Need open file first!";
-        return -1;
-    }
-
     return d->flushFunc();
 }
 
@@ -195,11 +182,6 @@ qint64 DFile::size()
     if (!d->sizeFunc)
         return -1;
 
-    if (!d->isOpen) {
-        qWarning() << "Need open file first!";
-        return -1;
-    }
-
     return d->sizeFunc();
 }
 
@@ -207,11 +189,6 @@ bool DFile::exists()
 {
     if (!d->existsFunc)
         return -1;
-
-    if (!d->isOpen) {
-        qWarning() << "Need open file first!";
-        return -1;
-    }
 
     return d->existsFunc();
 }

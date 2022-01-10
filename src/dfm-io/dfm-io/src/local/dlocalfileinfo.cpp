@@ -25,6 +25,8 @@
 #include "local/dlocalfileinfo.h"
 #include "local/dlocalfileinfo_p.h"
 #include "local/dlocalhelper.h"
+#include "core/diofactory.h"
+#include "dfmio_register.h"
 
 #include <QVariant>
 #include <QDebug>
@@ -157,6 +159,26 @@ bool DLocalFileInfoPrivate::flush()
     return ret;
 }
 
+DFile::Permissions DLocalFileInfoPrivate::permissions()
+{
+    const QUrl &url = q->uri();
+
+    QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
+    if (!factory) {
+        //qWarning() << "create factory failed";
+        return DFile::Permission::NoPermission;
+    }
+
+    QSharedPointer<DFile> dfile = factory->createFile();
+
+    if (!dfile) {
+        //qWarning() << "create file failed";
+        return DFile::Permission::NoPermission;
+    }
+
+    return dfile->permissions();
+}
+
 DFMIOError DLocalFileInfoPrivate::lastError()
 {
     return error;
@@ -166,7 +188,7 @@ void DLocalFileInfoPrivate::setErrorInfo(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
 
-    qWarning() << QString::fromLocal8Bit(gerror->message);
+    //qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 DLocalFileInfo::DLocalFileInfo(const QUrl &uri)
@@ -179,6 +201,7 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri)
     registerAttributeList(std::bind(&DLocalFileInfo::attributeIDList, this));
     registerExists(std::bind(&DLocalFileInfo::exists, this));
     registerFlush(std::bind(&DLocalFileInfo::flush, this));
+    registerPermissions(std::bind(&DLocalFileInfo::permissions, this));
     registerLastError(std::bind(&DLocalFileInfo::lastError, this));
 
     d->init();
@@ -221,6 +244,11 @@ bool DLocalFileInfo::exists() const
 bool DLocalFileInfo::flush()
 {
     return d->flush();
+}
+
+DFile::Permissions DLocalFileInfo::permissions()
+{
+    return d->permissions();
 }
 
 DFMIOError DLocalFileInfo::lastError() const

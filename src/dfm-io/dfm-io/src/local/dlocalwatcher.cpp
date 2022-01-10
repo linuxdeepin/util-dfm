@@ -24,6 +24,7 @@
 
 #include "local/dlocalwatcher.h"
 #include "local/dlocalwatcher_p.h"
+#include "local/dlocalfileinfo.h"
 
 #include <gio/gio.h>
 
@@ -79,7 +80,7 @@ bool DLocalWatcherPrivate::stop()
 {
     if (gmonitor) {
         if (!g_file_monitor_cancel(gmonitor)) {
-            qInfo() << "cancel file monitor failed.";
+            //qInfo() << "cancel file monitor failed.";
         }
         g_object_unref(gmonitor);
         gmonitor = nullptr;
@@ -106,7 +107,7 @@ void DLocalWatcherPrivate::setErrorInfo(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
 
-    qWarning() << QString::fromLocal8Bit(gerror->message);
+    //qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
@@ -134,29 +135,28 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
 
     switch (event_type) {
     case G_FILE_MONITOR_EVENT_CHANGED:
-        watcher->fileChanged(QUrl(childUrl), DFileInfo());
+        watcher->fileChanged(QUrl(childUrl), DLocalFileInfo(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
-        //watcher->fileChanged(QUrl(childUrl), DFileInfo());
         break;
     case G_FILE_MONITOR_EVENT_DELETED:
-        watcher->fileDeleted(QUrl(childUrl), DFileInfo());
+        watcher->fileDeleted(QUrl(childUrl), DLocalFileInfo(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_CREATED:
-        watcher->fileAdded(QUrl(childUrl), DFileInfo());
+        watcher->fileAdded(QUrl(childUrl), DLocalFileInfo(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
-        watcher->fileChanged(QUrl(childUrl), DFileInfo());
+        watcher->fileChanged(QUrl(childUrl), DLocalFileInfo(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_PRE_UNMOUNT:
         break;
     case G_FILE_MONITOR_EVENT_UNMOUNTED:
         break;
     case G_FILE_MONITOR_EVENT_MOVED_IN:
-        watcher->fileAdded(QUrl(childUrl), DFileInfo());
+        watcher->fileAdded(QUrl(childUrl), DLocalFileInfo(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_MOVED_OUT:
-        watcher->fileDeleted(QUrl(childUrl), DFileInfo());
+        watcher->fileDeleted(QUrl(childUrl), DLocalFileInfo(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_RENAMED:
         watcher->fileRenamed(QUrl(childUrl), QUrl(otherUrl));

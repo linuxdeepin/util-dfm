@@ -25,6 +25,7 @@
 
 #include "dfmio_global.h"
 #include "error/error.h"
+#include "dfile.h"
 
 #include <QUrl>
 #include <QSharedData>
@@ -195,6 +196,7 @@ public:
     DFM_VIRTUAL QList<DFileInfo::AttributeID> attributeIDList() const;
     DFM_VIRTUAL bool exists() const;
     DFM_VIRTUAL bool flush();
+    DFM_VIRTUAL DFile::Permissions permissions();
 
     DFM_VIRTUAL DFMIOError lastError() const;
 
@@ -206,6 +208,7 @@ public:
     void registerAttributeList(const AttributeListFunc &func);
     void registerExists(const ExistsFunc &func);
     void registerFlush(const FlushFunc &func);
+    void registerPermissions(const DFile::PermissionFunc &func);
     void registerLastError(const LastErrorFunc &func);
 
     QUrl uri() const;

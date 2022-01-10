@@ -65,6 +65,7 @@ public:
     DFileInfo::AttributeListFunc attributeListFunc = nullptr;
     DFileInfo::ExistsFunc existsFunc = nullptr;
     DFileInfo::FlushFunc flushFunc = nullptr;
+    DFile::PermissionFunc permissionFunc = nullptr;
     DFileInfo::LastErrorFunc lastErrorFunc = nullptr;
 };
 

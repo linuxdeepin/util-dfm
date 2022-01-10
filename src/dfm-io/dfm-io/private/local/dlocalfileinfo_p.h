@@ -53,6 +53,7 @@ public:
     QList<DFileInfo::AttributeID> attributeIDList() const;
     bool exists() const;
     bool flush();
+    DFile::Permissions permissions();
 
     DFMIOError lastError();
     void setErrorInfo(GError *gerror);

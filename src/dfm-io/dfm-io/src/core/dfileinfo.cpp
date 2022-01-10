@@ -227,6 +227,13 @@ bool DFileInfo::flush()
     return false;
 }
 
+DFile::Permissions DFileInfo::permissions()
+{
+    if (d->permissionFunc)
+        return d->permissionFunc();
+    return DFile::Permission::NoPermission;
+}
+
 void DFileInfo::registerAttribute(const DFileInfo::AttributeFunc &func)
 {
     d->attributeFunc = func;
@@ -260,6 +267,11 @@ void DFileInfo::registerExists(const DFileInfo::ExistsFunc &func)
 void DFileInfo::registerFlush(const DFileInfo::FlushFunc &func)
 {
     d->flushFunc = func;
+}
+
+void DFileInfo::registerPermissions(const DFile::PermissionFunc &func)
+{
+    d->permissionFunc = func;
 }
 
 void DFileInfo::registerLastError(const DFileInfo::LastErrorFunc &func)
