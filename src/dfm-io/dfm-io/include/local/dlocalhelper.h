@@ -58,7 +58,7 @@ public:
     static QSharedPointer<DFileInfo> getFileInfo(const QString &uri);
     static QSharedPointer<DFileInfo> getFileInfoByUri(const QString &uri);
 
-    static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id);
+    static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode);
     static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);
     static bool setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, const QVariant &value, GError **error);
     static std::string attributeStringById(DFileInfo::AttributeID id);

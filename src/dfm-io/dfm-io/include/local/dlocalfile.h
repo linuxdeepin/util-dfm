@@ -55,9 +55,10 @@ public:
     bool flush() DFM_OVERRIDE;
     qint64 size() DFM_OVERRIDE;
     bool exists() DFM_OVERRIDE;
-    Permissions permissions() DFM_OVERRIDE;
+    Permissions permissions() const DFM_OVERRIDE;
     bool setPermissions(Permissions permission) DFM_OVERRIDE;
 
+    void setError(DFMIOError error);
     DFMIOError lastError() const DFM_OVERRIDE;
 
 private:

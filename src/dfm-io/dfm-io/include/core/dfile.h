@@ -113,6 +113,7 @@ public:
     using PermissionFunc = std::function<Permissions()>;
     using SetPermissionFunc = std::function<bool(Permissions)>;
     using LastErrorFunc = std::function<DFMIOError()>;
+    using SetErrorFunc = std::function<void(DFMIOError)>;
 
 public:
     DFile(const QUrl &uri);
@@ -135,7 +136,7 @@ public:
     DFM_VIRTUAL qint64 size();
     DFM_VIRTUAL bool exists();
 
-    DFM_VIRTUAL Permissions permissions();
+    DFM_VIRTUAL Permissions permissions() const;
     DFM_VIRTUAL bool setPermissions(Permissions permission);
 
     DFM_VIRTUAL DFMIOError lastError() const;
@@ -157,6 +158,7 @@ public:
     void registerPermissions(const PermissionFunc &func);
     void registerSetPermissions(const SetPermissionFunc &func);
     void registerLastError(const LastErrorFunc &func);
+    void registerSetError(const SetErrorFunc &func);
 
     QUrl uri() const;
     bool isOpen();

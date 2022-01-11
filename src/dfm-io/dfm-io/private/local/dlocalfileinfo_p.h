@@ -56,7 +56,7 @@ public:
     DFile::Permissions permissions();
 
     DFMIOError lastError();
-    void setErrorInfo(GError *gerror);
+    void setErrorFromGError(GError *gerror);
 
 public:
     QMap<DFileInfo::AttributeID, QVariant> attributes;

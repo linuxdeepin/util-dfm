@@ -30,6 +30,7 @@
 #include "core/doperator_p.h"
 
 #include <gio/gio.h>
+#include <glib/gstdio.h>
 
 #include <QDebug>
 
@@ -68,7 +69,7 @@ bool DLocalOperatorPrivate::renameFile(const QString &new_name)
     g_free(name);
 
     if (!gfile_ret) {
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
         g_error_free(gerror);
         return false;
     }
@@ -78,6 +79,16 @@ bool DLocalOperatorPrivate::renameFile(const QString &new_name)
     g_object_unref(gfile_ret);
 
     return true;
+}
+
+bool DLocalOperatorPrivate::renameFile(const QUrl &toUrl)
+{
+    const QUrl &fromUrl = q->uri();
+
+    const std::string &fromStr = fromUrl.toLocalFile().toStdString();
+    const std::string &toStr = toUrl.toLocalFile().toStdString();
+
+    return g_rename(fromStr.c_str(), toStr.c_str()) == 0;
 }
 
 bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
@@ -108,7 +119,7 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag
     freeCancellable(gcancellable);
 
     if (gerror) {
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
         g_error_free(gerror);
     }
 
@@ -136,7 +147,7 @@ bool DLocalOperatorPrivate::moveFile(const QUrl &to, DOperator::CopyFlag flag, D
     freeCancellable(gcancellable);
 
     if (gerror)
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
 
     return ret;
 }
@@ -246,7 +257,7 @@ bool DLocalOperatorPrivate::trashFile()
     freeCancellable(gcancellable);
 
     if (gerror)
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
 
     return ret;
 }
@@ -267,7 +278,7 @@ bool DLocalOperatorPrivate::deleteFile()
     freeCancellable(gcancellable);
 
     if (gerror)
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
 
     return ret;
 }
@@ -284,7 +295,7 @@ bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackFunc func, vo
 
     if (!gfileinfo) {
         if (gerror) {
-            setErrorInfo(gerror);
+            setErrorFromGError(gerror);
             g_error_free(gerror);
         }
         return false;
@@ -391,7 +402,7 @@ bool DLocalOperatorPrivate::touchFile()
     freeCancellable(gcancellable);
 
     if (gerror)
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
 
     return stream != nullptr;
 }
@@ -413,7 +424,7 @@ bool DLocalOperatorPrivate::makeDirectory()
     freeCancellable(gcancellable);
 
     if (gerror)
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
 
     return ret;
 }
@@ -437,7 +448,7 @@ bool DLocalOperatorPrivate::createLink(const QUrl &link)
     freeCancellable(gcancellable);
 
     if (!ret) {
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
     }
 
     if (gerror)
@@ -527,7 +538,7 @@ bool DLocalOperatorPrivate::setFileInfo(const DFileInfo &fileInfo)
         if (!succ)
             ret = false;
         if (gerror)
-            setErrorInfo(gerror);
+            setErrorFromGError(gerror);
     }
 
     return ret;
@@ -561,7 +572,7 @@ void DLocalOperatorPrivate::freeCancellable(GCancellable *gcancellable)
     }
 }
 
-void DLocalOperatorPrivate::setErrorInfo(GError *gerror)
+void DLocalOperatorPrivate::setErrorFromGError(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
 
@@ -571,7 +582,8 @@ void DLocalOperatorPrivate::setErrorInfo(GError *gerror)
 DLocalOperator::DLocalOperator(const QUrl &uri)
     : DOperator(uri), d(new DLocalOperatorPrivate(this))
 {
-    registerRenameFile(bind_field(this, &DLocalOperator::renameFile));
+    registerRenameFile(bind_field(this, static_cast<bool (DLocalOperator::*)(const QString &)>(&DLocalOperator::renameFile)));
+    registerRenameFileByStd(bind_field(this, static_cast<bool (DLocalOperator::*)(const QUrl &)>(&DLocalOperator::renameFile)));
     registerCopyFile(bind_field(this, &DLocalOperator::copyFile));
     registerMoveFile(bind_field(this, &DLocalOperator::moveFile));
     registerRenameFileAsync(bind_field(this, &DLocalOperator::renameFileAsync));
@@ -593,7 +605,7 @@ DLocalOperator::DLocalOperator(const QUrl &uri)
     registerMakeDirectoryAsync(bind_field(this, &DLocalOperator::makeDirectoryAsync));
     registerCreateLinkAsync(bind_field(this, &DLocalOperator::createLinkAsync));
 
-    registerSetFileInfo(bind_field(this, &DLocalOperator::setFileInfo));
+    registerSetFileInfo(bind_field(this, &DLocalOperator::setErrorFromGError));
 
     registerCancel(bind_field(this, &DLocalOperator::cancel));
     registerLastError(bind_field(this, &DLocalOperator::lastError));
@@ -606,6 +618,11 @@ DLocalOperator::~DLocalOperator()
 bool DLocalOperator::renameFile(const QString &newName)
 {
     return d->renameFile(newName);
+}
+
+bool DLocalOperator::renameFile(const QUrl &toUrl)
+{
+    return d->renameFile(toUrl);
 }
 
 bool DLocalOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
@@ -696,7 +713,7 @@ void DLocalOperator::createLinkAsync(const QUrl &link, int ioPriority, DOperator
     d->createLinkAsync(link, ioPriority, operateFunc, userData);
 }
 
-bool DLocalOperator::setFileInfo(const DFileInfo &fileInfo)
+bool DLocalOperator::setErrorFromGError(const DFileInfo &fileInfo)
 {
     return d->setFileInfo(fileInfo);
 }

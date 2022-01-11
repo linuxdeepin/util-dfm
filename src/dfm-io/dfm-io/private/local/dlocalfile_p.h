@@ -62,7 +62,8 @@ public:
     DFile::Permissions permissionsFromGio();
 
     DFMIOError lastError();
-    void setErrorInfo(GError *gerror);
+    void setError(DFMIOError error);
+    void setErrorFromGError(GError *gerror);
 
     bool checkOpenFlags(DFile::OpenFlags *mode);
 

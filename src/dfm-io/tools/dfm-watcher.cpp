@@ -60,26 +60,23 @@ static bool watcher_dir(const QUrl &url, QSharedPointer<DWatcher> &watcher)
         return false;
     }
 
-    QObject::connect(watcher.get(), &DWatcher::fileChanged, [](const QUrl &uri, const DFileInfo &fileInfo) {
-        Q_UNUSED(fileInfo);
-        qDebug() << "file changed: " << uri;
-        printf("file changed:%s.\n", uri.url().toStdString().c_str());
+    QObject::connect(watcher.get(), &DWatcher::fileChanged, [](const QUrl &url) {
+        qDebug() << "file changed: " << url;
+        printf("file changed:%s.\n", url.url().toLocal8Bit().data());
     });
 
-    QObject::connect(watcher.get(), &DWatcher::fileDeleted, [](const QUrl &uri, const DFileInfo &fileInfo) {
-        Q_UNUSED(fileInfo);
-        qDebug() << "file deleted: " << uri;
-        printf("file deleted:%s.\n", uri.url().toStdString().c_str());
+    QObject::connect(watcher.get(), &DWatcher::fileDeleted, [](const QUrl &url) {
+        qDebug() << "file deleted: " << url;
+        printf("file deleted:%s.\n", url.url().toLocal8Bit().data());
     });
 
-    QObject::connect(watcher.get(), &DWatcher::fileAdded, [](const QUrl &uri, const DFileInfo &fileInfo) {
-        Q_UNUSED(fileInfo);
-        qDebug() << "file added: " << uri;
-        printf("file added:%s.\n", uri.url().toStdString().c_str());
+    QObject::connect(watcher.get(), &DWatcher::fileAdded, [](const QUrl &url) {
+        qDebug() << "file added: " << url;
+        printf("file added:%s.\n", url.url().toLocal8Bit().data());
     });
     QObject::connect(watcher.get(), &DWatcher::fileRenamed, [](const QUrl &fromUri, const QUrl &toUri) {
         qDebug() << "file move: " << fromUri << "to" << toUri;
-        printf("file move: %s to %s.\n", fromUri.url().toStdString().c_str(), toUri.url().toStdString().c_str());
+        printf("file move: %s to %s.\n", fromUri.url().toLocal8Bit().data(), toUri.url().toLocal8Bit().data());
     });
 
     if (!watcher->start()) {

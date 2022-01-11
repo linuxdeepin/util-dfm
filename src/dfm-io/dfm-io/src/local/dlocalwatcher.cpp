@@ -103,11 +103,9 @@ DFMIOError DLocalWatcherPrivate::lastError()
     return error;
 }
 
-void DLocalWatcherPrivate::setErrorInfo(GError *gerror)
+void DLocalWatcherPrivate::setErrorFromGError(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
-
-    //qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
@@ -135,28 +133,28 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
 
     switch (event_type) {
     case G_FILE_MONITOR_EVENT_CHANGED:
-        watcher->fileChanged(QUrl(childUrl), DLocalFileInfo(childUrl));
+        watcher->fileChanged(QUrl(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
         break;
     case G_FILE_MONITOR_EVENT_DELETED:
-        watcher->fileDeleted(QUrl(childUrl), DLocalFileInfo(childUrl));
+        watcher->fileDeleted(QUrl(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_CREATED:
-        watcher->fileAdded(QUrl(childUrl), DLocalFileInfo(childUrl));
+        watcher->fileAdded(QUrl(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
-        watcher->fileChanged(QUrl(childUrl), DLocalFileInfo(childUrl));
+        watcher->fileChanged(QUrl(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_PRE_UNMOUNT:
         break;
     case G_FILE_MONITOR_EVENT_UNMOUNTED:
         break;
     case G_FILE_MONITOR_EVENT_MOVED_IN:
-        watcher->fileAdded(QUrl(childUrl), DLocalFileInfo(childUrl));
+        watcher->fileAdded(QUrl(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_MOVED_OUT:
-        watcher->fileDeleted(QUrl(childUrl), DLocalFileInfo(childUrl));
+        watcher->fileDeleted(QUrl(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_RENAMED:
         watcher->fileRenamed(QUrl(childUrl), QUrl(otherUrl));
@@ -182,7 +180,7 @@ DWatcher::WatchType DLocalWatcherPrivate::transWatcherType(GFile *gfile, bool *o
 
     gfileinfo = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
     if (!gfileinfo) {
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
 
         return retType;
     }
@@ -214,7 +212,7 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
         gmonitor = g_file_monitor(gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
 
     if (!gmonitor) {
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
 
         return nullptr;
     }

@@ -84,10 +84,10 @@ public:
     void registerLastError(const LastErrorFunc &func);
 
 Q_SIGNALS:
-    void fileChanged(const QUrl &uri, const DFileInfo &fileInfo);
-    void fileDeleted(const QUrl &uri, const DFileInfo &fileInfo);
-    void fileAdded(const QUrl &uri, const DFileInfo &fileInfo);
-    void fileRenamed(const QUrl &urlOld, const QUrl &urlNew);
+    void fileChanged(const QUrl &url);
+    void fileDeleted(const QUrl &url);
+    void fileAdded(const QUrl &url);
+    void fileRenamed(const QUrl &fromUrl, const QUrl &toUrl);
 
 private:
     QSharedPointer<DWatcherPrivate> d = nullptr;

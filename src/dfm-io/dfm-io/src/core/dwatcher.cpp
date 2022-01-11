@@ -99,7 +99,7 @@ bool DWatcher::running() const
     return d->runningFunc();
 }
 
-DFM_VIRTUAL bool DWatcher::start(int timeRate)
+bool DWatcher::start(int timeRate)
 {
     if (!d->startFunc)
         return false;
@@ -108,7 +108,7 @@ DFM_VIRTUAL bool DWatcher::start(int timeRate)
     return d->startFunc(timeRate);
 }
 
-DFM_VIRTUAL bool DWatcher::stop()
+bool DWatcher::stop()
 {
     if (!d->stopFunc)
         return false;

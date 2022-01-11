@@ -159,7 +159,7 @@ QSharedPointer<DFileInfo> DLocalHelper::getFileInfoByUri(const QString &uri)
     return info;
 }
 
-QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id)
+QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode)
 {
     if (!gfileinfo)
         return QVariant();
@@ -173,7 +173,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     const std::string &key = DLocalHelper::attributeStringById(id);
     bool hasAttr = g_file_info_has_attribute(gfileinfo, key.c_str());
     if (!hasAttr) {
-        //qWarning() << "fileinfo has not attr: " << QString::fromLocal8Bit(key.c_str());
+        errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
         return QVariant();
     }
 
@@ -286,7 +286,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     case DFileInfo::AttributeID::PreviewIcon: {
         GObject *ret = g_file_info_get_attribute_object(gfileinfo, key.c_str());
         Q_UNUSED(ret);
-        // TODO
+        // TODO(lanxs)
         return QVariant();
     }
 
@@ -336,14 +336,12 @@ QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::A
 bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, const QVariant &value, GError **gerror)
 {
     if (!gfile) {
-        //qWarning() << "gfile is invalid";
         return false;
     }
 
     // check has attribute
     const std::string &key = DLocalHelper::attributeStringById(id);
     if (key.empty()) {
-        //qWarning() << "fileinfo has not attr: " << QString::fromLocal8Bit(key.c_str());
         return false;
     }
 

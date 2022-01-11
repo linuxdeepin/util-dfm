@@ -48,7 +48,7 @@ QUrl DOperator::uri() const
     return d->uri;
 }
 
-DFM_VIRTUAL bool DOperator::renameFile(const QString &newName)
+bool DOperator::renameFile(const QString &newName)
 {
     if (!d->renameFileFunc)
         return false;
@@ -56,7 +56,14 @@ DFM_VIRTUAL bool DOperator::renameFile(const QString &newName)
     return d->renameFileFunc(newName);
 }
 
-DFM_VIRTUAL bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
+bool DOperator::renameFile(const QUrl &toUrl)
+{
+    if (!d->renameFileByStdFunc)
+        return false;
+    return d->renameFileByStdFunc(toUrl);
+}
+
+bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
     if (!d->copyFileFunc)
         return false;
@@ -64,7 +71,7 @@ DFM_VIRTUAL bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag fl
     return d->copyFileFunc(destUri, flag, func, progressCallbackData);
 }
 
-DFM_VIRTUAL bool DOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
+bool DOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
     if (!d->moveFileFunc)
         return false;
@@ -72,7 +79,7 @@ DFM_VIRTUAL bool DOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag fl
     return d->moveFileFunc(destUri, flag, func, progressCallbackData);
 }
 
-DFM_VIRTUAL void DOperator::renameFileAsync(const QString &newName, int ioPriority, FileOperateCallbackFunc func, void *progressCallbackData)
+void DOperator::renameFileAsync(const QString &newName, int ioPriority, FileOperateCallbackFunc func, void *progressCallbackData)
 {
     if (!d->renameFileFuncAsync)
         return;
@@ -80,8 +87,8 @@ DFM_VIRTUAL void DOperator::renameFileAsync(const QString &newName, int ioPriori
     d->renameFileFuncAsync(newName, ioPriority, func, progressCallbackData);
 }
 
-DFM_VIRTUAL void DOperator::copyFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc progressfunc, void *progressCallbackData,
-                                          int ioPriority, FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::copyFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc progressfunc, void *progressCallbackData,
+                              int ioPriority, FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->copyFileFuncAsync)
         return;
@@ -89,8 +96,8 @@ DFM_VIRTUAL void DOperator::copyFileAsync(const QUrl &destUri, CopyFlag flag, Pr
     d->copyFileFuncAsync(destUri, flag, progressfunc, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
-DFM_VIRTUAL void DOperator::moveFileAsync(const QUrl &destUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
-                                          int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::moveFileAsync(const QUrl &destUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+                              int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->moveFileFuncAsync)
         return;
@@ -98,7 +105,7 @@ DFM_VIRTUAL void DOperator::moveFileAsync(const QUrl &destUri, DOperator::CopyFl
     d->moveFileFuncAsync(destUri, flag, func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
-DFM_VIRTUAL bool DOperator::trashFile()
+bool DOperator::trashFile()
 {
     if (!d->trashFileFunc)
         return false;
@@ -106,7 +113,7 @@ DFM_VIRTUAL bool DOperator::trashFile()
     return d->trashFileFunc();
 }
 
-DFM_VIRTUAL bool DOperator::deleteFile()
+bool DOperator::deleteFile()
 {
     if (!d->deleteFileFunc)
         return false;
@@ -114,7 +121,7 @@ DFM_VIRTUAL bool DOperator::deleteFile()
     return d->deleteFileFunc();
 }
 
-DFM_VIRTUAL bool DOperator::restoreFile(ProgressCallbackFunc func, void *progressCallbackData)
+bool DOperator::restoreFile(ProgressCallbackFunc func, void *progressCallbackData)
 {
     if (!d->restoreFileFunc)
         return false;
@@ -122,7 +129,7 @@ DFM_VIRTUAL bool DOperator::restoreFile(ProgressCallbackFunc func, void *progres
     return d->restoreFileFunc(func, progressCallbackData);
 }
 
-DFM_VIRTUAL void DOperator::trashFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::trashFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->trashFileFuncAsync)
         return;
@@ -130,7 +137,7 @@ DFM_VIRTUAL void DOperator::trashFileAsync(int ioPriority, DOperator::FileOperat
     d->trashFileFuncAsync(ioPriority, operatefunc, userData);
 }
 
-DFM_VIRTUAL void DOperator::deleteFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::deleteFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->deleteFileFuncAsync)
         return;
@@ -138,7 +145,7 @@ DFM_VIRTUAL void DOperator::deleteFileAsync(int ioPriority, DOperator::FileOpera
     d->deleteFileFuncAsync(ioPriority, operatefunc, userData);
 }
 
-DFM_VIRTUAL void DOperator::restoreFileAsync(DOperator::ProgressCallbackFunc func, void *progressCallbackData, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::restoreFileAsync(DOperator::ProgressCallbackFunc func, void *progressCallbackData, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->restoreFileFuncAsync)
         return;
@@ -146,7 +153,7 @@ DFM_VIRTUAL void DOperator::restoreFileAsync(DOperator::ProgressCallbackFunc fun
     d->restoreFileFuncAsync(func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
-DFM_VIRTUAL bool DOperator::touchFile()
+bool DOperator::touchFile()
 {
     if (!d->touchFileFunc)
         return false;
@@ -154,7 +161,7 @@ DFM_VIRTUAL bool DOperator::touchFile()
     return d->touchFileFunc();
 }
 
-DFM_VIRTUAL bool DOperator::makeDirectory()
+bool DOperator::makeDirectory()
 {
     if (!d->makeDirectoryFunc)
         return false;
@@ -162,7 +169,7 @@ DFM_VIRTUAL bool DOperator::makeDirectory()
     return d->makeDirectoryFunc();
 }
 
-DFM_VIRTUAL bool DOperator::createLink(const QUrl &link)
+bool DOperator::createLink(const QUrl &link)
 {
     if (!d->createLinkFunc)
         return false;
@@ -170,7 +177,7 @@ DFM_VIRTUAL bool DOperator::createLink(const QUrl &link)
     return d->createLinkFunc(link);
 }
 
-DFM_VIRTUAL void DOperator::touchFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::touchFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->touchFileFuncAsync)
         return;
@@ -178,7 +185,7 @@ DFM_VIRTUAL void DOperator::touchFileAsync(int ioPriority, DOperator::FileOperat
     d->touchFileFuncAsync(ioPriority, operatefunc, userData);
 }
 
-DFM_VIRTUAL void DOperator::makeDirectoryAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::makeDirectoryAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->makeDirectoryFuncAsync)
         return;
@@ -186,7 +193,7 @@ DFM_VIRTUAL void DOperator::makeDirectoryAsync(int ioPriority, DOperator::FileOp
     d->makeDirectoryFuncAsync(ioPriority, operatefunc, userData);
 }
 
-DFM_VIRTUAL void DOperator::createLinkAsync(const QUrl &link, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::createLinkAsync(const QUrl &link, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->createLinkFuncAsync)
         return;
@@ -194,7 +201,7 @@ DFM_VIRTUAL void DOperator::createLinkAsync(const QUrl &link, int ioPriority, DO
     d->createLinkFuncAsync(link, ioPriority, operatefunc, userData);
 }
 
-DFM_VIRTUAL bool DOperator::setFileInfo(const DFileInfo &fileInfo)
+bool DOperator::setFileInfo(const DFileInfo &fileInfo)
 {
     if (!d->setFileInfoFunc)
         return false;
@@ -221,6 +228,11 @@ DFMIOError DOperator::lastError() const
 void DOperator::registerRenameFile(const DOperator::RenameFileFunc &func)
 {
     d->renameFileFunc = func;
+}
+
+void DOperator::registerRenameFileByStd(const DOperator::RenameFileByStdFunc &func)
+{
+    d->renameFileByStdFunc = func;
 }
 
 void DOperator::registerCopyFile(const DOperator::CopyFileFunc &func)

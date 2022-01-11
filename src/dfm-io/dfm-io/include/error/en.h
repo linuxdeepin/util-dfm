@@ -79,7 +79,9 @@ enum DFMIOErrorCode {
     DFM_IO_ERROR_MESSAGE_TOO_LARGE,   // Message too large.
 
     DFM_IO_ERROR_FAILED = 1000,   // Generic error condition for when an operation fails and no more specific DFMIOErrorEnum value is defined.
-    DFM_IO_ERROR_OPEN_FAILED,   // file open failed
+    DFM_IO_ERROR_OPEN_FAILED,   // File open failed
+    DFM_IO_ERROR_OPEN_FLAG_ERROR,   // File open flag is error
+    DFM_IO_ERROR_INFO_NO_ATTRIBUTE,   // File info has no attribute
 };
 
 inline const QString GetError_En(DFMIOErrorCode errorCode)
@@ -185,6 +187,10 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
         return QString("Generic error condition for when an operation fails and no more specific DFMIOErrorEnum value is defined");
     case DFM_IO_ERROR_OPEN_FAILED:
         return QString("File open failed");
+    case DFM_IO_ERROR_OPEN_FLAG_ERROR:
+        return QString("File open flag error");
+    case DFM_IO_ERROR_INFO_NO_ATTRIBUTE:
+        return QString("File info has no attribute");
     }
 
     return QString("Unknown error");

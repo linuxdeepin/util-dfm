@@ -61,7 +61,7 @@ QUrl DIOFactory::uri() const
     return d->uri;
 }
 
-DFM_VIRTUAL QSharedPointer<DFileInfo> DIOFactory::createFileInfo() const
+QSharedPointer<DFileInfo> DIOFactory::createFileInfo() const
 {
     if (!d->createFileInfoFunc)
         return nullptr;
@@ -69,7 +69,7 @@ DFM_VIRTUAL QSharedPointer<DFileInfo> DIOFactory::createFileInfo() const
     return d->createFileInfoFunc();
 }
 
-DFM_VIRTUAL QSharedPointer<DFile> DIOFactory::createFile() const
+QSharedPointer<DFile> DIOFactory::createFile() const
 {
     if (!d->createFileFunc)
         return nullptr;
@@ -77,7 +77,7 @@ DFM_VIRTUAL QSharedPointer<DFile> DIOFactory::createFile() const
     return d->createFileFunc();
 }
 
-DFM_VIRTUAL QSharedPointer<DEnumerator> DIOFactory::createEnumerator(const QStringList &nameFilters, DEnumerator::DirFilters filters, DEnumerator::IteratorFlags flags) const
+QSharedPointer<DEnumerator> DIOFactory::createEnumerator(const QStringList &nameFilters, DEnumerator::DirFilters filters, DEnumerator::IteratorFlags flags) const
 {
     if (!d->createEnumeratorFunc)
         return nullptr;
@@ -85,7 +85,7 @@ DFM_VIRTUAL QSharedPointer<DEnumerator> DIOFactory::createEnumerator(const QStri
     return d->createEnumeratorFunc(nameFilters, filters, flags);
 }
 
-DFM_VIRTUAL QSharedPointer<DWatcher> DIOFactory::createWatcher() const
+QSharedPointer<DWatcher> DIOFactory::createWatcher() const
 {
     if (!d->createWatcherFunc)
         return nullptr;
@@ -93,7 +93,7 @@ DFM_VIRTUAL QSharedPointer<DWatcher> DIOFactory::createWatcher() const
     return d->createWatcherFunc();
 }
 
-DFM_VIRTUAL QSharedPointer<DOperator> DIOFactory::createOperator() const
+QSharedPointer<DOperator> DIOFactory::createOperator() const
 {
     if (!d->createOperatorFunc)
         return nullptr;

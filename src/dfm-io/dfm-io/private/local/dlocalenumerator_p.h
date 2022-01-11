@@ -56,7 +56,7 @@ public:
     bool checkFilter();
 
     DFMIOError lastError();
-    void setErrorInfo(GError *gerror);
+    void setErrorFromGError(GError *gerror);
     void clean();
 
 public:

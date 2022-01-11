@@ -29,8 +29,6 @@
 
 USING_IO_NAMESPACE
 
-// TODO(lanxs) deal all warning
-
 DFilePrivate::DFilePrivate(DFile *q)
     : q(q)
 {
@@ -38,6 +36,12 @@ DFilePrivate::DFilePrivate(DFile *q)
 
 DFilePrivate::~DFilePrivate()
 {
+}
+
+void DFilePrivate::setError(DFMIOError error)
+{
+    if (setErrorFunc)
+        setErrorFunc(error);
 }
 
 DFile::DFile(const QUrl &uri)
@@ -50,7 +54,7 @@ DFile::~DFile()
 {
 }
 
-DFM_VIRTUAL bool DFile::open(DFile::OpenFlags mode)
+bool DFile::open(DFile::OpenFlags mode)
 {
     if (!d->openFunc)
         return false;
@@ -60,7 +64,7 @@ DFM_VIRTUAL bool DFile::open(DFile::OpenFlags mode)
     return d->isOpen;
 }
 
-DFM_VIRTUAL bool DFile::close()
+bool DFile::close()
 {
     if (!d->closeFunc)
         return false;
@@ -75,13 +79,13 @@ DFM_VIRTUAL bool DFile::close()
     return true;
 }
 
-DFM_VIRTUAL qint64 DFile::read(char *data, qint64 maxSize)
+qint64 DFile::read(char *data, qint64 maxSize)
 {
     if (!d->readFunc)
         return -1;
 
     if (!d->isOpen) {
-        //qWarning() << "Need open file first!";
+        d->setError(DFMIOError(DFM_IO_ERROR_OPEN_FAILED));
         return -1;
     }
 
@@ -94,7 +98,7 @@ QByteArray DFile::read(qint64 maxSize)
         return QByteArray();
 
     if (!d->isOpen) {
-        //qWarning() << "Need open file first!";
+        d->setError(DFMIOError(DFM_IO_ERROR_OPEN_FAILED));
         return QByteArray();
     }
 
@@ -107,20 +111,20 @@ QByteArray DFile::readAll()
         return QByteArray();
 
     if (!d->isOpen) {
-        //qWarning() << "Need open file first!";
+        d->setError(DFMIOError(DFM_IO_ERROR_OPEN_FAILED));
         return QByteArray();
     }
 
     return d->readAllFunc();
 }
 
-DFM_VIRTUAL qint64 DFile::write(const char *data, qint64 len)
+qint64 DFile::write(const char *data, qint64 len)
 {
     if (!d->writeFunc)
         return -1;
 
     if (!d->isOpen) {
-        //qWarning() << "Need open file first!";
+        d->setError(DFMIOError(DFM_IO_ERROR_OPEN_FAILED));
         return -1;
     }
 
@@ -133,7 +137,7 @@ qint64 DFile::write(const char *data)
         return -1;
 
     if (!d->isOpen) {
-        //qWarning() << "Need open file first!";
+        d->setError(DFMIOError(DFM_IO_ERROR_OPEN_FAILED));
         return -1;
     }
 
@@ -146,14 +150,14 @@ qint64 DFile::write(const QByteArray &byteArray)
         return -1;
 
     if (!d->isOpen) {
-        //qWarning() << "Need open file first!";
+        d->setError(DFMIOError(DFM_IO_ERROR_OPEN_FAILED));
         return -1;
     }
 
     return d->writeQFunc(byteArray);
 }
 
-DFM_VIRTUAL bool DFile::seek(qint64 pos, DFMSeekType type)
+bool DFile::seek(qint64 pos, DFMSeekType type)
 {
     if (!d->seekFunc)
         return -1;
@@ -161,7 +165,7 @@ DFM_VIRTUAL bool DFile::seek(qint64 pos, DFMSeekType type)
     return d->seekFunc(pos, type);
 }
 
-DFM_VIRTUAL qint64 DFile::pos()
+qint64 DFile::pos()
 {
     if (!d->posFunc)
         return -1;
@@ -193,7 +197,7 @@ bool DFile::exists()
     return d->existsFunc();
 }
 
-DFile::Permissions DFile::permissions()
+DFile::Permissions DFile::permissions() const
 {
     if (d->permissionFunc)
         return d->permissionFunc();
@@ -285,6 +289,11 @@ void DFile::registerSetPermissions(const DFile::SetPermissionFunc &func)
 void DFile::registerLastError(const DFile::LastErrorFunc &func)
 {
     d->lastErrorFunc = func;
+}
+
+void DFile::registerSetError(const DFile::SetErrorFunc &func)
+{
+    d->setErrorFunc = func;
 }
 
 QUrl DFile::uri() const

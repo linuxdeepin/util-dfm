@@ -55,6 +55,7 @@ public:
     using FileOperateCallbackFunc = void (*)(bool, void *);
 
     using RenameFileFunc = std::function<bool(const QString &)>;
+    using RenameFileByStdFunc = std::function<bool(const QUrl &)>;
     using RenameFileFuncAsync = std::function<void(const QString &, int, FileOperateCallbackFunc, void *)>;
     using CopyFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackFunc, void *)>;
     using CopyFileFuncAsync = std::function<void(const QUrl &, CopyFlag, ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
@@ -87,6 +88,7 @@ public:
     QUrl uri() const;
 
     DFM_VIRTUAL bool renameFile(const QString &newName);
+    DFM_VIRTUAL bool renameFile(const QUrl &toUrl);
     DFM_VIRTUAL bool copyFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     DFM_VIRTUAL bool moveFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     // async
@@ -120,6 +122,7 @@ public:
 
     //register
     void registerRenameFile(const RenameFileFunc &func);
+    void registerRenameFileByStd(const RenameFileByStdFunc &func);
     void registerCopyFile(const CopyFileFunc &func);
     void registerMoveFile(const MoveFileFunc &func);
     void registerRenameFileAsync(const RenameFileFuncAsync &func);

@@ -62,7 +62,7 @@ bool DLocalFileInfoPrivate::init()
     GFileInfo *gfileinfo = g_file_query_info(gfile, "*", G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
 
     if (gerror) {
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
         g_error_free(gerror);
     }
 
@@ -83,9 +83,13 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
                 const QString &path = q->uri().path();
                 retValue = DLocalHelper::customAttributeFromPath(path, id);
             } else {
-                retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id);
+                DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
+                retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
+                if (errorCode != DFM_IO_ERROR_NONE)
+                    error.setCode(errorCode);
             }
-            setAttribute(id, retValue);
+            if (retValue.isValid())
+                setAttribute(id, retValue);
         }
         if (success)
             *success = retValue.isValid();
@@ -113,9 +117,14 @@ bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
         return true;
 
     if (gfileinfo) {
-        const QVariant &value = DLocalHelper::attributeFromGFileInfo(gfileinfo, id);
-        setAttribute(id, value);
-        return true;
+        DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
+        const QVariant &value = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
+        if (errorCode != DFM_IO_ERROR_NONE)
+            error.setCode(errorCode);
+        if (value.isValid()) {
+            setAttribute(id, value);
+            return true;
+        }
     }
     return false;
 }
@@ -153,7 +162,7 @@ bool DLocalFileInfoPrivate::flush()
         if (!succ)
             ret = false;
         if (gerror)
-            setErrorInfo(gerror);
+            setErrorFromGError(gerror);
         ++it;
     }
     return ret;
@@ -165,14 +174,14 @@ DFile::Permissions DLocalFileInfoPrivate::permissions()
 
     QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
     if (!factory) {
-        //qWarning() << "create factory failed";
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_NOT_INITIALIZED);
         return DFile::Permission::NoPermission;
     }
 
     QSharedPointer<DFile> dfile = factory->createFile();
 
     if (!dfile) {
-        //qWarning() << "create file failed";
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_NOT_INITIALIZED);
         return DFile::Permission::NoPermission;
     }
 
@@ -184,11 +193,9 @@ DFMIOError DLocalFileInfoPrivate::lastError()
     return error;
 }
 
-void DLocalFileInfoPrivate::setErrorInfo(GError *gerror)
+void DLocalFileInfoPrivate::setErrorFromGError(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
-
-    //qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 DLocalFileInfo::DLocalFileInfo(const QUrl &uri)

@@ -40,6 +40,7 @@ public:
     ~DLocalOperator();
 
     bool renameFile(const QString &newName) DFM_OVERRIDE;
+    bool renameFile(const QUrl &toUrl) DFM_OVERRIDE;
     bool copyFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr) DFM_OVERRIDE;
     bool moveFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr) DFM_OVERRIDE;
     // async
@@ -66,7 +67,7 @@ public:
     void makeDirectoryAsync(int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr) DFM_OVERRIDE;
     void createLinkAsync(const QUrl &link, int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr) DFM_OVERRIDE;
 
-    bool setFileInfo(const DFileInfo &fileInfo) DFM_OVERRIDE;
+    bool setErrorFromGError(const DFileInfo &fileInfo) DFM_OVERRIDE;
 
     bool cancel() DFM_OVERRIDE;
     DFMIOError lastError() const DFM_OVERRIDE;

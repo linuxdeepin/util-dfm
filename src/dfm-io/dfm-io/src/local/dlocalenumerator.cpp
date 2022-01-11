@@ -59,7 +59,7 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 
     if (nullptr == enumerator) {
         if (gerror) {
-            setErrorInfo(gerror);
+            setErrorFromGError(gerror);
         }
         return list_;
     }
@@ -79,13 +79,13 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
             list_.append(info);
 
         if (gerror) {
-            setErrorInfo(gerror);
+            setErrorFromGError(gerror);
             gerror = nullptr;
         }
     }
 
     if (gerror) {
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
     }
 
     return list_;
@@ -112,7 +112,7 @@ bool DLocalEnumeratorPrivate::hasNext()
                                                                      &gerror);
             if (nullptr == genumerator) {
                 if (gerror) {
-                    setErrorInfo(gerror);
+                    setErrorFromGError(gerror);
                 }
             } else {
                 stackEnumerator.push_back(genumerator);
@@ -144,7 +144,7 @@ bool DLocalEnumeratorPrivate::hasNext()
     }
 
     if (gerror) {
-        setErrorInfo(gerror);
+        setErrorFromGError(gerror);
     }
     return false;
 }
@@ -268,14 +268,14 @@ void DLocalEnumeratorPrivate::init()
 
     if (nullptr == genumerator) {
         if (gerror) {
-            setErrorInfo(gerror);
+            setErrorFromGError(gerror);
         }
     } else {
         stackEnumerator.push_back(genumerator);
     }
 }
 
-void DLocalEnumeratorPrivate::setErrorInfo(GError *gerror)
+void DLocalEnumeratorPrivate::setErrorFromGError(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
 

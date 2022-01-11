@@ -38,6 +38,7 @@ public:
     QUrl uri;
 
     DOperator::RenameFileFunc renameFileFunc = nullptr;
+    DOperator::RenameFileByStdFunc renameFileByStdFunc = nullptr;
     DOperator::CopyFileFunc copyFileFunc = nullptr;
     DOperator::MoveFileFunc moveFileFunc = nullptr;
     DOperator::RenameFileFuncAsync renameFileFuncAsync = nullptr;

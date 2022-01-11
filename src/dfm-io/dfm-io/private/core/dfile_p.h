@@ -35,6 +35,8 @@ public:
     explicit DFilePrivate(DFile *q);
     virtual ~DFilePrivate();
 
+    void setError(DFMIOError error);
+
 public:
     DFile *q = nullptr;
     QUrl uri;
@@ -57,6 +59,7 @@ public:
     DFile::PermissionFunc permissionFunc = nullptr;
     DFile::SetPermissionFunc setPermissionsFunc = nullptr;
     DFile::LastErrorFunc lastErrorFunc = nullptr;
+    DFile::SetErrorFunc setErrorFunc = nullptr;
 };
 
 END_IO_NAMESPACE

@@ -42,6 +42,7 @@ public:
     ~DLocalOperatorPrivate();
 
     bool renameFile(const QString &new_name);
+    bool renameFile(const QUrl &toUrl);
     bool copyFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     bool moveFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     void renameFileAsync(const QString &newName, int ioPriority = 0, DOperator::FileOperateCallbackFunc func = nullptr, void *userData = nullptr);
@@ -69,7 +70,7 @@ public:
     bool cancel();
 
     DFMIOError lastError();
-    void setErrorInfo(GError *gerror);
+    void setErrorFromGError(GError *gerror);
 
     GFile *makeGFile(const QUrl &url);
     void freeCancellable(GCancellable *gcancellable);

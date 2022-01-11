@@ -48,7 +48,7 @@ public:
     bool running() const;
 
     DFMIOError lastError();
-    void setErrorInfo(GError *gerror);
+    void setErrorFromGError(GError *gerror);
 
     static void watchCallback(GFileMonitor *gmonitor, GFile *child, GFile *other, GFileMonitorEvent event_type, gpointer user_data);
 
