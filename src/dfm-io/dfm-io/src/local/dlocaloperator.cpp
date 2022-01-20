@@ -431,29 +431,24 @@ bool DLocalOperatorPrivate::makeDirectory()
 
 bool DLocalOperatorPrivate::createLink(const QUrl &link)
 {
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
 
-    const QUrl &uri = q->uri();
-    GFile *gfile = makeGFile(uri);
-
-    const QString &qstr = link.path();
-    const char *symlink_value = qstr.toLocal8Bit().data();
+    g_autoptr(GFile) gfile = makeGFile(link);
 
     freeCancellable(gcancellable);
 
     gcancellable = g_cancellable_new();
 
-    bool ret = g_file_make_symbolic_link(gfile, symlink_value, gcancellable, &gerror);
+    const QUrl &uri = q->uri();
+    const QString &linkValue = uri.toLocalFile();
+
+    bool ret = g_file_make_symbolic_link(gfile, linkValue.toLocal8Bit().data(), gcancellable, &gerror);
 
     freeCancellable(gcancellable);
 
     if (!ret) {
         setErrorFromGError(gerror);
     }
-
-    if (gerror)
-        g_error_free(gerror);
-    g_object_unref(gfile);
 
     return ret;
 }

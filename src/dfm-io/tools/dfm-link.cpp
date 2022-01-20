@@ -42,7 +42,7 @@ static void usage()
     err_msg("usage: dfm-link link src-path.");
 }
 
-static bool link_file(const QUrl &url, const QString &urito)
+static bool link_file(const QUrl &url, const QUrl &urlto)
 {
     QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
     if (!factory) {
@@ -56,9 +56,7 @@ static bool link_file(const QUrl &url, const QString &urito)
         return false;
     }
 
-    QUrl link(urito);
-
-    bool success = op->createLink(link);
+    bool success = op->createLink(urlto);
     if (!success) {
         err_msg("create file link failed.");
         return false;
@@ -78,15 +76,15 @@ int main(int argc, char *argv[])
     const char *uri = argv[1];
     const char *urito = argv[2];
 
-    QUrl url(QString::fromLocal8Bit(uri));
+    QUrl urlSource(QString::fromLocal8Bit(uri));
+    QUrl urlTarget(QString::fromLocal8Bit(urito));
 
-    if (!url.isValid())
-        return 1;
+    if (!urlSource.isValid())
+        return -1;
 
     dfmio_init();
-    //REGISTER_FACTORY1(DLocalIOFactory, url.scheme(), QUrl);
 
-    if (!link_file(url, QString::fromLocal8Bit(urito))) {
+    if (!link_file(urlSource, urlTarget)) {
         return 1;
     }
 

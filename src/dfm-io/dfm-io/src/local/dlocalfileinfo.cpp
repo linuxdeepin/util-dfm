@@ -78,19 +78,20 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
 {
     QVariant retValue;
     if (attributes.count(id) == 0) {
-        if (gfileinfo) {
-            if (Q_UNLIKELY(id > DFileInfo::AttributeID::CustomStart)) {
-                const QString &path = q->uri().path();
-                retValue = DLocalHelper::customAttributeFromPath(path, id);
-            } else {
+        if (id > DFileInfo::AttributeID::CustomStart) {
+            const QString &path = q->uri().path();
+            retValue = DLocalHelper::customAttributeFromPath(path, id);
+        } else {
+            if(gfileinfo) {
                 DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
                 retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
                 if (errorCode != DFM_IO_ERROR_NONE)
                     error.setCode(errorCode);
             }
-            if (retValue.isValid())
-                setAttribute(id, retValue);
         }
+        if (retValue.isValid())
+            setAttribute(id, retValue);
+
         if (success)
             *success = retValue.isValid();
         if (!retValue.isValid())
