@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2020 ~ 2021 Deepin Technology Co., Ltd.
+ * Copyright (C) 2022 Uniontech Software Technology Co., Ltd.
  *
- * Author:     zhangsheng <zhangsheng@uniontech.com>
+ * Author:     zhangsheng<zhangsheng@uniontech.com>
  *
- * Maintainer: zhangsheng <zhangsheng@uniontech.com>
+ * Maintainer: max-lv<lvwujun@uniontech.com>
+ *             lanxuesong<lanxuesong@uniontech.com>
+ *             xushitong<xushitong@uniontech.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,31 +19,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#ifndef XORRISOENGINE_P_H
-#define XORRISOENGINE_P_H
+*/
+#ifndef UDFBURNENGINE_H
+#define UDFBURNENGINE_H
 
-#include "private/abstractopticaldiscengine_p.h"
+#include <QObject>
 
-BEGIN_BURN_NAMESPACE
-
-class XorrisoEnginePrivate;
-class XorrisoEngine : public AbstractOpticalDiscEngine
+class UDFBurnEngine : public QObject
 {
-    Q_DECLARE_PRIVATE(XorrisoEngine)
+    Q_OBJECT
 public:
-    XorrisoEngine();
+    explicit UDFBurnEngine(QObject *parent = nullptr);
 
+signals:
+
+public slots:
 };
 
-class XorrisoEnginePrivate : public AbstractOpticalDiscEnginePrivate
-{
-    Q_DECLARE_PUBLIC(XorrisoEngine)
-public:
-    inline XorrisoEnginePrivate() {}
-
-};
-
-END_BURN_NAMESPACE
-
-#endif // XORRISOENGINE_P_H
+#endif // UDFBURNENGINE_H

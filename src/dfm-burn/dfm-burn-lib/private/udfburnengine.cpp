@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2020 ~ 2021 Deepin Technology Co., Ltd.
+ * Copyright (C) 2022 Uniontech Software Technology Co., Ltd.
  *
- * Author:     zhangsheng <zhangsheng@uniontech.com>
+ * Author:     zhangsheng<zhangsheng@uniontech.com>
  *
- * Maintainer: zhangsheng <zhangsheng@uniontech.com>
+ * Maintainer: max-lv<lvwujun@uniontech.com>
+ *             lanxuesong<lanxuesong@uniontech.com>
+ *             xushitong<xushitong@uniontech.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,14 +19,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-#include "private/xorrisoengine_p.h"
+*/
+#include "udfburnengine.h"
 
-BEGIN_BURN_NAMESPACE
-
-XorrisoEngine::XorrisoEngine()
+UDFBurnEngine::UDFBurnEngine(QObject *parent) : QObject(parent)
 {
 
 }
-
-END_BURN_NAMESPACE

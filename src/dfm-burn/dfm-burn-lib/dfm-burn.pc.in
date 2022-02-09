@@ -1,0 +1,12 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/include
+
+Name: dfm-burn
+Description: the library of burn.
+Version: @PROJECT_VERSION@
+Requires: libisoburn-1, Qt5Core
+
+Libs: -L${libdir} -ldfm-burn
+Cflags: -I${includedir} -I${includedir}/dfm-burn

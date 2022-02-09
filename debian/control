@@ -12,7 +12,8 @@ Build-Depends:
  libglibmm-2.4-dev,
  qttools5-dev-tools,
  libglib2.0-dev,
- libudisks2-dev
+ libudisks2-dev,
+ libisoburn-dev
 Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm
@@ -59,3 +60,26 @@ Depends:
  libudisks2-dev
 Description: A libaray about mount and umount dev.
  A libaray that provides mount and umount interface dev.
+
+Package: libdfm-burn
+Architecture: any
+Section: libdevel
+Multi-Arch: same
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends}
+Recommends:
+ libudfburn
+Description: A libaray about burning CD.
+ A libaray that provides burning CD interface.
+
+Package: libdfm-burn-dev
+Architecture: any
+Section: libdevel
+Multi-Arch: same
+Depends:
+ ${shlibs:Depends}, 
+ ${misc:Depends},
+ libdfm-burn
+Description: A libaray about mount burning CD.
+ A libaray that provides burning CD interface dev.

@@ -21,28 +21,25 @@
 #ifndef OPTICALDISCINFO_H
 #define OPTICALDISCINFO_H
 
+#include "dfmburn_global.h"
+
 #include <QObject>
 #include <QString>
-#include <QSharedData>
+#include <QSharedDataPointer>
 
-#include "dfm_burn_namespace.h"
-
-BEGIN_BURN_NAMESPACE
+DFM_BURN_BEGIN_NS
 
 class OpticalDiscInfoPrivate;
 
 class OpticalDiscInfo
 {
     friend class OpticalDiscInfoPrivate;
+    friend class OpticalDiscManager;
+
 public:
-    OpticalDiscInfo();
-    OpticalDiscInfo(const QString &dev);
     OpticalDiscInfo(const OpticalDiscInfo &info);
-
-    ~OpticalDiscInfo();
     OpticalDiscInfo &operator=(const OpticalDiscInfo &info);
-
-    void setDevice(const QString &dev);
+    ~OpticalDiscInfo();
 
     bool blank() const;
     QString device() const;
@@ -50,13 +47,17 @@ public:
     quint64 usedSize() const;
     quint64 availableSize() const;
     quint64 totalSize() const;
-    dfmburn::FileSystem fileSystem() const;
-    dfmburn::MediaType mediaType() const;
+    MediaType mediaType() const;
+    QStringList writeSpeed() const;
+
+protected:
+    OpticalDiscInfo();
+    OpticalDiscInfo(const QString &dev);
 
 protected:
     QSharedDataPointer<OpticalDiscInfoPrivate> d_ptr;
 };
 
-END_BURN_NAMESPACE
+DFM_BURN_END_NS
 
-#endif // OPTICALDISCINFO_H
+#endif   // OPTICALDISCINFO_H

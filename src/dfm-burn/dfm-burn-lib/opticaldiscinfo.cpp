@@ -19,32 +19,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "opticaldiscinfo.h"
-
 #include "private/opticaldiscinfo_p.h"
 
-BEGIN_BURN_NAMESPACE
+DFM_BURN_USE_NS
 
 OpticalDiscInfo::OpticalDiscInfo()
     : d_ptr(new OpticalDiscInfoPrivate())
 {
-
 }
 
 OpticalDiscInfo::OpticalDiscInfo(const QString &dev)
     : d_ptr(new OpticalDiscInfoPrivate(dev))
 {
+}
 
+OpticalDiscInfo::~OpticalDiscInfo()
+{
 }
 
 OpticalDiscInfo::OpticalDiscInfo(const OpticalDiscInfo &info)
     : d_ptr(info.d_ptr)
 {
-
-}
-
-OpticalDiscInfo::~OpticalDiscInfo()
-{
-
 }
 
 OpticalDiscInfo &OpticalDiscInfo::operator=(const OpticalDiscInfo &info)
@@ -53,34 +48,29 @@ OpticalDiscInfo &OpticalDiscInfo::operator=(const OpticalDiscInfo &info)
     return *this;
 }
 
-void OpticalDiscInfo::setDevice(const QString &dev)
-{
-    *this = OpticalDiscInfo(dev);
-}
-
 bool OpticalDiscInfo::blank() const
 {
-    return false;
+    return d_ptr->formatted;
 }
 
 QString OpticalDiscInfo::device() const
 {
-    return "";
+    return d_ptr->devid;
 }
 
 QString OpticalDiscInfo::volumeName() const
 {
-    return "";
+    return d_ptr->volid;
 }
 
 quint64 OpticalDiscInfo::usedSize() const
 {
-    return 0;
+    return d_ptr->data;
 }
 
 quint64 OpticalDiscInfo::availableSize() const
 {
-    return 0;
+    return d_ptr->avail;
 }
 
 quint64 OpticalDiscInfo::totalSize() const
@@ -88,14 +78,24 @@ quint64 OpticalDiscInfo::totalSize() const
     return usedSize() + availableSize();
 }
 
-dfmburn::FileSystem OpticalDiscInfo::fileSystem() const
-{
-    return dfmburn::FileSystem::kNoFS;
-}
-
 dfmburn::MediaType OpticalDiscInfo::mediaType() const
 {
     return dfmburn::MediaType::kNoMedia;
 }
 
-END_BURN_NAMESPACE
+QStringList OpticalDiscInfo::writeSpeed() const
+{
+    return d_ptr->writespeed;
+}
+
+void OpticalDiscInfoPrivate::initData()
+{
+    isoEngine->acquireDevice(devid);
+    media = isoEngine->mediaTypeProperty();
+    isoEngine->mediaStorageProperty(&data, &avail, &datablocks);
+    formatted = isoEngine->mediaFormattedProperty();
+    volid = isoEngine->mediaVolIdProperty();
+    writespeed = isoEngine->mediaSpeedProperty();
+    isoEngine->clearResult();
+    isoEngine->releaseDevice();
+}
