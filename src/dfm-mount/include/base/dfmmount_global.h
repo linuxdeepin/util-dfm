@@ -298,6 +298,7 @@ enum class DeviceError : uint16_t {
     UserErrorNoBlock,
     UserErrorNetworkWrongPasswd,
     UserErrorNetworkAnonymousNotAllowed,
+    UserErrorUserCancelled,
     UserErrorTimedOut,
     UserErrorAlreadyMounted,
     UserErrorNotMounted,

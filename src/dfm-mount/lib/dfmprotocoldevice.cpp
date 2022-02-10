@@ -686,6 +686,12 @@ void DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd(GMountOperation *self
     }
 
     auto mountInfo = helper->callback(message, userDefault, domainDefault);
+    if (mountInfo.cancelled) {
+        g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
+        helper->err = DeviceError::UserErrorUserCancelled;
+        return;
+    }
+
     if (mountInfo.anonymous) {
         // the flags seem to always be 31(0b11111)
         if (!(flags & G_ASK_PASSWORD_ANONYMOUS_SUPPORTED)) {

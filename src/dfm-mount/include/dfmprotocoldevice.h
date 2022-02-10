@@ -38,6 +38,7 @@ struct MountPassInfo
     QString passwd {};
     QString domain {};
     bool anonymous { false };
+    bool cancelled { false };
     NetworkMountPasswdSaveMode savePasswd { NetworkMountPasswdSaveMode::NeverSavePasswd };
 };
 
