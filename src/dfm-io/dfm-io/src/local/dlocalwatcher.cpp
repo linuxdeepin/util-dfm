@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
+ * Copyright (C) 2021 ~ 2022 Uniontech Software Technology Co., Ltd.
  *
  * Author:     dengkeyun<dengkeyun@uniontech.com>
  *
@@ -22,6 +22,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "dfmio_utils.h"
 #include "local/dlocalwatcher.h"
 #include "local/dlocalwatcher_p.h"
 #include "local/dlocalfileinfo.h"
@@ -149,6 +150,7 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
     case G_FILE_MONITOR_EVENT_PRE_UNMOUNT:
         break;
     case G_FILE_MONITOR_EVENT_UNMOUNTED:
+        watcher->fileDeleted(QUrl(childUrl));
         break;
     case G_FILE_MONITOR_EVENT_MOVED_IN:
         watcher->fileAdded(QUrl(childUrl));
@@ -202,14 +204,23 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
         bool ok = false;
         type = transWatcherType(gfile, &ok);
         if (!ok)
-            return nullptr;
+            type = DWatcher::WatchType::kFile;
     }
 
     g_autoptr(GError) gerror = nullptr;
+
+    GFileMonitorFlags watchFlags = G_FILE_MONITOR_WATCH_MOVES;
+
+    // monitor file in movable device, can't received signal when umount, so need change flag to G_FILE_MONITOR_WATCH_HARD_LINKS
+    const QString &&filePath = QString::fromLocal8Bit(g_file_get_path(gfile));
+
+    if(type == DWatcher::WatchType::kFile && DFMUtils::fileUnmountable(filePath))
+        watchFlags = G_FILE_MONITOR_WATCH_HARD_LINKS;
+
     if (type == DWatcher::WatchType::kDir)
-        gmonitor = g_file_monitor_directory(gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
+        gmonitor = g_file_monitor_directory(gfile, watchFlags, nullptr, &gerror);
     else
-        gmonitor = g_file_monitor(gfile, G_FILE_MONITOR_WATCH_MOVES, nullptr, &gerror);
+        gmonitor = g_file_monitor(gfile, watchFlags, nullptr, &gerror);
 
     if (!gmonitor) {
         setErrorFromGError(gerror);
