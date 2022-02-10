@@ -717,11 +717,13 @@ void DFMProtocolDevicePrivate::mountNetworkDeviceCallback(GObject *srcObj, GAsyn
     auto file = reinterpret_cast<GFile *>(srcObj);
     GError_autoptr err = nullptr;
     bool ok = g_file_mount_enclosing_volume_finish(file, res, &err);
-    if (!ok) {
+    if (!ok && derr == DeviceError::NoError) {
         derr = Utils::castFromGError(err);
     }
+
+    g_autofree char *mntPath = g_file_get_path(file);
     if (finalize->callback)
-        finalize->callback(ok, derr);
+        finalize->callback(ok, derr, mntPath);
 
     delete finalize->askPasswd;
     delete finalize;

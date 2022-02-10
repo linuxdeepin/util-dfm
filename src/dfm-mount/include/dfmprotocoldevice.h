@@ -42,7 +42,7 @@ struct MountPassInfo
 };
 
 using GetMountPassInfo = std::function<MountPassInfo(const QString &message, const QString &userDefault, const QString &domainDefault)>;
-using MountResult = std::function<void(bool ok, DeviceError err)>;
+using MountResult = std::function<void(bool ok, DeviceError err, QString mntPath)>;
 
 class DFMProtocolDevicePrivate;
 class DFMProtocolDevice final : public DFMDevice
