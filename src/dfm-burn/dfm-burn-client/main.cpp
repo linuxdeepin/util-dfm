@@ -29,15 +29,42 @@
 
 DFM_BURN_USE_NS
 
+// TODO(zhangs): follow code is test code
+
+static void erase(const QString &dev)
+{
+    OpticalDiscManager manager(dev);
+    manager.erase();
+}
+
 static void showInfo(const QString &dev)
 {
     QScopedPointer<OpticalDiscInfo> info { OpticalDiscManager::createOpticalInfo(dev) };
     qDebug() << info->device();
 }
 
+static void commit()
+{
+    OpticalDiscManager manager("/dev/sr0");
+    manager.stageFile("/home/zhangs/test/0");
+    BurnOptions opts;
+    opts |= BurnOption::kJolietAndRockRidge;
+    opts |= BurnOption::kKeepAppendable;
+    manager.commit(opts, 0, "123");
+}
+
+static void writeISO()
+{
+    OpticalDiscManager manager("/dev/sr0");
+    manager.writeISO("/home/zhangs/Downloads/deb/20200413_214350.iso");
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    showInfo("/dev/sr0");
+    // showInfo("/dev/sr0");
+    // erase("/dev/sr0");
+    // writeISO();
+    commit();
     return a.exec();
 }

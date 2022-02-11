@@ -21,6 +21,8 @@
 #include "opticaldiscinfo.h"
 #include "private/opticaldiscinfo_p.h"
 
+#include <QDebug>
+
 DFM_BURN_USE_NS
 
 OpticalDiscInfo::OpticalDiscInfo()
@@ -78,6 +80,11 @@ quint64 OpticalDiscInfo::totalSize() const
     return usedSize() + availableSize();
 }
 
+quint64 OpticalDiscInfo::dataBlocks() const
+{
+    return d_ptr->datablocks;
+}
+
 dfmburn::MediaType OpticalDiscInfo::mediaType() const
 {
     return dfmburn::MediaType::kNoMedia;
@@ -90,7 +97,11 @@ QStringList OpticalDiscInfo::writeSpeed() const
 
 void OpticalDiscInfoPrivate::initData()
 {
-    isoEngine->acquireDevice(devid);
+    if (!isoEngine->acquireDevice(devid)) {
+        qWarning() << "[dfm-burn]: Init data failed, cannot acquire device";
+        devid = "";
+        return;
+    }
     media = isoEngine->mediaTypeProperty();
     isoEngine->mediaStorageProperty(&data, &avail, &datablocks);
     formatted = isoEngine->mediaFormattedProperty();

@@ -41,6 +41,16 @@ static inline int XORRISO_OPT(struct XorrisO *x, std::function<int()> opt)
     return Xorriso_eval_problem_status(x, r, 0);
 }
 
+static inline bool JOBFAILED_IF(XorrisoEngine *engine, int r, struct XorrisO *x)
+{
+    if (r <= 0) {
+        Xorriso_option_end(x, 1);
+        emit engine->jobStatusChanged(JobStatus::kFailed, -1, "");
+        return true;
+    }
+    return false;
+}
+
 static int xorrisoResultHandler(void *handle, char *text)
 {
     (static_cast<XorrisoEngine *>(handle))->messageReceived(0, text);
@@ -102,8 +112,7 @@ bool XorrisoEngine::acquireDevice(QString dev)
         curDev = dev;
 
         int result = XORRISO_OPT(xorriso, [this, dev]() {
-            int r = Xorriso_option_dev(xorriso, dev.toUtf8().data(), 3);
-            return r;
+            return Xorriso_option_dev(xorriso, dev.toUtf8().data(), 3);
         });
         if (result <= 0) {
             curDev = "";
@@ -253,9 +262,188 @@ QStringList XorrisoEngine::takeInfoMessages()
     return ret;
 }
 
-QString XorrisoEngine::getCurSpeed() const
+bool XorrisoEngine::doErase()
 {
-    return curspeed;
+    Q_EMIT jobStatusChanged(JobStatus::kRunning, 0, curspeed);
+    xorrisomsg.clear();
+
+    XORRISO_OPT(xorriso, [this]() {
+        return Xorriso_option_abort_on(xorriso, PCHAR("ABORT"), 0);
+    });
+    int r = XORRISO_OPT(xorriso, [this]() {
+        return Xorriso_option_blank(xorriso, PCHAR("as_needed"), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    return true;
+}
+
+bool XorrisoEngine::doWriteISO(const QString &isoPath, int speed)
+{
+    Q_EMIT jobStatusChanged(JobStatus::kStalled, 0, curspeed);
+    xorrisomsg.clear();
+
+    QString spd = QString::number(speed) + "k";
+    if (speed == 0)
+        spd = "0";
+
+    char **av = new char *[6];
+    av[0] = strdup("cdrecord");
+    av[1] = strdup("-v");
+    av[2] = strdup((QString("dev=") + curDev).toUtf8().data());
+    av[3] = strdup("blank=as_needed");
+    av[4] = strdup((QString("speed=") + spd).toUtf8().data());
+    av[5] = strdup(isoPath.toUtf8().data());
+
+    int r = XORRISO_OPT(xorriso, [this, av]() {
+        int dummy { 0 };
+        return Xorriso_option_as(xorriso, 6, av, &dummy, 1);
+    });
+
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    return true;
+}
+
+/*!
+ * \brief Perform a data integration check for the disc.
+ * \param dataBlocks is current device's blocks
+ * \param qgood if not null, will be set to the portion of sectors that can be read fast.
+ * \param qslow if not null, will be set to the portion of sectors that can still be read, but slowly.
+ * \param qbad if not null, will be set to the portion of sectors that are corrupt.
+ * \return true on success, false on failure (if for some reason the disc could not be checked)
+ *
+ * The values returned should add up to 1 (or very close to 1).
+ */
+bool XorrisoEngine::doCheckmedia(quint64 dataBlocks, double *qgood, double *qslow, double *qbad)
+{
+    if (dataBlocks == 0)
+        return false;
+
+    Q_EMIT jobStatusChanged(JobStatus::kRunning, 0, curspeed);
+
+    int r = XORRISO_OPT(xorriso, [this]() {
+        int dummy { 0 };
+        return Xorriso_option_check_media(xorriso, 0, nullptr, &dummy, 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    quint64 ngood = 0;
+    quint64 nslow = 0;
+    quint64 nbad = 0;
+
+    int ac, avail;
+    char **av;
+
+    do {
+        Xorriso_sieve_get_result(xorriso, PCHAR("Media region :"), &ac, &av, &avail, 0);
+        if (ac == 3) {
+            quint64 szblk = static_cast<quint64>(QString(av[1]).toLongLong());
+            if (av[2][0] == '-') {
+                nbad += szblk;
+            } else if (av[2][0] == '0') {
+                ngood += szblk;
+            } else {
+                if (QString(av[2]).contains("slow")) {
+                    nslow += szblk;
+                } else {
+                    ngood += szblk;
+                }
+            }
+        }
+        Xorriso__dispose_words(&ac, &av);
+    } while (avail > 0);
+
+    if (qgood) {
+        *qgood = 1. * ngood / dataBlocks;
+    }
+    if (qslow) {
+        *qslow = 1. * nslow / dataBlocks;
+    }
+    if (qbad) {
+        *qbad = 1. * nbad / dataBlocks;
+    }
+    Xorriso_sieve_clear_results(xorriso, 0);
+    Q_EMIT jobStatusChanged(JobStatus::kFinished, 0, curspeed);
+
+    return true;
+}
+
+bool XorrisoEngine::doBurn(const QHash<QString, QString> files, int speed, QString volId, XorrisoEngine::JolietSupport joliet, XorrisoEngine::RockRageSupport rockRage, XorrisoEngine::KeepAppendable appendable)
+{
+    if (files.isEmpty())
+        return false;
+
+    Q_EMIT jobStatusChanged(JobStatus::kStalled, 0, curspeed);
+    xorrisomsg.clear();
+
+    QString spd = QString::number(speed) + "k";
+    if (speed == 0)
+        spd = "0";
+
+    // speed
+    int r = XORRISO_OPT(xorriso, [this, spd]() {
+        return Xorriso_option_speed(xorriso, spd.toUtf8().data(), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    // volid
+    r = XORRISO_OPT(xorriso, [this, volId]() {
+        return Xorriso_option_volid(xorriso, volId.toUtf8().data(), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    // overwrite
+    r = XORRISO_OPT(xorriso, [this]() {
+        return Xorriso_option_overwrite(xorriso, PCHAR("off"), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    // joliet
+    r = XORRISO_OPT(xorriso, [this, joliet]() {
+        return Xorriso_option_joliet(xorriso, PCHAR(joliet == JolietSupport::kTrue ? "on" : "off"), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    // rockridge
+    r = XORRISO_OPT(xorriso, [this, rockRage]() {
+        return Xorriso_option_rockridge(xorriso, PCHAR(rockRage == RockRageSupport::kTrue ? "on" : "off"), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    // add files
+    for (auto it = files.begin(); it != files.end(); ++it) {
+        r = XORRISO_OPT(xorriso, [this, it]() {
+            return Xorriso_option_map(xorriso, it.key().toUtf8().data(),
+                                      it.value().toUtf8().data(), 0);
+        });
+        if (JOBFAILED_IF(this, r, xorriso))
+            return false;
+    }
+
+    // close
+    r = XORRISO_OPT(xorriso, [this, appendable]() {
+        return Xorriso_option_close(xorriso, PCHAR(appendable == KeepAppendable::kTrue ? "off" : "on"), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    // commit
+    r = XORRISO_OPT(xorriso, [this]() {
+        return Xorriso_option_commit(xorriso, 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    return true;
 }
 
 void XorrisoEngine::messageReceived(int type, char *text)
@@ -269,41 +457,41 @@ void XorrisoEngine::messageReceived(int type, char *text)
 
     // closing session
     if (msg.contains("UPDATE : Closing track/session.")) {
-        Q_EMIT jobStatusChanged(JobStatus::kStalled, 1);
+        Q_EMIT jobStatusChanged(JobStatus::kStalled, 1, curspeed);
         return;
     }
 
     // stalled
     if (msg.contains("UPDATE : Thank you for being patient.")) {
-        Q_EMIT jobStatusChanged(JobStatus::kStalled, 0);
+        Q_EMIT jobStatusChanged(JobStatus::kStalled, 0, curspeed);
         return;
     }
 
-    //cdrecord / blanking
+    // cdrecord / blanking
     QRegularExpression r("([0-9.]*)%\\s*(fifo|done)");
     QRegularExpressionMatch m = r.match(msg);
     if (m.hasMatch()) {
         double percentage = m.captured(1).toDouble();
-        Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(percentage));
+        Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(percentage), curspeed);
     }
 
-    //commit
+    // commit
     r = QRegularExpression("([0-9]*)\\s*of\\s*([0-9]*) MB written");
     m = r.match(msg);
     if (m.hasMatch()) {
         double percentage = 100. * m.captured(1).toDouble() / m.captured(2).toDouble();
-        Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(percentage));
+        Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(percentage), curspeed);
     }
 
-    //check media
+    // check media
     r = QRegularExpression("([0-9]*) blocks read in ([0-9]*) seconds , ([0-9.]*)x");
     m = r.match(msg);
     if (m.hasMatch() && curDatablocks != 0) {
         double percentage = 100. * m.captured(1).toDouble() / curDatablocks;
-        Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(percentage));
+        Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(percentage), curspeed);
     }
 
-    //current speed
+    // current speed
     r = QRegularExpression("([0-9]*\\.[0-9]x)[bBcCdD.]");
     m = r.match(msg);
     if (m.hasMatch()) {
@@ -312,8 +500,8 @@ void XorrisoEngine::messageReceived(int type, char *text)
         curspeed.clear();
     }
 
-    //operation complete
+    // operation complete
     if (msg.contains("Blanking done") || msg.contains(QRegularExpression("Writing to .* completed successfully."))) {
-        Q_EMIT jobStatusChanged(JobStatus::kFinished, 0);
+        Q_EMIT jobStatusChanged(JobStatus::kFinished, 0, curspeed);
     }
 }

@@ -39,7 +39,7 @@ enum class BurnOption : unsigned int {
     kISO9660Only = 1 << 3,   // default
     kJolietSupport = 1 << 4,   // add joliet extension
     kRockRidgeSupport = 1 << 5,   // add rockridge extension
-    kUDF102 = 1 << 6,
+    kUDF102Supported = 1 << 6,
     kJolietAndRockRidge = kJolietSupport | kRockRidgeSupport   // add both of them, not used yet
 };
 Q_DECLARE_FLAGS(BurnOptions, BurnOption)

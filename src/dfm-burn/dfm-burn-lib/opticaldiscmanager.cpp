@@ -23,7 +23,10 @@
 #include "opticaldiscmanager.h"
 #include "opticaldiscinfo.h"
 #include "private/opticaldiscmanager_p.h"
+#include "private/xorrisoengine.h"
+#include "private/udfburnengine.h"
 
+#include <QDebug>
 #include <QUrl>
 
 DFM_BURN_USE_NS
@@ -82,24 +85,107 @@ void OpticalDiscManager::clearStageFiles()
     dptr->files.clear();
 }
 
+/*!
+ * \brief DISOMaster::commit  Burn all staged files to the disc.
+ * \param opts   burning options
+ * \param speed  desired writing speed in kilobytes per second
+ * \param volId  volume name of the disc
+ * \return       true on success, false on failure
+ */
 bool OpticalDiscManager::commit(const BurnOptions &opts, int speed, const QString &volId)
 {
-    return false;
+    bool ret { false };
+    QScopedPointer<XorrisoEngine> engine { new XorrisoEngine };
+    connect(engine.data(), &XorrisoEngine::jobStatusChanged, this, &OpticalDiscManager::jobStatusChanged);
+
+    if (!engine->acquireDevice(dptr->curDev)) {
+        qWarning() << "[dfm-burn]: Cannot acquire device";
+        return ret;
+    }
+
+    using XJolietSupport = XorrisoEngine::JolietSupport;
+    using XRockRageSupport = XorrisoEngine::RockRageSupport;
+    using XKeepAppendable = XorrisoEngine::KeepAppendable;
+    XJolietSupport joliet = opts.testFlag(BurnOption::kJolietSupport)
+            ? XJolietSupport::kTrue
+            : XJolietSupport::kFalse;
+    XRockRageSupport rockRage = opts.testFlag(BurnOption::kRockRidgeSupport)
+            ? XRockRageSupport::kTrue
+            : XRockRageSupport::kFalse;
+    XKeepAppendable keepAppendable = opts.testFlag(BurnOption::kKeepAppendable)
+            ? XKeepAppendable::kTrue
+            : XKeepAppendable::kFalse;
+
+    if (!opts.testFlag(BurnOption::kUDF102Supported)) {
+        engine->doBurn(dptr->files, speed, volId, joliet, rockRage, keepAppendable);
+    } else {
+        // TODO(zhangs): Impl me!
+    }
+    return ret;
 }
 
 bool OpticalDiscManager::erase()
 {
-    return false;
+    bool ret { false };
+    QScopedPointer<XorrisoEngine> engine { new XorrisoEngine };
+    connect(engine.data(), &XorrisoEngine::jobStatusChanged, this, &OpticalDiscManager::jobStatusChanged);
+
+    if (!engine->acquireDevice(dptr->curDev)) {
+        qWarning() << "[dfm-burn]: Cannot acquire device";
+        return ret;
+    }
+
+    ret = engine->doErase();
+
+    engine->releaseDevice();
+    return ret;
 }
 
 bool OpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
 {
-    return false;
+    bool ret { false };
+    QScopedPointer<XorrisoEngine> engine { new XorrisoEngine };
+    connect(engine.data(), &XorrisoEngine::jobStatusChanged, this, &OpticalDiscManager::jobStatusChanged);
+    if (!engine->acquireDevice(dptr->curDev)) {
+        qWarning() << "[dfm-burn]: Cannot acquire device";
+        return ret;
+    }
+
+    quint64 blocks { 0 };
+
+    {
+        auto info = OpticalDiscManager::createOpticalInfo(dptr->curDev);
+        blocks = info->dataBlocks();
+    }
+
+    ret = engine->doCheckmedia(blocks, qgood, qslow, qbad);
+
+    engine->releaseDevice();
+
+    return ret;
 }
 
 bool OpticalDiscManager::writeISO(const QString &isoPath, int speed)
 {
-    return false;
+    bool ret { false };
+    QScopedPointer<XorrisoEngine> engine { new XorrisoEngine };
+    connect(engine.data(), &XorrisoEngine::jobStatusChanged, this, &OpticalDiscManager::jobStatusChanged);
+
+    if (!engine->acquireDevice(dptr->curDev)) {
+        qWarning() << "[dfm-burn]: Cannot acquire device";
+        return ret;
+    }
+
+    if (QUrl(isoPath).isEmpty() || !QUrl(isoPath).isValid()) {
+        qWarning() << "[dfm-burn]: Invalid path: " << isoPath;
+        return ret;
+    }
+
+    ret = engine->doWriteISO(isoPath, speed);
+
+    engine->releaseDevice();
+
+    return ret;
 }
 
 QString OpticalDiscManager::lastError() const
@@ -109,5 +195,9 @@ QString OpticalDiscManager::lastError() const
 
 OpticalDiscInfo *OpticalDiscManager::createOpticalInfo(const QString &dev)
 {
-    return new OpticalDiscInfo(dev);
+    auto info = new OpticalDiscInfo(dev);
+    if (info->device().isEmpty())
+        return nullptr;
+
+    return info;
 }

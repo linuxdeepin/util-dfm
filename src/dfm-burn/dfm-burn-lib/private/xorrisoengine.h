@@ -34,6 +34,23 @@ DFM_BURN_BEGIN_NS
 class XorrisoEngine : public QObject
 {
     Q_OBJECT
+
+public:
+    enum class JolietSupport {
+        kFalse,
+        kTrue
+    };
+
+    enum class RockRageSupport {
+        kFalse,
+        kTrue
+    };
+
+    enum class KeepAppendable {
+        kFalse,
+        kTrue
+    };
+
 public:
     explicit XorrisoEngine(QObject *parent = nullptr);
     ~XorrisoEngine();
@@ -47,7 +64,11 @@ public:
     QString mediaVolIdProperty() const;
     QStringList mediaSpeedProperty() const;
     QStringList takeInfoMessages();
-    QString getCurSpeed() const;
+    bool doErase();
+    bool doWriteISO(const QString &isoPath, int speed);
+    bool doCheckmedia(quint64 dataBlocks, double *qgood, double *qslow, double *qbad);
+    bool doBurn(const QHash<QString, QString> files, int speed, QString volId,
+                JolietSupport joliet, RockRageSupport rockRage, KeepAppendable appendable);
 
 public slots:
     void messageReceived(int type, char *text);
@@ -60,7 +81,7 @@ signals:
      * \param progress Job progress in percentage if status is running.
      *        Type of stalled work if status is stalled (1 = closing session, 0 = others).
      */
-    void jobStatusChanged(JobStatus status, int progress);
+    void jobStatusChanged(JobStatus status, int progress, QString speed);
 
 private:
     XorrisO *xorriso;

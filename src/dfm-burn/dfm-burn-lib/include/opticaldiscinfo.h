@@ -47,6 +47,7 @@ public:
     quint64 usedSize() const;
     quint64 availableSize() const;
     quint64 totalSize() const;
+    quint64 dataBlocks() const;
     MediaType mediaType() const;
     QStringList writeSpeed() const;
 

@@ -56,7 +56,7 @@ public:
     QString lastError() const;
 
 signals:
-    // TODO(zhangs): update status, speed, info
+    void jobStatusChanged(JobStatus status, int progress, QString speed);
 
 private:
     QScopedPointer<OpticalDiscManagerPrivate> dptr;
