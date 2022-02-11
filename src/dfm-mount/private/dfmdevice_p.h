@@ -31,12 +31,12 @@ DFM_MOUNT_BEGIN_NS
 class CallbackProxy
 {
 public:
-    CallbackProxy(DeviceOperateCb cb)
+    CallbackProxy(Callback1 cb)
         : cb(cb) {}
-    CallbackProxy(DeviceOperateCbWithInfo cb)
+    CallbackProxy(Callback2 cb)
         : cbWithInfo(cb) {}
-    DeviceOperateCb cb { nullptr };
-    DeviceOperateCbWithInfo cbWithInfo { nullptr };
+    Callback1 cb { nullptr };
+    Callback2 cbWithInfo { nullptr };
 };
 
 class DFMDevicePrivate

@@ -24,6 +24,7 @@
 #define DFMMOUNT_GLOBAL_H
 
 #include <QtCore/qglobal.h>
+#include <functional>
 
 #if defined(DFMMOUNT_LIBRARY)
 #    define DFMMOUNTSHARED_EXPORT Q_DECL_EXPORT
@@ -40,6 +41,10 @@
 #define DFM_MNT_OVERRIDE
 
 DFM_MOUNT_BEGIN_NS
+
+#define ParamCancellable "cancellable"
+#define ParamMountOperation "operation"
+#define ParamForce "force"
 
 enum class DeviceType : uint16_t {
     AllDevice = 0,
@@ -611,6 +616,9 @@ enum class PartitionType : uint16_t {
     GptEmmcBoot1FuchsiaLegacy,
     GptEmmcBoot2FuchsiaLegacy,
 };
+
+using Callback1 = std::function<void(bool, DeviceError)>;
+using Callback2 = std::function<void(bool, DeviceError, QString)>;
 
 DFM_MOUNT_END_NS
 #endif   // DFMMOUNT_GLOBAL_H

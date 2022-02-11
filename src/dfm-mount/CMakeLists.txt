@@ -44,7 +44,6 @@ set(LIB_BASE_HEADER
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmdevice.h
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmonitor.h
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmount_global.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmountdefines.h
     ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmountutils.h
     )
 

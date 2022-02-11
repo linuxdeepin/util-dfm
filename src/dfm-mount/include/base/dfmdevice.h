@@ -24,7 +24,6 @@
 #define DFMDEVICE_H
 
 #include "dfmmount_global.h"
-#include "dfmmountdefines.h"
 
 #include <QObject>
 #include <QSharedPointer>
@@ -47,11 +46,11 @@ public:
 
     DFM_MNT_VIRTUAL QString path() const;
     DFM_MNT_VIRTUAL QString mount(const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
+    DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts = {}, Callback2 cb = nullptr);
     DFM_MNT_VIRTUAL bool unmount(const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void unmountAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
+    DFM_MNT_VIRTUAL void unmountAsync(const QVariantMap &opts = {}, Callback1 cb = nullptr);
     DFM_MNT_VIRTUAL bool rename(const QString &newName, const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void renameAsync(const QString &newName, const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
+    DFM_MNT_VIRTUAL void renameAsync(const QString &newName, const QVariantMap &opts = {}, Callback1 cb = nullptr);
     DFM_MNT_VIRTUAL QString mountPoint() const;
     DFM_MNT_VIRTUAL QString fileSystem() const;
     DFM_MNT_VIRTUAL qint64 sizeTotal() const;
@@ -73,11 +72,11 @@ public:
     // type definition
     using PathFunc = std::function<QString()>;
     using MountFunc = std::function<QString(const QVariantMap &)>;
-    using MountAsyncFunc = std::function<void(const QVariantMap &, DeviceOperateCb)>;
+    using MountAsyncFunc = std::function<void(const QVariantMap &, Callback2)>;
     using UnmountFunc = std::function<bool(const QVariantMap &)>;
-    using UnmountAsyncFunc = std::function<void(const QVariantMap &, DeviceOperateCb)>;
+    using UnmountAsyncFunc = std::function<void(const QVariantMap &, Callback1)>;
     using RenameFunc = std::function<bool(const QString &, const QVariantMap &)>;
-    using RenameAsyncFunc = std::function<void(const QString &, const QVariantMap &, DeviceOperateCb)>;
+    using RenameAsyncFunc = std::function<void(const QString &, const QVariantMap &, Callback1)>;
     using MountPointFunc = std::function<QString()>;
     using FileSystemFunc = std::function<QString()>;
     using SizeTotalFunc = std::function<qint64()>;

@@ -22,7 +22,6 @@
 #define DFMDEVICEMANAGER_H
 
 #include "base/dfmmount_global.h"
-#include "base/dfmmountdefines.h"
 
 #include <QObject>
 

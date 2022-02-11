@@ -23,7 +23,7 @@
 #ifndef DFMPROTOCOLDEVICE_P_H
 #define DFMPROTOCOLDEVICE_P_H
 
-#include "base/dfmmountdefines.h"
+#include "base/dfmmount_global.h"
 #include "private/dfmdevice_p.h"
 #include "dfmprotocoldevice.h"
 
@@ -75,7 +75,7 @@ struct AskPasswdHelper
 struct FinalizeHelper
 {
     AskPasswdHelper *askPasswd { nullptr };
-    MountResult callback;
+    Callback2 callback;
 };
 
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
@@ -88,11 +88,11 @@ public:
 
     QString path() const;
     QString mount(const QVariantMap &opts);
-    void mountAsync(const QVariantMap &opts, DeviceOperateCb cb);
+    void mountAsync(const QVariantMap &opts, Callback2 cb);
     bool unmount(const QVariantMap &opts);
-    void unmountAsync(const QVariantMap &opts, DeviceOperateCb cb);
+    void unmountAsync(const QVariantMap &opts, Callback1 cb);
     bool rename(const QString &newName);
-    void renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb);
+    void renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb);
     QString mountPoint() const;
     QString fileSystem() const;
     long sizeTotal() const;

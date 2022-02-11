@@ -24,7 +24,7 @@
 #define DFMBLOCKDEVICE_H
 
 #include "base/dfmdevice.h"
-#include "base/dfmmountdefines.h"
+#include "base/dfmmount_global.h"
 
 #include <QObject>
 
@@ -48,13 +48,13 @@ private:
 
 public:
     bool eject(const QVariantMap &opts = {});
-    void ejectAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
+    void ejectAsync(const QVariantMap &opts = {}, Callback1 cb = nullptr);
     bool powerOff(const QVariantMap &opts = {});
-    void powerOffAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
+    void powerOffAsync(const QVariantMap &opts = {}, Callback1 cb = nullptr);
     bool lock(const QVariantMap &opts = {});
-    void lockAsync(const QVariantMap &opts = {}, DeviceOperateCb cb = nullptr);
+    void lockAsync(const QVariantMap &opts = {}, Callback1 cb = nullptr);
     bool unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts = {});
-    void unlockAsync(const QString &passwd, const QVariantMap &opts = {}, DeviceOperateCbWithInfo cb = nullptr);
+    void unlockAsync(const QString &passwd, const QVariantMap &opts = {}, Callback2 cb = nullptr);
 
     // these are convinience methods
     QStringList mountPoints() const;

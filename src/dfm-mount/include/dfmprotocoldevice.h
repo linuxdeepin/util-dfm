@@ -43,7 +43,6 @@ struct MountPassInfo
 };
 
 using GetMountPassInfo = std::function<MountPassInfo(const QString &message, const QString &userDefault, const QString &domainDefault)>;
-using MountResult = std::function<void(bool ok, DeviceError err, QString mntPath)>;
 
 class DFMProtocolDevicePrivate;
 class DFMProtocolDevice final : public DFMDevice
@@ -54,7 +53,7 @@ class DFMProtocolDevice final : public DFMDevice
 public:
     ~DFMProtocolDevice();
     QStringList deviceIcons() const;
-    static void mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, MountResult mountResult);
+    static void mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, Callback2 mountResult);
 
     void setOperatorTimeout(int msecs);
 

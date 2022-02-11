@@ -26,7 +26,7 @@
 #include "dfmblockdevice.h"
 #include "udisks/udisks-generated.h"
 #include "private/dfmdevice_p.h"
-#include "base/dfmmountdefines.h"
+#include "base/dfmmount_global.h"
 
 DFM_MOUNT_BEGIN_NS
 
@@ -38,11 +38,11 @@ public:
 
     QString path() const DFM_MNT_OVERRIDE;
     QString mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void mountAsync(const QVariantMap &opts, DeviceOperateCb cb) DFM_MNT_OVERRIDE;
+    void mountAsync(const QVariantMap &opts, Callback2 cb) DFM_MNT_OVERRIDE;
     bool unmount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void unmountAsync(const QVariantMap &opts, DeviceOperateCb cb) DFM_MNT_OVERRIDE;
+    void unmountAsync(const QVariantMap &opts, Callback1 cb) DFM_MNT_OVERRIDE;
     bool rename(const QString &newName, const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb) DFM_MNT_OVERRIDE;
+    void renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb) DFM_MNT_OVERRIDE;
     QString mountPoint() const DFM_MNT_OVERRIDE;
     QString fileSystem() const DFM_MNT_OVERRIDE;
     qint64 sizeTotal() const DFM_MNT_OVERRIDE;
@@ -59,13 +59,13 @@ public:
     QVariant getEncryptedProperty(Property name) const;
 
     bool eject(const QVariantMap &opts);
-    void ejectAsync(const QVariantMap &opts, DeviceOperateCb cb);
+    void ejectAsync(const QVariantMap &opts, Callback1 cb);
     bool powerOff(const QVariantMap &opts);
-    void powerOffAsync(const QVariantMap &opts, DeviceOperateCb cb);
+    void powerOffAsync(const QVariantMap &opts, Callback1 cb);
     bool lock(const QVariantMap &opts);
-    void lockAsync(const QVariantMap &opts, DeviceOperateCb cb);
+    void lockAsync(const QVariantMap &opts, Callback1 cb);
     bool unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts);
-    void unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCbWithInfo cb);
+    void unlockAsync(const QString &passwd, const QVariantMap &opts, Callback2 cb);
 
 private:
     void init();

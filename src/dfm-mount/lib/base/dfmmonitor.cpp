@@ -23,7 +23,7 @@
 #include <QDebug>
 
 #include "base/dfmmonitor.h"
-#include "base/dfmmountdefines.h"
+#include "base/dfmmount_global.h"
 #include "private/dfmmonitor_p.h"
 
 DFM_MOUNT_USE_NS

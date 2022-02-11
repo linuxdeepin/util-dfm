@@ -26,7 +26,7 @@
 #include "base/dfmdevice.h"
 #include "dfmblockdevice.h"
 #include "private/dfmblockdevice_p.h"
-#include "base/dfmmountdefines.h"
+#include "base/dfmmount_global.h"
 #include "base/dfmmountutils.h"
 
 #include <QDebug>

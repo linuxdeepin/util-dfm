@@ -21,7 +21,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "base/dfmmountdefines.h"
+#include "base/dfmmount_global.h"
 #include "base/dfmdevice.h"
 #include "private/dfmdevice_p.h"
 
@@ -61,7 +61,7 @@ QString DFMDevice::mount(const QVariantMap &opts)
     return d->mount(opts);
 }
 
-void DFMDevice::mountAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMDevice::mountAsync(const QVariantMap &opts, Callback2 cb)
 {
     Q_ASSERT_X(d->mountAsync, __PRETTY_FUNCTION__, "not register");
 
@@ -75,7 +75,7 @@ bool DFMDevice::unmount(const QVariantMap &opts)
     return d->unmount(opts);
 }
 
-void DFMDevice::unmountAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMDevice::unmountAsync(const QVariantMap &opts, Callback1 cb)
 {
     Q_ASSERT_X(d->unmountAsync, __PRETTY_FUNCTION__, "not register");
 
@@ -89,7 +89,7 @@ bool DFMDevice::rename(const QString &newName, const QVariantMap &opts)
     return d->rename(newName, opts);
 }
 
-void DFMDevice::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb)
+void DFMDevice::renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb)
 {
     Q_ASSERT_X(d->renameAsync, __PRETTY_FUNCTION__, "not register");
 

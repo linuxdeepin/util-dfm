@@ -23,7 +23,7 @@
 
 #include "dfmprotocoldevice.h"
 #include "private/dfmprotocoldevice_p.h"
-#include "base/dfmmountdefines.h"
+#include "base/dfmmount_global.h"
 #include "base/dfmmountutils.h"
 
 #include <QEventLoop>
@@ -39,9 +39,9 @@ namespace {
 struct CallbackProxyWithData
 {
     CallbackProxyWithData() = delete;
-    explicit CallbackProxyWithData(DeviceOperateCb cb)
+    explicit CallbackProxyWithData(Callback1 cb)
         : caller(cb) {}
-    explicit CallbackProxyWithData(DeviceOperateCbWithInfo cb)
+    explicit CallbackProxyWithData(Callback2 cb)
         : caller(cb) {}
     CallbackProxy caller;
     QPointer<DFMProtocolDevice> data;
@@ -157,7 +157,7 @@ QStringList DFMProtocolDevice::deviceIcons() const
  * \param getPassInfo   an passwd-asking dialog should be exec in this function, and return a struct object which contains the passwd
  * \param mountResult   when mount finished, this function will be invoked.
  */
-void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, MountResult mountResult)
+void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, Callback2 mountResult)
 {
     GFile_autoptr file = g_file_new_for_uri(address.toStdString().c_str());
     if (!file) {
@@ -290,21 +290,23 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
     return "";
 }
 
-void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, Callback2 cb)
 {
     if (mountHandler) {
         qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
         qInfo() << "mutexForMount locked" << __FUNCTION__;
         lastError = DeviceError::UserErrorAlreadyMounted;
-        cb(true, lastError);
+        if (cb)
+            cb(true, lastError, mountPoint(mountHandler));
         return;
     }
 
     if (volumeHandler) {
         if (!g_volume_can_mount(volumeHandler)) {
             lastError = DeviceError::UserErrorNotMountable;
-            cb(false, lastError);
+            if (cb)
+                cb(false, lastError, "");
             return;
         }
 
@@ -356,7 +358,7 @@ bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
     return false;
 }
 
-void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, Callback1 cb)
 {
     if (!mountHandler) {
         lastError = DeviceError::UserErrorNotMounted;
@@ -394,7 +396,7 @@ bool DFMProtocolDevicePrivate::rename(const QString &newName)
     return false;
 }
 
-void DFMProtocolDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb)
+void DFMProtocolDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb)
 {
     Q_UNUSED(newName);
     Q_UNUSED(opts);
@@ -578,18 +580,16 @@ static bool mountDone(GObject *sourceObj, GAsyncResult *res, DeviceError &derr)
 void DFMProtocolDevicePrivate::mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker)
 {
     DeviceError err;
-    auto &&ret = mountDone(sourceObj, res, err);
+    bool ret = mountDone(sourceObj, res, err);
     auto helper = static_cast<ASyncToSyncHelper *>(blocker);
     if (helper) {
-        auto code = ret ? ASyncToSyncHelper::NoError : ASyncToSyncHelper::Failed;
+        int code = ret ? ASyncToSyncHelper::NoError : ASyncToSyncHelper::Failed;
         if (ret) {
             auto volume = reinterpret_cast<GVolume *>(sourceObj);
             if (volume) {
-                auto mount = g_volume_get_mount(volume);
-                if (mount) {
+                GMount_autoptr mount = g_volume_get_mount(volume);
+                if (mount)
                     helper->setResult(mountPoint(mount));
-                    g_object_unref(mount);
-                }
             }
         }
         helper->exit(code);
@@ -604,16 +604,10 @@ void DFMProtocolDevicePrivate::mountWithCallback(GObject *sourceObj, GAsyncResul
     if (proxy) {
         auto volume = reinterpret_cast<GVolume *>(sourceObj);
         if (volume) {
-            auto mount = g_volume_get_mount(volume);
-            if (proxy->data) {
-                //                proxy->d->setMount(mount);
-            }
-            if (mount)
-                g_object_unref(mount);
-        }
+            GMount_autoptr mount = g_volume_get_mount(volume);
 
-        if (proxy->caller.cb) {
-            proxy->caller.cb(ret, err);
+            if (proxy->caller.cbWithInfo)
+                proxy->caller.cbWithInfo(ret, err, mountPoint(mount));
         }
 
         delete proxy;

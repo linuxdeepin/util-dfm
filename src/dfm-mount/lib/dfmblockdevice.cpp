@@ -23,7 +23,7 @@
 
 #include "dfmblockdevice.h"
 #include "private/dfmblockdevice_p.h"
-#include "base/dfmmountdefines.h"
+#include "base/dfmmount_global.h"
 #include "base/dfmmountutils.h"
 
 #include <QStorageInfo>
@@ -59,12 +59,9 @@ void DFMBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult 
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
-    char *mountPoint = nullptr;
+    g_autofree char *mountPoint = nullptr;
     bool result = udisks_filesystem_call_mount_finish(fs, &mountPoint, res, &err);
-    handleErrorAndRelease(proxy, result, err);   // ignore mount point, which will be notified by onPropertyChanged
-    if (mountPoint) {
-        g_free(mountPoint);
-    }
+    handleErrorAndRelease(proxy, result, err, mountPoint);   // ignore mount point, which will be notified by onPropertyChanged
 };
 
 void DFMBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
@@ -130,10 +127,9 @@ void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
-    char *clearTextDev = nullptr;
+    g_autofree char *clearTextDev = nullptr;
     bool result = udisks_encrypted_call_unlock_finish(encrypted, &clearTextDev, res, &err);
     handleErrorAndRelease(proxy, result, err, QString(clearTextDev));
-    g_free(clearTextDev);
 }
 
 DFMBlockDevice::DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent)
@@ -179,7 +175,7 @@ bool DFMBlockDevice::eject(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::ejectAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevice::ejectAsync(const QVariantMap &opts, Callback1 cb)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp) {
@@ -200,7 +196,7 @@ bool DFMBlockDevice::powerOff(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::powerOffAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevice::powerOffAsync(const QVariantMap &opts, Callback1 cb)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp) {
@@ -221,7 +217,7 @@ bool DFMBlockDevice::lock(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::lockAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevice::lockAsync(const QVariantMap &opts, Callback1 cb)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp) {
@@ -242,7 +238,7 @@ bool DFMBlockDevice::unlock(const QString &passwd, QString &clearTextDev, const 
     }
 }
 
-void DFMBlockDevice::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCbWithInfo cb)
+void DFMBlockDevice::unlockAsync(const QString &passwd, const QVariantMap &opts, Callback2 cb)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp) {
@@ -426,13 +422,13 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
     return ret;
 }
 
-void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, Callback2 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
         lastError = DeviceError::UserErrorNotMountable;
         if (proxy) {
-            proxy->cb(false, lastError);
+            proxy->cbWithInfo(false, lastError, "");
             delete proxy;
         }
         return;
@@ -442,7 +438,7 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCb 
     if (!mpts.empty()) {
         lastError = DeviceError::UDisksErrorAlreadyMounted;
         if (proxy) {
-            proxy->cb(false, lastError);
+            proxy->cbWithInfo(true, lastError, mpts.first()); // when it's already mounted, return true but report an error refer to `already mounted`.
             delete proxy;
         }
         return;
@@ -478,7 +474,7 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
@@ -534,7 +530,7 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
     return false;
 }
 
-void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!fileSystemHandler) {
@@ -588,7 +584,7 @@ bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
@@ -634,7 +630,7 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!driveHandler) {
@@ -668,7 +664,7 @@ bool DFMBlockDevicePrivate::lock(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCb cb)
+void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!encryptedHandler) {
@@ -707,7 +703,7 @@ bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev,
     return false;
 }
 
-void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCbWithInfo cb)
+void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &opts, Callback2 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     if (!encryptedHandler) {
