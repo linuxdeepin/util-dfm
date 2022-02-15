@@ -39,9 +39,9 @@ namespace {
 struct CallbackProxyWithData
 {
     CallbackProxyWithData() = delete;
-    explicit CallbackProxyWithData(Callback1 cb)
+    explicit CallbackProxyWithData(DeviceOperateCallback cb)
         : caller(cb) {}
-    explicit CallbackProxyWithData(Callback2 cb)
+    explicit CallbackProxyWithData(DeviceOperateCallbackWithMessage cb)
         : caller(cb) {}
     CallbackProxy caller;
     QPointer<DFMProtocolDevice> data;
@@ -157,7 +157,7 @@ QStringList DFMProtocolDevice::deviceIcons() const
  * \param getPassInfo   an passwd-asking dialog should be exec in this function, and return a struct object which contains the passwd
  * \param mountResult   when mount finished, this function will be invoked.
  */
-void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, Callback2 mountResult)
+void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, DeviceOperateCallbackWithMessage mountResult)
 {
     GFile_autoptr file = g_file_new_for_uri(address.toStdString().c_str());
     if (!file) {
@@ -290,7 +290,7 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
     return "";
 }
 
-void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, Callback2 cb)
+void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
     if (mountHandler) {
         qInfo() << "mutexForMount prelock" << __FUNCTION__;
@@ -358,7 +358,7 @@ bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
     return false;
 }
 
-void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, Callback1 cb)
+void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     if (!mountHandler) {
         lastError = DeviceError::UserErrorNotMounted;
@@ -396,7 +396,7 @@ bool DFMProtocolDevicePrivate::rename(const QString &newName)
     return false;
 }
 
-void DFMProtocolDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb)
+void DFMProtocolDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb)
 {
     Q_UNUSED(newName);
     Q_UNUSED(opts);

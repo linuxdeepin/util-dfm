@@ -617,8 +617,8 @@ enum class PartitionType : uint16_t {
     GptEmmcBoot2FuchsiaLegacy,
 };
 
-using Callback1 = std::function<void(bool, DeviceError)>;
-using Callback2 = std::function<void(bool, DeviceError, QString)>;
+using DeviceOperateCallback = std::function<void(bool, DeviceError)>;
+using DeviceOperateCallbackWithMessage = std::function<void(bool, DeviceError, QString)>;
 
 DFM_MOUNT_END_NS
 #endif   // DFMMOUNT_GLOBAL_H

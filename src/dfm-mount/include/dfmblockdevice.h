@@ -48,13 +48,13 @@ private:
 
 public:
     bool eject(const QVariantMap &opts = {});
-    void ejectAsync(const QVariantMap &opts = {}, Callback1 cb = nullptr);
+    void ejectAsync(const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
     bool powerOff(const QVariantMap &opts = {});
-    void powerOffAsync(const QVariantMap &opts = {}, Callback1 cb = nullptr);
+    void powerOffAsync(const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
     bool lock(const QVariantMap &opts = {});
-    void lockAsync(const QVariantMap &opts = {}, Callback1 cb = nullptr);
+    void lockAsync(const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
     bool unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts = {});
-    void unlockAsync(const QString &passwd, const QVariantMap &opts = {}, Callback2 cb = nullptr);
+    void unlockAsync(const QString &passwd, const QVariantMap &opts = {}, DeviceOperateCallbackWithMessage cb = nullptr);
 
     // these are convinience methods
     QStringList mountPoints() const;

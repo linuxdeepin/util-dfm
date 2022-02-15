@@ -75,7 +75,7 @@ struct AskPasswdHelper
 struct FinalizeHelper
 {
     AskPasswdHelper *askPasswd { nullptr };
-    Callback2 callback;
+    DeviceOperateCallbackWithMessage callback;
 };
 
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
@@ -88,11 +88,11 @@ public:
 
     QString path() const;
     QString mount(const QVariantMap &opts);
-    void mountAsync(const QVariantMap &opts, Callback2 cb);
+    void mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb);
     bool unmount(const QVariantMap &opts);
-    void unmountAsync(const QVariantMap &opts, Callback1 cb);
+    void unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb);
     bool rename(const QString &newName);
-    void renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb);
+    void renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb);
     QString mountPoint() const;
     QString fileSystem() const;
     long sizeTotal() const;

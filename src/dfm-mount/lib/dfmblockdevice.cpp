@@ -272,7 +272,7 @@ bool DFMBlockDevice::eject(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::ejectAsync(const QVariantMap &opts, Callback1 cb)
+void DFMBlockDevice::ejectAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp) {
@@ -293,7 +293,7 @@ bool DFMBlockDevice::powerOff(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::powerOffAsync(const QVariantMap &opts, Callback1 cb)
+void DFMBlockDevice::powerOffAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp) {
@@ -314,7 +314,7 @@ bool DFMBlockDevice::lock(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::lockAsync(const QVariantMap &opts, Callback1 cb)
+void DFMBlockDevice::lockAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp) {
@@ -335,7 +335,7 @@ bool DFMBlockDevice::unlock(const QString &passwd, QString &clearTextDev, const 
     }
 }
 
-void DFMBlockDevice::unlockAsync(const QString &passwd, const QVariantMap &opts, Callback2 cb)
+void DFMBlockDevice::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
     if (dp) {
@@ -508,7 +508,7 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
     return ret;
 }
 
-void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, Callback2 cb)
+void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
@@ -563,7 +563,7 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, Callback1 cb)
+void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
@@ -622,7 +622,7 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
     return false;
 }
 
-void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb)
+void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
@@ -678,7 +678,7 @@ bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, Callback1 cb)
+void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
@@ -727,7 +727,7 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, Callback1 cb)
+void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksDrive_autoptr drv = getDriveHandler();
@@ -764,7 +764,7 @@ bool DFMBlockDevicePrivate::lock(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, Callback1 cb)
+void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
@@ -806,7 +806,7 @@ bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev,
     return false;
 }
 
-void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &opts, Callback2 cb)
+void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
