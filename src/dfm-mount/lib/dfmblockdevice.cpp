@@ -93,7 +93,6 @@ void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult 
     CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
 
     GError *err = nullptr;
-    DeviceError derr = DeviceError::NoError;
     bool result = udisks_drive_call_eject_finish(drive, res, &err);
     handleErrorAndRelease(proxy, result, err);
 };
@@ -130,6 +129,104 @@ void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult
     g_autofree char *clearTextDev = nullptr;
     bool result = udisks_encrypted_call_unlock_finish(encrypted, &clearTextDev, res, &err);
     handleErrorAndRelease(proxy, result, err, QString(clearTextDev));
+}
+
+UDisksObject_autoptr DFMBlockDevicePrivate::getUDisksObject() const
+{
+    Q_ASSERT(client);
+    Q_ASSERT(!blkObjPath.isEmpty());
+
+    std::string str = blkObjPath.toStdString();
+    UDisksObject_autoptr obj = udisks_client_get_object(client, str.c_str());
+    return obj;
+}
+
+UDisksBlock_autoptr DFMBlockDevicePrivate::getBlockHandler() const
+{
+    UDisksObject_autoptr obj = getUDisksObject();
+    if (!obj) {
+        qWarning() << "UDisksObject is not valid for" << blkObjPath;
+        return nullptr;
+    }
+
+    UDisksBlock_autoptr ret = udisks_object_get_block(obj);
+    return ret;
+}
+
+UDisksDrive_autoptr DFMBlockDevicePrivate::getDriveHandler() const
+{
+    Q_ASSERT(client);
+
+    UDisksBlock_autoptr blk = getBlockHandler();
+    if (!blk) {
+        qWarning() << "UDisksBlock is not valid for" << blkObjPath;
+        return nullptr;
+    }
+
+    UDisksDrive_autoptr ret = udisks_client_get_drive_for_block(client, blk);
+    return ret;
+}
+
+UDisksLoop_autoptr DFMBlockDevicePrivate::getLoopHandler() const
+{
+    Q_ASSERT(client);
+
+    UDisksBlock_autoptr blk = getBlockHandler();
+    if (!blk) {
+        qWarning() << "UDisksBlock is not valid for" << blkObjPath;
+        return nullptr;
+    }
+
+    UDisksLoop_autoptr ret = udisks_client_get_loop_for_block(client, blk);
+    return ret;
+}
+
+UDisksEncrypted_autoptr DFMBlockDevicePrivate::getEncryptedHandler() const
+{
+    UDisksObject_autoptr obj = getUDisksObject();
+    if (!obj) {
+        qWarning() << "UDisksObject is not valid for" << blkObjPath;
+        return nullptr;
+    }
+
+    UDisksEncrypted_autoptr ret = udisks_object_get_encrypted(obj);
+    return ret;
+}
+
+UDisksPartition_autoptr DFMBlockDevicePrivate::getPartitionHandler() const
+{
+    UDisksObject_autoptr obj = getUDisksObject();
+    if (!obj) {
+        qWarning() << "UDisksObject is not valid for" << blkObjPath;
+        return nullptr;
+    }
+
+    UDisksPartition_autoptr ret = udisks_object_get_partition(obj);
+    return ret;
+}
+
+UDisksPartitionTable_autoptr DFMBlockDevicePrivate::getPartitionTableHandler() const
+{
+    UDisksObject_autoptr obj = getUDisksObject();
+    if (!obj) {
+        qWarning() << "UDisksObject is not valid for" << blkObjPath;
+        return nullptr;
+    }
+
+    UDisksPartitionTable_autoptr ret = udisks_object_get_partition_table(obj);
+    return ret;
+}
+
+UDisksFilesystem_autoptr DFMBlockDevicePrivate::getFilesystemHandler() const
+{
+    UDisksObject_autoptr obj = getUDisksObject();
+    if (!obj) {
+        qWarning() << "UDisksObject is not valid for" << blkObjPath;
+        return nullptr;
+    }
+
+    UDisksFilesystem_autoptr ret = udisks_object_get_filesystem(obj);
+    return ret;
 }
 
 DFMBlockDevice::DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent)
@@ -301,31 +398,31 @@ bool DFMBlockDevice::ejectable() const
 bool DFMBlockDevice::isEncrypted() const
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    return dp ? dp->encryptedHandler != nullptr : false;
+    return dp ? dp->getEncryptedHandler() != nullptr : false;
 }
 
 bool DFMBlockDevice::hasFileSystem() const
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    return dp ? dp->fileSystemHandler != nullptr : false;
+    return dp ? dp->getFilesystemHandler() != nullptr : false;
 }
 
 bool DFMBlockDevice::hasPartitionTable() const
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    return dp ? dp->partitionTabHandler != nullptr : false;
+    return dp ? dp->getPartitionTableHandler() != nullptr : false;
 }
 
 bool DFMBlockDevice::hasPartition() const
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    return dp ? dp->partitionHandler != nullptr : false;
+    return dp ? dp->getPartitionHandler() != nullptr : false;
 }
 
 bool DFMBlockDevice::isLoopDevice() const
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    return dp ? dp->loopHandler != nullptr : false;
+    return dp ? dp->getLoopHandler() != nullptr : false;
 }
 
 bool DFMBlockDevice::hintIgnore() const
@@ -364,28 +461,16 @@ QString DFMBlockDevice::partitionType() const
 bool DFMBlockDevice::hasBlock() const
 {
     auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
-    return dp ? dp->blockHandler != nullptr : false;
+    return dp ? dp->getBlockHandler() != nullptr : false;
 }
 
 DFMBlockDevicePrivate::DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq)
     : DFMDevicePrivate(qq), blkObjPath(blkObjPath), client(cli)
 {
-    init();
 }
 
 DFMBlockDevicePrivate::~DFMBlockDevicePrivate()
 {
-    auto gunref = [](void *gobj) {
-        if (gobj)
-            g_object_unref(gobj);
-    };
-    gunref(driveHandler);
-    gunref(fileSystemHandler);
-    gunref(blockHandler);
-    gunref(partitionHandler);
-    gunref(encryptedHandler);
-    gunref(partitionTabHandler);
-    gunref(loopHandler);
 }
 
 QString DFMBlockDevicePrivate::path() const
@@ -397,7 +482,8 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 {
     warningIfNotInMain();
 
-    if (!fileSystemHandler) {
+    UDisksFilesystem_autoptr fs = getFilesystemHandler();
+    if (!fs) {
         lastError = DeviceError::UserErrorNotMountable;
         return "";
     }
@@ -411,7 +497,7 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
     GError *err = nullptr;
     GVariant *gopts = Utils::castFromQVariantMap(opts);
     char *mountPoint = nullptr;
-    bool mounted = udisks_filesystem_call_mount_sync(fileSystemHandler, gopts, &mountPoint, nullptr, &err);
+    bool mounted = udisks_filesystem_call_mount_sync(fs, gopts, &mountPoint, nullptr, &err);
 
     handleErrorAndRelase(err);
     QString ret;
@@ -425,7 +511,9 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
 void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, Callback2 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
-    if (!fileSystemHandler) {
+    UDisksFilesystem_autoptr fs = getFilesystemHandler();
+
+    if (!fs) {
         lastError = DeviceError::UserErrorNotMountable;
         if (proxy) {
             proxy->cbWithInfo(false, lastError, "");
@@ -438,7 +526,7 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, Callback2 cb)
     if (!mpts.empty()) {
         lastError = DeviceError::UDisksErrorAlreadyMounted;
         if (proxy) {
-            proxy->cbWithInfo(true, lastError, mpts.first()); // when it's already mounted, return true but report an error refer to `already mounted`.
+            proxy->cbWithInfo(true, lastError, mpts.first());   // when it's already mounted, return true but report an error refer to `already mounted`.
             delete proxy;
         }
         return;
@@ -446,14 +534,15 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, Callback2 cb)
 
     // mount device async
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    udisks_filesystem_call_mount(fileSystemHandler, gopts, nullptr, mountAsyncCallback, proxy);
+    udisks_filesystem_call_mount(fs, gopts, nullptr, mountAsyncCallback, proxy);
 }
 
 bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
 {
     warningIfNotInMain();
+    UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
-    if (!fileSystemHandler) {
+    if (!fs) {
         lastError = DeviceError::UserErrorNotMountable;
         return true;   // since device is not mountable, so we just return true here
     }
@@ -466,7 +555,7 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
 
     GVariant *gopts = Utils::castFromQVariantMap(opts);
     GError *err = nullptr;
-    bool result = udisks_filesystem_call_unmount_sync(fileSystemHandler, gopts, nullptr, &err);
+    bool result = udisks_filesystem_call_unmount_sync(fs, gopts, nullptr, &err);
     if (result)
         return true;
 
@@ -477,7 +566,9 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
 void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
-    if (!fileSystemHandler) {
+    UDisksFilesystem_autoptr fs = getFilesystemHandler();
+
+    if (!fs) {
         lastError = DeviceError::UserErrorNotMountable;
         if (proxy) {
             proxy->cb(false, lastError);
@@ -499,14 +590,15 @@ void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, Callback1 cb)
     // start unmount device async
     // construct the options
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    udisks_filesystem_call_unmount(fileSystemHandler, gopts, nullptr, unmountAsyncCallback, proxy);
+    udisks_filesystem_call_unmount(fs, gopts, nullptr, unmountAsyncCallback, proxy);
 }
 
 bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &opts)
 {
     warningIfNotInMain();
+    UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
-    if (!fileSystemHandler) {
+    if (!fs) {
         lastError = DeviceError::UserErrorNotMountable;
         return false;
     }
@@ -522,7 +614,7 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
     const char *label = newName.toStdString().c_str();
     GError *err = nullptr;
 
-    bool result = udisks_filesystem_call_set_label_sync(fileSystemHandler, label, gopts, nullptr, &err);
+    bool result = udisks_filesystem_call_set_label_sync(fs, label, gopts, nullptr, &err);
     if (result)
         return true;
 
@@ -533,7 +625,9 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
 void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
-    if (!fileSystemHandler) {
+    UDisksFilesystem_autoptr fs = getFilesystemHandler();
+
+    if (!fs) {
         lastError = DeviceError::UserErrorNotMountable;
         if (proxy) {
             proxy->cb(false, lastError);
@@ -554,12 +648,17 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMa
 
     GVariant *gopts = Utils::castFromQVariantMap(opts);
     const char *label = newName.toStdString().c_str();
-    udisks_filesystem_call_set_label(fileSystemHandler, label, gopts, nullptr, renameAsyncCallback, proxy);
+    udisks_filesystem_call_set_label(fs, label, gopts, nullptr, renameAsyncCallback, proxy);
 }
 
 bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
 {
     warningIfNotInMain();
+    UDisksDrive_autoptr drv = getDriveHandler();
+    if (!drv) {
+        lastError = DeviceError::UserErrorNoDriver;
+        return false;
+    }
 
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
     if (!ejectable) {
@@ -567,16 +666,11 @@ bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
         return false;
     }
 
-    if (!driveHandler) {
-        lastError = DeviceError::UserErrorNoDriver;
-        return false;
-    }
-
     // construct the options
     GVariant *gopts = Utils::castFromQVariantMap(opts);
     GError *err = nullptr;
 
-    bool result = udisks_drive_call_eject_sync(driveHandler, gopts, nullptr, &err);
+    bool result = udisks_drive_call_eject_sync(drv, gopts, nullptr, &err);
     if (result)
         return true;
 
@@ -597,7 +691,9 @@ void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, Callback1 cb)
         return;
     }
 
-    if (!driveHandler) {
+    UDisksDrive_autoptr drv = getDriveHandler();
+
+    if (!drv) {
         lastError = DeviceError::UserErrorNoDriver;
         if (proxy) {
             proxy->cb(false, lastError);
@@ -607,14 +703,15 @@ void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, Callback1 cb)
     }
 
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    udisks_drive_call_eject(driveHandler, gopts, nullptr, ejectAsyncCallback, proxy);
+    udisks_drive_call_eject(drv, gopts, nullptr, ejectAsyncCallback, proxy);
 }
 
 bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
 {
     warningIfNotInMain();
+    UDisksDrive_autoptr drv = getDriveHandler();
 
-    if (!driveHandler) {
+    if (!drv) {
         lastError = DeviceError::UserErrorNoDriver;
         return false;
     }
@@ -622,7 +719,7 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
     // construct the options
     GVariant *gopts = Utils::castFromQVariantMap(opts);
     GError *err = nullptr;
-    bool result = udisks_drive_call_power_off_sync(driveHandler, gopts, nullptr, &err);
+    bool result = udisks_drive_call_power_off_sync(drv, gopts, nullptr, &err);
     if (result)
         return true;
 
@@ -633,7 +730,9 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
 void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
-    if (!driveHandler) {
+    UDisksDrive_autoptr drv = getDriveHandler();
+
+    if (!drv) {
         lastError = DeviceError::UserErrorNoDriver;
         if (proxy) {
             proxy->cb(false, lastError);
@@ -642,21 +741,22 @@ void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, Callback1 cb)
         return;
     }
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    udisks_drive_call_power_off(driveHandler, gopts, nullptr, powerOffAsyncCallback, proxy);
+    udisks_drive_call_power_off(drv, gopts, nullptr, powerOffAsyncCallback, proxy);
 }
 
 bool DFMBlockDevicePrivate::lock(const QVariantMap &opts)
 {
     warningIfNotInMain();
+    UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
-    if (!encryptedHandler) {
+    if (!encrypted) {
         lastError = DeviceError::UserErrorNotEncryptable;
         return false;
     }
 
     GError *err = nullptr;
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    bool result = udisks_encrypted_call_lock_sync(encryptedHandler, gopts, nullptr, &err);
+    bool result = udisks_encrypted_call_lock_sync(encrypted, gopts, nullptr, &err);
     if (result)
         return true;
 
@@ -667,7 +767,9 @@ bool DFMBlockDevicePrivate::lock(const QVariantMap &opts)
 void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, Callback1 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
-    if (!encryptedHandler) {
+    UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
+
+    if (!encrypted) {
         lastError = DeviceError::UserErrorNotEncryptable;
         if (proxy) {
             proxy->cb(false, lastError);
@@ -677,14 +779,15 @@ void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, Callback1 cb)
     }
 
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    udisks_encrypted_call_lock(encryptedHandler, gopts, nullptr, lockAsyncCallback, proxy);
+    udisks_encrypted_call_lock(encrypted, gopts, nullptr, lockAsyncCallback, proxy);
 }
 
 bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts)
 {
     warningIfNotInMain();
+    UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
-    if (!encryptedHandler) {
+    if (!encrypted) {
         lastError = DeviceError::UserErrorNotEncryptable;
         return false;
     }
@@ -692,7 +795,7 @@ bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev,
     GError *err = nullptr;
     GVariant *gopts = Utils::castFromQVariantMap(opts);
     char *clearDev = nullptr;
-    bool result = udisks_encrypted_call_unlock_sync(encryptedHandler, passwd.toStdString().c_str(), gopts, &clearDev, nullptr, &err);
+    bool result = udisks_encrypted_call_unlock_sync(encrypted, passwd.toStdString().c_str(), gopts, &clearDev, nullptr, &err);
     if (result) {
         clearTextDev = QString(clearDev);
         g_free(clearDev);
@@ -706,7 +809,9 @@ bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev,
 void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &opts, Callback2 cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
-    if (!encryptedHandler) {
+    UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
+
+    if (!encrypted) {
         lastError = DeviceError::UserErrorNotEncryptable;
         if (proxy) {
             proxy->cbWithInfo(false, lastError, QString());
@@ -716,7 +821,7 @@ void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap
     }
 
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    udisks_encrypted_call_unlock(encryptedHandler, passwd.toStdString().c_str(), gopts, nullptr, unlockAsyncCallback, proxy);
+    udisks_encrypted_call_unlock(encrypted, passwd.toStdString().c_str(), gopts, nullptr, unlockAsyncCallback, proxy);
 }
 
 inline void DFMBlockDevicePrivate::handleErrorAndRelase(GError *err)
@@ -789,7 +894,8 @@ QString DFMBlockDevicePrivate::displayName() const
 
 QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
 {
-    if (!blockHandler) {
+    UDisksBlock_autoptr blk = getBlockHandler();
+    if (!blk) {
         qWarning() << __FUNCTION__ << "NO BLOCK: " << blkObjPath;
         lastError = DeviceError::UserErrorNoBlock;
         return QVariant();
@@ -799,85 +905,85 @@ QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
     // but we shall release the objects by calling g_free for char * or g_strfreev for char ** funcs.
     switch (name) {
     case Property::BlockConfiguration:
-        //                return udisks_block_dup_configuration(blockHandler); TODO
+        //                return udisks_block_dup_configuration(blk); TODO
         return "";
     case Property::BlockCryptoBackingDevice: {
-        char *tmp = udisks_block_dup_crypto_backing_device(blockHandler);
+        char *tmp = udisks_block_dup_crypto_backing_device(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockDevice: {
-        char *tmp = udisks_block_dup_device(blockHandler);
+        char *tmp = udisks_block_dup_device(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockDrive: {
-        char *tmp = udisks_block_dup_drive(blockHandler);
+        char *tmp = udisks_block_dup_drive(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockIDLabel: {
-        char *tmp = udisks_block_dup_id_label(blockHandler);
+        char *tmp = udisks_block_dup_id_label(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockIDType: {
-        char *tmp = udisks_block_dup_id_type(blockHandler);
+        char *tmp = udisks_block_dup_id_type(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockIDUsage: {
-        char *tmp = udisks_block_dup_id_usage(blockHandler);
+        char *tmp = udisks_block_dup_id_usage(blk);
         QString ret = Utils::gcharToQString(tmp);
         return ret.toLongLong();
     }
     case Property::BlockIDUUID: {
-        char *tmp = udisks_block_dup_id_uuid(blockHandler);
+        char *tmp = udisks_block_dup_id_uuid(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockIDVersion: {
-        char *tmp = udisks_block_dup_id_version(blockHandler);
+        char *tmp = udisks_block_dup_id_version(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockDeviceNumber:
-        return quint64(udisks_block_get_device_number(blockHandler));
+        return quint64(udisks_block_get_device_number(blk));
     case Property::BlockPreferredDevice: {
-        char *tmp = udisks_block_dup_preferred_device(blockHandler);
+        char *tmp = udisks_block_dup_preferred_device(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockID: {
-        char *tmp = udisks_block_dup_id(blockHandler);
+        char *tmp = udisks_block_dup_id(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockSize:
-        return quint64(udisks_block_get_size(blockHandler));
+        return quint64(udisks_block_get_size(blk));
     case Property::BlockReadOnly:
-        return bool(udisks_block_get_read_only(blockHandler));
+        return bool(udisks_block_get_read_only(blk));
     case Property::BlockSymlinks: {
-        char **ret = udisks_block_dup_symlinks(blockHandler);
+        char **ret = udisks_block_dup_symlinks(blk);
         return Utils::gcharvToQStringList(ret);
     }
     case Property::BlockHintPartitionable:
-        return bool(udisks_block_get_hint_partitionable(blockHandler));
+        return bool(udisks_block_get_hint_partitionable(blk));
     case Property::BlockHintSystem:
-        return bool(udisks_block_get_hint_system(blockHandler));
+        return bool(udisks_block_get_hint_system(blk));
     case Property::BlockHintIgnore:
-        return bool(udisks_block_get_hint_ignore(blockHandler));
+        return bool(udisks_block_get_hint_ignore(blk));
     case Property::BlockHintAuto:
-        return bool(udisks_block_get_hint_auto(blockHandler));
+        return bool(udisks_block_get_hint_auto(blk));
     case Property::BlockHintName: {
-        char *tmp = udisks_block_dup_hint_name(blockHandler);
+        char *tmp = udisks_block_dup_hint_name(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockHintIconName: {
-        char *tmp = udisks_block_dup_hint_icon_name(blockHandler);
+        char *tmp = udisks_block_dup_hint_icon_name(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockHintSymbolicIconName: {
-        char *tmp = udisks_block_dup_hint_symbolic_icon_name(blockHandler);
+        char *tmp = udisks_block_dup_hint_symbolic_icon_name(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockMdRaid: {
-        char *tmp = udisks_block_dup_mdraid(blockHandler);
+        char *tmp = udisks_block_dup_mdraid(blk);
         return Utils::gcharToQString(tmp);
     }
     case Property::BlockMdRaidMember: {
-        char *tmp = udisks_block_dup_mdraid_member(blockHandler);
+        char *tmp = udisks_block_dup_mdraid_member(blk);
         return Utils::gcharToQString(tmp);
     }
     default:
@@ -888,93 +994,95 @@ QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
 
 QVariant DFMBlockDevicePrivate::getDriveProperty(Property name) const
 {
-    if (!driveHandler) {
+    UDisksDrive_autoptr drv = getDriveHandler();
+    if (!drv) {
         qWarning() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
         lastError = DeviceError::UserErrorNoDriver;
         return "";
     }
+
     switch (name) {
     case Property::DriveConnectionBus: {
-        char *tmp = udisks_drive_dup_connection_bus(driveHandler);
+        char *tmp = udisks_drive_dup_connection_bus(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveRemovable:
-        return bool(udisks_drive_get_removable(driveHandler));
+        return bool(udisks_drive_get_removable(drv));
     case Property::DriveEjectable:
-        return bool(udisks_drive_get_ejectable(driveHandler));
+        return bool(udisks_drive_get_ejectable(drv));
     case Property::DriveSeat: {
-        char *tmp = udisks_drive_dup_seat(driveHandler);
+        char *tmp = udisks_drive_dup_seat(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveMedia: {
-        char *tmp = udisks_drive_dup_media(driveHandler);
+        char *tmp = udisks_drive_dup_media(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveMediaCompatibility: {
-        char **ret = udisks_drive_dup_media_compatibility(driveHandler);
+        char **ret = udisks_drive_dup_media_compatibility(drv);
         return Utils::gcharvToQStringList(ret);
     }
     case Property::DriveMediaRemovable:
-        return bool(udisks_drive_get_media_removable(driveHandler));
+        return bool(udisks_drive_get_media_removable(drv));
     case Property::DriveMediaAvailable:
-        return bool(udisks_drive_get_media_available(driveHandler));
+        return bool(udisks_drive_get_media_available(drv));
     case Property::DriveMediaChangeDetected:
-        return bool(udisks_drive_get_media_change_detected(driveHandler));
+        return bool(udisks_drive_get_media_change_detected(drv));
     case Property::DriveTimeDetected:
-        return quint64(udisks_drive_get_time_detected(driveHandler));
+        return quint64(udisks_drive_get_time_detected(drv));
     case Property::DriveTimeMediaDetected:
-        return quint64(udisks_drive_get_time_media_detected(driveHandler));
+        return quint64(udisks_drive_get_time_media_detected(drv));
     case Property::DriveSize:
-        return quint64(udisks_drive_get_size(driveHandler));
+        return quint64(udisks_drive_get_size(drv));
     case Property::DriveOptical:
-        return bool(udisks_drive_get_optical(driveHandler));
+        return bool(udisks_drive_get_optical(drv));
     case Property::DriveOpticalBlank:
-        return bool(udisks_drive_get_optical_blank(driveHandler));
+        return bool(udisks_drive_get_optical_blank(drv));
     case Property::DriveOpticalNumTracks:
-        return uint(udisks_drive_get_optical_num_tracks(driveHandler));
+        return uint(udisks_drive_get_optical_num_tracks(drv));
     case Property::DriveOpticalNumAudioTracks:
-        return uint(udisks_drive_get_optical_num_audio_tracks(driveHandler));
+        return uint(udisks_drive_get_optical_num_audio_tracks(drv));
     case Property::DriveOpticalNumDataTracks:
-        return uint(udisks_drive_get_optical_num_data_tracks(driveHandler));
+        return uint(udisks_drive_get_optical_num_data_tracks(drv));
     case Property::DriveOpticalNumSessions:
-        return uint(udisks_drive_get_optical_num_sessions(driveHandler));
+        return uint(udisks_drive_get_optical_num_sessions(drv));
     case Property::DriveModel: {
-        char *tmp = udisks_drive_dup_model(driveHandler);
+        char *tmp = udisks_drive_dup_model(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveRevision: {
-        char *tmp = udisks_drive_dup_revision(driveHandler);
+        char *tmp = udisks_drive_dup_revision(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveRotationRate:
-        return int(udisks_drive_get_rotation_rate(driveHandler));
+        return int(udisks_drive_get_rotation_rate(drv));
     case Property::DriveSerial: {
-        char *tmp = udisks_drive_dup_serial(driveHandler);
+        char *tmp = udisks_drive_dup_serial(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveVender: {
-        char *tmp = udisks_drive_dup_vendor(driveHandler);
+        char *tmp = udisks_drive_dup_vendor(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveWWN: {
-        char *tmp = udisks_drive_dup_wwn(driveHandler);
+        char *tmp = udisks_drive_dup_wwn(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveSortKey: {
-        char *tmp = udisks_drive_dup_sort_key(driveHandler);
+        char *tmp = udisks_drive_dup_sort_key(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveConfiguration:
-        //        return QVariant(udisks_drive_dup_configuration(driveHandler));
+        //        return QVariant(udisks_drive_dup_configuration(drv));
         return "";
     case Property::DriveID: {
-        char *tmp = udisks_drive_dup_id(driveHandler);
+        char *tmp = udisks_drive_dup_id(drv);
         return Utils::gcharToQString(tmp);
     }
     case Property::DriveCanPowerOff:
-        return bool(udisks_drive_get_can_power_off(driveHandler));
+        return bool(udisks_drive_get_can_power_off(drv));
     case Property::DriveSiblingID: {
-        char *tmp = udisks_drive_dup_sibling_id(driveHandler);
+        char *tmp = udisks_drive_dup_sibling_id(drv);
         return Utils::gcharToQString(tmp);
     }
     default:
@@ -985,14 +1093,15 @@ QVariant DFMBlockDevicePrivate::getDriveProperty(Property name) const
 
 QVariant DFMBlockDevicePrivate::getFileSystemProperty(Property name) const
 {
-    if (!fileSystemHandler) {
+    UDisksFilesystem_autoptr fs = getFilesystemHandler();
+    if (!fs) {
         lastError = DeviceError::UserErrorNotMountable;
         return QVariant();
     }
 
     switch (name) {
     case Property::FileSystemMountPoint: {
-        char **ret = udisks_filesystem_dup_mount_points(fileSystemHandler);
+        char **ret = udisks_filesystem_dup_mount_points(fs);
         return Utils::gcharvToQStringList(ret);
     }
     default:
@@ -1002,7 +1111,9 @@ QVariant DFMBlockDevicePrivate::getFileSystemProperty(Property name) const
 
 QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
 {
-    if (!partitionHandler) {
+    UDisksPartition_autoptr partition = getPartitionHandler();
+
+    if (!partition) {
         qWarning() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
         lastError = DeviceError::UserErrorNoPartition;
         return QVariant();
@@ -1010,33 +1121,33 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
 
     switch (name) {
     case Property::PartitionNumber:
-        return uint(udisks_partition_get_number(partitionHandler));
+        return uint(udisks_partition_get_number(partition));
     case Property::PartitionType: {
-        char *tmp = udisks_partition_dup_type_(partitionHandler);
+        char *tmp = udisks_partition_dup_type_(partition);
         return Utils::gcharToQString(tmp);
     }
     case Property::PartitionOffset:
-        return quint64(udisks_partition_get_offset(partitionHandler));
+        return quint64(udisks_partition_get_offset(partition));
     case Property::PartitionSize:
-        return quint64(udisks_partition_get_size(partitionHandler));
+        return quint64(udisks_partition_get_size(partition));
     case Property::PartitionFlags:
-        return quint64(udisks_partition_get_flags(partitionHandler));
+        return quint64(udisks_partition_get_flags(partition));
     case Property::PartitionName: {
-        char *tmp = udisks_partition_dup_uuid(partitionHandler);
+        char *tmp = udisks_partition_dup_uuid(partition);
         return Utils::gcharToQString(tmp);
     }
     case Property::PartitionUUID: {
-        char *tmp = udisks_partition_dup_type_(partitionHandler);
+        char *tmp = udisks_partition_dup_type_(partition);
         return Utils::gcharToQString(tmp);
     }
     case Property::PartitionTable: {
-        char *tmp = udisks_partition_dup_table(partitionHandler);
+        char *tmp = udisks_partition_dup_table(partition);
         return Utils::gcharToQString(tmp);
     }
     case Property::PartitionIsContainer:
-        return bool(udisks_partition_get_is_container(partitionHandler));
+        return bool(udisks_partition_get_is_container(partition));
     case Property::PartitionIsContained:
-        return bool(udisks_partition_get_is_contained(partitionHandler));
+        return bool(udisks_partition_get_is_contained(partition));
     default:
         Q_ASSERT_X(0, __FUNCTION__, "the property is not supported for block device");
     }
@@ -1044,7 +1155,9 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
 
 QVariant DFMBlockDevicePrivate::getEncryptedProperty(Property name) const
 {
-    if (!encryptedHandler) {
+    UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
+
+    if (!encrypted) {
         qWarning() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
         lastError = DeviceError::UserErrorNotEncryptable;
         return QVariant();
@@ -1052,37 +1165,14 @@ QVariant DFMBlockDevicePrivate::getEncryptedProperty(Property name) const
 
     switch (name) {
     case Property::EncryptedChildConfiguration:
-        return Utils::castFromGVariant(udisks_encrypted_get_child_configuration(encryptedHandler));
+        return Utils::castFromGVariant(udisks_encrypted_get_child_configuration(encrypted));
     case Property::EncryptedCleartextDevice:
-        return Utils::gcharToQString(udisks_encrypted_dup_cleartext_device(encryptedHandler));
+        return Utils::gcharToQString(udisks_encrypted_dup_cleartext_device(encrypted));
     case Property::EncryptedHintEncryptionType:
-        return Utils::gcharToQString(udisks_encrypted_dup_hint_encryption_type(encryptedHandler));
+        return Utils::gcharToQString(udisks_encrypted_dup_hint_encryption_type(encrypted));
     case Property::EncryptedMetadataSize:
-        return quint64(udisks_encrypted_get_metadata_size(encryptedHandler));
+        return quint64(udisks_encrypted_get_metadata_size(encrypted));
     default:
         Q_ASSERT_X(0, __FUNCTION__, "the property is not supported for block device");
-    }
-}
-
-void DFMBlockDevicePrivate::init()
-{
-    // block until all pending message been recieved.
-    // make sure that we can obtain the handlers if the device is created just recently
-    udisks_client_settle(client);
-    std::string str = blkObjPath.toStdString();
-    UDisksObject *blkObj = udisks_client_peek_object(client, str.c_str());
-    if (!blkObj)
-        return;
-
-    blockHandler = udisks_object_get_block(blkObj);
-    fileSystemHandler = udisks_object_get_filesystem(blkObj);
-    partitionHandler = udisks_object_get_partition(blkObj);
-    encryptedHandler = udisks_object_get_encrypted(blkObj);
-    partitionTabHandler = udisks_object_get_partition_table(blkObj);
-    loopHandler = udisks_object_get_loop(blkObj);
-
-    if (blockHandler) {
-        // must be freed with g_object_unref
-        driveHandler = udisks_client_get_drive_for_block(client, blockHandler);
     }
 }

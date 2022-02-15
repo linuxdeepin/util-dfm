@@ -32,6 +32,8 @@ DFM_MOUNT_BEGIN_NS
 
 class DFMBlockDevicePrivate final : public DFMDevicePrivate
 {
+    friend class DFMBlockDevice;
+
 public:
     DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq);
     ~DFMBlockDevicePrivate();
@@ -68,8 +70,6 @@ public:
     void unlockAsync(const QString &passwd, const QVariantMap &opts, Callback2 cb);
 
 private:
-    void init();
-
     // error report
     void handleErrorAndRelase(GError *err);
     static void handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info = QString());
@@ -83,16 +83,17 @@ private:
     static void lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
     static void unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
 
-public:
+    UDisksObject_autoptr getUDisksObject() const;
+    UDisksBlock_autoptr getBlockHandler() const;
+    UDisksDrive_autoptr getDriveHandler() const;
+    UDisksLoop_autoptr getLoopHandler() const;
+    UDisksEncrypted_autoptr getEncryptedHandler() const;
+    UDisksPartition_autoptr getPartitionHandler() const;
+    UDisksPartitionTable_autoptr getPartitionTableHandler() const;
+    UDisksFilesystem_autoptr getFilesystemHandler() const;
+
     QString blkObjPath;   // path of block device object
     UDisksClient *client { nullptr };
-    UDisksBlock *blockHandler { nullptr };
-    UDisksFilesystem *fileSystemHandler { nullptr };
-    UDisksDrive *driveHandler { nullptr };
-    UDisksPartition *partitionHandler { nullptr };
-    UDisksEncrypted *encryptedHandler { nullptr };
-    UDisksPartitionTable *partitionTabHandler { nullptr };
-    UDisksLoop *loopHandler { nullptr };
 };
 DFM_MOUNT_END_NS
 
