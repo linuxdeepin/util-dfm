@@ -67,7 +67,7 @@ public:
     bool doErase();
     bool doWriteISO(const QString &isoPath, int speed);
     bool doCheckmedia(quint64 dataBlocks, double *qgood, double *qslow, double *qbad);
-    bool doBurn(const QHash<QString, QString> files, int speed, QString volId,
+    bool doBurn(const QPair<QString, QString> files, int speed, QString volId,
                 JolietSupport joliet, RockRageSupport rockRage, KeepAppendable appendable);
 
 public slots:

@@ -22,7 +22,129 @@
 */
 #include "udfburnengine.h"
 
-UDFBurnEngine::UDFBurnEngine(QObject *parent) : QObject(parent)
-{
+#include <QDebug>
 
+DFM_BURN_USE_NS
+
+namespace {
+typedef struct
+{
+    long totalSize;
+    long wroteSize;
+    double progress;
+} ProgressInfo;
+
+// this is defined for callback register
+std::function<void(const ProgressInfo *)> udfProgressCbBinder;
+extern "C" void udProgressCbProxy(const ProgressInfo *info)
+{
+    udfProgressCbBinder(info);
+}
+
+extern "C" {
+typedef void (*progress_cb)(const ProgressInfo *);
+typedef void (*uburn_init)();
+typedef int (*uburn_do_burn)(const char *dev, const char *file, const char *lable);
+typedef void (*uburn_regi_cb)(progress_cb cb);
+typedef char **(*uburn_get_errors)(int *);
+typedef void (*uburn_show_verbose)();
+typedef void (*uburn_redirect_output)(int redir_stdout, int redir_stderr);
+
+static uburn_init ub_init = nullptr;
+static uburn_do_burn ub_do_burn = nullptr;
+static uburn_regi_cb ub_regi_cb = nullptr;
+static uburn_get_errors ub_get_errors = nullptr;
+static uburn_show_verbose ub_show_verbose = nullptr;
+static uburn_redirect_output ub_redirect_output = nullptr;
+}
+
+}   // namespace
+
+UDFBurnEngine::UDFBurnEngine(QObject *parent)
+    : QObject(parent)
+{
+    lib.setFileName("udfburn");
+    if (lib.isLoaded())
+        return;
+    libLoaded = lib.load();
+    if (!libLoaded) {
+        qWarning() << "[dfm-burn] Cannot load lib: " << lib.fileName();
+        return;
+    }
+    qDebug() << lib.fileName();
+    ub_init = reinterpret_cast<uburn_init>(lib.resolve("burn_init"));
+    funcsLoaded &= (ub_init != nullptr);
+
+    ub_do_burn = reinterpret_cast<uburn_do_burn>(lib.resolve("burn_burn_to_disc"));
+    funcsLoaded &= (ub_do_burn != nullptr);
+
+    ub_regi_cb = reinterpret_cast<uburn_regi_cb>(lib.resolve("burn_register_progress_callback"));
+    funcsLoaded &= (ub_regi_cb != nullptr);
+
+    ub_show_verbose = reinterpret_cast<uburn_show_verbose>(lib.resolve("burn_show_verbose_information"));
+    funcsLoaded &= (ub_show_verbose != nullptr);
+
+    ub_redirect_output = reinterpret_cast<uburn_redirect_output>(lib.resolve("burn_redirect_output"));
+    funcsLoaded &= (ub_redirect_output != nullptr);
+
+    ub_get_errors = reinterpret_cast<uburn_get_errors>(lib.resolve("burn_get_last_errors"));
+    funcsLoaded &= (ub_get_errors != nullptr);
+
+    qInfo() << "[dfm-burn] udf load lib " << (libLoaded ? "success" : "failed");
+    qInfo() << "[dfm-burn] udf load func " << (funcsLoaded ? "success" : "failed");
+}
+
+UDFBurnEngine::~UDFBurnEngine()
+{
+    if (libLoaded)
+        lib.unload();
+}
+
+bool UDFBurnEngine::doBurn(const QString &dev, const QPair<QString, QString> files, QString volId)
+{
+    if (!canSafeUse())
+        return false;
+
+    Q_EMIT jobStatusChanged(JobStatus::kStalled, 0);
+
+    udfProgressCbBinder = [this](const ProgressInfo *info) {
+        Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(info->progress));
+    };
+    ub_init();
+    ub_regi_cb(udProgressCbProxy);
+    ub_show_verbose();
+    ub_redirect_output(1, 0);
+
+    int ret = ub_do_burn(dev.toStdString().c_str(), files.first.toStdString().c_str(),
+                         volId.toStdString().c_str());
+
+    // burn failed
+    if (ret != 0) {
+        int err_count = 0;
+        char **errors = ub_get_errors(&err_count);
+        if (errors != nullptr && err_count > 0) {
+            QStringList errMsg;
+            for (int i = err_count - 1; i >= 0; i--) {
+                errMsg.append(errors[i]);
+                errMsg.append(";");
+            }
+            message = errMsg;
+        }
+        Q_EMIT jobStatusChanged(JobStatus::kFailed, 100);
+        return false;
+    }
+
+    Q_EMIT jobStatusChanged(JobStatus::kFinished, 100);
+
+    return true;
+}
+
+QStringList UDFBurnEngine::lastErrorMessage() const
+{
+    return message;
+}
+
+bool UDFBurnEngine::canSafeUse() const
+{
+    return libLoaded && funcsLoaded;
 }

@@ -23,17 +23,36 @@
 #ifndef UDFBURNENGINE_H
 #define UDFBURNENGINE_H
 
+#include "dfmburn_global.h"
+
 #include <QObject>
+#include <QLibrary>
+
+DFM_BURN_BEGIN_NS
 
 class UDFBurnEngine : public QObject
 {
     Q_OBJECT
 public:
     explicit UDFBurnEngine(QObject *parent = nullptr);
+    ~UDFBurnEngine();
+
+    bool doBurn(const QString &dev, const QPair<QString, QString> files, QString volId);
+    QStringList lastErrorMessage() const;
 
 signals:
+    void jobStatusChanged(JobStatus status, int progress);
 
-public slots:
+private:
+    bool canSafeUse() const;
+
+private:
+    QLibrary lib;
+    bool libLoaded { false };
+    bool funcsLoaded { true };
+    QStringList message;
 };
 
-#endif // UDFBURNENGINE_H
+DFM_BURN_END_NS
+
+#endif   // UDFBURNENGINE_H

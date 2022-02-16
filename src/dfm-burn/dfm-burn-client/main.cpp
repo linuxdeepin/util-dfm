@@ -34,6 +34,9 @@ DFM_BURN_USE_NS
 static void erase(const QString &dev)
 {
     OpticalDiscManager manager(dev);
+    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+        qDebug() << int(status) << progress << speed << message;
+    });
     manager.erase();
 }
 
@@ -46,16 +49,34 @@ static void showInfo(const QString &dev)
 static void commit()
 {
     OpticalDiscManager manager("/dev/sr0");
-    manager.stageFile("/home/zhangs/test/0");
+    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+        qDebug() << int(status) << progress << speed << message;
+    });
+    manager.setStageFile("/home/zhangs/test/0");
     BurnOptions opts;
     opts |= BurnOption::kJolietAndRockRidge;
     opts |= BurnOption::kKeepAppendable;
     manager.commit(opts, 0, "123");
 }
 
+static void commitUDF()
+{
+    OpticalDiscManager manager("/dev/sr0");
+    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+        qDebug() << int(status) << progress << speed << message;
+    });
+    manager.setStageFile("/home/zhangs/test/1/git_pro");
+    BurnOptions opts;
+    opts |= BurnOption::kUDF102Supported;
+    opts |= BurnOption::kKeepAppendable;
+    manager.commit(opts, 0, "abc123");
+}
 static void writeISO()
 {
     OpticalDiscManager manager("/dev/sr0");
+    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+        qDebug() << int(status) << progress << speed << message;
+    });
     manager.writeISO("/home/zhangs/Downloads/deb/20200413_214350.iso");
 }
 
@@ -65,6 +86,7 @@ int main(int argc, char *argv[])
     // showInfo("/dev/sr0");
     // erase("/dev/sr0");
     // writeISO();
-    commit();
+    // commit();
+    // commitUDF();
     return a.exec();
 }

@@ -45,10 +45,7 @@ public:
     explicit OpticalDiscManager(const QString &dev, QObject *parent = nullptr);
     ~OpticalDiscManager();
 
-    bool stageFile(const QString &diskPath, const QString &isoPath = "/");
-    QHash<QString, QString> stageFiles() const;
-    bool removeStageFile(const QString &diskPath);
-    void clearStageFiles();
+    bool setStageFile(const QString &diskPath, const QString &isoPath = "/");
     bool commit(const BurnOptions &opts, int speed = 0, const QString &volId = "ISOIMAGE");
     bool erase();
     bool checkmedia(double *qgood, double *qslow, double *qbad);
@@ -56,7 +53,7 @@ public:
     QString lastError() const;
 
 signals:
-    void jobStatusChanged(JobStatus status, int progress, QString speed);
+    void jobStatusChanged(JobStatus status, int progress, QString speed, QStringList message);
 
 private:
     QScopedPointer<OpticalDiscManagerPrivate> dptr;

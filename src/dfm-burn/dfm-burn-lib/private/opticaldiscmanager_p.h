@@ -25,7 +25,7 @@
 
 #include "dfmburn_global.h"
 
-#include <QHash>
+#include <QPair>
 
 DFM_BURN_BEGIN_NS
 
@@ -34,7 +34,7 @@ class OpticalDiscManagerPrivate
 public:
     QString errorMsg;
     QString curDev;
-    QHash<QString, QString> files;   // first: local disk path, second: optical disk path
+    QPair<QString, QString> files;   // first: local disk path, second: optical disk path
 };
 
 DFM_BURN_END_NS

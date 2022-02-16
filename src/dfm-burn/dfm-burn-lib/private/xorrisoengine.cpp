@@ -372,9 +372,9 @@ bool XorrisoEngine::doCheckmedia(quint64 dataBlocks, double *qgood, double *qslo
     return true;
 }
 
-bool XorrisoEngine::doBurn(const QHash<QString, QString> files, int speed, QString volId, XorrisoEngine::JolietSupport joliet, XorrisoEngine::RockRageSupport rockRage, XorrisoEngine::KeepAppendable appendable)
+bool XorrisoEngine::doBurn(const QPair<QString, QString> files, int speed, QString volId, XorrisoEngine::JolietSupport joliet, XorrisoEngine::RockRageSupport rockRage, XorrisoEngine::KeepAppendable appendable)
 {
-    if (files.isEmpty())
+    if (files.first.isEmpty())
         return false;
 
     Q_EMIT jobStatusChanged(JobStatus::kStalled, 0, curspeed);
@@ -420,14 +420,12 @@ bool XorrisoEngine::doBurn(const QHash<QString, QString> files, int speed, QStri
         return false;
 
     // add files
-    for (auto it = files.begin(); it != files.end(); ++it) {
-        r = XORRISO_OPT(xorriso, [this, it]() {
-            return Xorriso_option_map(xorriso, it.key().toUtf8().data(),
-                                      it.value().toUtf8().data(), 0);
-        });
-        if (JOBFAILED_IF(this, r, xorriso))
-            return false;
-    }
+    r = XORRISO_OPT(xorriso, [this, files]() {
+        return Xorriso_option_map(xorriso, files.first.toUtf8().data(),
+                                  files.second.toUtf8().data(), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
 
     // close
     r = XORRISO_OPT(xorriso, [this, appendable]() {
@@ -475,6 +473,15 @@ void XorrisoEngine::messageReceived(int type, char *text)
         Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(percentage), curspeed);
     }
 
+    // current speed
+    r = QRegularExpression("([0-9]*\\.[0-9]x)[bBcCdD.]");
+    m = r.match(msg);
+    if (m.hasMatch()) {
+        curspeed = m.captured(1);
+    } else {
+        curspeed.clear();
+    }
+
     // commit
     r = QRegularExpression("([0-9]*)\\s*of\\s*([0-9]*) MB written");
     m = r.match(msg);
@@ -489,15 +496,6 @@ void XorrisoEngine::messageReceived(int type, char *text)
     if (m.hasMatch() && curDatablocks != 0) {
         double percentage = 100. * m.captured(1).toDouble() / curDatablocks;
         Q_EMIT jobStatusChanged(JobStatus::kRunning, static_cast<int>(percentage), curspeed);
-    }
-
-    // current speed
-    r = QRegularExpression("([0-9]*\\.[0-9]x)[bBcCdD.]");
-    m = r.match(msg);
-    if (m.hasMatch()) {
-        curspeed = m.captured(1);
-    } else {
-        curspeed.clear();
     }
 
     // operation complete
