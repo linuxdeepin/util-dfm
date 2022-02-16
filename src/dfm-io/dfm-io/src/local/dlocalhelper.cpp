@@ -36,25 +36,22 @@ namespace LocalFunc {
 
 bool isFile(const QString &path)
 {
-    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+    g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
     const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_REGULAR);
-    g_object_unref(file);
     return ret;
 }
 
 bool isDir(const QString &path)
 {
-    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+    g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
     const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_DIRECTORY);
-    g_object_unref(file);
     return ret;
 }
 
 bool isSymlink(const QString &path)
 {
-    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+    g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
     const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_SYMBOLIC_LINK);
-    g_object_unref(file);
     return ret;
 }
 
@@ -112,37 +109,29 @@ QString completeSuffix(const QString &path)
 
 bool exists(const QString &path)
 {
-    GFile *gfile = g_file_new_for_path(path.toStdString().c_str());
+    g_autoptr(GFile) gfile = g_file_new_for_path(path.toStdString().c_str());
     const bool exists = g_file_query_exists(gfile, nullptr);
 
-    g_object_unref(gfile);
     return exists;
 }
 
 QString filePath(const QString &path)
 {
-    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
+    g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
 
-    char *gpath = g_file_get_path(file);
+    g_autofree gchar *gpath = g_file_get_path(file);
     QString retPath = QString::fromLocal8Bit(gpath);
-
-    g_object_unref(file);
-    g_free(gpath);
 
     return retPath;
 }
 
 QString parentPath(const QString &path)
 {
-    GFile *file = g_file_new_for_path(path.toLocal8Bit().data());
-    GFile *fileParent = g_file_get_parent(file);
+    g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
+    g_autoptr(GFile) fileParent = g_file_get_parent(file);
 
-    char *gpath = g_file_get_path(fileParent);
+    g_autofree gchar *gpath = g_file_get_path(fileParent);
     QString retPath = QString::fromLocal8Bit(gpath);
-
-    g_object_unref(file);
-    g_object_unref(fileParent);
-    g_free(gpath);
 
     return retPath;
 }
@@ -282,7 +271,16 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     }
     // object
     case DFileInfo::AttributeID::StandardIcon:
-    case DFileInfo::AttributeID::StandardSymbolicIcon:
+    case DFileInfo::AttributeID::StandardSymbolicIcon: {
+        QList<QString> ret;
+
+        GObject *icon = g_file_info_get_attribute_object(gfileinfo, key.c_str());
+        auto names = g_themed_icon_get_names(G_THEMED_ICON(icon));
+        for (int j = 0; names[j] != nullptr; ++j)
+            ret.append(QString::fromLocal8Bit(names[j]));
+
+        return QVariant(ret);
+    }
     case DFileInfo::AttributeID::PreviewIcon: {
         GObject *ret = g_file_info_get_attribute_object(gfileinfo, key.c_str());
         Q_UNUSED(ret);

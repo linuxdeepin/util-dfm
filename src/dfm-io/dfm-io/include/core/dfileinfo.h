@@ -65,8 +65,8 @@ public:
         StandardDisplayName = 7,   // string
         StandardEditName = 8,   // string
         StandardCopyName = 9,   // string
-        StandardIcon = 10,   // object
-        StandardSymbolicIcon = 11,   // object
+        StandardIcon = 10,   // QList<QString>
+        StandardSymbolicIcon = 11,   // QList<QString>
         StandardContentType = 12,   // string
         StandardFastContentType = 13,   // string
         StandardSize = 14,   // uint64
