@@ -27,12 +27,17 @@
 
 #include <QString>
 
+class QUrl;
+
 BEGIN_IO_NAMESPACE
 
 class DFMUtils
 {
 public:
     static bool fileUnmountable(const QString &path);
+    static QString devicePathFromUrl(const QUrl &url);
+    static QString fsTypeFromUrl(const QUrl &url);
+    static QUrl directParentUrl(const QUrl &url);
 };
 
 

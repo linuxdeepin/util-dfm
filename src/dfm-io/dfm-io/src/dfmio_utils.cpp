@@ -24,6 +24,9 @@
 #include "dfmio_utils.h"
 
 #include <gio/gio.h>
+#include <gio-unix-2.0/gio/gunixmounts.h>
+
+#include <QUrl>
 
 USING_IO_NAMESPACE
 
@@ -37,4 +40,31 @@ bool DFMUtils::fileUnmountable(const QString &path)
     }
 
     return false;
+}
+
+QString DFMUtils::devicePathFromUrl(const QUrl &url)
+{
+    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
+    if (mount)
+        return QString::fromLocal8Bit(g_unix_mount_get_device_path(mount));
+}
+
+QString DFMUtils::fsTypeFromUrl(const QUrl &url)
+{
+    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
+    if (mount)
+        return QString::fromLocal8Bit(g_unix_mount_get_fs_type(mount));
+}
+
+QUrl DFMUtils::directParentUrl(const QUrl &url)
+{
+    g_autoptr(GFile) file = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GFile) fileParent = g_file_get_parent(file);
+    if (fileParent) {
+        g_autofree gchar *uri = g_file_get_uri(fileParent);
+        return QUrl(QString::fromLocal8Bit(uri));
+    }
+    return QUrl();
 }

@@ -126,10 +126,10 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
     QString otherUrl;
 
     g_autofree gchar *child_str = g_file_get_uri(child);
-    childUrl = QString::fromLocal8Bit(child_str);
+    childUrl = QUrl::fromPercentEncoding(child_str);
     if (other) {
         g_autofree gchar *other_str = g_file_get_uri(other);
-        otherUrl = QString::fromLocal8Bit(other_str);
+        otherUrl = QUrl::fromPercentEncoding(other_str);
     }
 
     switch (event_type) {
@@ -217,10 +217,7 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
     if(type == DWatcher::WatchType::kFile && DFMUtils::fileUnmountable(filePath))
         watchFlags = G_FILE_MONITOR_WATCH_HARD_LINKS;
 
-    if (type == DWatcher::WatchType::kDir)
-        gmonitor = g_file_monitor_directory(gfile, watchFlags, nullptr, &gerror);
-    else
-        gmonitor = g_file_monitor(gfile, watchFlags, nullptr, &gerror);
+    gmonitor = g_file_monitor(gfile, watchFlags, nullptr, &gerror);
 
     if (!gmonitor) {
         setErrorFromGError(gerror);

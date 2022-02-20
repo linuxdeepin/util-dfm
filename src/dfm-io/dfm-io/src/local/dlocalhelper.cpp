@@ -62,12 +62,9 @@ bool isRoot(const QString &path)
 
 QString fileName(const QString &path)
 {
-    int pos = path.lastIndexOf("/");
-    if (pos == -1) {
-        return path;
-    } else {
-        return path.mid(pos + 1);
-    }
+    g_autoptr(GFile) gfile = g_file_new_for_path(path.toLocal8Bit().data());
+    g_autofree gchar *baseName = g_file_get_basename(gfile);
+    return QString::fromLocal8Bit(baseName);
 }
 
 QString baseName(const QString &path)
@@ -365,7 +362,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::ExtendMediaDuration: {
         g_file_set_attribute_uint32(gfile, key.c_str(), value.toUInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
-            const auto *url = g_file_get_uri(gfile);
+            g_autofree gchar *url = g_file_get_uri(gfile);
             //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
 
             return false;
@@ -376,7 +373,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::StandardSortOrder: {
         g_file_set_attribute_int32(gfile, key.c_str(), value.toInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
-            const auto *url = g_file_get_uri(gfile);
+            g_autofree gchar *url = g_file_get_uri(gfile);
             //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
@@ -397,7 +394,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::RecentModified: {
         g_file_set_attribute_uint64(gfile, key.c_str(), value.toULongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
-            const auto *url = g_file_get_uri(gfile);
+            g_autofree gchar *url = g_file_get_uri(gfile);
             //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
@@ -432,7 +429,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         gpointer gpValue = &b;
         g_file_set_attribute(gfile, key.c_str(), G_FILE_ATTRIBUTE_TYPE_BOOLEAN, gpValue, G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
-            const auto *url = g_file_get_uri(gfile);
+            g_autofree gchar *url = g_file_get_uri(gfile);
             //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
@@ -444,7 +441,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::ThumbnailPath: {
         g_file_set_attribute_byte_string(gfile, key.c_str(), value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
-            const auto *url = g_file_get_uri(gfile);
+            g_autofree gchar *url = g_file_get_uri(gfile);
             //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }
@@ -473,7 +470,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::TrashOrigPath: {
         g_file_set_attribute_string(gfile, key.c_str(), value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
-            const auto *url = g_file_get_uri(gfile);
+            g_autofree gchar *url = g_file_get_uri(gfile);
             //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
             return false;
         }

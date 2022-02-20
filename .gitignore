@@ -47,6 +47,8 @@ debian/libdfm-io/*
 debian/libdfm-io-dev/*
 debian/libdfm-mount/*
 debian/libdfm-mount-dev/*
+debian/libdfm-burn/*
+debian/libdfm-burn-dev/*
 debian/*.log
 debian/*.substvars
 debian/files
