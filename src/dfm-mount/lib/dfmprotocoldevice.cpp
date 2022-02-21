@@ -549,9 +549,15 @@ QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type
             if (err) {
                 lastError = Utils::castFromGError(err);
                 errMsg = err->message;
+                int errCode = err->code;
+                const char *domain = g_quark_to_string(err->domain);
                 g_error_free(err);
                 if (errMsg.contains("was not provided by any .service files"))
                     break;
+                if (strcmp(GIO_ERR_DOMAIN, domain) == 0
+                    && errCode == static_cast<int>(DeviceError::GIOErrorNotSupported) - GIO_ERR_START)
+                    break;
+
                 retry -= 1;
                 QThread::msleep(50);
             }
