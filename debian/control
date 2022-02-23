@@ -80,6 +80,7 @@ Multi-Arch: same
 Depends:
  ${shlibs:Depends}, 
  ${misc:Depends},
- libdfm-burn
+ libdfm-burn,
+ libisoburn-dev
 Description: A libaray about mount burning CD.
  A libaray that provides burning CD interface dev.
