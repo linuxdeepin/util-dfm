@@ -235,6 +235,12 @@ QStringList XorrisoEngine::mediaSpeedProperty() const
     if (curDev.isEmpty())
         return writeSpeed;
 
+    int r = XORRISO_OPT(xorriso, [this]() {
+        return Xorriso_option_list_speeds(xorriso, 0);
+    });
+    if (r < 0)
+        return writeSpeed;
+
     int ac, avail;
     char **av;
     do {

@@ -87,7 +87,7 @@ quint64 OpticalDiscInfo::dataBlocks() const
 
 dfmburn::MediaType OpticalDiscInfo::mediaType() const
 {
-    return dfmburn::MediaType::kNoMedia;
+    return d_ptr->media;
 }
 
 QStringList OpticalDiscInfo::writeSpeed() const

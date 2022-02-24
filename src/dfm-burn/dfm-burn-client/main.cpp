@@ -44,6 +44,9 @@ static void showInfo(const QString &dev)
 {
     QScopedPointer<OpticalDiscInfo> info { OpticalDiscManager::createOpticalInfo(dev) };
     qDebug() << info->device();
+    qDebug() << int(info->mediaType());
+    qDebug() << info->writeSpeed();
+    qDebug() << info->volumeName();
 }
 
 static void commit()
