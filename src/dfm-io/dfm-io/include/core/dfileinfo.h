@@ -166,6 +166,7 @@ public:
         StandardParentPath = 616,
         StandardBaseName = 617,
         StandardFileName = 618,
+        StandardCompleteBaseName = 619,
 
         AttributeIDMax = 999,
     };

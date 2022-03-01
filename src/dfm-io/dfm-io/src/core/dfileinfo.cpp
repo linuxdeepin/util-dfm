@@ -136,6 +136,7 @@ DFileInfo::AttributeInfoMap DFileInfo::attributeInfoMap = {
     { DFileInfo::AttributeID::StandardParentPath, std::make_tuple<std::string, QVariant>("standard::parent-path", "") },
     { DFileInfo::AttributeID::StandardBaseName, std::make_tuple<std::string, QVariant>("standard::base-name", "") },
     { DFileInfo::AttributeID::StandardFileName, std::make_tuple<std::string, QVariant>("standard::file-name", "") },
+    { DFileInfo::AttributeID::StandardCompleteBaseName, std::make_tuple<std::string, QVariant>("standard::complete-base-name", "") },
 };
 
 DFileInfo::DFileInfo()

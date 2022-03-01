@@ -78,6 +78,17 @@ QString baseName(const QString &path)
         return fullName.left(pos2);
 }
 
+QString completeBaseName(const QString &path)
+{
+    const QString &fullName = fileName(path);
+
+    int pos2 = fullName.lastIndexOf(".");
+    if (pos2 == -1)
+        return fullName;
+    else
+        return fullName.left(pos2);
+}
+
 QString suffix(const QString &path)
 {
     // path
@@ -322,6 +333,9 @@ QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::A
     }
     case DFileInfo::AttributeID::StandardFileName: {
         return LocalFunc::fileName(path);
+    }
+    case DFileInfo::AttributeID::StandardCompleteBaseName: {
+        return LocalFunc::completeBaseName(path);
     }
     default:
         return QVariant();
