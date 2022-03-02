@@ -55,6 +55,8 @@ public:
     void lockAsync(const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
     bool unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts = {});
     void unlockAsync(const QString &passwd, const QVariantMap &opts = {}, DeviceOperateCallbackWithMessage cb = nullptr);
+    bool rescan(const QVariantMap &opts = {});
+    void rescanAsync(const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
 
     // these are convinience methods
     QStringList mountPoints() const;

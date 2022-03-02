@@ -131,6 +131,17 @@ void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult
     handleErrorAndRelease(proxy, result, err, QString(clearTextDev));
 }
 
+void DFMBlockDevicePrivate::rescanAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+{
+    UDisksBlock *block = UDISKS_BLOCK(sourceObj);
+    Q_ASSERT_X(block, __FUNCTION__, "block is not valid");
+    CallbackProxy *proxy = static_cast<CallbackProxy *>(userData);
+
+    GError *err = nullptr;
+    bool result = udisks_block_call_rescan_finish(block, res, &err);
+    handleErrorAndRelease(proxy, result, err);
+}
+
 UDisksObject_autoptr DFMBlockDevicePrivate::getUDisksObject() const
 {
     Q_ASSERT(client);
@@ -345,6 +356,28 @@ void DFMBlockDevice::unlockAsync(const QString &passwd, const QVariantMap &opts,
     }
 }
 
+bool DFMBlockDevice::rescan(const QVariantMap &opts)
+{
+    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    if (dp)
+        return dp->rescan(opts);
+    else
+        qCritical() << "DP IS NULL: " << __PRETTY_FUNCTION__;
+    return false;
+}
+
+void DFMBlockDevice::rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+{
+    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    if (dp) {
+        dp->rescanAsync(opts, cb);
+    } else {
+        if (cb)
+            cb(false, DeviceError::UserErrorFailed);
+        qWarning() << "private pointer is null!";
+    }
+}
+
 QStringList DFMBlockDevice::mountPoints() const
 {
     return getProperty(Property::FileSystemMountPoint).toStringList();
@@ -499,7 +532,7 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
     char *mountPoint = nullptr;
     bool mounted = udisks_filesystem_call_mount_sync(fs, gopts, &mountPoint, nullptr, &err);
 
-    handleErrorAndRelase(err);
+    handleErrorAndRelease(err);
     QString ret;
     if (mounted && mountPoint) {
         ret = mountPoint;
@@ -559,7 +592,7 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
     if (result)
         return true;
 
-    handleErrorAndRelase(err);
+    handleErrorAndRelease(err);
     return false;
 }
 
@@ -618,7 +651,7 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
     if (result)
         return true;
 
-    handleErrorAndRelase(err);
+    handleErrorAndRelease(err);
     return false;
 }
 
@@ -674,7 +707,7 @@ bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
     if (result)
         return true;
 
-    handleErrorAndRelase(err);
+    handleErrorAndRelease(err);
     return false;
 }
 
@@ -723,7 +756,7 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
     if (result)
         return true;
 
-    handleErrorAndRelase(err);
+    handleErrorAndRelease(err);
     return false;
 }
 
@@ -760,7 +793,7 @@ bool DFMBlockDevicePrivate::lock(const QVariantMap &opts)
     if (result)
         return true;
 
-    handleErrorAndRelase(err);
+    handleErrorAndRelease(err);
     return false;
 }
 
@@ -802,7 +835,7 @@ bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev,
         return true;
     }
 
-    handleErrorAndRelase(err);
+    handleErrorAndRelease(err);
     return false;
 }
 
@@ -824,7 +857,36 @@ void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap
     udisks_encrypted_call_unlock(encrypted, passwd.toStdString().c_str(), gopts, nullptr, unlockAsyncCallback, proxy);
 }
 
-inline void DFMBlockDevicePrivate::handleErrorAndRelase(GError *err)
+bool DFMBlockDevicePrivate::rescan(const QVariantMap &opts)
+{
+    UDisksBlock_autoptr blk = getBlockHandler();
+    GError_autoptr err = nullptr;
+    if (blk) {
+        bool ret = udisks_block_call_rescan_sync(blk, Utils::castFromQVariantMap(opts), nullptr, &err);
+        if (err) {
+            qWarning() << "error while rescaning: " << err->message;
+            return false;
+        }
+        return ret;
+    }
+    return false;
+}
+
+void DFMBlockDevicePrivate::rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+{
+    CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
+    UDisksBlock_autoptr blk = getBlockHandler();
+
+    if (blk) {
+        udisks_block_call_rescan(blk, Utils::castFromQVariantMap(opts), nullptr, rescanAsyncCallback, proxy);
+    } else {
+        if (cb)
+            cb(false, DeviceError::UserErrorNoBlock);
+        qWarning() << "cannot get block handler";
+    }
+}
+
+inline void DFMBlockDevicePrivate::handleErrorAndRelease(GError *err)
 {
     if (err) {
         lastError = Utils::castFromGError(err);

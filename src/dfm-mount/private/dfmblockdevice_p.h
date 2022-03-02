@@ -68,10 +68,12 @@ public:
     void lockAsync(const QVariantMap &opts, DeviceOperateCallback cb);
     bool unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts);
     void unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCallbackWithMessage cb);
+    bool rescan(const QVariantMap &opts);
+    void rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb);
 
 private:
     // error report
-    void handleErrorAndRelase(GError *err);
+    void handleErrorAndRelease(GError *err);
     static void handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info = QString());
 
     // async callbacks
@@ -82,6 +84,7 @@ private:
     static void powerOffAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
     static void lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
     static void unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
+    static void rescanAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
 
     UDisksObject_autoptr getUDisksObject() const;
     UDisksBlock_autoptr getBlockHandler() const;
