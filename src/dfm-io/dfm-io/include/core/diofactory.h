@@ -57,7 +57,9 @@ public:
 
     DFM_VIRTUAL QSharedPointer<DFileInfo> createFileInfo() const;
     DFM_VIRTUAL QSharedPointer<DFile> createFile() const;
-    DFM_VIRTUAL QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(), DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter, DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::NoIteratorFlags) const;
+    DFM_VIRTUAL QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(),
+                                                             DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter,
+                                                             DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::NoIteratorFlags) const;
     DFM_VIRTUAL QSharedPointer<DWatcher> createWatcher() const;
     DFM_VIRTUAL QSharedPointer<DOperator> createOperator() const;
 

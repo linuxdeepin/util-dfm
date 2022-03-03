@@ -99,7 +99,7 @@ QString suffix(const QString &path)
 
     int pos2 = fullName.lastIndexOf(".");
     if (pos2 == -1)
-        return fullName;
+        return "";
     else
         return fullName.mid(pos2 + 1);
 }
@@ -110,7 +110,7 @@ QString completeSuffix(const QString &path)
 
     int pos2 = fullName.indexOf(".");
     if (pos2 == -1)
-        return fullName;
+        return "";
     else
         return fullName.mid(pos2 + 1);
 }

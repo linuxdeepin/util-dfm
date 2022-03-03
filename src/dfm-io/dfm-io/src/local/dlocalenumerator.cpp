@@ -159,6 +159,9 @@ QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
 
 bool DLocalEnumeratorPrivate::checkFilter()
 {
+    if (dirFilters == kDirFilterNofilter)
+        return true;
+
     if (!dfileInfoNext)
         return false;
 
