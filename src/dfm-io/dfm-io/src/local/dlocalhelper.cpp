@@ -71,6 +71,9 @@ QString baseName(const QString &path)
 {
     const QString &fullName = fileName(path);
 
+    if (isDir(path))
+        return fullName;
+
     int pos2 = fullName.indexOf(".");
     if (pos2 == -1)
         return fullName;
@@ -81,6 +84,9 @@ QString baseName(const QString &path)
 QString completeBaseName(const QString &path)
 {
     const QString &fullName = fileName(path);
+
+    if (isDir(path))
+        return fullName;
 
     int pos2 = fullName.lastIndexOf(".");
     if (pos2 == -1)
@@ -106,6 +112,9 @@ QString suffix(const QString &path)
 
 QString completeSuffix(const QString &path)
 {
+    if (isDir(path))
+        return "";
+
     const QString &fullName = fileName(path);
 
     int pos2 = fullName.indexOf(".");
