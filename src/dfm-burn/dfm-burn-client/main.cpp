@@ -55,7 +55,7 @@ static void commit()
     QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
         qDebug() << int(status) << progress << speed << message;
     });
-    manager.setStageFile("/home/zhangs/test/0");
+    manager.setStageFile("/home/zhangs/.cache/deepin/discburn/_dev_sr0");
     BurnOptions opts;
     opts |= BurnOption::kJolietAndRockRidge;
     opts |= BurnOption::kKeepAppendable;
@@ -83,6 +83,19 @@ static void writeISO()
     manager.writeISO("/home/zhangs/Downloads/deb/20200413_214350.iso");
 }
 
+static void check()
+{
+    OpticalDiscManager manager("/dev/sr0");
+    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+        qDebug() << int(status) << progress << speed << message;
+    });
+    double gud, slo, bad;
+    manager.checkmedia(&gud, &slo, &bad);
+    bool check { true };
+    bool checkRet { !(check && (bad > (2 + 1e-6))) };
+    qDebug() << "check ret" << checkRet;
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -91,5 +104,6 @@ int main(int argc, char *argv[])
     // writeISO();
     // commit();
     // commitUDF();
+    // check();
     return a.exec();
 }

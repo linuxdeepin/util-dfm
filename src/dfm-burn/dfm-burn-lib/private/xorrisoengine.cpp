@@ -325,6 +325,7 @@ bool XorrisoEngine::doWriteISO(const QString &isoPath, int speed)
  */
 bool XorrisoEngine::doCheckmedia(quint64 dataBlocks, double *qgood, double *qslow, double *qbad)
 {
+    curDatablocks = dataBlocks;
     if (dataBlocks == 0)
         return false;
 

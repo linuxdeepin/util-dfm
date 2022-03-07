@@ -145,6 +145,15 @@ bool OpticalDiscManager::erase()
 bool OpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
 {
     bool ret { false };
+    quint64 blocks { 0 };
+
+    {
+        QScopedPointer<OpticalDiscInfo> info { OpticalDiscManager::createOpticalInfo(dptr->curDev) };
+        if (!info)
+            return ret;
+        blocks = info->dataBlocks();
+    }
+
     QScopedPointer<XorrisoEngine> engine { new XorrisoEngine };
     connect(engine.data(), &XorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
@@ -155,13 +164,6 @@ bool OpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
     if (!engine->acquireDevice(dptr->curDev)) {
         dptr->errorMsg = "Cannot acquire device";
         return ret;
-    }
-
-    quint64 blocks { 0 };
-
-    {
-        auto info = OpticalDiscManager::createOpticalInfo(dptr->curDev);
-        blocks = info->dataBlocks();
     }
 
     ret = engine->doCheckmedia(blocks, qgood, qslow, qbad);
