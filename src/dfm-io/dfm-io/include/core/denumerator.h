@@ -32,7 +32,7 @@
 
 #include <functional>
 
-const uint16_t kDirFilterNofilter = 0x000;
+const int16_t kDirFilterNofilter = -1;
 const uint16_t kDirFilterDirs = 0x001;
 const uint16_t kDirFilterFiles = 0x002;
 const uint16_t kDirFilterDrives = 0x004;
@@ -61,7 +61,7 @@ class DFileInfo;
 class DEnumerator
 {
 public:
-    enum class DirFilter : uint16_t {
+    enum class DirFilter : int16_t {
         NoFilter = kDirFilterNofilter,   // no filter
         Dirs = kDirFilterDirs,   // List directories that match the filters.
         Files = kDirFilterFiles,   // List files.
