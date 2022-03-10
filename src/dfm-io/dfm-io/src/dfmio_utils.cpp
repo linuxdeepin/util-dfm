@@ -45,9 +45,18 @@ bool DFMUtils::fileUnmountable(const QString &path)
 QString DFMUtils::devicePathFromUrl(const QUrl &url)
 {
     g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
-    g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
-    if (mount)
-        return QString::fromLocal8Bit(g_unix_mount_get_device_path(mount));
+    g_autoptr(GError) gerror = nullptr;
+    g_autoptr(GMount) gmount = g_file_find_enclosing_mount(gfile, nullptr, &gerror);
+    if (gmount) {
+        g_autoptr(GFile) rootFile = g_mount_get_root(gmount);
+        g_autofree gchar *uri = g_file_get_uri(rootFile);
+        return QString::fromLocal8Bit(uri);
+    } else {
+        g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
+        if (mount)
+            return QString::fromLocal8Bit(g_unix_mount_get_device_path(mount));
+    }
+    return QString();
 }
 
 QString DFMUtils::fsTypeFromUrl(const QUrl &url)
