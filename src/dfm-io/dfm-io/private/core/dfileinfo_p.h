@@ -57,6 +57,7 @@ public:
     DFileInfo *q = nullptr;
 
     QUrl uri;
+    DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks;
 
     DFileInfo::AttributeFunc attributeFunc = nullptr;
     DFileInfo::SetAttributeFunc setAttributeFunc = nullptr;

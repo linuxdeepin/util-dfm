@@ -53,13 +53,14 @@ DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
 bool DLocalFileInfoPrivate::init()
 {
     const QUrl &url = q->uri();
+    const DFileInfo::FileQueryInfoFlags flag = q->fileQueryInfoFlag();
     const QString &path = url.toString();
 
     GFile *gfile = g_file_new_for_uri(path.toLocal8Bit().data());
 
     GError *gerror = nullptr;
 
-    GFileInfo *gfileinfo = g_file_query_info(gfile, "*", G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
+    GFileInfo *gfileinfo = g_file_query_info(gfile, "*", GFileQueryInfoFlags(flag), nullptr, &gerror);
 
     if (gerror) {
         setErrorFromGError(gerror);

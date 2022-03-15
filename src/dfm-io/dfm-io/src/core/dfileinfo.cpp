@@ -144,10 +144,11 @@ DFileInfo::DFileInfo()
 {
 }
 
-DFileInfo::DFileInfo(const QUrl &uri)
+DFileInfo::DFileInfo(const QUrl &uri, const FileQueryInfoFlags flag)
     : d(new DFileInfoPrivate(this))
 {
     d->uri = uri;
+    d->flag = flag;
 }
 
 DFileInfo::DFileInfo(const DFileInfo &info)
@@ -309,6 +310,11 @@ void DFileInfo::registerLastError(const DFileInfo::LastErrorFunc &func)
 QUrl DFileInfo::uri() const
 {
     return d->uri;
+}
+
+DFileInfo::FileQueryInfoFlags DFileInfo::fileQueryInfoFlag()
+{
+    return d->flag;
 }
 
 QString DFileInfo::dump() const

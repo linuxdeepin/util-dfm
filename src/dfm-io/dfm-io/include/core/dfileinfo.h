@@ -205,7 +205,7 @@ public:
 
 public:
     DFileInfo();
-    explicit DFileInfo(const QUrl &uri);
+    explicit DFileInfo(const QUrl &uri, const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNoFollowSymlinks);
     explicit DFileInfo(const DFileInfo &info);
     virtual ~DFileInfo();
     DFileInfo &operator=(const DFileInfo &info);
@@ -239,6 +239,7 @@ public:
     void registerLastError(const LastErrorFunc &func);
 
     QUrl uri() const;
+    DFileInfo::FileQueryInfoFlags fileQueryInfoFlag();
     QString dump() const;
 
 private:
