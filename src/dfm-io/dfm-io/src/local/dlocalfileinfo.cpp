@@ -82,7 +82,7 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
             const QString &path = q->uri().path();
             retValue = DLocalHelper::customAttributeFromPath(path, id);
         } else {
-            if(gfileinfo) {
+            if (gfileinfo) {
                 DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
                 retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
                 if (errorCode != DFM_IO_ERROR_NONE)
@@ -189,6 +189,63 @@ DFile::Permissions DLocalFileInfoPrivate::permissions()
     return dfile->permissions();
 }
 
+bool DLocalFileInfoPrivate::setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag)
+{
+    if (gfile) {
+        g_autoptr(GError) gerror = nullptr;
+        bool ret = g_file_set_attribute(gfile, key, GFileAttributeType(type), (gpointer)(value), GFileQueryInfoFlags(flag), nullptr, &gerror);
+
+        if (gerror)
+            setErrorFromGError(gerror);
+        return ret;
+    }
+    return false;
+}
+
+QVariant DLocalFileInfoPrivate::customAttribute(const char *key, const DFileInfo::DFileAttributeType type)
+{
+    switch (type) {
+    case DFileInfo::DFileAttributeType::TypeString: {
+        const char *ret = g_file_info_get_attribute_string(gfileinfo, key);
+        return QVariant(ret);
+    }
+    case DFileInfo::DFileAttributeType::TypeByteString: {
+        const char *ret = g_file_info_get_attribute_byte_string(gfileinfo, key);
+        return QVariant(ret);
+    }
+    case DFileInfo::DFileAttributeType::TypeBool: {
+        bool ret = g_file_info_get_attribute_boolean(gfileinfo, key);
+        return QVariant(ret);
+    }
+    case DFileInfo::DFileAttributeType::TypeUInt32: {
+        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key);
+        return QVariant(ret);
+    }
+    case DFileInfo::DFileAttributeType::TypeInt32: {
+        int32_t ret = g_file_info_get_attribute_int32(gfileinfo, key);
+        return QVariant(ret);
+    }
+    case DFileInfo::DFileAttributeType::TypeUInt64: {
+        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key);
+        return QVariant(qulonglong(ret));
+    }
+    case DFileInfo::DFileAttributeType::TypeInt64: {
+        int64_t ret = g_file_info_get_attribute_int64(gfileinfo, key);
+        return QVariant(qulonglong(ret));
+    }
+    case DFileInfo::DFileAttributeType::TypeStringV: {
+        char **ret = g_file_info_get_attribute_stringv(gfileinfo, key);
+        QStringList retValue;
+        for (int i = 0; ret && ret[i]; ++i) {
+            retValue.append(QString::fromLocal8Bit(ret[i]));
+        }
+        return retValue;
+    }
+    default:
+        return QVariant();
+    }
+}
+
 DFMIOError DLocalFileInfoPrivate::lastError()
 {
     return error;
@@ -210,6 +267,8 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri)
     registerExists(std::bind(&DLocalFileInfo::exists, this));
     registerFlush(std::bind(&DLocalFileInfo::flush, this));
     registerPermissions(std::bind(&DLocalFileInfo::permissions, this));
+    registerSetCustomAttribute(std::bind(&DLocalFileInfo::setCustomAttribute, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+    registerCustomAttribute(std::bind(&DLocalFileInfo::customAttribute, this, std::placeholders::_1, std::placeholders::_2));
     registerLastError(std::bind(&DLocalFileInfo::lastError, this));
 
     d->init();
@@ -257,6 +316,16 @@ bool DLocalFileInfo::flush()
 DFile::Permissions DLocalFileInfo::permissions()
 {
     return d->permissions();
+}
+
+bool DLocalFileInfo::setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag)
+{
+    return d->setCustomAttribute(key, type, value, flag);
+}
+
+QVariant DLocalFileInfo::customAttribute(const char *key, const DFileInfo::DFileAttributeType type)
+{
+    return d->customAttribute(key, type);
 }
 
 DFMIOError DLocalFileInfo::lastError() const

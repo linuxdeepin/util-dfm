@@ -235,6 +235,22 @@ DFile::Permissions DFileInfo::permissions()
     return DFile::Permission::NoPermission;
 }
 
+bool DFileInfo::setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag)
+{
+    if (!d->setCustomAttributeFunc)
+        return false;
+
+    return d->setCustomAttributeFunc(key, type, value, flag);
+}
+
+QVariant DFileInfo::customAttribute(const char *key, const DFileInfo::DFileAttributeType type)
+{
+    if (!d->customAttributeFunc)
+        return false;
+
+    return d->customAttributeFunc(key, type);
+}
+
 void DFileInfo::registerAttribute(const DFileInfo::AttributeFunc &func)
 {
     d->attributeFunc = func;
@@ -273,6 +289,16 @@ void DFileInfo::registerFlush(const DFileInfo::FlushFunc &func)
 void DFileInfo::registerPermissions(const DFile::PermissionFunc &func)
 {
     d->permissionFunc = func;
+}
+
+void DFileInfo::registerSetCustomAttribute(const DFileInfo::SetCustomAttributeFunc &func)
+{
+    d->setCustomAttributeFunc = func;
+}
+
+void DFileInfo::registerCustomAttribute(const DFileInfo::CustomAttributeFunc &func)
+{
+    d->customAttributeFunc = func;
 }
 
 void DFileInfo::registerLastError(const DFileInfo::LastErrorFunc &func)

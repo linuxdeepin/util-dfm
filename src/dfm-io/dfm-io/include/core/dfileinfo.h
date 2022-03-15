@@ -54,6 +54,24 @@ public:
         UserType = 0x100
     };
 
+    enum class DFileAttributeType : uint8_t {
+        TypeInvalid = 0,   // Indicates an invalid or uninitialized type
+        TypeString = 1,   // A null terminated UTF8 string
+        TypeByteString = 2,   // A zero terminated string of non-zero bytes
+        TypeBool = 3,   // A boolean value
+        TypeUInt32 = 4,   // An unsigned 4-byte/32-bit integer
+        TypeInt32 = 5,   // A signed 4-byte/32-bit integer
+        TypeUInt64 = 6,   // An unsigned 8-byte/64-bit integer
+        TypeInt64 = 7,   // A signed 8-byte/64-bit integer
+        TypeObject = 8,   // A Object
+        TypeStringV = 9   // A NULL terminated char **
+    };
+
+    enum class FileQueryInfoFlags : uint8_t {
+        TypeNone,
+        TypeNoFollowSymlinks
+    };
+
     enum class AttributeID : uint16_t {
         StandardType = 0,   // uint32
         StandardIsHidden = 1,   // boolean
@@ -181,6 +199,8 @@ public:
     using AttributeListFunc = std::function<QList<DFileInfo::AttributeID>()>;
     using ExistsFunc = std::function<bool()>;
     using FlushFunc = std::function<bool()>;
+    using SetCustomAttributeFunc = std::function<bool(const char *, const DFileAttributeType, const void *, const FileQueryInfoFlags)>;
+    using CustomAttributeFunc = std::function<QVariant(const char *, const DFileAttributeType)>;
     using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
@@ -199,6 +219,10 @@ public:
     DFM_VIRTUAL bool flush();
     DFM_VIRTUAL DFile::Permissions permissions();
 
+    // custom attribute
+    DFM_VIRTUAL bool setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNone);
+    DFM_VIRTUAL QVariant customAttribute(const char *key, const DFileAttributeType type);
+
     DFM_VIRTUAL DFMIOError lastError() const;
 
     // register
@@ -210,6 +234,8 @@ public:
     void registerExists(const ExistsFunc &func);
     void registerFlush(const FlushFunc &func);
     void registerPermissions(const DFile::PermissionFunc &func);
+    void registerSetCustomAttribute(const SetCustomAttributeFunc &func);
+    void registerCustomAttribute(const CustomAttributeFunc &func);
     void registerLastError(const LastErrorFunc &func);
 
     QUrl uri() const;

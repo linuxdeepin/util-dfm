@@ -54,6 +54,8 @@ public:
     bool exists() const;
     bool flush();
     DFile::Permissions permissions();
+    bool setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNone);
+    QVariant customAttribute(const char *key, const DFileInfo::DFileAttributeType type);
 
     DFMIOError lastError();
     void setErrorFromGError(GError *gerror);
