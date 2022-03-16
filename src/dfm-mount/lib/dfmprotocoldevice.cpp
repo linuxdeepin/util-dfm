@@ -157,7 +157,7 @@ QStringList DFMProtocolDevice::deviceIcons() const
  * \param getPassInfo   an passwd-asking dialog should be exec in this function, and return a struct object which contains the passwd
  * \param mountResult   when mount finished, this function will be invoked.
  */
-void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, DeviceOperateCallbackWithMessage mountResult)
+void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult)
 {
     GFile_autoptr file = g_file_new_for_uri(address.toStdString().c_str());
     if (!file) {
@@ -176,16 +176,21 @@ void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassI
     //        return;
     //    }
 
-    AskPasswdHelper *helper = new AskPasswdHelper();
-    helper->callback = getPassInfo;
-    helper->callOnceFlag = false;   // make sure the signal will not emit continuously when validate failed.
+    AskPasswdHelper *passwdHelper = new AskPasswdHelper();
+    passwdHelper->callback = getPassInfo;
+    passwdHelper->callOnceFlag = false;   // make sure the signal will not emit continuously when validate failed.
+
+    AskQuestionHelper *questionHelper = new AskQuestionHelper();
+    questionHelper->callback = getUserChoice;
 
     GMountOperation_autoptr op = g_mount_operation_new();
-    g_signal_connect(op, "ask_password", G_CALLBACK(DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd), helper);
+    g_signal_connect(op, "ask_question", G_CALLBACK(DFMProtocolDevicePrivate::mountNetworkDeviceAskQuestion), questionHelper);
+    g_signal_connect(op, "ask_password", G_CALLBACK(DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd), passwdHelper);
 
     FinalizeHelper *finalizeHelper = new FinalizeHelper;
-    finalizeHelper->askPasswd = helper;
-    finalizeHelper->callback = mountResult;
+    finalizeHelper->askPasswd = passwdHelper;
+    finalizeHelper->askQuestion = questionHelper;
+    finalizeHelper->resultCallback = mountResult;
 
     // a timout machinism TODO(xust)
     GCancellable_autoptr cancellable = g_cancellable_new();
@@ -664,12 +669,38 @@ void DFMProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncRes
     }
 }
 
-void DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd(GMountOperation *self, gchar *message, gchar *userDefault,
-                                                           gchar *domainDefault, GAskPasswordFlags flags, gpointer userData)
+void DFMProtocolDevicePrivate::mountNetworkDeviceAskQuestion(GMountOperation *self, const char *message, const char **choices, gpointer userData)
+{
+    auto helper = reinterpret_cast<AskQuestionHelper *>(userData);
+    if (!helper || !helper->callback) {
+        if (helper)
+            helper->err = DeviceError::UserErrorFailed;
+        g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
+        return;
+    }
+
+    QString sMsg(message);
+    QStringList lstChoices;
+    while (*choices)
+        lstChoices << QString::asprintf("%s", *choices++);
+
+    int choice = helper->callback(sMsg, lstChoices);
+    if (choice < 0 || choice >= lstChoices.count()) {
+        g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
+        return;
+    }
+
+    g_mount_operation_set_choice(self, choice);
+    g_mount_operation_reply(self, G_MOUNT_OPERATION_HANDLED);
+}
+
+void DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd(GMountOperation *self, gchar *message, gchar *defaultUser,
+                                                           gchar *defaultDomain, GAskPasswordFlags flags, gpointer userData)
 {
     auto helper = reinterpret_cast<AskPasswdHelper *>(userData);
     if (!helper || !helper->callback) {
-        helper->err = DeviceError::UserErrorFailed;
+        if (helper)
+            helper->err = DeviceError::UserErrorFailed;
         g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
         return;
     }
@@ -685,7 +716,7 @@ void DFMProtocolDevicePrivate::mountNetworkDeviceAskPasswd(GMountOperation *self
         return;
     }
 
-    auto mountInfo = helper->callback(message, userDefault, domainDefault);
+    auto mountInfo = helper->callback(message, defaultUser, defaultDomain);
     if (mountInfo.cancelled) {
         g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
         helper->err = DeviceError::UserErrorUserCancelled;
@@ -728,10 +759,11 @@ void DFMProtocolDevicePrivate::mountNetworkDeviceCallback(GObject *srcObj, GAsyn
     }
 
     g_autofree char *mntPath = g_file_get_path(file);
-    if (finalize->callback)
-        finalize->callback(ok, derr, mntPath);
+    if (finalize->resultCallback)
+        finalize->resultCallback(ok, derr, mntPath);
 
     delete finalize->askPasswd;
+    delete finalize->askQuestion;
     delete finalize;
 }
 
