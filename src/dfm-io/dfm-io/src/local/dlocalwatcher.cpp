@@ -122,14 +122,14 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
         return;
     }
 
-    QString childUrl;
-    QString otherUrl;
+    QUrl childUrl;
+    QUrl otherUrl;
 
-    g_autofree gchar *child_str = g_file_get_uri(child);
-    childUrl = QUrl::fromPercentEncoding(child_str);
+    g_autofree gchar *child_str = g_file_get_path(child);
+    childUrl = QUrl::fromLocalFile(child_str);
     if (other) {
-        g_autofree gchar *other_str = g_file_get_uri(other);
-        otherUrl = QUrl::fromPercentEncoding(other_str);
+        g_autofree gchar *other_str = g_file_get_path(other);
+        otherUrl = QUrl::fromLocalFile(other_str);
     }
 
     switch (event_type) {
@@ -214,7 +214,7 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
     // monitor file in movable device, can't received signal when umount, so need change flag to G_FILE_MONITOR_WATCH_HARD_LINKS
     const QString &&filePath = QString::fromLocal8Bit(g_file_get_path(gfile));
 
-    if(type == DWatcher::WatchType::kFile && DFMUtils::fileUnmountable(filePath))
+    if (type == DWatcher::WatchType::kFile && DFMUtils::fileUnmountable(filePath))
         watchFlags = G_FILE_MONITOR_WATCH_HARD_LINKS;
 
     gmonitor = g_file_monitor(gfile, watchFlags, nullptr, &gerror);
