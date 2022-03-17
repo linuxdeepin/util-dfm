@@ -72,7 +72,7 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
             break;
 
         g_autofree gchar *uri = g_file_get_uri(gfileIn);
-        QSharedPointer<DFileInfo> info = DLocalHelper::getFileInfoByUri(QByteArray::fromPercentEncoding(uri));
+        QSharedPointer<DFileInfo> info = DLocalHelper::getFileInfoByUri(uri);
         if (info)
             list_.append(info);
 
@@ -133,7 +133,7 @@ bool DLocalEnumeratorPrivate::hasNext()
         }
 
         g_autofree gchar *uri = g_file_get_uri(gfileNext);
-        dfileInfoNext = DLocalHelper::getFileInfoByUri(QByteArray::fromPercentEncoding(uri));
+        dfileInfoNext = DLocalHelper::getFileInfoByUri(uri);
         if (!checkFilter())
             return this->hasNext();
 

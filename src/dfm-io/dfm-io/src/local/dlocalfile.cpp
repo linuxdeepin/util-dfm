@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
  *
  * Author:     dengkeyun<dengkeyun@uniontech.com>
@@ -60,7 +60,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
     g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
     g_autoptr(GError) gerror = nullptr;
 
-    if ((mode & DFile::OpenFlag::ReadOnly) == 0x0001) {
+    if (mode == DFile::OpenFlags(DFile::OpenFlag::ReadOnly)) {
         if (!exists()) {
             return false;
         }
@@ -72,7 +72,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
             return false;
         }
         return true;
-    } else if ((mode & DFile::OpenFlag::WriteOnly) == 0x0002) {
+    } else if (mode == DFile::OpenFlags(DFile::OpenFlag::WriteOnly)) {
         oStream = (GOutputStream *)g_file_replace(gfile,
                                                   nullptr,
                                                   false,
@@ -86,7 +86,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
             return false;
         }
         return true;
-    } else if ((mode & DFile::OpenFlag::Append) == 0x0004) {
+    } else if (mode == 0x0004) {
         oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
         if (gerror)
             setErrorFromGError(gerror);
@@ -115,14 +115,20 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
 bool DLocalFilePrivate::close()
 {
     if (iStream) {
+        if (!g_input_stream_is_closed(iStream))
+            g_input_stream_close(iStream, nullptr, nullptr);
         g_object_unref(iStream);
         iStream = nullptr;
     }
     if (oStream) {
+        if (!g_output_stream_is_closed(oStream))
+            g_output_stream_close(oStream, nullptr, nullptr);
         g_object_unref(oStream);
         oStream = nullptr;
     }
     if (ioStream) {
+        if (!g_io_stream_is_closed(ioStream))
+            g_io_stream_close(ioStream, nullptr, nullptr);
         g_object_unref(ioStream);
         ioStream = nullptr;
     }
@@ -137,7 +143,7 @@ qint64 DLocalFilePrivate::read(char *data, qint64 maxSize)
         return -1;
     }
 
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
     gssize read = g_input_stream_read(inputStream,
                                       data,
                                       static_cast<gsize>(maxSize),
@@ -146,7 +152,6 @@ qint64 DLocalFilePrivate::read(char *data, qint64 maxSize)
 
     if (gerror) {
         setErrorFromGError(gerror);
-        g_error_free(gerror);
         return -1;
     }
 
@@ -162,7 +167,7 @@ QByteArray DLocalFilePrivate::read(qint64 maxSize)
     }
 
     char data[maxSize];
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
     g_input_stream_read(inputStream,
                         data,
                         static_cast<gsize>(maxSize),
@@ -170,7 +175,6 @@ QByteArray DLocalFilePrivate::read(qint64 maxSize)
                         &gerror);
     if (gerror) {
         setErrorFromGError(gerror);
-        g_error_free(gerror);
         return QByteArray();
     }
 
@@ -189,15 +193,16 @@ QByteArray DLocalFilePrivate::readAll()
 
     const gsize size = 8192;
 
-    gsize bytes_read;
+    gsize bytesRead;
     char data[size];
+    memset(data, 0, size);
     GError *gerror = nullptr;
 
     while (true) {
         gboolean read = g_input_stream_read_all(inputStream,
                                                 data,
                                                 size,
-                                                &bytes_read,
+                                                &bytesRead,
                                                 nullptr,
                                                 &gerror);
         if (!read || gerror) {
@@ -207,7 +212,17 @@ QByteArray DLocalFilePrivate::readAll()
             }
             break;
         }
-        dataRet.append(data);
+        if (bytesRead == 0)
+            break;
+
+        bytesRead += 1;
+        char *dataRead = new char[bytesRead];
+        memset(dataRead, 0, bytesRead);
+        memcpy(dataRead, data, bytesRead);
+
+        dataRet.append(dataRead);
+        delete[] dataRead;
+
         memset(data, 0, size);
     }
 
