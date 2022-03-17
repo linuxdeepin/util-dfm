@@ -112,12 +112,12 @@ void DLocalWatcherPrivate::setErrorFromGError(GError *gerror)
 void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
                                          GFile *child,
                                          GFile *other,
-                                         GFileMonitorEvent event_type,
-                                         gpointer user_data)
+                                         GFileMonitorEvent eventType,
+                                         gpointer userData)
 {
     Q_UNUSED(monitor);
 
-    DLocalWatcher *watcher = static_cast<DLocalWatcher *>(user_data);
+    DLocalWatcher *watcher = static_cast<DLocalWatcher *>(userData);
     if (nullptr == watcher) {
         return;
     }
@@ -125,41 +125,52 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
     QUrl childUrl;
     QUrl otherUrl;
 
-    g_autofree gchar *child_str = g_file_get_path(child);
-    childUrl = QUrl::fromLocalFile(child_str);
-    if (other) {
-        g_autofree gchar *other_str = g_file_get_path(other);
-        otherUrl = QUrl::fromLocalFile(other_str);
+    g_autofree gchar *childStr = g_file_get_path(child);
+    if (childStr != nullptr) {
+        childUrl = QUrl::fromLocalFile(childStr);
+    } else {
+        g_autofree gchar *uri = g_file_get_uri(child);
+        childUrl = QUrl(QString::fromLocal8Bit(QByteArray::fromPercentEncoding(uri)));
     }
 
-    switch (event_type) {
+    if (other) {
+        g_autofree gchar *otherStr = g_file_get_path(other);
+        if (otherStr != nullptr) {
+            otherUrl = QUrl::fromLocalFile(otherStr);
+        } else {
+            g_autofree gchar *uri = g_file_get_uri(other);
+            otherUrl = QUrl(QString::fromLocal8Bit(QByteArray::fromPercentEncoding(uri)));
+        }
+    }
+
+    switch (eventType) {
     case G_FILE_MONITOR_EVENT_CHANGED:
-        watcher->fileChanged(QUrl(childUrl));
+        watcher->fileChanged(childUrl);
         break;
     case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
         break;
     case G_FILE_MONITOR_EVENT_DELETED:
-        watcher->fileDeleted(QUrl(childUrl));
+        watcher->fileDeleted(childUrl);
         break;
     case G_FILE_MONITOR_EVENT_CREATED:
-        watcher->fileAdded(QUrl(childUrl));
+        watcher->fileAdded(childUrl);
         break;
     case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
-        watcher->fileChanged(QUrl(childUrl));
+        watcher->fileChanged(childUrl);
         break;
     case G_FILE_MONITOR_EVENT_PRE_UNMOUNT:
         break;
     case G_FILE_MONITOR_EVENT_UNMOUNTED:
-        watcher->fileDeleted(QUrl(childUrl));
+        watcher->fileDeleted(childUrl);
         break;
     case G_FILE_MONITOR_EVENT_MOVED_IN:
-        watcher->fileAdded(QUrl(childUrl));
+        watcher->fileAdded(childUrl);
         break;
     case G_FILE_MONITOR_EVENT_MOVED_OUT:
-        watcher->fileDeleted(QUrl(childUrl));
+        watcher->fileDeleted(childUrl);
         break;
     case G_FILE_MONITOR_EVENT_RENAMED:
-        watcher->fileRenamed(QUrl(childUrl), QUrl(otherUrl));
+        watcher->fileRenamed(childUrl, otherUrl);
         break;
 
     //case G_FILE_MONITOR_EVENT_MOVED:

@@ -148,8 +148,13 @@ bool DLocalEnumeratorPrivate::hasNext()
 
 QString DLocalEnumeratorPrivate::next() const
 {
-    g_autofree char *gpath = g_file_get_path(gfileNext);
-    return QString::fromLocal8Bit(gpath);
+    g_autofree gchar *gpath = g_file_get_path(gfileNext);
+    if (gpath != nullptr) {
+        return QString::fromLocal8Bit(gpath);
+    } else {
+        g_autofree gchar *uri = g_file_get_uri(gfileNext);
+        return QString::fromLocal8Bit(QByteArray::fromPercentEncoding(uri));
+    }
 }
 
 QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
