@@ -65,6 +65,7 @@ QString DFMUtils::fsTypeFromUrl(const QUrl &url)
     g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
     if (mount)
         return QString::fromLocal8Bit(g_unix_mount_get_fs_type(mount));
+    return QString();
 }
 
 QUrl DFMUtils::directParentUrl(const QUrl &url)

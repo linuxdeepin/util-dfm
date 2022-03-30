@@ -86,7 +86,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
             return false;
         }
         return true;
-    } else if (mode == 0x0004) {
+    } else if (mode == DFile::OpenFlags(DFile::OpenFlag::Append)) {
         oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
         if (gerror)
             setErrorFromGError(gerror);
@@ -166,7 +166,9 @@ QByteArray DLocalFilePrivate::read(qint64 maxSize)
         return QByteArray();
     }
 
-    char data[maxSize];
+    char data[maxSize + 1];
+    memset(&data, 0, maxSize + 1);
+
     g_autoptr(GError) gerror = nullptr;
     g_input_stream_read(inputStream,
                         data,
@@ -193,12 +195,13 @@ QByteArray DLocalFilePrivate::readAll()
 
     const gsize size = 8192;
 
-    gsize bytesRead;
-    char data[size];
-    memset(data, 0, size);
     GError *gerror = nullptr;
 
     while (true) {
+        gsize bytesRead;
+        char data[size + 1];
+        memset(data, 0, size + 1);
+
         gboolean read = g_input_stream_read_all(inputStream,
                                                 data,
                                                 size,
@@ -215,15 +218,7 @@ QByteArray DLocalFilePrivate::readAll()
         if (bytesRead == 0)
             break;
 
-        bytesRead += 1;
-        char *dataRead = new char[bytesRead];
-        memset(dataRead, 0, bytesRead);
-        memcpy(dataRead, data, bytesRead);
-
-        dataRet.append(dataRead);
-        delete[] dataRead;
-
-        memset(data, 0, size);
+        dataRet.append(data);
     }
 
     return dataRet;
