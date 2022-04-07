@@ -30,6 +30,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QPointer>
+#include <QElapsedTimer>
 
 #include <functional>
 
@@ -490,85 +491,61 @@ QString DFMProtocolDevicePrivate::mountPoint(GMount *mount)
 
 QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type) const
 {
-    const char *attr = nullptr;
-    switch (type) {
-    case Total:
-        attr = G_FILE_ATTRIBUTE_FILESYSTEM_SIZE;
-        break;
-    case Usage:
-        attr = G_FILE_ATTRIBUTE_FILESYSTEM_USED;
-        break;
-    case Free:
-        attr = G_FILE_ATTRIBUTE_FILESYSTEM_FREE;
-        break;
-    case Type:
-        attr = G_FILE_ATTRIBUTE_FILESYSTEM_TYPE;
-    }
+    if (fsAttrs.contains(QString::number(type)))
+        return fsAttrs.value(QString::number(type));
 
-    if (!mountHandler) {
-        lastError = DeviceError::UserErrorNotMounted;
+    if (mountPoint().isEmpty() || deviceId.startsWith("afc://"))   // gvfs cannot handle the afc files.
+        return QVariant();
+
+    g_autoptr(GFile) mntFile = g_file_new_for_uri(deviceId.toStdString().data());
+    if (!mntFile) {
+        lastError = DeviceError::UnhandledError;
+        qDebug() << "cannot create file handler for " << deviceId;
         return QVariant();
     }
 
-    //    qInfo() << "mutexForMount prelock" << __FUNCTION__;
-    QMutexLocker mntLocker(&mutexForMount);
-    //    qInfo() << "mutexForMount locked" << __FUNCTION__;
-    auto mnt = mountPoint(mountHandler);
-    mntLocker.unlock();
+    GError *err = nullptr;
+    QElapsedTimer t;
+    t.start();
+    do {
+        g_autoptr(GFileInfo) sysInfo = g_file_query_filesystem_info(mntFile, G_FILE_ATTRIBUTE_FILESYSTEM_SIZE "," G_FILE_ATTRIBUTE_FILESYSTEM_FREE "," G_FILE_ATTRIBUTE_FILESYSTEM_USED "," G_FILE_ATTRIBUTE_FILESYSTEM_TYPE, nullptr, &err);
+        if (err) {
+            int errCode = err->code;
+            QString errMsg = err->message;
+            lastError = Utils::castFromGError(err);
+            g_error_free(err);
+            err = nullptr;
 
-    g_autoptr(GFile) location = g_mount_get_root(mountHandler);
-    QString errMsg;
-    if (location) {
-        g_autoptr(GCancellable) cancellable = g_cancellable_new();
-        QSharedPointer<QTimer> timer(new QTimer);
-        QObject::connect(timer.data(), &QTimer::timeout, q, [=] {
-            lastError = DeviceError::UserErrorTimedOut;
-            g_cancellable_cancel(cancellable);
-        });
-        timer->setSingleShot(true);
-        timer->start(timeout);
+            qDebug() << "query filesystem info failed" << deviceId << errMsg;
+            if (errCode == G_IO_ERROR_NOT_MOUNTED)
+                return QVariant();
 
-        // before get attributes, check whether the location exist.
-        if (!g_file_query_exists(location, cancellable)) {
-            errMsg = "dir not exist";
-            qWarning() << "get attribute" << attr << "failed: " << errMsg;
-            return QVariant();
+            QThread::msleep(50);
+            qApp->processEvents();
+            continue;
         }
 
-        int retry = 50;
-        while (retry) {
-            GError *err { nullptr };
-            g_autoptr(GFileInfo) info = g_file_query_filesystem_info(location, attr, cancellable, &err);
-            if (info) {
-                QVariant ret;
-                if (type < Type) {
-                    auto size = g_file_info_get_attribute_uint64(info, attr);
-                    ret.setValue<long>(static_cast<long>(size));
-                    return ret;
-                } else if (type == Type) {
-                    auto fs = g_file_info_get_attribute_string(info, attr);
-                    ret.setValue<QString>(fs);
-                    return ret;
-                }
-            }
-            if (err) {
-                lastError = Utils::castFromGError(err);
-                errMsg = err->message;
-                int errCode = err->code;
-                const char *domain = g_quark_to_string(err->domain);
-                g_error_free(err);
-                if (errMsg.contains("was not provided by any .service files"))
-                    break;
-                if (strcmp(GIO_ERR_DOMAIN, domain) == 0
-                    && errCode == static_cast<int>(DeviceError::GIOErrorNotSupported) - GIO_ERR_START)
-                    break;
+        quint64 total = g_file_info_get_attribute_uint64(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_SIZE);
+        quint64 free = g_file_info_get_attribute_uint64(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_FREE);
+        quint64 used = g_file_info_get_attribute_uint64(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_USED);
+        QString fs = g_file_info_get_attribute_as_string(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_TYPE);
 
-                retry -= 1;
-                QThread::msleep(50);
-            }
-        }
-    }
-    qDebug() << "get attribute" << attr << "failed: " << errMsg;
+        fsAttrs.insert(QString::number(FsAttr::Free), free);
+        fsAttrs.insert(QString::number(FsAttr::Total), total);
+        fsAttrs.insert(QString::number(FsAttr::Usage), used);
+        fsAttrs.insert(QString::number(FsAttr::Type), fs);
+
+        if (type == FsAttr::Free)
+            return free;
+        if (type == FsAttr::Total)
+            return total;
+        if (type == FsAttr::Usage)
+            return used;
+        if (type == FsAttr::Type)
+            return fs;
+
+    } while (t.elapsed() < 5000);
+    qDebug() << "info not obtained after timeout" << deviceId;
     return QVariant();
 }
 

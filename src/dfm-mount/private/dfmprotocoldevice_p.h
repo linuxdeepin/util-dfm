@@ -142,6 +142,8 @@ private:
     GVolume *volumeHandler { nullptr };
     GVolumeMonitor *volumeMonitor { nullptr };
 
+    mutable QVariantMap fsAttrs;
+
     int timeout { 25000 };
 };
 DFM_MOUNT_END_NS
