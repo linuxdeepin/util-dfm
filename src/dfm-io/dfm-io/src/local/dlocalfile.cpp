@@ -28,6 +28,7 @@
 
 #include "core/dfile_p.h"
 
+#include <QPointer>
 #include <QDebug>
 
 #include <sys/stat.h>
@@ -224,6 +225,169 @@ QByteArray DLocalFilePrivate::readAll()
     return dataRet;
 }
 
+typedef struct
+{
+    DFile::ReadCallbackFunc callback;
+    gpointer user_data;
+} ReadAsyncOp;
+
+void ReadAsyncCallback(GObject *source_object,
+                       GAsyncResult *res,
+                       gpointer user_data)
+{
+    ReadAsyncOp *data = static_cast<ReadAsyncOp *>(user_data);
+    GInputStream *stream = (GInputStream *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    gssize size = g_input_stream_read_finish(stream, res, &gerror);
+    if (data->callback)
+        data->callback(size, data->user_data);
+}
+
+void DLocalFilePrivate::readAsync(char *data, qint64 maxSize, int ioPriority, DFile::ReadCallbackFunc func, void *userData)
+{
+    GInputStream *inputStream = this->inputStream();
+    if (!inputStream) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        if (func)
+            func(-1, userData);
+        return;
+    }
+
+    freeCancellable(gcancellable);
+    gcancellable = g_cancellable_new();
+
+    ReadAsyncOp *dataOp = g_new0(ReadAsyncOp, 1);
+    dataOp->callback = func;
+    dataOp->user_data = userData;
+
+    g_input_stream_read_async(inputStream,
+                              data,
+                              static_cast<gsize>(maxSize),
+                              ioPriority,
+                              gcancellable,
+                              ReadAsyncCallback,
+                              dataOp);
+}
+
+typedef struct
+{
+    DFile::ReadQCallbackFunc callback;
+    char *data;
+    gpointer user_data;
+} ReadQAsyncOp;
+
+void ReadQAsyncCallback(GObject *source_object,
+                        GAsyncResult *res,
+                        gpointer user_data)
+{
+    ReadQAsyncOp *data = static_cast<ReadQAsyncOp *>(user_data);
+    GInputStream *stream = (GInputStream *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    gssize size = g_input_stream_read_finish(stream, res, &gerror);
+    QByteArray dataRet = size >= 0 ? QByteArray(data->data) : QByteArray();
+    if (data->callback)
+        data->callback(dataRet, data->user_data);
+}
+
+void DLocalFilePrivate::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQCallbackFunc func, void *userData)
+{
+    GInputStream *inputStream = this->inputStream();
+    if (!inputStream) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        if (func)
+            func(QByteArray(), userData);
+        return;
+    }
+
+    char data[maxSize + 1];
+    memset(&data, 0, maxSize + 1);
+
+    freeCancellable(gcancellable);
+    gcancellable = g_cancellable_new();
+
+    ReadQAsyncOp *dataOp = g_new0(ReadQAsyncOp, 1);
+    dataOp->callback = func;
+    dataOp->user_data = userData;
+    dataOp->data = data;
+
+    g_input_stream_read_async(inputStream,
+                              data,
+                              static_cast<gsize>(maxSize),
+                              ioPriority,
+                              gcancellable,
+                              ReadQAsyncCallback,
+                              dataOp);
+}
+
+typedef struct
+{
+    char *data;
+    int ioPriority;
+    DFile::ReadAllCallbackFunc callback;
+    gpointer user_data;
+    QPointer<DLocalFilePrivate> me;
+
+} ReadAllAsyncOp;
+
+void ReadAllAsyncCallback(GObject *source_object,
+                          GAsyncResult *res,
+                          gpointer user_data)
+{
+    ReadAllAsyncOp *data = static_cast<ReadAllAsyncOp *>(user_data);
+    GInputStream *stream = (GInputStream *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    gsize size = 0;
+    bool succ = g_input_stream_read_all_finish(stream, res, &size, &gerror);
+    if (!succ || gerror) {
+        if (data->callback)
+            data->callback(QByteArray(), data->user_data);
+    }
+    if (size == 0) {
+        if (data->callback) {
+            if (data->me)
+                data->callback(data->me->readAllAsyncRet, data->user_data);
+        }
+    }
+
+    if (data->me) {
+        data->me->readAllAsyncRet.append(data->data);
+        data->me->readAllAsync(data->ioPriority, data->callback, data->user_data);
+    }
+}
+
+void DLocalFilePrivate::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc func, void *userData)
+{
+    GInputStream *inputStream = this->inputStream();
+    if (!inputStream) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        if (func)
+            func(QByteArray(), userData);
+        return;
+    }
+
+    const gsize size = 8192;
+    freeCancellable(gcancellable);
+    gcancellable = g_cancellable_new();
+
+    char data[size + 1];
+    memset(data, 0, size + 1);
+
+    ReadAllAsyncOp *dataOp = g_new0(ReadAllAsyncOp, 1);
+    dataOp->callback = func;
+    dataOp->user_data = userData;
+    dataOp->data = data;
+    dataOp->ioPriority = ioPriority;
+    dataOp->me = this;
+
+    g_input_stream_read_all_async(inputStream,
+                                  data,
+                                  size,
+                                  ioPriority,
+                                  gcancellable,
+                                  ReadAllAsyncCallback,
+                                  dataOp);
+}
+
 qint64 DLocalFilePrivate::write(const char *data, qint64 maxSize)
 {
     GOutputStream *outputStream = this->outputStream();
@@ -270,6 +434,60 @@ qint64 DLocalFilePrivate::write(const char *data)
 qint64 DLocalFilePrivate::write(const QByteArray &data)
 {
     return write(data.data());
+}
+
+typedef struct
+{
+    DFile::WriteCallbackFunc callback;
+    gpointer user_data;
+} WriteAsyncOp;
+
+void WriteAsyncCallback(GObject *source_object,
+                        GAsyncResult *res,
+                        gpointer user_data)
+{
+    WriteAsyncOp *data = static_cast<WriteAsyncOp *>(user_data);
+    GOutputStream *stream = (GOutputStream *)(source_object);
+    g_autoptr(GError) gerror = nullptr;
+    gssize size = g_output_stream_write_finish(stream, res, &gerror);
+    if (data->callback)
+        data->callback(size, data->user_data);
+}
+
+void DLocalFilePrivate::writeAsync(const char *data, qint64 maxSize, int ioPriority, DFile::WriteCallbackFunc func, void *userData)
+{
+    GOutputStream *outputStream = this->outputStream();
+    if (!outputStream) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        if (func)
+            func(-1, userData);
+        return;
+    }
+
+    freeCancellable(gcancellable);
+    gcancellable = g_cancellable_new();
+
+    WriteAsyncOp *dataOp = g_new0(WriteAsyncOp, 1);
+    dataOp->callback = func;
+    dataOp->user_data = userData;
+
+    g_output_stream_write_async(outputStream,
+                                data,
+                                static_cast<gsize>(maxSize),
+                                ioPriority,
+                                gcancellable,
+                                WriteAsyncCallback,
+                                dataOp);
+}
+
+void DLocalFilePrivate::writeAllAsync(const char *data, int ioPriority, DFile::WriteAllCallbackFunc func, void *userData)
+{
+    writeAsync(data, strlen(data), ioPriority, func, userData);
+}
+
+void DLocalFilePrivate::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile::WriteQCallbackFunc func, void *userData)
+{
+    writeAllAsync(byteArray.data(), ioPriority, func, userData);
 }
 
 bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
@@ -542,6 +760,14 @@ bool DLocalFilePrivate::checkOpenFlags(DFile::OpenFlags *modeIn)
     return true;
 }
 
+void DLocalFilePrivate::freeCancellable(GCancellable *gcancellable)
+{
+    if (gcancellable) {
+        g_cancellable_reset(gcancellable);
+        gcancellable = nullptr;
+    }
+}
+
 GInputStream *DLocalFilePrivate::inputStream()
 {
     if (iStream)
@@ -586,10 +812,18 @@ DLocalFile::DLocalFile(const QUrl &uri)
     registerRead(std::bind<bind_read>(&DLocalFile::read, this, std::placeholders::_1, std::placeholders::_2));
     registerReadQ(std::bind<bind_readQ>(&DLocalFile::read, this, std::placeholders::_1));
     registerReadAll(std::bind(&DLocalFile::readAll, this));
+    // async
+    registerReadAsync(bind_field(this, &DLocalFile::readAsync));
+    registerReadQAsync(bind_field(this, &DLocalFile::readQAsync));
+    registerReadAllAsync(bind_field(this, &DLocalFile::readAllAsync));
 
     registerWrite(std::bind<bind_write>(&DLocalFile::write, this, std::placeholders::_1, std::placeholders::_2));
     registerWriteAll(std::bind<bind_writeAll>(&DLocalFile::write, this, std::placeholders::_1));
     registerWriteQ(std::bind<bind_writeQ>(&DLocalFile::write, this, std::placeholders::_1));
+    // async
+    registerWriteAsync(bind_field(this, &DLocalFile::writeAsync));
+    registerWriteAllAsync(bind_field(this, &DLocalFile::writeAllAsync));
+    registerWriteQAsync(bind_field(this, &DLocalFile::writeQAsync));
 
     registerSeek(std::bind(&DLocalFile::seek, this, std::placeholders::_1, std::placeholders::_2));
     registerPos(std::bind(&DLocalFile::pos, this));
@@ -633,6 +867,21 @@ QByteArray DLocalFile::readAll()
     return d->readAll();
 }
 
+void DLocalFile::readAsync(char *data, qint64 maxSize, int ioPriority, DFile::ReadCallbackFunc func, void *userData)
+{
+    d->readAsync(data, maxSize, ioPriority, func, userData);
+}
+
+void DLocalFile::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQCallbackFunc func, void *userData)
+{
+    d->readQAsync(maxSize, ioPriority, func, userData);
+}
+
+void DLocalFile::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc func, void *userData)
+{
+    d->readAllAsync(ioPriority, func, userData);
+}
+
 qint64 DLocalFile::write(const char *data, qint64 len)
 {
     return d->write(data, len);
@@ -646,6 +895,21 @@ qint64 DLocalFile::write(const char *data)
 qint64 DLocalFile::write(const QByteArray &byteArray)
 {
     return d->write(byteArray);
+}
+
+void DLocalFile::writeAsync(const char *data, qint64 len, int ioPriority, DFile::WriteCallbackFunc func, void *userData)
+{
+    d->writeAsync(data, len, ioPriority, func, userData);
+}
+
+void DLocalFile::writeAllAsync(const char *data, int ioPriority, DFile::WriteAllCallbackFunc func, void *userData)
+{
+    d->writeAllAsync(data, ioPriority, func, userData);
+}
+
+void DLocalFile::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile::WriteQCallbackFunc func, void *userData)
+{
+    d->writeQAsync(byteArray, ioPriority, func, userData);
 }
 
 bool DLocalFile::seek(qint64 pos, DFile::DFMSeekType type)

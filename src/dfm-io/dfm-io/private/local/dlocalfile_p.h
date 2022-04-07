@@ -35,7 +35,7 @@ BEGIN_IO_NAMESPACE
 
 class DLocalFile;
 
-class DLocalFilePrivate
+class DLocalFilePrivate : public QObject
 {
 public:
     explicit DLocalFilePrivate(DLocalFile *q);
@@ -46,9 +46,19 @@ public:
     qint64 read(char *data, qint64 maxSize);
     QByteArray read(qint64 maxSize);
     QByteArray readAll();
+    // async
+    void readAsync(char *data, qint64 maxSize, int ioPriority = 0, DFile::ReadCallbackFunc func = nullptr, void *userData = nullptr);
+    void readQAsync(qint64 maxSize, int ioPriority = 0, DFile::ReadQCallbackFunc func = nullptr, void *userData = nullptr);
+    void readAllAsync(int ioPriority = 0, DFile::ReadAllCallbackFunc func = nullptr, void *userData = nullptr);
+
     qint64 write(const char *data, qint64 len);
     qint64 write(const char *data);
     qint64 write(const QByteArray &data);
+    // async
+    void writeAsync(const char *data, qint64 len, int ioPriority = 0, DFile::WriteCallbackFunc func = nullptr, void *userData = nullptr);
+    void writeAllAsync(const char *data, int ioPriority = 0, DFile::WriteAllCallbackFunc func = nullptr, void *userData = nullptr);
+    void writeQAsync(const QByteArray &byteArray, int ioPriority = 0, DFile::WriteQCallbackFunc func = nullptr, void *userData = nullptr);
+
     bool seek(qint64 pos, DFile::DFMSeekType type = DFile::DFMSeekType::BEGIN);
     qint64 pos();
     bool flush();
@@ -67,6 +77,8 @@ public:
 
     bool checkOpenFlags(DFile::OpenFlags *mode);
 
+    void freeCancellable(GCancellable *gcancellable);
+
 public:
     GIOStream *ioStream = nullptr;
     GInputStream *iStream = nullptr;
@@ -75,6 +87,8 @@ public:
     DFMIOError error;
 
     DLocalFile *q = nullptr;
+    GCancellable *gcancellable = nullptr;
+    QByteArray readAllAsyncRet;
 };
 
 END_IO_NAMESPACE

@@ -118,6 +118,27 @@ QByteArray DFile::readAll()
     return d->readAllFunc();
 }
 
+void DFile::readAsync(char *data, qint64 maxSize, int ioPriority, DFile::ReadCallbackFunc func, void *userData)
+{
+    if (!d->readFuncAsync)
+        return;
+    d->readFuncAsync(data, maxSize, ioPriority, func, userData);
+}
+
+void DFile::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQCallbackFunc func, void *userData)
+{
+    if (!d->readQFuncAsync)
+        return;
+    d->readQFuncAsync(maxSize, ioPriority, func, userData);
+}
+
+void DFile::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc func, void *userData)
+{
+    if (!d->readAllFuncAsync)
+        return;
+    d->readAllFuncAsync(ioPriority, func, userData);
+}
+
 qint64 DFile::write(const char *data, qint64 len)
 {
     if (!d->writeFunc)
@@ -155,6 +176,27 @@ qint64 DFile::write(const QByteArray &byteArray)
     }
 
     return d->writeQFunc(byteArray);
+}
+
+void DFile::writeAsync(const char *data, qint64 len, int ioPriority, DFile::WriteCallbackFunc func, void *userData)
+{
+    if (!d->writeFuncAsync)
+        return;
+    d->writeFuncAsync(data, len, ioPriority, func, userData);
+}
+
+void DFile::writeAllAsync(const char *data, int ioPriority, DFile::WriteAllCallbackFunc func, void *userData)
+{
+    if (!d->writeAllFuncAsync)
+        return;
+    d->writeAllFuncAsync(data, ioPriority, func, userData);
+}
+
+void DFile::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile::WriteQCallbackFunc func, void *userData)
+{
+    if (!d->writeQFuncAsync)
+        return;
+    d->writeQFuncAsync(byteArray, ioPriority, func, userData);
 }
 
 bool DFile::seek(qint64 pos, DFMSeekType type)
@@ -236,6 +278,21 @@ void DFile::registerReadAll(const DFile::ReadAllFunc &func)
     d->readAllFunc = func;
 }
 
+void DFile::registerReadAsync(const DFile::ReadFuncAsync &func)
+{
+    d->readFuncAsync = func;
+}
+
+void DFile::registerReadQAsync(const DFile::ReadQFuncAsync &func)
+{
+    d->readQFuncAsync = func;
+}
+
+void DFile::registerReadAllAsync(const DFile::ReadAllFuncAsync &func)
+{
+    d->readAllFuncAsync = func;
+}
+
 void DFile::registerWrite(const WriteFunc &func)
 {
     d->writeFunc = func;
@@ -249,6 +306,21 @@ void DFile::registerWriteAll(const DFile::WriteAllFunc &func)
 void DFile::registerWriteQ(const DFile::WriteQFunc &func)
 {
     d->writeQFunc = func;
+}
+
+void DFile::registerWriteAsync(const DFile::WriteFuncAsync &func)
+{
+    d->writeFuncAsync = func;
+}
+
+void DFile::registerWriteAllAsync(const DFile::WriteAllFuncAsync &func)
+{
+    d->writeAllFuncAsync = func;
+}
+
+void DFile::registerWriteQAsync(const DFile::WriteQFuncAsync &func)
+{
+    d->writeQFuncAsync = func;
 }
 
 void DFile::registerSeek(const SeekFunc &func)

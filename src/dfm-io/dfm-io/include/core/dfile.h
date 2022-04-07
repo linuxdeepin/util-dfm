@@ -92,6 +92,14 @@ public:
     };
     Q_DECLARE_FLAGS(Permissions, Permission)
 
+    using ReadCallbackFunc = void (*)(qint64, void *);
+    using ReadQCallbackFunc = void (*)(QByteArray, void *);
+    using ReadAllCallbackFunc = void (*)(QByteArray, void *);
+
+    using WriteCallbackFunc = void (*)(qint64, void *);
+    using WriteAllCallbackFunc = void (*)(qint64, void *);
+    using WriteQCallbackFunc = void (*)(qint64, void *);
+
     // interface
     using OpenFunc = std::function<bool(OpenFlags)>;
     using CloseFunc = std::function<bool()>;
@@ -99,10 +107,17 @@ public:
     using ReadFunc = std::function<qint64(char *, qint64)>;
     using ReadQFunc = std::function<QByteArray(qint64)>;
     using ReadAllFunc = std::function<QByteArray()>;
+    using ReadFuncAsync = std::function<void(char *, qint64, int, ReadCallbackFunc, void *)>;
+    using ReadQFuncAsync = std::function<void(qint64, int, ReadQCallbackFunc, void *)>;
+    using ReadAllFuncAsync = std::function<void(int, ReadAllCallbackFunc, void *)>;
+
     // write
     using WriteFunc = std::function<qint64(const char *, qint64)>;
     using WriteAllFunc = std::function<qint64(const char *)>;
     using WriteQFunc = std::function<qint64(const QByteArray &)>;
+    using WriteFuncAsync = std::function<void(const char *, qint64, int, WriteCallbackFunc, void *)>;
+    using WriteAllFuncAsync = std::function<void(const char *, int, WriteAllCallbackFunc, void *)>;
+    using WriteQFuncAsync = std::function<void(const QByteArray &, int, WriteQCallbackFunc, void *)>;
 
     using SeekFunc = std::function<bool(qint64, DFMSeekType)>;
     using PosFunc = std::function<qint64()>;
@@ -125,10 +140,18 @@ public:
     DFM_VIRTUAL qint64 read(char *data, qint64 maxSize);
     DFM_VIRTUAL QByteArray read(qint64 maxSize);
     DFM_VIRTUAL QByteArray readAll();
+    // async
+    DFM_VIRTUAL void readAsync(char *data, qint64 maxSize, int ioPriority = 0, ReadCallbackFunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void readQAsync(qint64 maxSize, int ioPriority = 0, ReadQCallbackFunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void readAllAsync(int ioPriority = 0, ReadAllCallbackFunc func = nullptr, void *userData = nullptr);
 
     DFM_VIRTUAL qint64 write(const char *data, qint64 len);
     DFM_VIRTUAL qint64 write(const char *data);
     DFM_VIRTUAL qint64 write(const QByteArray &byteArray);
+    // async
+    DFM_VIRTUAL void writeAsync(const char *data, qint64 len, int ioPriority = 0, WriteCallbackFunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void writeAllAsync(const char *data, int ioPriority = 0, WriteAllCallbackFunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL void writeQAsync(const QByteArray &byteArray, int ioPriority = 0, WriteQCallbackFunc func = nullptr, void *userData = nullptr);
 
     DFM_VIRTUAL bool seek(qint64 pos, DFMSeekType type = DFMSeekType::BEGIN);
     DFM_VIRTUAL qint64 pos();
@@ -147,9 +170,17 @@ public:
     void registerRead(const ReadFunc &func);
     void registerReadQ(const ReadQFunc &func);
     void registerReadAll(const ReadAllFunc &func);
+    void registerReadAsync(const ReadFuncAsync &func);
+    void registerReadQAsync(const ReadQFuncAsync &func);
+    void registerReadAllAsync(const ReadAllFuncAsync &func);
+
     void registerWrite(const WriteFunc &func);
     void registerWriteAll(const WriteAllFunc &func);
     void registerWriteQ(const WriteQFunc &func);
+    void registerWriteAsync(const WriteFuncAsync &func);
+    void registerWriteAllAsync(const WriteAllFuncAsync &func);
+    void registerWriteQAsync(const WriteQFuncAsync &func);
+
     void registerSeek(const SeekFunc &func);
     void registerPos(const PosFunc &func);
     void registerFlush(const FlushFunc &func);

@@ -45,10 +45,18 @@ public:
     qint64 read(char *data, qint64 maxSize) DFM_OVERRIDE;
     QByteArray read(qint64 maxSize) DFM_OVERRIDE;
     QByteArray readAll() DFM_OVERRIDE;
+    // async
+    void readAsync(char *data, qint64 maxSize, int ioPriority = 0, ReadCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
+    void readQAsync(qint64 maxSize, int ioPriority = 0, ReadQCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
+    void readAllAsync(int ioPriority = 0, ReadAllCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
 
     qint64 write(const char *data, qint64 len) DFM_OVERRIDE;
     qint64 write(const char *data) DFM_OVERRIDE;
     qint64 write(const QByteArray &byteArray) DFM_OVERRIDE;
+    // async
+    void writeAsync(const char *data, qint64 len, int ioPriority = 0, WriteCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
+    void writeAllAsync(const char *data, int ioPriority = 0, WriteAllCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
+    void writeQAsync(const QByteArray &byteArray, int ioPriority = 0, WriteQCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
 
     bool seek(qint64 pos, DFile::DFMSeekType type = DFMSeekType::BEGIN) DFM_OVERRIDE;
     qint64 pos() DFM_OVERRIDE;

@@ -48,9 +48,17 @@ public:
     DFile::ReadFunc readFunc = nullptr;
     DFile::ReadQFunc readQFunc = nullptr;
     DFile::ReadAllFunc readAllFunc = nullptr;
+    DFile::ReadFuncAsync readFuncAsync = nullptr;
+    DFile::ReadQFuncAsync readQFuncAsync = nullptr;
+    DFile::ReadAllFuncAsync readAllFuncAsync = nullptr;
+
     DFile::WriteFunc writeFunc = nullptr;
     DFile::WriteAllFunc writeAllFunc = nullptr;
     DFile::WriteQFunc writeQFunc = nullptr;
+    DFile::WriteFuncAsync writeFuncAsync = nullptr;
+    DFile::WriteAllFuncAsync writeAllFuncAsync = nullptr;
+    DFile::WriteQFuncAsync writeQFuncAsync = nullptr;
+
     DFile::SeekFunc seekFunc = nullptr;
     DFile::PosFunc posFunc = nullptr;
     DFile::FlushFunc flushFunc = nullptr;
