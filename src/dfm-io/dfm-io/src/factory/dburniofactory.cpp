@@ -47,9 +47,7 @@ DBurnIOFactoryPrivate::~DBurnIOFactoryPrivate()
 QSharedPointer<DFileInfo> DBurnIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DBurnIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DBurnIOFactoryPrivate::createOperator() const
 }
 
 DBurnIOFactory::DBurnIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DBurnIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DBurnIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DBurnIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DBurnIOFactory::createFile, this));

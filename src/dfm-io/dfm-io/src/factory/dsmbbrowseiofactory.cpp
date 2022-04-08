@@ -47,9 +47,7 @@ DSmbbrowseIOFactoryPrivate::~DSmbbrowseIOFactoryPrivate()
 QSharedPointer<DFileInfo> DSmbbrowseIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DSmbbrowseIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DSmbbrowseIOFactoryPrivate::createOperator() const
 }
 
 DSmbbrowseIOFactory::DSmbbrowseIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DSmbbrowseIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DSmbbrowseIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DSmbbrowseIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DSmbbrowseIOFactory::createFile, this));

@@ -192,6 +192,10 @@ public:
     using AttributeInfoMap = std::unordered_map<DFileInfo::AttributeID, std::tuple<std::string, QVariant>>;
     static AttributeInfoMap attributeInfoMap;
 
+    // callback, use function pointer
+    using QueryInfoAsyncCallback = std::function<void(bool, void *)>;
+
+    // register function, use std::function
     using AttributeFunc = std::function<QVariant(DFileInfo::AttributeID, bool *)>;
     using SetAttributeFunc = std::function<bool(DFileInfo::AttributeID, const QVariant &)>;
     using HasAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
@@ -202,19 +206,23 @@ public:
     using SetCustomAttributeFunc = std::function<bool(const char *, const DFileAttributeType, const void *, const FileQueryInfoFlags)>;
     using CustomAttributeFunc = std::function<QVariant(const char *, const DFileAttributeType)>;
     using LastErrorFunc = std::function<DFMIOError()>;
+    using QueryInfoAsyncFunc = std::function<void(int, QueryInfoAsyncCallback, void *)>;
 
 public:
     DFileInfo();
-    explicit DFileInfo(const QUrl &uri, const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNoFollowSymlinks);
+    explicit DFileInfo(const QUrl &uri, const char *attributes = "*", const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNoFollowSymlinks);
     explicit DFileInfo(const DFileInfo &info);
     virtual ~DFileInfo();
     DFileInfo &operator=(const DFileInfo &info);
+
+    DFM_VIRTUAL void queryInfoAsync(int ioPriority = 0, QueryInfoAsyncCallback func = nullptr, void *userData = nullptr) const;
 
     DFM_VIRTUAL QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) const;
     DFM_VIRTUAL bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
     DFM_VIRTUAL bool hasAttribute(DFileInfo::AttributeID id) const;
     DFM_VIRTUAL bool removeAttribute(DFileInfo::AttributeID id);
     DFM_VIRTUAL QList<DFileInfo::AttributeID> attributeIDList() const;
+
     DFM_VIRTUAL bool exists() const;
     DFM_VIRTUAL bool flush();
     DFM_VIRTUAL DFile::Permissions permissions();
@@ -237,9 +245,11 @@ public:
     void registerSetCustomAttribute(const SetCustomAttributeFunc &func);
     void registerCustomAttribute(const CustomAttributeFunc &func);
     void registerLastError(const LastErrorFunc &func);
+    void registerQueryInfoAsync(const QueryInfoAsyncFunc &func);
 
     QUrl uri() const;
-    DFileInfo::FileQueryInfoFlags fileQueryInfoFlag();
+    char *queryAttributes() const;
+    DFileInfo::FileQueryInfoFlags queryInfoFlag() const;
     QString dump() const;
 
 private:

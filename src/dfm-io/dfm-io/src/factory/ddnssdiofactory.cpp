@@ -47,9 +47,7 @@ DDnssdIOFactoryPrivate::~DDnssdIOFactoryPrivate()
 QSharedPointer<DFileInfo> DDnssdIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DDnssdIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DDnssdIOFactoryPrivate::createOperator() const
 }
 
 DDnssdIOFactory::DDnssdIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DDnssdIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DDnssdIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DDnssdIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DDnssdIOFactory::createFile, this));

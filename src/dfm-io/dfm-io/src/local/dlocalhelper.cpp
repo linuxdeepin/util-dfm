@@ -154,15 +154,9 @@ QString parentPath(const QString &path)
 }
 }
 
-QSharedPointer<DFileInfo> DLocalHelper::getFileInfo(const QString &uri)
+QSharedPointer<DFileInfo> DLocalHelper::createFileInfoByUri(const QUrl &uri)
 {
-    return DLocalHelper::getFileInfoByUri(uri);
-}
-
-QSharedPointer<DFileInfo> DLocalHelper::getFileInfoByUri(const QString &uri)
-{
-    QSharedPointer<DFileInfo> info = QSharedPointer<DFileInfo>(new DLocalFileInfo(QUrl(uri)));
-    return info;
+    return QSharedPointer<DFileInfo>(new DLocalFileInfo(uri));
 }
 
 QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode)

@@ -38,13 +38,13 @@ public:
     explicit DLocalIOFactory(const QUrl &uri);
     ~DLocalIOFactory();
 
-    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
     QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
+    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
+    QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
+    QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
     QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(),
                                                  DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter,
                                                  DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::NoIteratorFlags) const DFM_OVERRIDE;
-    QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
-    QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalIOFactoryPrivate> d = nullptr;

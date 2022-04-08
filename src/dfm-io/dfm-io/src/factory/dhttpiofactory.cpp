@@ -47,9 +47,7 @@ DHttpIOFactoryPrivate::~DHttpIOFactoryPrivate()
 QSharedPointer<DFileInfo> DHttpIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DHttpIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DHttpIOFactoryPrivate::createOperator() const
 }
 
 DHttpIOFactory::DHttpIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DHttpIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DHttpIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DHttpIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DHttpIOFactory::createFile, this));

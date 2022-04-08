@@ -47,9 +47,7 @@ DGoogleIOFactoryPrivate::~DGoogleIOFactoryPrivate()
 QSharedPointer<DFileInfo> DGoogleIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DGoogleIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DGoogleIOFactoryPrivate::createOperator() const
 }
 
 DGoogleIOFactory::DGoogleIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DGoogleIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DGoogleIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DGoogleIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DGoogleIOFactory::createFile, this));

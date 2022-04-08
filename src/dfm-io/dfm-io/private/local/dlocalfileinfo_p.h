@@ -38,14 +38,16 @@ BEGIN_IO_NAMESPACE
 
 class DLocalFileInfo;
 
-class DLocalFileInfoPrivate
+class DLocalFileInfoPrivate : public QObject
 {
 public:
     explicit DLocalFileInfoPrivate(DLocalFileInfo *q);
     ~DLocalFileInfoPrivate();
 
-    bool init();
+    void initNormal();
+    bool queryInfoSync();
 
+    void queryInfoAsync(int ioPriority = 0, DFileInfo::QueryInfoAsyncCallback func = nullptr, void *userData = nullptr);
     QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr);
     bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
     bool hasAttribute(DFileInfo::AttributeID id);
@@ -60,10 +62,14 @@ public:
     DFMIOError lastError();
     void setErrorFromGError(GError *gerror);
 
+    void freeCancellable(GCancellable *gcancellable);
+
 public:
     QMap<DFileInfo::AttributeID, QVariant> attributes;
     GFile *gfile = nullptr;
     GFileInfo *gfileinfo = nullptr;
+    bool initFinished = false;
+    GCancellable *gcancellable = nullptr;
 
     DFMIOError error;
 

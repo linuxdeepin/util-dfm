@@ -47,9 +47,7 @@ DLocalIOFactoryPrivate::~DLocalIOFactoryPrivate()
 QSharedPointer<DFileInfo> DLocalIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DLocalIOFactoryPrivate::createFile() const

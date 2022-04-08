@@ -47,9 +47,7 @@ DFtpIOFactoryPrivate::~DFtpIOFactoryPrivate()
 QSharedPointer<DFileInfo> DFtpIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DFtpIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DFtpIOFactoryPrivate::createOperator() const
 }
 
 DFtpIOFactory::DFtpIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DFtpIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DFtpIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DFtpIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DFtpIOFactory::createFile, this));

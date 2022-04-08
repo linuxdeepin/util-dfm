@@ -39,6 +39,7 @@ public:
     explicit DLocalFileInfo(const QUrl &uri);
     virtual ~DLocalFileInfo();
 
+    void queryInfoAsync(int ioPriority = 0, QueryInfoAsyncCallback func = nullptr, void *userData = nullptr) const DFM_OVERRIDE;
     QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) DFM_OVERRIDE;
     bool setAttribute(DFileInfo::AttributeID id, const QVariant &value) DFM_OVERRIDE;
     bool hasAttribute(DFileInfo::AttributeID id) DFM_OVERRIDE;

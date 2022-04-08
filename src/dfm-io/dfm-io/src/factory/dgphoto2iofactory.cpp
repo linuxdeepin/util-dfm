@@ -47,9 +47,7 @@ DGphoto2IOFactoryPrivate::~DGphoto2IOFactoryPrivate()
 QSharedPointer<DFileInfo> DGphoto2IOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DGphoto2IOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DGphoto2IOFactoryPrivate::createOperator() const
 }
 
 DGphoto2IOFactory::DGphoto2IOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DGphoto2IOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DGphoto2IOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DGphoto2IOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DGphoto2IOFactory::createFile, this));

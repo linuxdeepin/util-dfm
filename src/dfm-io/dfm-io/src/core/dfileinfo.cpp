@@ -144,10 +144,11 @@ DFileInfo::DFileInfo()
 {
 }
 
-DFileInfo::DFileInfo(const QUrl &uri, const FileQueryInfoFlags flag)
+DFileInfo::DFileInfo(const QUrl &uri, const char *attributes, const FileQueryInfoFlags flag)
     : d(new DFileInfoPrivate(this))
 {
     d->uri = uri;
+    d->attributes = strdup(attributes);
     d->flag = flag;
 }
 
@@ -164,6 +165,12 @@ DFileInfo &DFileInfo::operator=(const DFileInfo &info)
 {
     d = info.d;
     return *this;
+}
+
+void DFileInfo::queryInfoAsync(int ioPriority, DFileInfo::QueryInfoAsyncCallback func, void *userData) const
+{
+    if (d->queryInfoAsyncFunc)
+        d->queryInfoAsyncFunc(ioPriority, func, userData);
 }
 
 QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
@@ -307,12 +314,22 @@ void DFileInfo::registerLastError(const DFileInfo::LastErrorFunc &func)
     d->lastErrorFunc = func;
 }
 
+void DFileInfo::registerQueryInfoAsync(const DFileInfo::QueryInfoAsyncFunc &func)
+{
+    d->queryInfoAsyncFunc = func;
+}
+
 QUrl DFileInfo::uri() const
 {
     return d->uri;
 }
 
-DFileInfo::FileQueryInfoFlags DFileInfo::fileQueryInfoFlag()
+char *DFileInfo::queryAttributes() const
+{
+    return d->attributes;
+}
+
+DFileInfo::FileQueryInfoFlags DFileInfo::queryInfoFlag() const
 {
     return d->flag;
 }

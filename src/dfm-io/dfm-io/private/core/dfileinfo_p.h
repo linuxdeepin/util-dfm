@@ -57,6 +57,7 @@ public:
     DFileInfo *q = nullptr;
 
     QUrl uri;
+    char *attributes;
     DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks;
 
     DFileInfo::AttributeFunc attributeFunc = nullptr;
@@ -70,6 +71,7 @@ public:
     DFileInfo::CustomAttributeFunc customAttributeFunc = nullptr;
     DFile::PermissionFunc permissionFunc = nullptr;
     DFileInfo::LastErrorFunc lastErrorFunc = nullptr;
+    DFileInfo::QueryInfoAsyncFunc queryInfoAsyncFunc = nullptr;
 };
 
 END_IO_NAMESPACE

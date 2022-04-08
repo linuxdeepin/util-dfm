@@ -55,8 +55,7 @@ std::function<Ret(Ts...)> bind_field(Ret (*m)(Ts...))
 class DLocalHelper
 {
 public:
-    static QSharedPointer<DFileInfo> getFileInfo(const QString &uri);
-    static QSharedPointer<DFileInfo> getFileInfoByUri(const QString &uri);
+    static QSharedPointer<DFileInfo> createFileInfoByUri(const QUrl &uri);
 
     static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode);
     static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);

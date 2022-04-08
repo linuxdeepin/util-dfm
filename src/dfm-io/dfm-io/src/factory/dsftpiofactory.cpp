@@ -47,9 +47,7 @@ DSftpIOFactoryPrivate::~DSftpIOFactoryPrivate()
 QSharedPointer<DFileInfo> DSftpIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DSftpIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DSftpIOFactoryPrivate::createOperator() const
 }
 
 DSftpIOFactory::DSftpIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DSftpIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DSftpIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DSftpIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DSftpIOFactory::createFile, this));

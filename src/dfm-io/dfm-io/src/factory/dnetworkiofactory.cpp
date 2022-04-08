@@ -47,9 +47,7 @@ DNetworkIOFactoryPrivate::~DNetworkIOFactoryPrivate()
 QSharedPointer<DFileInfo> DNetworkIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DNetworkIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DNetworkIOFactoryPrivate::createOperator() const
 }
 
 DNetworkIOFactory::DNetworkIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DNetworkIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DNetworkIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DNetworkIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DNetworkIOFactory::createFile, this));

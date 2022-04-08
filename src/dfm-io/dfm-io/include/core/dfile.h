@@ -92,6 +92,7 @@ public:
     };
     Q_DECLARE_FLAGS(Permissions, Permission)
 
+    // callback, use function pointer
     using ReadCallbackFunc = void (*)(qint64, void *);
     using ReadQCallbackFunc = void (*)(QByteArray, void *);
     using ReadAllCallbackFunc = void (*)(QByteArray, void *);
@@ -100,6 +101,7 @@ public:
     using WriteAllCallbackFunc = void (*)(qint64, void *);
     using WriteQCallbackFunc = void (*)(qint64, void *);
 
+    // register function, use std::function
     // interface
     using OpenFunc = std::function<bool(OpenFlags)>;
     using CloseFunc = std::function<bool()>;

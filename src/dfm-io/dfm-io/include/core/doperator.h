@@ -51,9 +51,11 @@ public:
         UserFlag = 0x10
     };
 
+    // callback, use function pointer
     using ProgressCallbackFunc = void (*)(int64_t, int64_t, void *);   // current_num_bytes, total_num_bytes, user_data
     using FileOperateCallbackFunc = void (*)(bool, void *);
 
+    // register function, use std::function
     using RenameFileFunc = std::function<bool(const QString &)>;
     using RenameFileByStdFunc = std::function<bool(const QUrl &)>;
     using RenameFileFuncAsync = std::function<void(const QString &, int, FileOperateCallbackFunc, void *)>;

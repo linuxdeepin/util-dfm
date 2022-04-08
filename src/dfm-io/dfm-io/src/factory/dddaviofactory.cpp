@@ -47,9 +47,7 @@ DDdavIOFactoryPrivate::~DDdavIOFactoryPrivate()
 QSharedPointer<DFileInfo> DDdavIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DDdavIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DDdavIOFactoryPrivate::createOperator() const
 }
 
 DDdavIOFactory::DDdavIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DDdavIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DDdavIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DDdavIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DDdavIOFactory::createFile, this));

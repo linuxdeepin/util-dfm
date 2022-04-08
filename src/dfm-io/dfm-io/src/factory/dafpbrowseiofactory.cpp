@@ -47,9 +47,7 @@ DAfpbrowseIOFactoryPrivate::~DAfpbrowseIOFactoryPrivate()
 QSharedPointer<DFileInfo> DAfpbrowseIOFactoryPrivate::createFileInfo() const
 {
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
-
-    return DLocalHelper::getFileInfo(url);
+    return DLocalHelper::createFileInfoByUri(uri);
 }
 
 QSharedPointer<DFile> DAfpbrowseIOFactoryPrivate::createFile() const
@@ -81,8 +79,7 @@ QSharedPointer<DOperator> DAfpbrowseIOFactoryPrivate::createOperator() const
 }
 
 DAfpbrowseIOFactory::DAfpbrowseIOFactory(const QUrl &uri)
-    : DIOFactory(uri)
-    , d(new DAfpbrowseIOFactoryPrivate(this))
+    : DIOFactory(uri), d(new DAfpbrowseIOFactoryPrivate(this))
 {
     registerCreateFileInfo(std::bind(&DAfpbrowseIOFactory::createFileInfo, this));
     registerCreateFile(std::bind(&DAfpbrowseIOFactory::createFile, this));
