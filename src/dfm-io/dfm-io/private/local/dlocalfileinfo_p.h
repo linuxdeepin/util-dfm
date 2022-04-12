@@ -55,7 +55,9 @@ public:
     QList<DFileInfo::AttributeID> attributeIDList() const;
     bool exists() const;
     bool flush();
+    bool clearCache();
     DFile::Permissions permissions();
+
     bool setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNone);
     QVariant customAttribute(const char *key, const DFileInfo::DFileAttributeType type);
 
@@ -64,8 +66,14 @@ public:
 
     void freeCancellable(GCancellable *gcancellable);
 
+private:
+    bool cacheAttribute(DFileInfo::AttributeID id, const QVariant &value);
+    QVariant attributesBySelf(DFileInfo::AttributeID id);
+
 public:
-    QMap<DFileInfo::AttributeID, QVariant> attributes;
+    QMap<DFileInfo::AttributeID, QVariant> attributesReadyWrite;
+    QMap<DFileInfo::AttributeID, QVariant> attributesCache;
+    QList<DFileInfo::AttributeID> attributesRealizationSelf;
     GFile *gfile = nullptr;
     GFileInfo *gfileinfo = nullptr;
     bool initFinished = false;

@@ -68,10 +68,11 @@ public:
     bool enumSubDir = false;
     bool enumLinks = false;
 
-    QMap<QString, QSet<QString>> hiddenFiles;
     QStringList nameFilters;
     DEnumerator::DirFilters dirFilters = DEnumerator::DirFilter::NoFilter;
     DEnumerator::IteratorFlags iteratorFlags = DEnumerator::IteratorFlag::NoIteratorFlags;
+
+    QMap<QUrl, QSet<QString>> hideListMap;
 
     DFMIOError error;
 };

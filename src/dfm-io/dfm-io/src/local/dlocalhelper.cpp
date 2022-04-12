@@ -287,7 +287,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
 
         GObject *icon = g_file_info_get_attribute_object(gfileinfo, key.c_str());
         auto names = g_themed_icon_get_names(G_THEMED_ICON(icon));
-        for (int j = 0; names[j] != nullptr; ++j)
+        for (int j = 0; names && names[j] != nullptr; ++j)
             ret.append(QString::fromLocal8Bit(names[j]));
 
         return QVariant(ret);
@@ -507,6 +507,135 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     }
 }
 
+bool DLocalHelper::setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value)
+{
+    if (!gfileinfo) {
+        return false;
+    }
+
+    // check has attribute
+    const std::string &key = DLocalHelper::attributeStringById(id);
+    if (key.empty()) {
+        return false;
+    }
+
+    switch (id) {
+    // uint32_t
+    case DFileInfo::AttributeID::StandardType:
+    case DFileInfo::AttributeID::MountableUnixDevice:
+    case DFileInfo::AttributeID::MountableStartStopType:
+    case DFileInfo::AttributeID::TimeModifiedUsec:
+    case DFileInfo::AttributeID::TimeAccessUsec:
+    case DFileInfo::AttributeID::TimeChangedUsec:
+    case DFileInfo::AttributeID::TimeCreatedUsec:
+    case DFileInfo::AttributeID::UnixDevice:
+    case DFileInfo::AttributeID::UnixMode:
+    case DFileInfo::AttributeID::UnixNlink:
+    case DFileInfo::AttributeID::UnixUID:
+    case DFileInfo::AttributeID::UnixGID:
+    case DFileInfo::AttributeID::UnixRdev:
+    case DFileInfo::AttributeID::UnixBlockSize:
+    case DFileInfo::AttributeID::FileSystemUsePreview:
+    case DFileInfo::AttributeID::TrashItemCount:
+    case DFileInfo::AttributeID::ExtendWordSize:
+    case DFileInfo::AttributeID::ExtendMediaDuration: {
+        g_file_info_set_attribute_uint32(gfileinfo, key.c_str(), value.toUInt());
+        return true;
+    }
+    // int32_t
+    case DFileInfo::AttributeID::StandardSortOrder: {
+        g_file_info_set_attribute_int32(gfileinfo, key.c_str(), value.toInt());
+        return true;
+    }
+    // uint64_t
+    case DFileInfo::AttributeID::StandardSize:
+    case DFileInfo::AttributeID::StandardAllocatedSize:
+    case DFileInfo::AttributeID::TimeModified:
+    case DFileInfo::AttributeID::TimeAccess:
+    case DFileInfo::AttributeID::TimeChanged:
+    case DFileInfo::AttributeID::TimeCreated:
+    case DFileInfo::AttributeID::UnixInode:
+    case DFileInfo::AttributeID::UnixBlocks:
+    case DFileInfo::AttributeID::FileSystemSize:
+    case DFileInfo::AttributeID::FileSystemFree:
+    case DFileInfo::AttributeID::FileSystemUsed:
+    case DFileInfo::AttributeID::RecentModified: {
+        g_file_info_set_attribute_uint64(gfileinfo, key.c_str(), value.toULongLong());
+        return true;
+    }
+    // bool
+    case DFileInfo::AttributeID::StandardIsHidden:
+    case DFileInfo::AttributeID::StandardIsBackup:
+    case DFileInfo::AttributeID::StandardIsSymlink:
+    case DFileInfo::AttributeID::StandardIsVirtual:
+    case DFileInfo::AttributeID::StandardIsVolatile:
+    case DFileInfo::AttributeID::AccessCanRead:
+    case DFileInfo::AttributeID::AccessCanWrite:
+    case DFileInfo::AttributeID::AccessCanExecute:
+    case DFileInfo::AttributeID::AccessCanDelete:
+    case DFileInfo::AttributeID::AccessCanTrash:
+    case DFileInfo::AttributeID::AccessCanRename:
+    case DFileInfo::AttributeID::MountableCanMount:
+    case DFileInfo::AttributeID::MountableCanUnmount:
+    case DFileInfo::AttributeID::MountableCanEject:
+    case DFileInfo::AttributeID::MountableCanPoll:
+    case DFileInfo::AttributeID::MountableIsMediaCheckAutomatic:
+    case DFileInfo::AttributeID::MountableCanStart:
+    case DFileInfo::AttributeID::MountableCanStartDegraded:
+    case DFileInfo::AttributeID::MountableCanStop:
+    case DFileInfo::AttributeID::UnixIsMountPoint:
+    case DFileInfo::AttributeID::DosIsArchive:
+    case DFileInfo::AttributeID::DosIsSystem:
+    case DFileInfo::AttributeID::FileSystemReadOnly:
+    case DFileInfo::AttributeID::FileSystemRemote: {
+        g_file_info_set_attribute_boolean(gfileinfo, key.c_str(), value.toBool());
+        return true;
+    }
+    // byte string
+    case DFileInfo::AttributeID::StandardName:
+    case DFileInfo::AttributeID::StandardSymlinkTarget:
+    case DFileInfo::AttributeID::ThumbnailPath: {
+        g_file_info_set_attribute_byte_string(gfileinfo, key.c_str(), value.toString().toLocal8Bit().data());
+        return true;
+    }
+    // string
+    case DFileInfo::AttributeID::StandardDisplayName:
+    case DFileInfo::AttributeID::StandardEditName:
+    case DFileInfo::AttributeID::StandardCopyName:
+    case DFileInfo::AttributeID::StandardContentType:
+    case DFileInfo::AttributeID::StandardFastContentType:
+    case DFileInfo::AttributeID::StandardTargetUri:
+    case DFileInfo::AttributeID::StandardDescription:
+    case DFileInfo::AttributeID::EtagValue:
+    case DFileInfo::AttributeID::IdFile:
+    case DFileInfo::AttributeID::IdFilesystem:
+    case DFileInfo::AttributeID::MountableUnixDeviceFile:
+    case DFileInfo::AttributeID::MountableHalUdi:
+    case DFileInfo::AttributeID::OwnerUser:
+    case DFileInfo::AttributeID::OwnerUserReal:
+    case DFileInfo::AttributeID::OwnerGroup:
+    case DFileInfo::AttributeID::FileSystemType:
+    case DFileInfo::AttributeID::GvfsBackend:
+    case DFileInfo::AttributeID::SelinuxContext:
+    case DFileInfo::AttributeID::TrashDeletionDate:
+    case DFileInfo::AttributeID::TrashOrigPath: {
+        g_file_info_set_attribute_string(gfileinfo, key.c_str(), value.toString().toLocal8Bit().data());
+        return true;
+    }
+    // object
+    case DFileInfo::AttributeID::StandardIcon:
+    case DFileInfo::AttributeID::StandardSymbolicIcon:
+    case DFileInfo::AttributeID::PreviewIcon: {
+        //g_file_info_set_attribute_object(gfileinfo, key, value.object());
+        // TODO(lanxs)
+        return true;
+    }
+
+    default:
+        return true;
+    }
+}
+
 std::string DLocalHelper::attributeStringById(DFileInfo::AttributeID id)
 {
     if (DFileInfo::attributeInfoMap.count(id) > 0) {
@@ -514,6 +643,47 @@ std::string DLocalHelper::attributeStringById(DFileInfo::AttributeID id)
         return value;
     }
     return "";
+}
+
+QSet<QString> DLocalHelper::hideListFromUrl(const QUrl &url)
+{
+    g_autofree char *contents = nullptr;
+    g_autoptr(GError) error = nullptr;
+    gsize len = 0;
+    g_autoptr(GFile) hiddenFile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    const bool succ = g_file_load_contents(hiddenFile, nullptr, &contents, &len, nullptr, &error);
+    if (succ) {
+        if (contents && len > 0) {
+            QString dataStr(contents);
+            return QSet<QString>::fromList(dataStr.split('\n', QString::SkipEmptyParts));
+        }
+    } else {
+        qWarning() << "load .hidden fail, code: " << error->code << " " << QString::fromLocal8Bit(error->message);
+    }
+    return {};
+}
+
+bool DLocalHelper::fileIsHidden(const QSharedPointer<DFileInfo> &dfileinfo, const QSet<QString> &hideList)
+{
+    if (!dfileinfo)
+        return false;
+
+    const QString &fileName = dfileinfo->attribute(DFileInfo::AttributeID::StandardName, nullptr).toString();
+    if (fileName.startsWith(".")) {
+        return true;
+    } else {
+        if (hideList.isEmpty()) {
+            const QString &hiddenPath = dfileinfo->attribute(DFileInfo::AttributeID::StandardParentPath, nullptr).toString() + "/.hidden";
+            const QSet<QString> &hideList = DLocalHelper::hideListFromUrl(QUrl::fromLocalFile(hiddenPath));
+
+            if (hideList.contains(fileName))
+                return true;
+        } else {
+            return hideList.contains(fileName);
+        }
+    }
+
+    return false;
 }
 
 bool DLocalHelper::checkGFileType(GFile *file, GFileType type)

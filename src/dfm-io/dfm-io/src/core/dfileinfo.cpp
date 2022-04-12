@@ -236,6 +236,13 @@ bool DFileInfo::flush()
     return false;
 }
 
+bool DFileInfo::clearCache()
+{
+    if (d->clearCacheFunc)
+        return d->clearCacheFunc();
+    return false;
+}
+
 DFile::Permissions DFileInfo::permissions()
 {
     if (d->permissionFunc)
@@ -292,6 +299,11 @@ void DFileInfo::registerExists(const DFileInfo::ExistsFunc &func)
 void DFileInfo::registerFlush(const DFileInfo::FlushFunc &func)
 {
     d->flushFunc = func;
+}
+
+void DFileInfo::registerClearCache(const DFileInfo::ClearCacheFunc &func)
+{
+    d->clearCacheFunc = func;
 }
 
 void DFileInfo::registerPermissions(const DFile::PermissionFunc &func)

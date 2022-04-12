@@ -647,6 +647,7 @@ bool DLocalFilePrivate::setPermissions(DFile::Permissions permission)
     const char *path = url.toLocalFile().toLocal8Bit().data();
 
     struct stat buf;
+    buf.st_mode = 0000;
     if (permission.testFlag(DFile::Permission::ExeOwner) | permission.testFlag(DFile::Permission::ExeUser))
         buf.st_mode |= S_IXUSR;
     if (permission.testFlag(DFile::Permission::WriteOwner) | permission.testFlag(DFile::Permission::WriteUser))

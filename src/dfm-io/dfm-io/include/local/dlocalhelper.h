@@ -60,7 +60,10 @@ public:
     static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode);
     static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);
     static bool setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, const QVariant &value, GError **error);
+    static bool setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value);
     static std::string attributeStringById(DFileInfo::AttributeID id);
+    static QSet<QString> hideListFromUrl(const QUrl &url);
+    static bool fileIsHidden(const QSharedPointer<DFileInfo> &dfileinfo, const QSet<QString> &hideList);
 
     // tools
     static bool checkGFileType(GFile *file, GFileType type);

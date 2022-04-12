@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
  *
  * Author:     dengkeyun<dengkeyun@uniontech.com>
@@ -37,6 +37,7 @@ USING_IO_NAMESPACE
 DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
     : q(q)
 {
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::StandardIsHidden);
 }
 
 DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
@@ -133,20 +134,24 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
     }
 
     QVariant retValue;
-    if (attributes.count(id) == 0) {
+    if (attributesCache.count(id) == 0) {
         if (id > DFileInfo::AttributeID::CustomStart) {
             const QString &path = q->uri().path();
             retValue = DLocalHelper::customAttributeFromPath(path, id);
         } else {
             if (gfileinfo) {
                 DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
-                retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
-                if (errorCode != DFM_IO_ERROR_NONE)
-                    error.setCode(errorCode);
+                if (!attributesRealizationSelf.contains(id)) {
+                    retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
+                    if (errorCode != DFM_IO_ERROR_NONE)
+                        error.setCode(errorCode);
+                } else {
+                    retValue = attributesBySelf(id);
+                }
             }
         }
         if (retValue.isValid())
-            setAttribute(id, retValue);
+            cacheAttribute(id, retValue);
 
         if (success)
             *success = retValue.isValid();
@@ -156,21 +161,22 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
     }
     if (success)
         *success = true;
-    return attributes.value(id);
+    return attributesCache.value(id);
 }
 
 bool DLocalFileInfoPrivate::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 {
-    if (attributes.count(id) > 0)
-        attributes.remove(id);
+    if (attributesReadyWrite.count(id) > 0)
+        attributesReadyWrite.remove(id);
 
-    attributes.insert(id, value);
+    attributesReadyWrite.insert(id, value);
+    DLocalHelper::setAttributeByGFileInfo(gfileinfo, id, value);
     return true;
 }
 
 bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
 {
-    if (attributes.count(id) > 0)
+    if (attributesCache.count(id) > 0)
         return true;
 
     if (!initFinished) {
@@ -180,28 +186,46 @@ bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
     }
 
     if (gfileinfo) {
-        DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
-        const QVariant &value = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
-        if (errorCode != DFM_IO_ERROR_NONE)
-            error.setCode(errorCode);
-        if (value.isValid()) {
-            setAttribute(id, value);
-            return true;
-        }
+        const std::string &key = DLocalHelper::attributeStringById(id);
+        return g_file_info_has_attribute(gfileinfo, key.c_str());
     }
+
     return false;
 }
 
 bool DLocalFileInfoPrivate::removeAttribute(DFileInfo::AttributeID id)
 {
-    if (attributes.count(id) > 0)
-        attributes.remove(id);
+    if (attributesReadyWrite.count(id) > 0)
+        attributesReadyWrite.remove(id);
     return true;
+}
+
+bool DLocalFileInfoPrivate::cacheAttribute(DFileInfo::AttributeID id, const QVariant &value)
+{
+    if (attributesCache.count(id) > 0)
+        attributesCache.remove(id);
+
+    attributesCache.insert(id, value);
+    return true;
+}
+
+QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
+{
+    QVariant retValue;
+    switch (id) {
+    case DFileInfo::AttributeID::StandardIsHidden: {
+        retValue = DLocalHelper::fileIsHidden(q->sharedFromThis(), {});
+        break;
+    }
+    default:
+        return retValue;
+    }
+    return retValue;
 }
 
 QList<DFileInfo::AttributeID> DLocalFileInfoPrivate::attributeIDList() const
 {
-    return attributes.keys();
+    return attributesCache.keys();
 }
 
 bool DLocalFileInfoPrivate::exists() const
@@ -218,8 +242,8 @@ bool DLocalFileInfoPrivate::exists() const
 bool DLocalFileInfoPrivate::flush()
 {
     bool ret = true;
-    auto it = attributes.constBegin();
-    while (it != attributes.constEnd()) {
+    auto it = attributesReadyWrite.constBegin();
+    while (it != attributesReadyWrite.constEnd()) {
         g_autoptr(GError) gerror = nullptr;
         bool succ = DLocalHelper::setAttributeByGFile(gfile, it.key(), it.value(), &gerror);
         if (!succ)
@@ -228,7 +252,14 @@ bool DLocalFileInfoPrivate::flush()
             setErrorFromGError(gerror);
         ++it;
     }
+    attributesReadyWrite.clear();
     return ret;
+}
+
+bool DLocalFileInfoPrivate::clearCache()
+{
+    attributesCache.clear();
+    return true;
 }
 
 DFile::Permissions DLocalFileInfoPrivate::permissions()
@@ -345,6 +376,7 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri)
     registerAttributeList(std::bind(&DLocalFileInfo::attributeIDList, this));
     registerExists(std::bind(&DLocalFileInfo::exists, this));
     registerFlush(std::bind(&DLocalFileInfo::flush, this));
+    registerClearCache(std::bind(&DLocalFileInfo::clearCache, this));
     registerPermissions(std::bind(&DLocalFileInfo::permissions, this));
     registerSetCustomAttribute(std::bind(&DLocalFileInfo::setCustomAttribute, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     registerCustomAttribute(std::bind(&DLocalFileInfo::customAttribute, this, std::placeholders::_1, std::placeholders::_2));
@@ -396,6 +428,11 @@ bool DLocalFileInfo::exists() const
 bool DLocalFileInfo::flush()
 {
     return d->flush();
+}
+
+bool DLocalFileInfo::clearCache()
+{
+    return d->clearCache();
 }
 
 DFile::Permissions DLocalFileInfo::permissions()
