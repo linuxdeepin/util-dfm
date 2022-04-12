@@ -26,7 +26,7 @@
 #include "dfmmount_global.h"
 
 #include <QVariant>
-#include <QApplication>
+#include <QCoreApplication>
 #include <QThread>
 
 typedef struct _GVariant GVariant;
