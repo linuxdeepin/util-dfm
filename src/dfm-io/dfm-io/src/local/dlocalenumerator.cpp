@@ -234,15 +234,16 @@ bool DLocalEnumeratorPrivate::checkFilter()
     const QString &fileInfoName = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardName).toString();
     const bool showHidden = (dirFilters & DEnumerator::DirFilter::Hidden) == kDirFilterHidden;
     if (!showHidden) {   // hide files
-        const QUrl &url = dfileInfoNext->uri();
-        const QUrl &urlHidden = url.toString() + "/.hidden";
+        const QString &parentPath = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardParentPath).toString();
+        const QUrl &urlHidden = QUrl::fromLocalFile(parentPath + "/.hidden");
 
         QSet<QString> hideList;
         if (hideListMap.count(urlHidden) > 0) {
             hideList = hideListMap.value(urlHidden);
         } else {
             hideList = DLocalHelper::hideListFromUrl(urlHidden);
-            hideListMap.insert(urlHidden, hideList);
+            if (!hideList.empty())
+                hideListMap.insert(urlHidden, hideList);
         }
         bool isHidden = DLocalHelper::fileIsHidden(dfileInfoNext, hideList);
         if (isHidden)
