@@ -134,8 +134,6 @@ QStringList DFMProtocolMonitorPrivate::getDevices()
 
 QSharedPointer<DFMDevice> DFMProtocolMonitorPrivate::createDevice(const QString &id)
 {
-    if (!cachedDevices.contains(id))
-        return nullptr;
     auto dev = new DFMProtocolDevice(id, gVolMonitor, nullptr);
 
     // for updating the mounthandler of device, if the device exists.

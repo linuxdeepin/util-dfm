@@ -158,7 +158,7 @@ QStringList DFMProtocolDevice::deviceIcons() const
  * \param getPassInfo   an passwd-asking dialog should be exec in this function, and return a struct object which contains the passwd
  * \param mountResult   when mount finished, this function will be invoked.
  */
-void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult)
+void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int msecs)
 {
     GFile_autoptr file = g_file_new_for_uri(address.toStdString().c_str());
     if (!file) {
@@ -193,8 +193,13 @@ void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassI
     finalizeHelper->askQuestion = questionHelper;
     finalizeHelper->resultCallback = mountResult;
 
-    // a timout machinism TODO(xust)
     GCancellable_autoptr cancellable = g_cancellable_new();
+    if (msecs > 0) {
+        QTimer::singleShot(msecs, [cancellable] {
+            if (cancellable)
+                g_cancellable_cancel(cancellable);
+        });
+    }
     g_file_mount_enclosing_volume(file, G_MOUNT_MOUNT_NONE, op, cancellable,
                                   &DFMProtocolDevicePrivate::mountNetworkDeviceCallback, finalizeHelper);
 }
