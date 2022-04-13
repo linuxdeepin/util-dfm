@@ -522,7 +522,7 @@ QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type
             err = nullptr;
 
             qDebug() << "query filesystem info failed" << deviceId << errMsg;
-            if (errCode == G_IO_ERROR_NOT_MOUNTED)
+            if (errCode == G_IO_ERROR_NOT_MOUNTED || errCode == G_IO_ERROR_PERMISSION_DENIED)
                 return QVariant();
 
             QThread::msleep(50);
@@ -551,6 +551,10 @@ QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type
 
     } while (t.elapsed() < 5000);
     qDebug() << "info not obtained after timeout" << deviceId;
+    fsAttrs.insert(QString::number(FsAttr::Free), QVariant());
+    fsAttrs.insert(QString::number(FsAttr::Total), QVariant());
+    fsAttrs.insert(QString::number(FsAttr::Usage), QVariant());
+    fsAttrs.insert(QString::number(FsAttr::Type), QVariant());
     return QVariant();
 }
 

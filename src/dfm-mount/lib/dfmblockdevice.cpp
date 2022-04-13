@@ -644,7 +644,8 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
 
     // construct the options
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    const char *label = newName.toStdString().c_str();
+    std::string name = newName.toStdString();
+    const char *label = name.data();
     GError *err = nullptr;
 
     bool result = udisks_filesystem_call_set_label_sync(fs, label, gopts, nullptr, &err);
@@ -680,7 +681,8 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMa
     }
 
     GVariant *gopts = Utils::castFromQVariantMap(opts);
-    const char *label = newName.toStdString().c_str();
+    std::string name = newName.toStdString();
+    const char *label = name.data();
     udisks_filesystem_call_set_label(fs, label, gopts, nullptr, renameAsyncCallback, proxy);
 }
 
