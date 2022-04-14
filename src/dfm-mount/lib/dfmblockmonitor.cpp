@@ -307,7 +307,8 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
     Q_UNUSED(invalidProperty);
 
     DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
-    Q_ASSERT(q);
+    if (!q)
+        return;
 
     // get the changed object path: "/org/freedesktop/UDisks2/block_devices/sdb1"
     QString objPath = dbusProxy ? QString(g_dbus_proxy_get_object_path(dbusProxy)) : QString();
@@ -319,11 +320,9 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
     QVariant val = Utils::castFromGVariant(property);
     if (val.type() == QVariant::Map) {
         QVariantMap vmap = val.toMap();
-        auto iter = vmap.cbegin();
-        while (iter != vmap.cend()) {
+        for (auto iter = vmap.cbegin(); iter != vmap.cend(); ++iter) {
             auto key = iter.key();
             auto val = iter.value();
-            iter++;
             Property type = Utils::getPropertyByName(key);
             if (type == Property::NotInit) {
                 qDebug() << "\tproperty: " << key << "has no mapped type, but value is" << val;
@@ -336,22 +335,17 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
         return;
     }
 
-    if (changes.isEmpty()) {
-        qDebug() << "\tno import changes to report";
+    if (changes.isEmpty())
         return;
-    }
 
     if (changes.contains(Property::FileSystemMountPoint)) {
         auto mpts = changes.value(Property::FileSystemMountPoint).toStringList();
         Q_EMIT mpts.isEmpty() ? q->mountRemoved(objPath) : q->mountAdded(objPath, mpts.first());
     }
-    if (changes.contains(Property::BlockIDLabel)) {
-        ;   // TODO emit idLabel changed
-    }
 
-    if (isBlockChanged)
+    if (isBlockChanged) {
         Q_EMIT q->propertyChanged(objPath, changes);
-    else {
+    } else {
         QSet<QString> blks = blksOfDrive.value(objPath);
         for (const auto &blk : blks)
             Q_EMIT q->propertyChanged(blk, changes);

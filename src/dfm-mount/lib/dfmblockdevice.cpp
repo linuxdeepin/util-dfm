@@ -949,6 +949,7 @@ QVariant DFMBlockDevicePrivate::getProperty(Property name) const
         return getEncryptedProperty(name);
 
     //    Q_ASSERT_X(0, __FUNCTION__, "the property is not supported for block device");
+    return QVariant();
 }
 
 QString DFMBlockDevicePrivate::displayName() const
@@ -971,6 +972,10 @@ QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
     case Property::BlockConfiguration:
         //                return udisks_block_dup_configuration(blk); TODO
         return "";
+    case Property::BlockUserspaceMountOptions: {
+        char **opts = udisks_block_dup_userspace_mount_options(blk);
+        return Utils::gcharvToQStringList(opts);
+    }
     case Property::BlockCryptoBackingDevice: {
         char *tmp = udisks_block_dup_crypto_backing_device(blk);
         return Utils::gcharToQString(tmp);

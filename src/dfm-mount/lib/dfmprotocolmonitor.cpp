@@ -34,6 +34,7 @@
 
 extern "C" {
 #include <gio/gio.h>
+#include <gio/gunixmounts.h>
 }
 
 DFM_MOUNT_USE_NS
@@ -211,7 +212,8 @@ void DFMProtocolMonitorPrivate::initDeviceList()
         g_autoptr(GFile) root = g_mount_get_root(mnt);
         if (root) {
             g_autofree char *curi = g_file_get_uri(root);
-            d->cachedDevices.insert(curi);
+            if (!isNativeMount(DFMProtocolDevicePrivate::mountPoint(mnt)))
+                d->cachedDevices.insert(curi);
         } else {
             g_autofree char *cname = g_mount_get_name(mnt);
             qWarning() << "protocol: cannot get the root of " << cname;
@@ -224,12 +226,13 @@ void DFMProtocolMonitorPrivate::initDeviceList()
 void DFMProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
 {
     Q_UNUSED(monitor);
-    if (hasDrive(mount))   // don't handle real block devices
+    auto mpt = DFMProtocolDevicePrivate::mountPoint(mount);
+    if (isNativeMount(mpt) || hasDrive(mount))
         return;
+
     auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
-    auto mpt = DFMProtocolDevicePrivate::mountPoint(mount);
     g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
     if (mntRoot) {
         g_autofree char *curi = g_file_get_uri(mntRoot);
@@ -332,6 +335,21 @@ bool DFMProtocolMonitorPrivate::hasDrive(GVolume *volume)
         return false;
     g_autoptr(GDrive) drv = g_volume_get_drive(volume);
     return drv ? true : false;
+}
+
+bool DFMProtocolMonitorPrivate::isNativeMount(const QString &mpt)
+{
+    if (mpt.isEmpty())
+        return false;
+
+    std::string s = mpt.toStdString();
+    GUnixMountEntry_autoptr entry = g_unix_mount_for(s.data(), nullptr);
+    if (entry) {
+        QString devPath = g_unix_mount_get_device_path(entry);
+        if (devPath.startsWith("/dev/"))
+            return true;
+    }
+    return false;
 }
 
 bool DFMProtocolMonitorPrivate::isOrphanMount(GMount *mount)

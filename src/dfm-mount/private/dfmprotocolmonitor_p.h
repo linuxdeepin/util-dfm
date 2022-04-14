@@ -74,6 +74,7 @@ private:
 
     static bool hasDrive(GMount *mount);
     static bool hasDrive(GVolume *volume);
+    static bool isNativeMount(const QString &mpt);
 
     static bool isOrphanMount(GMount *mount);
 

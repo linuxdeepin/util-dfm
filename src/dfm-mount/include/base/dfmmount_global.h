@@ -71,6 +71,7 @@ enum class Property : uint16_t {
     // blocks property
     BlockProperty,   // this is invalid but just a placeholder
     BlockConfiguration,   // variant
+    BlockUserspaceMountOptions,   // strlist
     BlockCryptoBackingDevice,   // str
     BlockDevice,
     BlockDrive,

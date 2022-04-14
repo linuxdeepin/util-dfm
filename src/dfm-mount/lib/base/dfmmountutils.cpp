@@ -239,6 +239,7 @@ GVariant *Utils::castFromList(const QList<QVariant> &val)
 Property Utils::getPropertyByName(const QString &name)
 {
     const static QMap<QString, Property> datas = {
+        StringPropertyItem("UserspaceMountOptions", Property::BlockUserspaceMountOptions),
         StringPropertyItem("Configuration", Property::BlockConfiguration),
         StringPropertyItem("CryptoBackingDevice", Property::BlockCryptoBackingDevice),
         StringPropertyItem("Device", Property::BlockDevice),
@@ -518,6 +519,7 @@ DeviceError Utils::castFromGError(const GError *const err)
 QString Utils::getNameByProperty(Property property)
 {
     const static QMap<Property, QString> datas = {
+        PropertyStringItem("UserspaceMountOptions", Property::BlockUserspaceMountOptions),
         PropertyStringItem("Configuration", Property::BlockConfiguration),
         PropertyStringItem("CryptoBackingDevice", Property::BlockCryptoBackingDevice),
         PropertyStringItem("Device", Property::BlockDevice),
