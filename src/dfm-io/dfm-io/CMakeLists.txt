@@ -15,6 +15,9 @@ find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GLIB glib-2.0 gobject-2.0 gio-2.0)
 
+pkg_check_modules(mediainfoVal REQUIRED libmediainfo IMPORTED_TARGET)
+list(APPEND mediainfos ${mediainfoVal_LDFLAGS})
+
 # gio signals conflicts with qt signals
 add_definitions(-DQT_NO_KEYWORDS)
 
@@ -38,6 +41,7 @@ FILE (GLOB IO_PRIVATE_INCLUDES "private/*.h" "private/*.hpp"
     "private/core/*.h" "private/core/*.hpp"                 #core
     "private/factory/*.h" "private/factory/*.hpp"           #factory
     "private/local/*.h" "private/local/*.hpp"               #local
+    "utils/*.h"                                             #utils
 )
 
 # src
@@ -45,6 +49,7 @@ FILE (GLOB IO_SRCS "src/*.c" "src/*.cpp"
     "src/core/*.c" "src/core/*.cpp"                         #core
     "src/factory/*.c" "src/factory/*.cpp"                   #factory
     "src/local/*.c" "src/local/*.cpp"                       #local
+    "utils/*.cpp"                                           #utils
 )
 
 # Build
@@ -62,6 +67,8 @@ set_target_properties(
 
 target_link_libraries(${PROJECT_NAME}
     Qt5::Core
+    PkgConfig::mediainfoVal
+    ${mediainfos}
     ${GLIB_LIBRARIES}
 )
 

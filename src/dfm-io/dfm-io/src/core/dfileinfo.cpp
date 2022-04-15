@@ -22,6 +22,7 @@
 */
 
 #include "core/dfileinfo_p.h"
+#include "utils/dmediainfo.h"
 
 USING_IO_NAMESPACE
 
@@ -122,8 +123,6 @@ DFileInfo::AttributeInfoMap DFileInfo::attributeInfoMap = {
     { DFileInfo::AttributeID::TrashOrigPath, std::make_tuple<std::string, QVariant>("trash::orig-path", "") },   // G_FILE_ATTRIBUTE_TRASH_ORIG_PATH
 
     { DFileInfo::AttributeID::RecentModified, std::make_tuple<std::string, QVariant>("recent::modified", 0) },   // G_FILE_ATTRIBUTE_RECENT_MODIFIED
-    { DFileInfo::AttributeID::ExtendWordSize, std::make_tuple<std::string, QVariant>("xattr::word-size", 0) },   // user extend attr
-    { DFileInfo::AttributeID::ExtendMediaDuration, std::make_tuple<std::string, QVariant>("xattr::media-duration", 0) },   // user extend attr
 
     { DFileInfo::AttributeID::CustomStart, std::make_tuple<std::string, QVariant>("custom-start", 0) },
 
@@ -266,6 +265,16 @@ QVariant DFileInfo::customAttribute(const char *key, const DFileInfo::DFileAttri
     return d->customAttributeFunc(key, type);
 }
 
+void DFileInfo::attributeExtend(DFileInfo::MediaType type, QList<AttributeExtendID> ids, DFileInfo::AttributeExtendFuncCallback callback)
+{
+    d->attributeExtend(type, ids, callback);
+}
+
+bool DFileInfo::cancelAttributeExtend()
+{
+    return d->cancelAttributeExtend();
+}
+
 void DFileInfo::registerAttribute(const DFileInfo::AttributeFunc &func)
 {
     d->attributeFunc = func;
@@ -367,4 +376,60 @@ DFMIOError DFileInfo::lastError() const
         return DFMIOError();
 
     return d->lastErrorFunc();
+}
+
+void DFileInfoPrivate::attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, DFileInfo::AttributeExtendFuncCallback callback)
+{
+    if (ids.contains(DFileInfo::AttributeExtendID::ExtendMediaDuration)
+        || ids.contains(DFileInfo::AttributeExtendID::ExtendMediaWidth)
+        || ids.contains(DFileInfo::AttributeExtendID::ExtendMediaHeight)) {
+
+        const QString &filePath = attributeFunc ? attributeFunc(DFileInfo::AttributeID::StandardFilePath, nullptr).toString() : QString();
+        if (!filePath.isEmpty()) {
+            mediaType = type;
+            extendIDs = ids;
+            attributeExtendFuncCallback = callback;
+
+            if (!this->mediaInfo) {
+                this->mediaInfo.reset(new DMediaInfo(filePath));
+            }
+            this->mediaInfo->startReadInfo(std::bind(&DFileInfoPrivate::attributeExtendCallback, this));
+        } else {
+            if (callback)
+                callback(false, {});
+        }
+    }
+}
+
+bool DFileInfoPrivate::cancelAttributeExtend()
+{
+    if (this->mediaInfo)
+        this->mediaInfo->stopReadInfo();
+    return true;
+}
+
+void DFileInfoPrivate::attributeExtendCallback()
+{
+    if (this->mediaInfo) {
+        QMap<DFileInfo::AttributeExtendID, QVariant> map;
+
+        if (extendIDs.contains(DFileInfo::AttributeExtendID::ExtendMediaDuration)) {
+            QString duration = mediaInfo->value("Duration", mediaType);
+            if (duration.isEmpty()) {
+                duration = mediaInfo->value("Duration", DFileInfo::MediaType::General);
+            }
+            map.insert(DFileInfo::AttributeExtendID::ExtendMediaDuration, duration);
+        }
+        if (extendIDs.contains(DFileInfo::AttributeExtendID::ExtendMediaWidth)) {
+            const QString &width = mediaInfo->value("Width", mediaType);
+            map.insert(DFileInfo::AttributeExtendID::ExtendMediaWidth, width);
+        }
+        if (extendIDs.contains(DFileInfo::AttributeExtendID::ExtendMediaHeight)) {
+            const QString &height = mediaInfo->value("Height", mediaType);
+            map.insert(DFileInfo::AttributeExtendID::ExtendMediaHeight, height);
+        }
+
+        if (attributeExtendFuncCallback)
+            attributeExtendFuncCallback(true, map);
+    }
 }

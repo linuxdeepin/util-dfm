@@ -170,9 +170,6 @@ public:
 
         RecentModified = 540,   // uint64
 
-        ExtendWordSize = 550,   // uint32
-        ExtendMediaDuration = 551,   // uint32, ms
-
         CustomStart = 600,
 
         StandardIsFile = 610,
@@ -189,11 +186,31 @@ public:
         AttributeIDMax = 999,
     };
 
+    enum class MediaType : uint8_t {
+        General,
+        Video,
+        Audio,
+        Text,
+        Other,
+        Image,
+        Menu,
+
+        Max,
+    };
+
+    enum class AttributeExtendID : uint8_t {
+        ExtendWordSize,   // xattr::word-size
+        ExtendMediaDuration,   // xattr::media-duration
+        ExtendMediaWidth,   // xattr::media-width
+        ExtendMediaHeight,   // xattr::media-height
+    };
+
     using AttributeInfoMap = std::unordered_map<DFileInfo::AttributeID, std::tuple<std::string, QVariant>>;
     static AttributeInfoMap attributeInfoMap;
 
     // callback, use function pointer
     using QueryInfoAsyncCallback = std::function<void(bool, void *)>;
+    using AttributeExtendFuncCallback = std::function<void(bool, QMap<AttributeExtendID, QVariant>)>;
 
     // register function, use std::function
     using AttributeFunc = std::function<QVariant(DFileInfo::AttributeID, bool *)>;
@@ -232,6 +249,10 @@ public:
     // custom attribute
     DFM_VIRTUAL bool setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNone);
     DFM_VIRTUAL QVariant customAttribute(const char *key, const DFileAttributeType type);
+
+    // extend attribute
+    void attributeExtend(MediaType type, QList<AttributeExtendID> ids, AttributeExtendFuncCallback callback = nullptr);
+    bool cancelAttributeExtend();
 
     DFM_VIRTUAL DFMIOError lastError() const;
 

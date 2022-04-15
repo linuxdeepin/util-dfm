@@ -13,7 +13,8 @@ Build-Depends:
  qttools5-dev-tools,
  libglib2.0-dev,
  libudisks2-dev,
- libisoburn-dev
+ libisoburn-dev,
+ libmediainfo-dev
 Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm

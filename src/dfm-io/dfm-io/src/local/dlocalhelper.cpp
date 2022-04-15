@@ -194,9 +194,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     case DFileInfo::AttributeID::UnixRdev:
     case DFileInfo::AttributeID::UnixBlockSize:
     case DFileInfo::AttributeID::FileSystemUsePreview:
-    case DFileInfo::AttributeID::TrashItemCount:
-    case DFileInfo::AttributeID::ExtendWordSize:
-    case DFileInfo::AttributeID::ExtendMediaDuration: {
+    case DFileInfo::AttributeID::TrashItemCount: {
         uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
         return QVariant(ret);
     }
@@ -374,9 +372,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::UnixRdev:
     case DFileInfo::AttributeID::UnixBlockSize:
     case DFileInfo::AttributeID::FileSystemUsePreview:
-    case DFileInfo::AttributeID::TrashItemCount:
-    case DFileInfo::AttributeID::ExtendWordSize:
-    case DFileInfo::AttributeID::ExtendMediaDuration: {
+    case DFileInfo::AttributeID::TrashItemCount: {
         g_file_set_attribute_uint32(gfile, key.c_str(), value.toUInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             g_autofree gchar *url = g_file_get_uri(gfile);
@@ -536,9 +532,7 @@ bool DLocalHelper::setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::Attr
     case DFileInfo::AttributeID::UnixRdev:
     case DFileInfo::AttributeID::UnixBlockSize:
     case DFileInfo::AttributeID::FileSystemUsePreview:
-    case DFileInfo::AttributeID::TrashItemCount:
-    case DFileInfo::AttributeID::ExtendWordSize:
-    case DFileInfo::AttributeID::ExtendMediaDuration: {
+    case DFileInfo::AttributeID::TrashItemCount: {
         g_file_info_set_attribute_uint32(gfileinfo, key.c_str(), value.toUInt());
         return true;
     }

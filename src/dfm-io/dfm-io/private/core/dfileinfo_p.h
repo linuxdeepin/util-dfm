@@ -25,6 +25,7 @@
 
 #include "core/dfileinfo.h"
 #include "dfmio_global.h"
+#include "utils/dmediainfo.h"
 
 #include <QUrl>
 #include <QVariant>
@@ -53,12 +54,21 @@ public:
     {
     }
 
+    void attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, DFileInfo::AttributeExtendFuncCallback callback = nullptr);
+    bool cancelAttributeExtend();
+    void attributeExtendCallback();
+
 public:
     DFileInfo *q = nullptr;
 
     QUrl uri;
     char *attributes;
     DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks;
+
+    QSharedPointer<DFMIO::DMediaInfo> mediaInfo = nullptr;
+    QList<DFileInfo::AttributeExtendID> extendIDs;
+    DFileInfo::MediaType mediaType = DFileInfo::MediaType::General;
+    DFileInfo::AttributeExtendFuncCallback attributeExtendFuncCallback = nullptr;
 
     DFileInfo::AttributeFunc attributeFunc = nullptr;
     DFileInfo::SetAttributeFunc setAttributeFunc = nullptr;
