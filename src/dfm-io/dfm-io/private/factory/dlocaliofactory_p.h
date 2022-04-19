@@ -45,7 +45,8 @@ public:
     explicit DLocalIOFactoryPrivate(DLocalIOFactory *q);
     ~DLocalIOFactoryPrivate();
 
-    QSharedPointer<DFileInfo> createFileInfo() const;
+    QSharedPointer<DFileInfo> createFileInfo(const char *attributes = "*",
+                                             const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks) const;
     QSharedPointer<DFile> createFile() const;
     QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(), DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter, DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::NoIteratorFlags) const;
     QSharedPointer<DWatcher> createWatcher() const;

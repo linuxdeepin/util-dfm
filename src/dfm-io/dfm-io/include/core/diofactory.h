@@ -26,6 +26,7 @@
 #include "dfmio_global.h"
 #include "denumerator.h"
 #include "error/error.h"
+#include "core/dfileinfo.h"
 
 #include <QSharedPointer>
 
@@ -43,7 +44,7 @@ class DOperator;
 class DIOFactory
 {
 public:
-    using CreateFileInfoFunc = std::function<QSharedPointer<DFileInfo>()>;
+    using CreateFileInfoFunc = std::function<QSharedPointer<DFileInfo>(const char *, const DFMIO::DFileInfo::FileQueryInfoFlags)>;
     using CreateFileFunc = std::function<QSharedPointer<DFile>()>;
     using CreateEnumeratorFunc = std::function<QSharedPointer<DEnumerator>(const QStringList &nameFilters, DEnumerator::DirFilters filters, DEnumerator::IteratorFlags flags)>;
     using CreateWatcherFunc = std::function<QSharedPointer<DWatcher>()>;
@@ -55,7 +56,8 @@ public:
     void setUri(const QUrl &uri);
     QUrl uri() const;
 
-    DFM_VIRTUAL QSharedPointer<DFileInfo> createFileInfo() const;
+    DFM_VIRTUAL QSharedPointer<DFileInfo> createFileInfo(const char *attributes = "*",
+                                                         const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks) const;
     DFM_VIRTUAL QSharedPointer<DFile> createFile() const;
     DFM_VIRTUAL QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(),
                                                              DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter,

@@ -61,7 +61,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
     g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
     g_autoptr(GError) gerror = nullptr;
 
-    if (mode == DFile::OpenFlags(DFile::OpenFlag::ReadOnly)) {
+    if (mode & DFile::OpenFlag::ReadOnly && !(mode & DFile::OpenFlag::WriteOnly)) {
         if (!exists()) {
             return false;
         }
@@ -73,36 +73,63 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
             return false;
         }
         return true;
-    } else if (mode == DFile::OpenFlags(DFile::OpenFlag::WriteOnly)) {
-        oStream = (GOutputStream *)g_file_replace(gfile,
-                                                  nullptr,
-                                                  false,
-                                                  G_FILE_CREATE_NONE,
-                                                  nullptr,
-                                                  &gerror);
-        if (gerror)
-            setErrorFromGError(gerror);
+    } else if (mode & DFile::OpenFlag::WriteOnly && !(mode & DFile::OpenFlag::ReadOnly)) {
+        if (mode & DFile::OpenFlag::NewOnly) {
+            oStream = (GOutputStream *)g_file_create(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
+            if (gerror)
+                setErrorFromGError(gerror);
 
-        if (!oStream) {
-            return false;
+            if (!oStream) {
+                return false;
+            }
+        } else if (mode & DFile::OpenFlag::Append) {
+            oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
+            if (gerror)
+                setErrorFromGError(gerror);
+
+            if (!oStream) {
+                return false;
+            }
+        } else {
+            oStream = (GOutputStream *)g_file_replace(gfile, nullptr, false, G_FILE_CREATE_NONE, nullptr, &gerror);
+            if (gerror)
+                setErrorFromGError(gerror);
+
+            if (!oStream) {
+                return false;
+            }
         }
-        return true;
-    } else if (mode == DFile::OpenFlags(DFile::OpenFlag::Append)) {
-        oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
-        if (gerror)
-            setErrorFromGError(gerror);
 
-        if (!oStream) {
-            return false;
+        return true;
+    } else if (mode & DFile::OpenFlag::ReadOnly && mode & DFile::OpenFlag::WriteOnly) {
+        if (mode & DFile::OpenFlag::NewOnly) {
+            ioStream = (GIOStream *)g_file_create_readwrite(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
+            if (gerror)
+                setErrorFromGError(gerror);
+
+            if (!ioStream) {
+                return false;
+            }
+        } else if (mode & DFile::OpenFlag::ExistingOnly) {
+            ioStream = (GIOStream *)g_file_open_readwrite(gfile, nullptr, &gerror);
+            if (gerror)
+                setErrorFromGError(gerror);
+
+            if (!ioStream) {
+                return false;
+            }
+        } else {
+            ioStream = (GIOStream *)g_file_replace_readwrite(gfile, nullptr, false, G_FILE_CREATE_NONE, nullptr, &gerror);
+            if (gerror)
+                setErrorFromGError(gerror);
+
+            if (!ioStream) {
+                return false;
+            }
         }
         return true;
     } else {
-        ioStream = (GIOStream *)g_file_replace_readwrite(gfile,
-                                                         nullptr,
-                                                         false,
-                                                         G_FILE_CREATE_NONE,
-                                                         nullptr,
-                                                         &gerror);
+        ioStream = (GIOStream *)g_file_replace_readwrite(gfile, nullptr, false, G_FILE_CREATE_NONE, nullptr, &gerror);
         if (gerror)
             setErrorFromGError(gerror);
 
@@ -725,26 +752,6 @@ bool DLocalFilePrivate::checkOpenFlags(DFile::OpenFlags *modeIn)
 {
     DFile::OpenFlags &mode = *modeIn;
 
-    if (mode & (DFile::OpenFlag::Append | DFile::OpenFlag::NewOnly))
-        mode |= DFile::OpenFlag::WriteOnly;
-
-    if ((mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::WriteOnly)) == 0) {
-        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
-        return false;
-    }
-    if ((mode & DFile::OpenFlag::NewOnly) && (mode & DFile::OpenFlag::ExistingOnly)) {
-        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
-        return false;
-    }
-    if ((mode & DFile::OpenFlag::ExistingOnly) && !(mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::WriteOnly))) {
-        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
-        return false;
-    }
-
-    // WriteOnly implies Truncate when ReadOnly, Append, and NewOnly are not set.
-    if ((mode & DFile::OpenFlag::WriteOnly) && !(mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::Append | DFile::OpenFlag::NewOnly)))
-        mode |= DFile::OpenFlag::Truncate;
-
     if (mode & DFile::OpenFlag::NewOnly) {
         if (exists()) {
             error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
@@ -756,6 +763,26 @@ bool DLocalFilePrivate::checkOpenFlags(DFile::OpenFlags *modeIn)
             error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
             return false;
         }
+    }
+    if ((mode & DFile::OpenFlag::NewOnly) && (mode & DFile::OpenFlag::ExistingOnly)) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
+        return false;
+    }
+
+    // WriteOnly implies Truncate when ReadOnly, Append, and NewOnly are not set.
+    if ((mode & DFile::OpenFlag::WriteOnly) && !(mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::Append | DFile::OpenFlag::NewOnly)))
+        mode |= DFile::OpenFlag::Truncate;
+
+    if (mode & (DFile::OpenFlag::Append | DFile::OpenFlag::NewOnly))
+        mode |= DFile::OpenFlag::WriteOnly;
+
+    if ((mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::WriteOnly)) == 0) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
+        return false;
+    }
+    if ((mode & DFile::OpenFlag::ExistingOnly) && !(mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::WriteOnly))) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
+        return false;
     }
 
     return true;

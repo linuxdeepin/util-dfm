@@ -39,7 +39,8 @@ public:
     ~DLocalIOFactory();
 
     QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
-    QSharedPointer<DFileInfo> createFileInfo() const DFM_OVERRIDE;
+    QSharedPointer<DFileInfo> createFileInfo(const char *attributes = "*",
+                                             const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks) const DFM_OVERRIDE;
     QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
     QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
     QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(),

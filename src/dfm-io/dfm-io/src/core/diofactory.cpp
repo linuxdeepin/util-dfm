@@ -61,12 +61,13 @@ QUrl DIOFactory::uri() const
     return d->uri;
 }
 
-QSharedPointer<DFileInfo> DIOFactory::createFileInfo() const
+QSharedPointer<DFileInfo> DIOFactory::createFileInfo(const char *attributes /*= "*"*/,
+                                                     const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks*/) const
 {
     if (!d->createFileInfoFunc)
         return nullptr;
 
-    return d->createFileInfoFunc();
+    return d->createFileInfoFunc(attributes, flag);
 }
 
 QSharedPointer<DFile> DIOFactory::createFile() const

@@ -154,9 +154,10 @@ QString parentPath(const QString &path)
 }
 }
 
-QSharedPointer<DFileInfo> DLocalHelper::createFileInfoByUri(const QUrl &uri)
+QSharedPointer<DFileInfo> DLocalHelper::createFileInfoByUri(const QUrl &uri, const char *attributes /*= "*"*/,
+                                                            const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks*/)
 {
-    return QSharedPointer<DFileInfo>(new DLocalFileInfo(uri));
+    return QSharedPointer<DFileInfo>(new DLocalFileInfo(uri, attributes, flag));
 }
 
 QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode)

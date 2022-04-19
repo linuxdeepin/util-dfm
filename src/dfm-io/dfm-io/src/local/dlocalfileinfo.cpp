@@ -366,8 +366,10 @@ void DLocalFileInfoPrivate::freeCancellable(GCancellable *gcancellable)
     }
 }
 
-DLocalFileInfo::DLocalFileInfo(const QUrl &uri)
-    : DFileInfo(uri), d(new DLocalFileInfoPrivate(this))
+DLocalFileInfo::DLocalFileInfo(const QUrl &uri,
+                               const char *attributes /*= "*"*/,
+                               const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks*/)
+    : DFileInfo(uri, attributes, flag), d(new DLocalFileInfoPrivate(this))
 {
     registerAttribute(std::bind(&DLocalFileInfo::attribute, this, std::placeholders::_1, std::placeholders::_2));
     registerSetAttribute(std::bind(&DLocalFileInfo::setAttribute, this, std::placeholders::_1, std::placeholders::_2));
