@@ -525,7 +525,8 @@ bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
         return -1;
     }
 
-    gboolean canSeek = G_IS_SEEKABLE(inputStream) && g_seekable_can_seek(G_SEEKABLE(inputStream));
+    // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+    gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
     if (!canSeek) {
         return false;
     }
@@ -567,7 +568,8 @@ qint64 DLocalFilePrivate::pos()
         return -1;
     }
 
-    gboolean canSeek = G_IS_SEEKABLE(inputStream) && g_seekable_can_seek(G_SEEKABLE(inputStream));
+    // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+    gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
     if (!canSeek) {
         return false;
     }
