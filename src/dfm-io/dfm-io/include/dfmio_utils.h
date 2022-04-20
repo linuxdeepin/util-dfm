@@ -38,10 +38,9 @@ public:
     static QString devicePathFromUrl(const QUrl &url);
     static QString fsTypeFromUrl(const QUrl &url);
     static QUrl directParentUrl(const QUrl &url);
+    static bool fileIsRemovable(const QUrl &url);
 };
-
 
 END_IO_NAMESPACE
 
-
-#endif // DFMIO_UTILS_H
+#endif   // DFMIO_UTILS_H

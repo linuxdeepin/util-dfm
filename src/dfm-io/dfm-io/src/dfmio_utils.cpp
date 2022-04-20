@@ -87,3 +87,20 @@ QUrl DFMUtils::directParentUrl(const QUrl &url)
     }
     return QUrl();
 }
+
+bool DFMUtils::fileIsRemovable(const QUrl &url)
+{
+    if (!url.isValid())
+        return false;
+    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GMount) gmount = g_file_find_enclosing_mount(gfile, nullptr, nullptr);
+    if (gmount) {
+        g_autoptr(GDrive) gdrive = g_mount_get_drive(gmount);
+        if (gdrive)
+            return g_drive_is_removable(gdrive);
+        else
+            return g_mount_can_unmount(gmount);   // when gdrive is nullptr, check unmountable
+    }
+
+    return false;
+}
