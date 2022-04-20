@@ -373,7 +373,8 @@ void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOpera
 {
     if (!mountHandler) {
         lastError = DeviceError::UserErrorNotMounted;
-        cb(true, lastError);
+        if (cb)
+            cb(true, lastError);
         return;
     } else {
         GCancellable *cancellable { nullptr };
