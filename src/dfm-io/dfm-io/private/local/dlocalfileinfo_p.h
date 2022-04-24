@@ -71,7 +71,6 @@ private:
     QVariant attributesBySelf(DFileInfo::AttributeID id);
 
 public:
-    QMap<DFileInfo::AttributeID, QVariant> attributesReadyWrite;
     QMap<DFileInfo::AttributeID, QVariant> attributesCache;
     QList<DFileInfo::AttributeID> attributesRealizationSelf;
     GFile *gfile = nullptr;

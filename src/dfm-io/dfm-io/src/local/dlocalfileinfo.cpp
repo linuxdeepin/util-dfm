@@ -78,6 +78,11 @@ bool DLocalFileInfoPrivate::queryInfoSync()
     if (!gfileinfo)
         return false;
 
+    if (this->gfileinfo) {
+        g_object_unref(this->gfileinfo);
+        this->gfileinfo = nullptr;
+    }
+
     this->gfileinfo = gfileinfo;
 
     initFinished = true;
@@ -166,10 +171,7 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
 
 bool DLocalFileInfoPrivate::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 {
-    if (attributesReadyWrite.count(id) > 0)
-        attributesReadyWrite.remove(id);
-
-    attributesReadyWrite.insert(id, value);
+    cacheAttribute(id, value);
     DLocalHelper::setAttributeByGFileInfo(gfileinfo, id, value);
     return true;
 }
@@ -195,8 +197,8 @@ bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
 
 bool DLocalFileInfoPrivate::removeAttribute(DFileInfo::AttributeID id)
 {
-    if (attributesReadyWrite.count(id) > 0)
-        attributesReadyWrite.remove(id);
+    if (attributesCache.count(id) > 0)
+        attributesCache.remove(id);
     return true;
 }
 
@@ -241,19 +243,7 @@ bool DLocalFileInfoPrivate::exists() const
 
 bool DLocalFileInfoPrivate::flush()
 {
-    bool ret = true;
-    auto it = attributesReadyWrite.constBegin();
-    while (it != attributesReadyWrite.constEnd()) {
-        g_autoptr(GError) gerror = nullptr;
-        bool succ = DLocalHelper::setAttributeByGFile(gfile, it.key(), it.value(), &gerror);
-        if (!succ)
-            ret = false;
-        if (gerror)
-            setErrorFromGError(gerror);
-        ++it;
-    }
-    attributesReadyWrite.clear();
-    return ret;
+    return queryInfoSync();
 }
 
 bool DLocalFileInfoPrivate::clearCache()
