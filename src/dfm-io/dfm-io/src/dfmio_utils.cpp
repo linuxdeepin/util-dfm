@@ -74,16 +74,30 @@ QString DFMUtils::fsTypeFromUrl(const QUrl &url)
     return QString();
 }
 
-QUrl DFMUtils::directParentUrl(const QUrl &url)
+QUrl DFMUtils::directParentUrl(const QUrl &url, const bool localFirst /*= true*/)
 {
     if (!url.isValid())
         return QUrl();
 
+    auto localPathUrl = [=](GFile *gfile) {
+        g_autofree gchar *path = g_file_get_path(gfile);
+        if (path)
+            return QUrl::fromLocalFile(QString::fromLocal8Bit(path));
+        return QUrl();
+    };
+
     g_autoptr(GFile) file = g_file_new_for_uri(url.toString().toLocal8Bit().data());
     g_autoptr(GFile) fileParent = g_file_get_parent(file);
     if (fileParent) {
+        if (localFirst) {
+            const QUrl urlParent = localPathUrl(fileParent);
+            if (urlParent.isValid())
+                return urlParent;
+        }
         g_autofree gchar *uri = g_file_get_uri(fileParent);
-        return QUrl(QString::fromLocal8Bit(uri));
+        if (uri)
+            return QUrl(QString::fromLocal8Bit(uri));
+        return localPathUrl(fileParent);
     }
     return QUrl();
 }

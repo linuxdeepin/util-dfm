@@ -37,7 +37,7 @@ public:
     static bool fileUnmountable(const QString &path);
     static QString devicePathFromUrl(const QUrl &url);
     static QString fsTypeFromUrl(const QUrl &url);
-    static QUrl directParentUrl(const QUrl &url);
+    static QUrl directParentUrl(const QUrl &url, const bool localFirst = true);
     static bool fileIsRemovable(const QUrl &url);
 };
 
