@@ -261,9 +261,9 @@ QString DFMProtocolDevicePrivate::path() const
 QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
 {
     if (mountHandler) {
-        qInfo() << "mutexForMount prelock" << __FUNCTION__;
+        //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
-        qInfo() << "mutexForMount locked" << __FUNCTION__;
+        //        qInfo() << "mutexForMount locked" << __FUNCTION__;
         lastError = DeviceError::UserErrorAlreadyMounted;
         return mountPoint(mountHandler);
     }
@@ -304,9 +304,9 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
 void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
     if (mountHandler) {
-        qInfo() << "mutexForMount prelock" << __FUNCTION__;
+        //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
-        qInfo() << "mutexForMount locked" << __FUNCTION__;
+        //        qInfo() << "mutexForMount locked" << __FUNCTION__;
         lastError = DeviceError::UserErrorAlreadyMounted;
         if (cb)
             cb(true, lastError, mountPoint(mountHandler));
@@ -418,9 +418,9 @@ void DFMProtocolDevicePrivate::renameAsync(const QString &newName, const QVarian
 
 QString DFMProtocolDevicePrivate::mountPoint() const
 {
-    qInfo() << "mutexForMount prelock" << __FUNCTION__;
+    //    qInfo() << "mutexForMount prelock" << __FUNCTION__;
     QMutexLocker locker(&mutexForMount);
-    qInfo() << "mutexForMount locked" << __FUNCTION__;
+    //    qInfo() << "mutexForMount locked" << __FUNCTION__;
     if (mountHandler)
         return mountPoint(mountHandler);
     return QString();
