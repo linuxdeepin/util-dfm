@@ -62,7 +62,7 @@ QUrl DIOFactory::uri() const
 }
 
 QSharedPointer<DFileInfo> DIOFactory::createFileInfo(const char *attributes /*= "*"*/,
-                                                     const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks*/) const
+                                                     const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone*/) const
 {
     if (!d->createFileInfoFunc)
         return nullptr;

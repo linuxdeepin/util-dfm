@@ -56,7 +56,7 @@ class DLocalHelper
 {
 public:
     static QSharedPointer<DFileInfo> createFileInfoByUri(const QUrl &uri, const char *attributes = "*",
-                                                         const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks);
+                                                         const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone);
 
     static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode);
     static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);

@@ -45,7 +45,7 @@ DLocalIOFactoryPrivate::~DLocalIOFactoryPrivate()
 }
 
 QSharedPointer<DFileInfo> DLocalIOFactoryPrivate::createFileInfo(const char *attributes /*= "*"*/,
-                                                                 const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks*/) const
+                                                                 const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone*/) const
 {
     const QUrl &uri = q->uri();
     return DLocalHelper::createFileInfoByUri(uri, attributes, flag);
@@ -94,7 +94,7 @@ DLocalIOFactory::~DLocalIOFactory()
 }
 
 QSharedPointer<DFileInfo> DLocalIOFactory::createFileInfo(const char *attributes /*= "*"*/,
-                                                          const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks*/) const
+                                                          const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone*/) const
 {
     return d->createFileInfo(attributes, flag);
 }

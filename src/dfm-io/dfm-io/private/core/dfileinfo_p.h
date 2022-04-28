@@ -63,7 +63,7 @@ public:
 
     QUrl uri;
     char *attributes;
-    DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks;
+    DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNone;
 
     QSharedPointer<DFMIO::DMediaInfo> mediaInfo = nullptr;
     QList<DFileInfo::AttributeExtendID> extendIDs;

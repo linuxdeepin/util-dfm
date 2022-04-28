@@ -37,7 +37,7 @@ class DLocalFileInfo : public DFileInfo
 {
 public:
     explicit DLocalFileInfo(const QUrl &uri, const char *attributes = "*",
-                            const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks);
+                            const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone);
     virtual ~DLocalFileInfo();
 
     void queryInfoAsync(int ioPriority = 0, QueryInfoAsyncCallback func = nullptr, void *userData = nullptr) const DFM_OVERRIDE;

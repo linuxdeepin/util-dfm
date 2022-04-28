@@ -228,7 +228,7 @@ public:
 
 public:
     DFileInfo();
-    explicit DFileInfo(const QUrl &uri, const char *attributes = "*", const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNoFollowSymlinks);
+    explicit DFileInfo(const QUrl &uri, const char *attributes = "*", const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNone);
     explicit DFileInfo(const DFileInfo &info);
     virtual ~DFileInfo();
     DFileInfo &operator=(const DFileInfo &info);

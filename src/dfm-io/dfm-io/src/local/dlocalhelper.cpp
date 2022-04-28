@@ -155,7 +155,7 @@ QString parentPath(const QString &path)
 }
 
 QSharedPointer<DFileInfo> DLocalHelper::createFileInfoByUri(const QUrl &uri, const char *attributes /*= "*"*/,
-                                                            const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNoFollowSymlinks*/)
+                                                            const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone*/)
 {
     return QSharedPointer<DFileInfo>(new DLocalFileInfo(uri, attributes, flag));
 }
