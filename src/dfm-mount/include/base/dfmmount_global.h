@@ -308,6 +308,7 @@ enum class DeviceError : uint16_t {
     UserErrorTimedOut,
     UserErrorAlreadyMounted,
     UserErrorNotMounted,
+    UserErrorNotPoweroffable,
     UserErrorFailed,
 
     UnhandledError = 1000,

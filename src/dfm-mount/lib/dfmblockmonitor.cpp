@@ -38,6 +38,8 @@ DFM_MOUNT_USE_NS
 
 #define UDISKS_BLOCK_PATH_PREFIX "/org/freedesktop/UDisks2/block_devices/"
 #define UDISKS_DRIVE_PATH_PREFIX "/org/freedesktop/UDisks2/drives/"
+#define UDISKS_BLOCK_IFACE_FILESYSTEM "org.freedesktop.UDisks2.Filesystem"
+#define UDISKS_BLOCK_IFACE_PARTITIONTABLE "org.freedesktop.UDisks2.PartitionTable"
 
 QMap<QString, QSet<QString>> DFMBlockMonitorPrivate::blksOfDrive = {};
 
@@ -85,6 +87,12 @@ bool DFMBlockMonitorPrivate::startMonitor()
 
     handler = g_signal_connect(dbusMng, PROPERTY_CHANGED, G_CALLBACK(&DFMBlockMonitorPrivate::onPropertyChanged), q);
     connections.insert(PROPERTY_CHANGED, handler);
+
+    handler = g_signal_connect(dbusMng, INTERFACE_ADDED, G_CALLBACK(&DFMBlockMonitorPrivate::onInterfaceAdded), q);
+    connections.insert(INTERFACE_ADDED, handler);
+
+    handler = g_signal_connect(dbusMng, INTERFACE_REMOVED, G_CALLBACK(&DFMBlockMonitorPrivate::onInterfaceRemoved), q);
+    connections.insert(INTERFACE_REMOVED, handler);
 
     qDebug() << "block monitor start";
     return true;
@@ -142,8 +150,6 @@ QStringList DFMBlockMonitorPrivate::getDevices()
 
 QSharedPointer<DFMDevice> DFMBlockMonitorPrivate::createDeviceById(const QString &id)
 {
-    if (!getDevices().contains(id))
-        return nullptr;
     auto blk = new DFMBlockDevice(client, id, nullptr);
     // for a block device, there must have a block node in dbus, otherwise treat it as a invalid object
     if (blk->hasBlock()) {
@@ -208,7 +214,6 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
     if (!udisksObj)
         return;
-
     QString objPath = g_dbus_object_get_object_path(obj);
 
     UDisksDrive *drive = udisks_object_peek_drive(udisksObj);
@@ -350,6 +355,38 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
         for (const auto &blk : blks)
             Q_EMIT q->propertyChanged(blk, changes);
     }
+}
+
+void DFMBlockMonitorPrivate::onInterfaceAdded(GDBusObjectManager *mng, GDBusObject *obj, GDBusInterface *iface, gpointer userData)
+{
+    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
+    Q_ASSERT(q);
+
+    QString objPath = g_dbus_object_get_object_path(obj);
+    if (!objPath.startsWith(UDISKS_BLOCK_PATH_PREFIX))
+        return;
+    auto info = g_dbus_interface_get_info(iface);
+    if (strcmp(info->name, UDISKS_BLOCK_IFACE_FILESYSTEM) == 0) {
+        qDebug() << "filesystem added: " << objPath;
+        Q_EMIT q->fileSystemAdded(objPath);
+    } /*else if (strcmp(info->name, UDISKS_BLOCK_IFACE_PARTITIONTABLE) == 0) {
+    }*/
+}
+
+void DFMBlockMonitorPrivate::onInterfaceRemoved(GDBusObjectManager *mng, GDBusObject *obj, GDBusInterface *iface, gpointer userData)
+{
+    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
+    Q_ASSERT(q);
+
+    QString objPath = g_dbus_object_get_object_path(obj);
+    if (!objPath.startsWith(UDISKS_BLOCK_PATH_PREFIX))
+        return;
+    auto info = g_dbus_interface_get_info(iface);
+    if (strcmp(info->name, UDISKS_BLOCK_IFACE_FILESYSTEM) == 0) {
+        qDebug() << "filesystem removed: " << objPath;
+        Q_EMIT q->fileSystemRemoved(objPath);
+    } /*else if (strcmp(info->name, UDISKS_BLOCK_IFACE_PARTITIONTABLE) == 0) {
+    }*/
 }
 
 void DFMBlockMonitorPrivate::initDevices()

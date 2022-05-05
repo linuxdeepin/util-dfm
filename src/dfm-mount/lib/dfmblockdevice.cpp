@@ -604,7 +604,7 @@ void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateC
     if (!fs) {
         lastError = DeviceError::UserErrorNotMountable;
         if (proxy) {
-            proxy->cb(false, lastError);
+            proxy->cb(true, lastError);
             delete proxy;
         }
         return;
@@ -614,7 +614,7 @@ void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateC
     if (mpts.empty()) {
         lastError = DeviceError::UDisksErrorNotMounted;
         if (proxy) {
-            proxy->cb(false, lastError);
+            proxy->cb(true, lastError);
             delete proxy;
         }
         return;
@@ -922,7 +922,7 @@ qint64 DFMBlockDevicePrivate::sizeFree() const
     auto mpts = q->getProperty(Property::FileSystemMountPoint).toStringList();
     if (mpts.isEmpty()) {
         //        lastError = MountError::NotMounted;
-        qWarning() << __FUNCTION__ << "NOT MOUNTED: " << blkObjPath;
+        qInfo() << __FUNCTION__ << "NOT MOUNTED: " << blkObjPath;
         return 0;
     }
     auto mpt = mpts.first();
@@ -1065,7 +1065,7 @@ QVariant DFMBlockDevicePrivate::getDriveProperty(Property name) const
 {
     UDisksDrive_autoptr drv = getDriveHandler();
     if (!drv) {
-        qWarning() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
+        qInfo() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
         lastError = DeviceError::UserErrorNoDriver;
         return "";
     }
@@ -1183,7 +1183,7 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
     UDisksPartition_autoptr partition = getPartitionHandler();
 
     if (!partition) {
-        qWarning() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
+        qInfo() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
         lastError = DeviceError::UserErrorNoPartition;
         return QVariant();
     }
@@ -1227,7 +1227,7 @@ QVariant DFMBlockDevicePrivate::getEncryptedProperty(Property name) const
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
-        qWarning() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
+        qInfo() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
         lastError = DeviceError::UserErrorNotEncryptable;
         return QVariant();
     }

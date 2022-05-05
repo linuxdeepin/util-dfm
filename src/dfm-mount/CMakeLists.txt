@@ -48,6 +48,7 @@ set(LIB_BASE_HEADER
     )
 
 set(LIB_HEADER
+    ${CMAKE_CURRENT_LIST_DIR}/include/dfm-mount.h
     ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockdevice.h
     ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockmonitor.h
     ${CMAKE_CURRENT_LIST_DIR}/include/dfmprotocoldevice.h

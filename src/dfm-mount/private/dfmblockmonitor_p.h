@@ -35,6 +35,8 @@ DFM_MOUNT_BEGIN_NS
 
 #define OBJECT_ADDED "object-added"
 #define OBJECT_REMOVED "object-removed"
+#define INTERFACE_ADDED "interface-added"
+#define INTERFACE_REMOVED "interface-removed"
 #define PROPERTY_CHANGED "interface-proxy-properties-changed"
 
 class DFMBlockDevice;
@@ -59,6 +61,8 @@ private:
     static void onObjectRemoved(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData);
     static void onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *objProxy, GDBusProxy *dbusProxy,
                                   GVariant *property, const gchar *const invalidProperty, gpointer userData);
+    static void onInterfaceAdded(GDBusObjectManager *mng, GDBusObject *obj, GDBusInterface *iface, gpointer userData);
+    static void onInterfaceRemoved(GDBusObjectManager *mng, GDBusObject *obj, GDBusInterface *iface, gpointer userData);
 
     void initDevices();
 
