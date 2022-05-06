@@ -263,6 +263,9 @@ void DFMProtocolMonitorPrivate::onMountRemoved(GVolumeMonitor *monitor, GMount *
     Q_ASSERT(d);
 
     auto mpt = DFMProtocolDevicePrivate::mountPoint(mount);
+    if (!mpt.isEmpty() && isNativeMount(mpt))   // don't report block device unmounted.
+        return;
+
     g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
     if (mntRoot) {
         g_autofree char *curi = g_file_get_uri(mntRoot);
