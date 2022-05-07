@@ -24,6 +24,7 @@
 #define DFMMOUNT_GLOBAL_H
 
 #include <QtCore/qglobal.h>
+#include <QtCore/qobjectdefs.h>
 #include <functional>
 
 #if defined(DFMMOUNT_LIBRARY)
@@ -46,18 +47,22 @@ DFM_MOUNT_BEGIN_NS
 #define ParamMountOperation "operation"
 #define ParamForce "force"
 
+Q_NAMESPACE
+
 enum class DeviceType : uint16_t {
     AllDevice = 0,
     BlockDevice = 1,   // normal block devices, like removable disks
     ProtocolDevice = 2,   // protocol devices, like smb/mtp/ftp/ptp etc...
     NetDevice = 3,
 };
+Q_ENUM_NS(DeviceType)
 
 enum class NetworkMountPasswdSaveMode : uint8_t {
     NeverSavePasswd = 0,
     SaveBeforeLogout,
     SavePermanently,
 };
+Q_ENUM_NS(NetworkMountPasswdSaveMode)
 
 enum class MonitorStatus : uint16_t {
     Monitoring = 0,
@@ -65,6 +70,7 @@ enum class MonitorStatus : uint16_t {
 
     NotDefined = 0xff,
 };
+Q_ENUM_NS(MonitorStatus)
 
 enum class Property : uint16_t {
     NotInit = 0,
@@ -156,6 +162,7 @@ enum class Property : uint16_t {
     // protocol property
     ProtoProperty = 800,   // this is invalid but just a placeholder
 };
+Q_ENUM_NS(Property);
 
 #define UDISKS_ERR_DOMAIN "udisks-error-quark"
 #define UDISKS_ERR_START 0
@@ -313,12 +320,14 @@ enum class DeviceError : uint16_t {
 
     UnhandledError = 1000,
 };
+Q_ENUM_NS(DeviceError)
 
 enum class MonitorError : uint16_t {
     NoError = 0,
     MonitorAlreadyRegistered,
     MonitorNotRegister,
 };
+Q_ENUM_NS(MonitorError)
 
 enum class PartitionType : uint16_t {
     PartitionTypeNotFound = 65535,
@@ -618,6 +627,7 @@ enum class PartitionType : uint16_t {
     GptEmmcBoot1FuchsiaLegacy,
     GptEmmcBoot2FuchsiaLegacy,
 };
+Q_ENUM_NS(PartitionType)
 
 using DeviceOperateCallback = std::function<void(bool, DeviceError)>;
 using DeviceOperateCallbackWithMessage = std::function<void(bool, DeviceError, QString)>;

@@ -56,7 +56,7 @@ public:
 
     static QString getNameByProperty(Property type);
 
-    static Property getPropertyByName(const QString &name);
+    static Property getPropertyByName(const QString &name, const QString &iface);
 
     static PartitionType getPartitionTypeByGuid(const QString &guid);
 

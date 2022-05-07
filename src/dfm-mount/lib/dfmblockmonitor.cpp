@@ -317,6 +317,7 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
 
     // get the changed object path: "/org/freedesktop/UDisks2/block_devices/sdb1"
     QString objPath = dbusProxy ? QString(g_dbus_proxy_get_object_path(dbusProxy)) : QString();
+    QString ifaceName = dbusProxy ? QString(g_dbus_proxy_get_interface_name(dbusProxy)) : QString();
     bool isBlockChanged = objPath.startsWith(UDISKS_BLOCK_PATH_PREFIX);
     bool isDriveChanged = objPath.startsWith(UDISKS_DRIVE_PATH_PREFIX);
     if (!isBlockChanged && !isDriveChanged) return;
@@ -328,7 +329,7 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
         for (auto iter = vmap.cbegin(); iter != vmap.cend(); ++iter) {
             auto key = iter.key();
             auto val = iter.value();
-            Property type = Utils::getPropertyByName(key);
+            Property type = Utils::getPropertyByName(key, ifaceName);
             if (type == Property::NotInit) {
                 qDebug() << "\tproperty: " << key << "has no mapped type, but value is" << val;
                 continue;

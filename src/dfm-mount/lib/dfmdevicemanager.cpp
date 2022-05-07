@@ -46,7 +46,7 @@ bool DFMDeviceManagerPrivate::startMonitor()
 {
     bool res = true;
     for (const auto &monitor : monitors) {
-        int type = static_cast<int>(monitor->monitorObjectType());
+        auto type = monitor->monitorObjectType();
         res &= monitor->startMonitor();
         if (res)
             qDebug() << type << "started...";
@@ -60,7 +60,7 @@ bool DFMDeviceManagerPrivate::stopMonitor()
 {
     bool res = true;
     for (const auto &monitor : monitors) {
-        int type = static_cast<int>(monitor->monitorObjectType());
+        auto type = monitor->monitorObjectType();
         res &= monitor->stopMonitor();
         if (res)
             qDebug() << type << "stopped...";

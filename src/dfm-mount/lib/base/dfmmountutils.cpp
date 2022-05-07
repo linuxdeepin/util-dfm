@@ -236,7 +236,7 @@ GVariant *Utils::castFromList(const QList<QVariant> &val)
 
 #define StringPropertyItem(key, val) std::pair<QString, Property>(key, val)
 #define PropertyStringItem(val, key) std::pair<Property, QString>(key, val)
-Property Utils::getPropertyByName(const QString &name)
+Property Utils::getPropertyByName(const QString &name, const QString &iface)
 {
     const static QMap<QString, Property> datas = {
         StringPropertyItem("UserspaceMountOptions", Property::BlockUserspaceMountOptions),
@@ -309,6 +309,17 @@ Property Utils::getPropertyByName(const QString &name)
         StringPropertyItem("HintEncryptionType", Property::EncryptedHintEncryptionType),
         StringPropertyItem("MetadataSize", Property::EncryptedMetadataSize),
     };
+
+    // there are 3 same-name property in udisks, so distinguish it by InterfaceName
+    if (name == "Size") {
+        if (iface.endsWith("Block"))
+            return Property::BlockSize;
+        else if (iface.endsWith("Drive"))
+            return Property::DriveSize;
+        else if (iface.endsWith("Partition"))
+            return Property::PartitionSize;
+    }
+
     return datas.value(name, Property::NotInit);
 }
 
