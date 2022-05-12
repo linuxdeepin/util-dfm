@@ -20,11 +20,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKDEVICE_H
-#define DFMBLOCKDEVICE_H
+#ifndef DBLOCKDEVICE_H
+#define DBLOCKDEVICE_H
 
-#include "base/dfmdevice.h"
-#include "base/dfmmount_global.h"
+#include "base/ddevice.h"
+#include "base/dmount_global.h"
 
 #include <QObject>
 
@@ -32,19 +32,19 @@ typedef struct _UDisksClient UDisksClient;
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMBlockDevicePrivate;
-class DFMBlockDevice final : public DFMDevice
+class DBlockDevicePrivate;
+class DBlockDevice final : public DDevice
 {
     Q_OBJECT
-    friend class DFMBlockMonitorPrivate;
+    friend class DBlockMonitorPrivate;
 
 public:
-    DFMBlockDevice() = delete;
-    DFMBlockDevice(const DFMBlockDevice &) = delete;
-    ~DFMBlockDevice();
+    DBlockDevice() = delete;
+    DBlockDevice(const DBlockDevice &) = delete;
+    ~DBlockDevice();
 
 private:
-    DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent = nullptr);
+    DBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent = nullptr);
 
 public:
     bool eject(const QVariantMap &opts = {});
@@ -86,4 +86,4 @@ public:
 
 DFM_MOUNT_END_NS
 
-#endif   // DFMBLOCKDEVICE_H
+#endif   // DBLOCKDEVICE_H

@@ -21,11 +21,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "dfmprotocoldevice.h"
-#include "private/dfmprotocoldevice_p.h"
+#include "base/dmount_global.h"
+#include "base/dmountutils.h"
+#include "dprotocoldevice.h"
+#include "private/dprotocoldevice_p.h"
 #include "private/dnetworkmounter.h"
-#include "base/dfmmount_global.h"
-#include "base/dfmmountutils.h"
 
 #include <QEventLoop>
 #include <QDebug>
@@ -47,41 +47,41 @@ struct CallbackProxyWithData
     explicit CallbackProxyWithData(DeviceOperateCallbackWithMessage cb)
         : caller(cb) {}
     CallbackProxy caller;
-    QPointer<DFMProtocolDevice> data;
-    DFMProtocolDevicePrivate *d { nullptr };
+    QPointer<DProtocolDevice> data;
+    DProtocolDevicePrivate *d { nullptr };
 };
 }
 
-DFMProtocolDevice::DFMProtocolDevice(const QString &id, GVolumeMonitor *monitor, QObject *parent)
-    : DFMDevice(new DFMProtocolDevicePrivate(id, monitor, this), parent)
+DProtocolDevice::DProtocolDevice(const QString &id, GVolumeMonitor *monitor, QObject *parent)
+    : DDevice(new DProtocolDevicePrivate(id, monitor, this), parent)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DProtocolDevicePrivate>(d.data());
     if (!dp) {
         qCritical() << "private pointer not valid" << __PRETTY_FUNCTION__;
         abort();
     }
     using namespace std;
     using namespace std::placeholders;
-    registerPath(bind(&DFMProtocolDevicePrivate::path, dp));
-    registerMount(bind(&DFMProtocolDevicePrivate::mount, dp, _1));
-    registerMountAsync(bind(&DFMProtocolDevicePrivate::mountAsync, dp, _1, _2));
-    registerUnmount(bind(&DFMProtocolDevicePrivate::unmount, dp, _1));
-    registerUnmountAsync(bind(&DFMProtocolDevicePrivate::unmountAsync, dp, _1, _2));
-    registerRename(bind(&DFMProtocolDevicePrivate::rename, dp, _1));
-    registerRenameAsync(bind(&DFMProtocolDevicePrivate::renameAsync, dp, _1, _2, _3));
-    registerFileSystem(bind(&DFMProtocolDevicePrivate::fileSystem, dp));
-    registerSizeTotal(bind(&DFMProtocolDevicePrivate::sizeTotal, dp));
-    registerSizeUsage(bind(&DFMProtocolDevicePrivate::sizeUsage, dp));
-    registerSizeFree(bind(&DFMProtocolDevicePrivate::sizeFree, dp));
-    registerDeviceType(bind(&DFMProtocolDevicePrivate::deviceType, dp));
-    registerDisplayName(bind(&DFMProtocolDevicePrivate::displayName, dp));
-    auto mountPointOfClass = static_cast<QString (DFMProtocolDevicePrivate::*)() const>(&DFMProtocolDevicePrivate::mountPoint);
+    registerPath(bind(&DProtocolDevicePrivate::path, dp));
+    registerMount(bind(&DProtocolDevicePrivate::mount, dp, _1));
+    registerMountAsync(bind(&DProtocolDevicePrivate::mountAsync, dp, _1, _2));
+    registerUnmount(bind(&DProtocolDevicePrivate::unmount, dp, _1));
+    registerUnmountAsync(bind(&DProtocolDevicePrivate::unmountAsync, dp, _1, _2));
+    registerRename(bind(&DProtocolDevicePrivate::rename, dp, _1));
+    registerRenameAsync(bind(&DProtocolDevicePrivate::renameAsync, dp, _1, _2, _3));
+    registerFileSystem(bind(&DProtocolDevicePrivate::fileSystem, dp));
+    registerSizeTotal(bind(&DProtocolDevicePrivate::sizeTotal, dp));
+    registerSizeUsage(bind(&DProtocolDevicePrivate::sizeUsage, dp));
+    registerSizeFree(bind(&DProtocolDevicePrivate::sizeFree, dp));
+    registerDeviceType(bind(&DProtocolDevicePrivate::deviceType, dp));
+    registerDisplayName(bind(&DProtocolDevicePrivate::displayName, dp));
+    auto mountPointOfClass = static_cast<QString (DProtocolDevicePrivate::*)() const>(&DProtocolDevicePrivate::mountPoint);
     registerMountPoint(bind(mountPointOfClass, dp));
 }
 
-void DFMProtocolDevice::mounted(const QString &id)
+void DProtocolDevice::mounted(const QString &id)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DProtocolDevicePrivate>(d.data());
     if (!dp || id != dp->deviceId)
         return;
 
@@ -108,9 +108,9 @@ void DFMProtocolDevice::mounted(const QString &id)
     g_list_free_full(mnts, g_object_unref);
 }
 
-void DFMProtocolDevice::unmounted(const QString &id)
+void DProtocolDevice::unmounted(const QString &id)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DProtocolDevicePrivate>(d.data());
     if (!dp || id != dp->deviceId)
         return;
 
@@ -119,13 +119,13 @@ void DFMProtocolDevice::unmounted(const QString &id)
     dp->mountHandler = nullptr;
 }
 
-DFMProtocolDevice::~DFMProtocolDevice()
+DProtocolDevice::~DProtocolDevice()
 {
 }
 
-QStringList DFMProtocolDevice::deviceIcons() const
+QStringList DProtocolDevice::deviceIcons() const
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DProtocolDevicePrivate>(d.data());
     if (!dp)
         return {};
     if (!dp->deviceIcons.isEmpty())
@@ -155,25 +155,25 @@ QStringList DFMProtocolDevice::deviceIcons() const
 }
 
 /*!
- * \brief DFMProtocolDevice::mountNetworkDevice
+ * \brief DProtocolDevice::mountNetworkDevice
  * \param address       remote link address like 'smb://1.2.3.4/sharefolder/
  * \param getPassInfo   an passwd-asking dialog should be exec in this function, and return a struct object which contains the passwd
  * \param mountResult   when mount finished, this function will be invoked.
  */
-void DFMProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int msecs)
+void DProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int msecs)
 {
     DNetworkMounter::mountNetworkDev(address, getPassInfo, getUserChoice, mountResult, msecs);
 }
 
-void DFMProtocolDevice::setOperatorTimeout(int msecs)
+void DProtocolDevice::setOperatorTimeout(int msecs)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMProtocolDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DProtocolDevicePrivate>(d.data());
     if (dp)
         dp->timeout = msecs;
 }
 
-DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &id, GVolumeMonitor *monitor, DFMProtocolDevice *qq)
-    : DFMDevicePrivate(qq), deviceId(id), volumeMonitor(monitor)
+DProtocolDevicePrivate::DProtocolDevicePrivate(const QString &id, GVolumeMonitor *monitor, DProtocolDevice *qq)
+    : DDevicePrivate(qq), deviceId(id), volumeMonitor(monitor)
 {
     auto vols = g_volume_monitor_get_volumes(monitor);
     while (vols) {
@@ -206,7 +206,7 @@ DFMProtocolDevicePrivate::DFMProtocolDevicePrivate(const QString &id, GVolumeMon
     g_list_free_full(mnts, g_object_unref);
 }
 
-DFMProtocolDevicePrivate::~DFMProtocolDevicePrivate()
+DProtocolDevicePrivate::~DProtocolDevicePrivate()
 {
     if (mountHandler)
         g_object_unref(mountHandler);
@@ -214,12 +214,12 @@ DFMProtocolDevicePrivate::~DFMProtocolDevicePrivate()
         g_object_unref(volumeHandler);
 }
 
-QString DFMProtocolDevicePrivate::path() const
+QString DProtocolDevicePrivate::path() const
 {
     return deviceId;
 }
 
-QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
+QString DProtocolDevicePrivate::mount(const QVariantMap &opts)
 {
     if (mountHandler) {
         //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
@@ -262,7 +262,7 @@ QString DFMProtocolDevicePrivate::mount(const QVariantMap &opts)
     return "";
 }
 
-void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
+void DProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
     if (mountHandler) {
         //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
@@ -293,13 +293,13 @@ void DFMProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperate
             operation = reinterpret_cast<GMountOperation *>((opts.value(ParamMountOperation).value<void *>()));
 
         CallbackProxyWithData *proxy = new CallbackProxyWithData(cb);
-        proxy->data = qobject_cast<DFMProtocolDevice *>(q);
+        proxy->data = qobject_cast<DProtocolDevice *>(q);
         proxy->d = this;
         g_volume_mount(volumeHandler, G_MOUNT_MOUNT_NONE, operation, cancellable, mountWithCallback, proxy);
     }
 }
 
-bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
+bool DProtocolDevicePrivate::unmount(const QVariantMap &opts)
 {
     if (!mountHandler) {
         lastError = DeviceError::UserErrorNotMounted;
@@ -335,7 +335,7 @@ bool DFMProtocolDevicePrivate::unmount(const QVariantMap &opts)
     return false;
 }
 
-void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     if (!mountHandler) {
         lastError = DeviceError::UserErrorNotMounted;
@@ -365,21 +365,21 @@ void DFMProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOpera
             //        qInfo() << "mutexForMount locked" << __FUNCTION__;
 
             CallbackProxyWithData *proxy = new CallbackProxyWithData(cb);
-            proxy->data = qobject_cast<DFMProtocolDevice *>(q);
+            proxy->data = qobject_cast<DProtocolDevice *>(q);
             proxy->d = this;
             g_mount_unmount_with_operation(mountHandler, flag, operation, cancellable, unmountWithCallback, proxy);
         }
     }
 }
 
-bool DFMProtocolDevicePrivate::rename(const QString &newName)
+bool DProtocolDevicePrivate::rename(const QString &newName)
 {
     Q_UNUSED(newName);
     qWarning() << "not supported operation" << __FUNCTION__;
     return false;
 }
 
-void DFMProtocolDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb)
+void DProtocolDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb)
 {
     Q_UNUSED(newName);
     Q_UNUSED(opts);
@@ -387,7 +387,7 @@ void DFMProtocolDevicePrivate::renameAsync(const QString &newName, const QVarian
     qWarning() << "not supported operation" << __FUNCTION__;
 }
 
-QString DFMProtocolDevicePrivate::mountPoint() const
+QString DProtocolDevicePrivate::mountPoint() const
 {
     //    qInfo() << "mutexForMount prelock" << __FUNCTION__;
     QMutexLocker locker(&mutexForMount);
@@ -397,32 +397,32 @@ QString DFMProtocolDevicePrivate::mountPoint() const
     return QString();
 }
 
-QString DFMProtocolDevicePrivate::fileSystem() const
+QString DProtocolDevicePrivate::fileSystem() const
 {
     return getAttr(Type).toString();
 }
 
-long DFMProtocolDevicePrivate::sizeTotal() const
+long DProtocolDevicePrivate::sizeTotal() const
 {
     return getAttr(Total).value<long>();
 }
 
-long DFMProtocolDevicePrivate::sizeUsage() const
+long DProtocolDevicePrivate::sizeUsage() const
 {
     return sizeTotal() - sizeFree();
 }
 
-long DFMProtocolDevicePrivate::sizeFree() const
+long DProtocolDevicePrivate::sizeFree() const
 {
     return getAttr(Free).value<long>();
 }
 
-DeviceType DFMProtocolDevicePrivate::deviceType() const
+DeviceType DProtocolDevicePrivate::deviceType() const
 {
     return DeviceType::ProtocolDevice;
 }
 
-QString DFMProtocolDevicePrivate::displayName() const
+QString DProtocolDevicePrivate::displayName() const
 {
     if (volumeHandler) {
         g_autofree char *displayName = g_volume_get_name(volumeHandler);
@@ -443,19 +443,19 @@ QString DFMProtocolDevicePrivate::displayName() const
     return "";
 }
 
-bool DFMProtocolDevicePrivate::eject()
+bool DProtocolDevicePrivate::eject()
 {
     qWarning() << "not supported operation" << __FUNCTION__;
     return false;
 }
 
-bool DFMProtocolDevicePrivate::powerOff()
+bool DProtocolDevicePrivate::powerOff()
 {
     qWarning() << "not supported operation" << __FUNCTION__;
     return false;
 }
 
-QString DFMProtocolDevicePrivate::mountPoint(GMount *mount)
+QString DProtocolDevicePrivate::mountPoint(GMount *mount)
 {
     QString mpt;
     g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
@@ -466,7 +466,7 @@ QString DFMProtocolDevicePrivate::mountPoint(GMount *mount)
     return mpt;
 }
 
-QVariant DFMProtocolDevicePrivate::getAttr(DFMProtocolDevicePrivate::FsAttr type) const
+QVariant DProtocolDevicePrivate::getAttr(DProtocolDevicePrivate::FsAttr type) const
 {
     if (fsAttrs.contains(QString::number(type)))
         return fsAttrs.value(QString::number(type));
@@ -546,7 +546,7 @@ static bool mountDone(GObject *sourceObj, GAsyncResult *res, DeviceError &derr)
     return ret;
 }
 
-void DFMProtocolDevicePrivate::mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker)
+void DProtocolDevicePrivate::mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker)
 {
     DeviceError err;
     bool ret = mountDone(sourceObj, res, err);
@@ -565,7 +565,7 @@ void DFMProtocolDevicePrivate::mountWithBlocker(GObject *sourceObj, GAsyncResult
     }
 }
 
-void DFMProtocolDevicePrivate::mountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy)
+void DProtocolDevicePrivate::mountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy)
 {
     DeviceError err;
     auto &&ret = mountDone(sourceObj, res, err);
@@ -583,7 +583,7 @@ void DFMProtocolDevicePrivate::mountWithCallback(GObject *sourceObj, GAsyncResul
     }
 }
 
-void DFMProtocolDevicePrivate::unmountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker)
+void DProtocolDevicePrivate::unmountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker)
 {
     auto mnt = reinterpret_cast<GMount *>(sourceObj);
 
@@ -603,7 +603,7 @@ void DFMProtocolDevicePrivate::unmountWithBlocker(GObject *sourceObj, GAsyncResu
     }
 }
 
-void DFMProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy)
+void DProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy)
 {
     auto mnt = reinterpret_cast<GMount *>(sourceObj);
 

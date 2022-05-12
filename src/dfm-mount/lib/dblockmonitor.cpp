@@ -21,13 +21,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "dfmblockmonitor.h"
-#include "private/dfmblockmonitor_p.h"
-#include "base/dfmdevice.h"
-#include "dfmblockdevice.h"
-#include "private/dfmblockdevice_p.h"
-#include "base/dfmmount_global.h"
-#include "base/dfmmountutils.h"
+#include "base/ddevice.h"
+#include "base/dmount_global.h"
+#include "base/dmountutils.h"
+#include "dblockdevice.h"
+#include "dblockmonitor.h"
+#include "private/dblockdevice_p.h"
+#include "private/dblockmonitor_p.h"
 
 #include <QDebug>
 #include <QMapIterator>
@@ -41,10 +41,10 @@ DFM_MOUNT_USE_NS
 #define UDISKS_BLOCK_IFACE_FILESYSTEM "org.freedesktop.UDisks2.Filesystem"
 #define UDISKS_BLOCK_IFACE_PARTITIONTABLE "org.freedesktop.UDisks2.PartitionTable"
 
-QMap<QString, QSet<QString>> DFMBlockMonitorPrivate::blksOfDrive = {};
+QMap<QString, QSet<QString>> DBlockMonitorPrivate::blksOfDrive = {};
 
-DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
-    : DFMMonitorPrivate(qq)
+DBlockMonitorPrivate::DBlockMonitorPrivate(DBlockMonitor *qq)
+    : DDeviceMonitorPrivate(qq)
 {
     GError *err = nullptr;
     client = udisks_client_new_sync(nullptr, &err);
@@ -56,7 +56,7 @@ DFMBlockMonitorPrivate::DFMBlockMonitorPrivate(DFMBlockMonitor *qq)
     initDevices();
 }
 
-DFMBlockMonitorPrivate::~DFMBlockMonitorPrivate()
+DBlockMonitorPrivate::~DBlockMonitorPrivate()
 {
     qDebug() << "block monitor release...";
     if (client) {
@@ -65,7 +65,7 @@ DFMBlockMonitorPrivate::~DFMBlockMonitorPrivate()
     }
 }
 
-bool DFMBlockMonitorPrivate::startMonitor()
+bool DBlockMonitorPrivate::startMonitor()
 {
     if (!client) {
         qCritical() << "client is not valid";
@@ -79,26 +79,26 @@ bool DFMBlockMonitorPrivate::startMonitor()
         return false;
     }
 
-    auto handler = g_signal_connect(dbusMng, OBJECT_ADDED, G_CALLBACK(&DFMBlockMonitorPrivate::onObjectAdded), q);
+    auto handler = g_signal_connect(dbusMng, OBJECT_ADDED, G_CALLBACK(&DBlockMonitorPrivate::onObjectAdded), q);
     connections.insert(OBJECT_ADDED, handler);
 
-    handler = g_signal_connect(dbusMng, OBJECT_REMOVED, G_CALLBACK(&DFMBlockMonitorPrivate::onObjectRemoved), q);
+    handler = g_signal_connect(dbusMng, OBJECT_REMOVED, G_CALLBACK(&DBlockMonitorPrivate::onObjectRemoved), q);
     connections.insert(OBJECT_REMOVED, handler);
 
-    handler = g_signal_connect(dbusMng, PROPERTY_CHANGED, G_CALLBACK(&DFMBlockMonitorPrivate::onPropertyChanged), q);
+    handler = g_signal_connect(dbusMng, PROPERTY_CHANGED, G_CALLBACK(&DBlockMonitorPrivate::onPropertyChanged), q);
     connections.insert(PROPERTY_CHANGED, handler);
 
-    handler = g_signal_connect(dbusMng, INTERFACE_ADDED, G_CALLBACK(&DFMBlockMonitorPrivate::onInterfaceAdded), q);
+    handler = g_signal_connect(dbusMng, INTERFACE_ADDED, G_CALLBACK(&DBlockMonitorPrivate::onInterfaceAdded), q);
     connections.insert(INTERFACE_ADDED, handler);
 
-    handler = g_signal_connect(dbusMng, INTERFACE_REMOVED, G_CALLBACK(&DFMBlockMonitorPrivate::onInterfaceRemoved), q);
+    handler = g_signal_connect(dbusMng, INTERFACE_REMOVED, G_CALLBACK(&DBlockMonitorPrivate::onInterfaceRemoved), q);
     connections.insert(INTERFACE_REMOVED, handler);
 
     qDebug() << "block monitor start";
     return true;
 }
 
-bool DFMBlockMonitorPrivate::stopMonitor()
+bool DBlockMonitorPrivate::stopMonitor()
 {
     if (!client) {
         qDebug() << "client is not valid";
@@ -114,12 +114,12 @@ bool DFMBlockMonitorPrivate::stopMonitor()
     return true;
 }
 
-DeviceType DFMBlockMonitorPrivate::monitorObjectType() const
+DeviceType DBlockMonitorPrivate::monitorObjectType() const
 {
     return DeviceType::BlockDevice;
 }
 
-QStringList DFMBlockMonitorPrivate::getDevices()
+QStringList DBlockMonitorPrivate::getDevices()
 {
     Q_ASSERT(client);
     UDisksManager *mng = udisks_client_get_manager(client);
@@ -148,22 +148,22 @@ QStringList DFMBlockMonitorPrivate::getDevices()
     return QStringList();
 }
 
-QSharedPointer<DFMDevice> DFMBlockMonitorPrivate::createDeviceById(const QString &id)
+QSharedPointer<DDevice> DBlockMonitorPrivate::createDeviceById(const QString &id)
 {
-    auto blk = new DFMBlockDevice(client, id, nullptr);
+    auto blk = new DBlockDevice(client, id, nullptr);
     // for a block device, there must have a block node in dbus, otherwise treat it as a invalid object
     if (blk->hasBlock()) {
-        QSharedPointer<DFMDevice> ret;
+        QSharedPointer<DDevice> ret;
         ret.reset(blk);
         return ret;
     } else {
         delete blk;
         blk = nullptr;
-        return QSharedPointer<DFMDevice>(nullptr);
+        return QSharedPointer<DDevice>(nullptr);
     }
 }
 
-QStringList DFMBlockMonitorPrivate::resolveDevice(const QVariantMap &devspec, const QVariantMap &opts)
+QStringList DBlockMonitorPrivate::resolveDevice(const QVariantMap &devspec, const QVariantMap &opts)
 {
     Q_ASSERT(client);
 
@@ -192,7 +192,7 @@ QStringList DFMBlockMonitorPrivate::resolveDevice(const QVariantMap &devspec, co
     return {};
 }
 
-QStringList DFMBlockMonitorPrivate::resolveDeviceNode(const QString &node, const QVariantMap &opts)
+QStringList DBlockMonitorPrivate::resolveDeviceNode(const QString &node, const QVariantMap &opts)
 {
     if (node.isEmpty())
         return QStringList();
@@ -200,15 +200,15 @@ QStringList DFMBlockMonitorPrivate::resolveDeviceNode(const QString &node, const
     return resolveDevice(devSpec, opts);
 }
 
-QStringList DFMBlockMonitorPrivate::resolveDeviceOfDrive(const QString &drvObjPath)
+QStringList DBlockMonitorPrivate::resolveDeviceOfDrive(const QString &drvObjPath)
 {
     return blksOfDrive.value(drvObjPath).toList();
 }
 
-void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
+void DBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
 {
     Q_UNUSED(mng);
-    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
+    DBlockMonitor *q = static_cast<DBlockMonitor *>(userData);
     Q_ASSERT(q);
 
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
@@ -253,11 +253,11 @@ void DFMBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject 
     }
 }
 
-void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
+void DBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)
 {
     Q_UNUSED(mng);
 
-    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
+    DBlockMonitor *q = static_cast<DBlockMonitor *>(userData);
     Q_ASSERT(q);
 
     UDisksObject *udisksObj = UDISKS_OBJECT(obj);
@@ -304,14 +304,14 @@ void DFMBlockMonitorPrivate::onObjectRemoved(GDBusObjectManager *mng, GDBusObjec
     }
 }
 
-void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *dbusObjProxy, GDBusProxy *dbusProxy,
-                                               GVariant *property, const gchar *const invalidProperty, gpointer userData)
+void DBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient, GDBusObjectProxy *dbusObjProxy, GDBusProxy *dbusProxy,
+                                             GVariant *property, const gchar *const invalidProperty, gpointer userData)
 {
     Q_UNUSED(mngClient);
     Q_UNUSED(dbusObjProxy);
     Q_UNUSED(invalidProperty);
 
-    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
+    DBlockMonitor *q = static_cast<DBlockMonitor *>(userData);
     if (!q)
         return;
 
@@ -358,9 +358,9 @@ void DFMBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClie
     }
 }
 
-void DFMBlockMonitorPrivate::onInterfaceAdded(GDBusObjectManager *mng, GDBusObject *obj, GDBusInterface *iface, gpointer userData)
+void DBlockMonitorPrivate::onInterfaceAdded(GDBusObjectManager *mng, GDBusObject *obj, GDBusInterface *iface, gpointer userData)
 {
-    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
+    DBlockMonitor *q = static_cast<DBlockMonitor *>(userData);
     Q_ASSERT(q);
 
     QString objPath = g_dbus_object_get_object_path(obj);
@@ -374,9 +374,9 @@ void DFMBlockMonitorPrivate::onInterfaceAdded(GDBusObjectManager *mng, GDBusObje
     }*/
 }
 
-void DFMBlockMonitorPrivate::onInterfaceRemoved(GDBusObjectManager *mng, GDBusObject *obj, GDBusInterface *iface, gpointer userData)
+void DBlockMonitorPrivate::onInterfaceRemoved(GDBusObjectManager *mng, GDBusObject *obj, GDBusInterface *iface, gpointer userData)
 {
-    DFMBlockMonitor *q = static_cast<DFMBlockMonitor *>(userData);
+    DBlockMonitor *q = static_cast<DBlockMonitor *>(userData);
     Q_ASSERT(q);
 
     QString objPath = g_dbus_object_get_object_path(obj);
@@ -390,7 +390,7 @@ void DFMBlockMonitorPrivate::onInterfaceRemoved(GDBusObjectManager *mng, GDBusOb
     }*/
 }
 
-void DFMBlockMonitorPrivate::initDevices()
+void DBlockMonitorPrivate::initDevices()
 {
     auto lst = getDevices();
     for (const auto &blk : lst) {
@@ -409,53 +409,53 @@ void DFMBlockMonitorPrivate::initDevices()
     }
 }
 
-DFMBlockMonitor::DFMBlockMonitor(QObject *parent)
-    : DFMMonitor(new DFMBlockMonitorPrivate(this), parent)
+DBlockMonitor::DBlockMonitor(QObject *parent)
+    : DDeviceMonitor(new DBlockMonitorPrivate(this), parent)
 {
-    auto dp = Utils::castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDeviceMonitorPrivate, DBlockMonitorPrivate>(d.data());
     if (!dp) {
         qCritical() << "private pointer not valid" << __PRETTY_FUNCTION__;
         abort();
     }
-    registerStartMonitor(std::bind(&DFMBlockMonitorPrivate::startMonitor, dp));
-    registerStopMonitor(std::bind(&DFMBlockMonitorPrivate::stopMonitor, dp));
-    registerMonitorObjectType(std::bind(&DFMBlockMonitorPrivate::monitorObjectType, dp));
-    registerGetDevices(std::bind(&DFMBlockMonitorPrivate::getDevices, dp));
-    registerCreateDeviceById(std::bind(&DFMBlockMonitorPrivate::createDeviceById, dp, std::placeholders::_1));
+    registerStartMonitor(std::bind(&DBlockMonitorPrivate::startMonitor, dp));
+    registerStopMonitor(std::bind(&DBlockMonitorPrivate::stopMonitor, dp));
+    registerMonitorObjectType(std::bind(&DBlockMonitorPrivate::monitorObjectType, dp));
+    registerGetDevices(std::bind(&DBlockMonitorPrivate::getDevices, dp));
+    registerCreateDeviceById(std::bind(&DBlockMonitorPrivate::createDeviceById, dp, std::placeholders::_1));
 }
 
-DFMBlockMonitor::~DFMBlockMonitor()
+DBlockMonitor::~DBlockMonitor()
 {
-    auto dp = Utils::castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDeviceMonitorPrivate, DBlockMonitorPrivate>(d.data());
     if (dp)
         dp->stopMonitor();
 }
 
 /*!
- * \brief DFMBlockMonitor::resolveDevice
+ * \brief DBlockMonitor::resolveDevice
  * \param devspec:  currently support keys: path, label and uuid
  * \param opts:     currently unused in udisks2
  * \return          the associated device object paths
  */
-QStringList DFMBlockMonitor::resolveDevice(const QVariantMap &devspec, const QVariantMap &opts)
+QStringList DBlockMonitor::resolveDevice(const QVariantMap &devspec, const QVariantMap &opts)
 {
-    auto dp = Utils::castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDeviceMonitorPrivate, DBlockMonitorPrivate>(d.data());
     return dp ? dp->resolveDevice(devspec, opts) : QStringList();
 }
 
-QStringList DFMBlockMonitor::resolveDeviceNode(const QString &node, const QVariantMap &opts)
+QStringList DBlockMonitor::resolveDeviceNode(const QString &node, const QVariantMap &opts)
 {
-    auto dp = Utils::castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDeviceMonitorPrivate, DBlockMonitorPrivate>(d.data());
     return dp ? dp->resolveDeviceNode(node, opts) : QStringList();
 }
 
 /*!
- * \brief DFMBlockMonitor::resolveDeviceFromDrive
+ * \brief DBlockMonitor::resolveDeviceFromDrive
  * \param drvObjPath:   object path for drive
  * \return              the associated block object paths
  */
-QStringList DFMBlockMonitor::resolveDeviceFromDrive(const QString &drvObjPath)
+QStringList DBlockMonitor::resolveDeviceFromDrive(const QString &drvObjPath)
 {
-    auto dp = Utils::castClassFromTo<DFMMonitorPrivate, DFMBlockMonitorPrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDeviceMonitorPrivate, DBlockMonitorPrivate>(d.data());
     return dp ? dp->resolveDeviceOfDrive(drvObjPath) : QStringList();
 }

@@ -19,21 +19,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "base/dfmdevice.h"
-#include "dfmdevicemanager.h"
-#include "private/dfmdevicemanager_p.h"
-#include "dfmblockmonitor.h"
+#include "base/ddevice.h"
+#include "ddevicemanager.h"
+#include "dblockmonitor.h"
+#include "private/ddevicemanager_p.h"
 
 #include <QDebug>
 
 DFM_MOUNT_USE_NS
 
-DFMDeviceManagerPrivate::DFMDeviceManagerPrivate(DFMDeviceManager *qq)
+DDeviceManagerPrivate::DDeviceManagerPrivate(DDeviceManager *qq)
     : q(qq)
 {
 }
 
-QSharedPointer<DFMMonitor> DFMDeviceManagerPrivate::getRegisteredMonitor(DeviceType type) const
+QSharedPointer<DDeviceMonitor> DDeviceManagerPrivate::getRegisteredMonitor(DeviceType type) const
 {
     if (type == DeviceType::AllDevice) {
         qWarning() << "DeviceType::AllDevice is not a specific type.";
@@ -42,7 +42,7 @@ QSharedPointer<DFMMonitor> DFMDeviceManagerPrivate::getRegisteredMonitor(DeviceT
     return monitors.value(type, nullptr);
 }
 
-bool DFMDeviceManagerPrivate::startMonitor()
+bool DDeviceManagerPrivate::startMonitor()
 {
     bool res = true;
     for (const auto &monitor : monitors) {
@@ -56,7 +56,7 @@ bool DFMDeviceManagerPrivate::startMonitor()
     return res;
 }
 
-bool DFMDeviceManagerPrivate::stopMonitor()
+bool DDeviceManagerPrivate::stopMonitor()
 {
     bool res = true;
     for (const auto &monitor : monitors) {
@@ -70,7 +70,7 @@ bool DFMDeviceManagerPrivate::stopMonitor()
     return res;
 }
 
-QMap<DeviceType, QStringList> DFMDeviceManagerPrivate::devices(DeviceType type)
+QMap<DeviceType, QStringList> DDeviceManagerPrivate::devices(DeviceType type)
 {
     auto getAllDev = [this] {
         QMap<DeviceType, QStringList> ret;
@@ -107,58 +107,58 @@ QMap<DeviceType, QStringList> DFMDeviceManagerPrivate::devices(DeviceType type)
     return {};
 }
 
-DFMDeviceManager::DFMDeviceManager(QObject *parent)
-    : QObject(parent), d(new DFMDeviceManagerPrivate(this))
+DDeviceManager::DDeviceManager(QObject *parent)
+    : QObject(parent), d(new DDeviceManagerPrivate(this))
 {
-    registerMonitor<DFMBlockMonitor>(this);
-    registerMonitor<DFMProtocolMonitor>(this);
+    registerMonitor<DBlockMonitor>(this);
+    registerMonitor<DProtocolMonitor>(this);
 }
 
-DFMDeviceManager::~DFMDeviceManager()
+DDeviceManager::~DDeviceManager()
 {
 }
 
-DFMDeviceManager *DFMDeviceManager::instance()
+DDeviceManager *DDeviceManager::instance()
 {
-    static DFMDeviceManager mng;
+    static DDeviceManager mng;
     return &mng;
 }
 
-QSharedPointer<DFMMonitor> DFMDeviceManager::getRegisteredMonitor(DeviceType type) const
+QSharedPointer<DDeviceMonitor> DDeviceManager::getRegisteredMonitor(DeviceType type) const
 {
     return d->getRegisteredMonitor(type);
 }
 
-bool DFMDeviceManager::startMonitorWatch()
+bool DDeviceManager::startMonitorWatch()
 {
     return d->startMonitor();
 }
 
-bool DFMDeviceManager::stopMonitorWatch()
+bool DDeviceManager::stopMonitorWatch()
 {
     return d->stopMonitor();
 }
 
-MonitorError DFMDeviceManager::lastError() const
+MonitorError DDeviceManager::lastError() const
 {
     return d->lastError;
 }
 
-QMap<DeviceType, QStringList> DFMDeviceManager::devices(DeviceType type)
+QMap<DeviceType, QStringList> DDeviceManager::devices(DeviceType type)
 {
     return d->devices(type);
 }
 
 template<class DFMSubMonitor, typename... ConstructArgs>
-bool DFMDeviceManager::registerMonitor(ConstructArgs &&... args)
+bool DDeviceManager::registerMonitor(ConstructArgs &&... args)
 {
     return d->registerMonitor<DFMSubMonitor>(std::forward<ConstructArgs>(args)...);
 }
 
 template<typename DFMSubMonitor, typename... ConstructArgs>
-bool DFMDeviceManagerPrivate::registerMonitor(ConstructArgs &&... args)
+bool DDeviceManagerPrivate::registerMonitor(ConstructArgs &&... args)
 {
-    QSharedPointer<DFMMonitor> monitor(new DFMSubMonitor(std::forward<ConstructArgs>(args)...));
+    QSharedPointer<DDeviceMonitor> monitor(new DFMSubMonitor(std::forward<ConstructArgs>(args)...));
     if (!monitor) return false;
 
     auto type = monitor->monitorObjectType();
@@ -168,19 +168,19 @@ bool DFMDeviceManagerPrivate::registerMonitor(ConstructArgs &&... args)
     }
     monitors.insert(type, monitor);
 
-    QObject::connect(monitor.data(), &DFMMonitor::deviceAdded, q, [type, this](const QString &devId) {
+    QObject::connect(monitor.data(), &DDeviceMonitor::deviceAdded, q, [type, this](const QString &devId) {
         Q_EMIT q->deviceAdded(devId, type);
     });
-    QObject::connect(monitor.data(), &DFMMonitor::deviceRemoved, q, [type, this](const QString &devId) {
+    QObject::connect(monitor.data(), &DDeviceMonitor::deviceRemoved, q, [type, this](const QString &devId) {
         Q_EMIT q->deviceRemoved(devId, type);
     });
-    QObject::connect(monitor.data(), &DFMMonitor::mountAdded, q, [type, this](const QString &devId, const QString &mpt) {
+    QObject::connect(monitor.data(), &DDeviceMonitor::mountAdded, q, [type, this](const QString &devId, const QString &mpt) {
         Q_EMIT q->mounted(devId, mpt, type);
     });
-    QObject::connect(monitor.data(), &DFMMonitor::mountRemoved, q, [type, this](const QString &devId) {
+    QObject::connect(monitor.data(), &DDeviceMonitor::mountRemoved, q, [type, this](const QString &devId) {
         Q_EMIT q->unmounted(devId, type);
     });
-    QObject::connect(monitor.data(), &DFMMonitor::propertyChanged, q, [type, this](const QString &devId, const QMap<Property, QVariant> &changes) {
+    QObject::connect(monitor.data(), &DDeviceMonitor::propertyChanged, q, [type, this](const QString &devId, const QMap<Property, QVariant> &changes) {
         Q_EMIT q->propertyChanged(devId, changes, type);
     });
 

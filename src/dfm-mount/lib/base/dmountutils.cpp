@@ -21,11 +21,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "base/dfmmountutils.h"
+#include "base/dmountutils.h"
 
 #include <QDebug>
 
+extern "C" {
 #include <glib.h>
+}
 
 DFM_MOUNT_USE_NS
 

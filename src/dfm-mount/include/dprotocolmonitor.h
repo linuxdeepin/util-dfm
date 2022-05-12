@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Uniontech Software Technology Co., Ltd.
+ * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
  *
  * Author:     xushitong<xushitong@uniontech.com>
  *
@@ -20,15 +20,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMMOUNT_H
-#define DFMMOUNT_H
+#ifndef DPROTOCOLMONITOR_H
+#define DPROTOCOLMONITOR_H
 
-#include <base/dfmmount_global.h>
-#include <base/dfmmountutils.h>
-#include <dfmdevicemanager.h>
-#include <dfmblockmonitor.h>
-#include <dfmblockdevice.h>
-#include <dfmprotocolmonitor.h>
-#include <dfmprotocoldevice.h>
+#include "base/ddevicemonitor.h"
 
-#endif   // DFMMOUNT_H
+#include <QObject>
+
+DFM_MOUNT_BEGIN_NS
+class DProtocolMonitorPrivate;
+class DProtocolMonitor : public DDeviceMonitor
+{
+    Q_OBJECT
+
+public:
+    DProtocolMonitor(QObject *parent = nullptr);
+    ~DProtocolMonitor();
+};
+DFM_MOUNT_END_NS
+
+#endif   // DBLOCKMONITOR_H

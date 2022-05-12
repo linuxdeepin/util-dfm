@@ -20,10 +20,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMMOUNTUTILS_H
-#define DFMMOUNTUTILS_H
+#ifndef DMOUNTUTILS_H
+#define DMOUNTUTILS_H
 
-#include "dfmmount_global.h"
+#include "dmount_global.h"
 
 #include <QVariant>
 #include <QCoreApplication>

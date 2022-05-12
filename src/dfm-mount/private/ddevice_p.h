@@ -20,11 +20,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMDEVICEPRIVATE_H
-#define DFMDEVICEPRIVATE_H
+#ifndef DDEVICEPRIVATE_H
+#define DDEVICEPRIVATE_H
 
-#include "base/dfmmount_global.h"
-#include "base/dfmdevice.h"
+#include "base/dmount_global.h"
+#include "base/ddevice.h"
 
 DFM_MOUNT_BEGIN_NS
 
@@ -39,34 +39,34 @@ public:
     DeviceOperateCallbackWithMessage cbWithInfo { nullptr };
 };
 
-class DFMDevicePrivate
+class DDevicePrivate
 {
 public:
-    DFMDevicePrivate(DFMDevice *qq);
-    virtual ~DFMDevicePrivate();
+    DDevicePrivate(DDevice *qq);
+    virtual ~DDevicePrivate();
 
-    DFMDevice::PathFunc path { nullptr };
-    DFMDevice::MountFunc mount { nullptr };
-    DFMDevice::MountAsyncFunc mountAsync { nullptr };
-    DFMDevice::UnmountFunc unmount { nullptr };
-    DFMDevice::UnmountAsyncFunc unmountAsync { nullptr };
-    DFMDevice::RenameFunc rename { nullptr };
-    DFMDevice::RenameAsyncFunc renameAsync { nullptr };
-    DFMDevice::MountPointFunc mountPoint { nullptr };
-    DFMDevice::FileSystemFunc fileSystem { nullptr };
-    DFMDevice::SizeTotalFunc sizeTotal { nullptr };
-    DFMDevice::SizeUsageFunc sizeUsage { nullptr };
-    DFMDevice::SizeFreeFunc sizeFree { nullptr };
-    DFMDevice::DeviceTypeFunc deviceType { nullptr };
-    DFMDevice::GetPropertyFunc getProperty { nullptr };
-    DFMDevice::DisplayNameFunc displayName { nullptr };
+    DDevice::PathFunc path { nullptr };
+    DDevice::MountFunc mount { nullptr };
+    DDevice::MountAsyncFunc mountAsync { nullptr };
+    DDevice::UnmountFunc unmount { nullptr };
+    DDevice::UnmountAsyncFunc unmountAsync { nullptr };
+    DDevice::RenameFunc rename { nullptr };
+    DDevice::RenameAsyncFunc renameAsync { nullptr };
+    DDevice::MountPointFunc mountPoint { nullptr };
+    DDevice::FileSystemFunc fileSystem { nullptr };
+    DDevice::SizeTotalFunc sizeTotal { nullptr };
+    DDevice::SizeUsageFunc sizeUsage { nullptr };
+    DDevice::SizeFreeFunc sizeFree { nullptr };
+    DDevice::DeviceTypeFunc deviceType { nullptr };
+    DDevice::GetPropertyFunc getProperty { nullptr };
+    DDevice::DisplayNameFunc displayName { nullptr };
 
     mutable DeviceError lastError { DeviceError::NoError };
 
 protected:
-    DFMDevice *q = nullptr;
+    DDevice *q = nullptr;
 };
 
 DFM_MOUNT_END_NS
 
-#endif   // DFMDEVICEPRIVATE_H
+#endif   // DDEVICEPRIVATE_H

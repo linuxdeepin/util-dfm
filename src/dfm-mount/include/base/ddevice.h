@@ -20,10 +20,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMDEVICE_H
-#define DFMDEVICE_H
+#ifndef DDEVICE_H
+#define DDEVICE_H
 
-#include "dfmmount_global.h"
+#include "dmount_global.h"
 
 #include <QObject>
 #include <QSharedPointer>
@@ -35,36 +35,36 @@
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMDevicePrivate;
-class DFMDevice : public QObject
+class DDevicePrivate;
+class DDevice : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit DFMDevice(DFMDevicePrivate *dd, QObject *parent = nullptr);
-    virtual ~DFMDevice();
+    explicit DDevice(DDevicePrivate *dd, QObject *parent = nullptr);
+    virtual ~DDevice();
 
-    DFM_MNT_VIRTUAL QString path() const;
-    DFM_MNT_VIRTUAL QString mount(const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void mountAsync(const QVariantMap &opts = {}, DeviceOperateCallbackWithMessage cb = nullptr);
-    DFM_MNT_VIRTUAL bool unmount(const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void unmountAsync(const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
-    DFM_MNT_VIRTUAL bool rename(const QString &newName, const QVariantMap &opts = {});
-    DFM_MNT_VIRTUAL void renameAsync(const QString &newName, const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
-    DFM_MNT_VIRTUAL QString mountPoint() const;
-    DFM_MNT_VIRTUAL QString fileSystem() const;
-    DFM_MNT_VIRTUAL qint64 sizeTotal() const;
+    DMNT_VIRTUAL QString path() const;
+    DMNT_VIRTUAL QString mount(const QVariantMap &opts = {});
+    DMNT_VIRTUAL void mountAsync(const QVariantMap &opts = {}, DeviceOperateCallbackWithMessage cb = nullptr);
+    DMNT_VIRTUAL bool unmount(const QVariantMap &opts = {});
+    DMNT_VIRTUAL void unmountAsync(const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
+    DMNT_VIRTUAL bool rename(const QString &newName, const QVariantMap &opts = {});
+    DMNT_VIRTUAL void renameAsync(const QString &newName, const QVariantMap &opts = {}, DeviceOperateCallback cb = nullptr);
+    DMNT_VIRTUAL QString mountPoint() const;
+    DMNT_VIRTUAL QString fileSystem() const;
+    DMNT_VIRTUAL qint64 sizeTotal() const;
 
     // use these two functions CAUTION!!! for block devices if you invoke just after mount sync, the
     // mount point of this device cannot be returned correctly, so there is no way to get the useage
     // via QStorageInfo cause cannot get the mountpoint right away.
     // already submit an issue to report this: https://github.com/storaged-project/udisks/issues/930
-    DFM_MNT_VIRTUAL qint64 sizeFree() const;
-    DFM_MNT_VIRTUAL qint64 sizeUsage() const;
+    DMNT_VIRTUAL qint64 sizeFree() const;
+    DMNT_VIRTUAL qint64 sizeUsage() const;
 
-    DFM_MNT_VIRTUAL DeviceType deviceType() const;
-    DFM_MNT_VIRTUAL QVariant getProperty(Property name) const;
-    DFM_MNT_VIRTUAL QString displayName() const;
+    DMNT_VIRTUAL DeviceType deviceType() const;
+    DMNT_VIRTUAL QVariant getProperty(Property name) const;
+    DMNT_VIRTUAL QString displayName() const;
 
     DeviceError lastError() const;
 
@@ -103,8 +103,8 @@ public:
     void registerDisplayName(const DisplayNameFunc &func);
 
 protected:
-    QScopedPointer<DFMDevicePrivate> d;
+    QScopedPointer<DDevicePrivate> d;
 };
 DFM_MOUNT_END_NS
 
-#endif   // DFMDEVICE_H
+#endif   // DDEVICE_H

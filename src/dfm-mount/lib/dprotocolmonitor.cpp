@@ -21,11 +21,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "dfmprotocolmonitor.h"
-#include "private/dfmprotocolmonitor_p.h"
-#include "private/dfmprotocoldevice_p.h"
-#include "dfmprotocoldevice.h"
-#include "base/dfmmountutils.h"
+#include "base/dmountutils.h"
+#include "dprotocolmonitor.h"
+#include "dprotocoldevice.h"
+#include "private/dprotocolmonitor_p.h"
+#include "private/dprotocoldevice_p.h"
 
 #include <QUuid>
 #include <QDebug>
@@ -39,27 +39,27 @@ extern "C" {
 
 DFM_MOUNT_USE_NS
 
-DFMProtocolMonitor::DFMProtocolMonitor(QObject *parent)
-    : DFMMonitor(new DFMProtocolMonitorPrivate(this), parent)
+DProtocolMonitor::DProtocolMonitor(QObject *parent)
+    : DDeviceMonitor(new DProtocolMonitorPrivate(this), parent)
 {
-    auto dp = Utils::castClassFromTo<DFMMonitorPrivate, DFMProtocolMonitorPrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDeviceMonitorPrivate, DProtocolMonitorPrivate>(d.data());
     if (!dp) {
         qCritical() << "private pointer not valid" << __PRETTY_FUNCTION__;
         abort();
     }
-    registerStartMonitor(std::bind(&DFMProtocolMonitorPrivate::startMonitor, dp));
-    registerStopMonitor(std::bind(&DFMProtocolMonitorPrivate::stopMonitor, dp));
-    registerMonitorObjectType(std::bind(&DFMProtocolMonitorPrivate::monitorObjectType, dp));
-    registerGetDevices(std::bind(&DFMProtocolMonitorPrivate::getDevices, dp));
-    registerCreateDeviceById(std::bind(&DFMProtocolMonitorPrivate::createDevice, dp, std::placeholders::_1));
+    registerStartMonitor(std::bind(&DProtocolMonitorPrivate::startMonitor, dp));
+    registerStopMonitor(std::bind(&DProtocolMonitorPrivate::stopMonitor, dp));
+    registerMonitorObjectType(std::bind(&DProtocolMonitorPrivate::monitorObjectType, dp));
+    registerGetDevices(std::bind(&DProtocolMonitorPrivate::getDevices, dp));
+    registerCreateDeviceById(std::bind(&DProtocolMonitorPrivate::createDevice, dp, std::placeholders::_1));
 }
 
-DFMProtocolMonitor::~DFMProtocolMonitor()
+DProtocolMonitor::~DProtocolMonitor()
 {
 }
 
-DFMProtocolMonitorPrivate::DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq)
-    : DFMMonitorPrivate(qq)
+DProtocolMonitorPrivate::DProtocolMonitorPrivate(DProtocolMonitor *qq)
+    : DDeviceMonitorPrivate(qq)
 {
     // gvolumemonitor must be initialized in main thread
     if (QThread::currentThread() != qApp->thread()) {
@@ -75,14 +75,14 @@ DFMProtocolMonitorPrivate::DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq)
     initDeviceList();
 }
 
-DFMProtocolMonitorPrivate::~DFMProtocolMonitorPrivate()
+DProtocolMonitorPrivate::~DProtocolMonitorPrivate()
 {
     if (gVolMonitor)
         g_object_unref(gVolMonitor);
     gVolMonitor = nullptr;
 }
 
-bool DFMProtocolMonitorPrivate::startMonitor()
+bool DProtocolMonitorPrivate::startMonitor()
 {
     if (!gVolMonitor) {
         qCritical() << "monitor is not valid";
@@ -91,29 +91,29 @@ bool DFMProtocolMonitorPrivate::startMonitor()
 
     ulong handler = 0;
 
-    handler = g_signal_connect(gVolMonitor, MOUNT_ADDED, G_CALLBACK(&DFMProtocolMonitorPrivate::onMountAdded), this);
+    handler = g_signal_connect(gVolMonitor, MOUNT_ADDED, G_CALLBACK(&DProtocolMonitorPrivate::onMountAdded), this);
     connections.insert(MOUNT_ADDED, handler);
 
-    //    handler = g_signal_connect(gVolMonitor, MOUNT_CHANGED, G_CALLBACK(&DFMProtocolMonitorPrivate::onMountChanged), this);
+    //    handler = g_signal_connect(gVolMonitor, MOUNT_CHANGED, G_CALLBACK(&DProtocolMonitorPrivate::onMountChanged), this);
     //    connections.insert(MOUNT_CHANGED, handler);
 
-    handler = g_signal_connect(gVolMonitor, MOUNT_REMOVED, G_CALLBACK(&DFMProtocolMonitorPrivate::onMountRemoved), this);
+    handler = g_signal_connect(gVolMonitor, MOUNT_REMOVED, G_CALLBACK(&DProtocolMonitorPrivate::onMountRemoved), this);
     connections.insert(MOUNT_REMOVED, handler);
 
-    handler = g_signal_connect(gVolMonitor, VOLUME_ADDED, G_CALLBACK(&DFMProtocolMonitorPrivate::onVolumeAdded), this);
+    handler = g_signal_connect(gVolMonitor, VOLUME_ADDED, G_CALLBACK(&DProtocolMonitorPrivate::onVolumeAdded), this);
     connections.insert(VOLUME_ADDED, handler);
 
-    //    handler = g_signal_connect(gVolMonitor, VOLUME_CHANGED, G_CALLBACK(&DFMProtocolMonitorPrivate::onVolumeChanged), this);
+    //    handler = g_signal_connect(gVolMonitor, VOLUME_CHANGED, G_CALLBACK(&DProtocolMonitorPrivate::onVolumeChanged), this);
     //    connections.insert(VOLUME_CHANGED, handler);
 
-    handler = g_signal_connect(gVolMonitor, VOLUME_REMOVED, G_CALLBACK(&DFMProtocolMonitorPrivate::onVolumeRemoved), this);
+    handler = g_signal_connect(gVolMonitor, VOLUME_REMOVED, G_CALLBACK(&DProtocolMonitorPrivate::onVolumeRemoved), this);
     connections.insert(VOLUME_REMOVED, handler);
 
     qDebug() << "protocol monitor start";
     return true;
 }
 
-bool DFMProtocolMonitorPrivate::stopMonitor()
+bool DProtocolMonitorPrivate::stopMonitor()
 {
     for (auto iter = connections.cbegin(); iter != connections.cend(); iter++)
         g_signal_handler_disconnect(gVolMonitor, iter.value());
@@ -123,36 +123,36 @@ bool DFMProtocolMonitorPrivate::stopMonitor()
     return true;
 }
 
-DeviceType DFMProtocolMonitorPrivate::monitorObjectType() const
+DeviceType DProtocolMonitorPrivate::monitorObjectType() const
 {
     return DeviceType::ProtocolDevice;
 }
 
-QStringList DFMProtocolMonitorPrivate::getDevices()
+QStringList DProtocolMonitorPrivate::getDevices()
 {
     return cachedDevices.toList();
 }
 
-QSharedPointer<DFMDevice> DFMProtocolMonitorPrivate::createDevice(const QString &id)
+QSharedPointer<DDevice> DProtocolMonitorPrivate::createDevice(const QString &id)
 {
-    auto dev = new DFMProtocolDevice(id, gVolMonitor, nullptr);
+    auto dev = new DProtocolDevice(id, gVolMonitor, nullptr);
 
     // for updating the mounthandler of device, if the device exists.
-    QObject::connect(q, &DFMProtocolMonitor::mountAdded, dev, &DFMProtocolDevice::mounted);
-    QObject::connect(q, &DFMProtocolMonitor::mountRemoved, dev, &DFMProtocolDevice::unmounted);
+    QObject::connect(q, &DProtocolMonitor::mountAdded, dev, &DProtocolDevice::mounted);
+    QObject::connect(q, &DProtocolMonitor::mountRemoved, dev, &DProtocolDevice::unmounted);
 
-    QSharedPointer<DFMDevice> ret;
+    QSharedPointer<DDevice> ret;
     ret.reset(dev);
     return ret;
 }
 
-QSharedPointer<DFMDevice> DFMProtocolMonitorPrivate::createDeviceByMount()
+QSharedPointer<DDevice> DProtocolMonitorPrivate::createDeviceByMount()
 {
     // TODO
     return nullptr;
 }
 
-void DFMProtocolMonitorPrivate::initDeviceList()
+void DProtocolMonitorPrivate::initDeviceList()
 {
     /* all blocks have a GDrive object, but we need to handle CDDA which exactly has a GDrive
      * GDrive   <-->    UDisks::Drive
@@ -166,13 +166,13 @@ void DFMProtocolMonitorPrivate::initDeviceList()
      *      no             no            opt         virtual devices (smb/ftp/sftp, etc.)
      * -----------------------------------------------------------------------------------
      * opt means the Object is not existed anytime, only if it was mounted, then GMount object generated.
-     * so, we need to gather both phones and virtual devices and ignore block devices which will be gathered in DFMBlockMonitor.
+     * so, we need to gather both phones and virtual devices and ignore block devices which will be gathered in DBlockMonitor.
      * */
 
     // first, get all volumes which do not have a GDrive.
     GList *vols = g_volume_monitor_get_volumes(gVolMonitor);
     auto iterVol = [](gpointer pVol, gpointer userData) {
-        auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+        auto d = static_cast<DProtocolMonitorPrivate *>(userData);
         Q_ASSERT(d);
 
         GVolume *vol = static_cast<GVolume *>(pVol);
@@ -197,7 +197,7 @@ void DFMProtocolMonitorPrivate::initDeviceList()
     // second, find those orphan mounts
     GList *mnts = g_volume_monitor_get_mounts(gVolMonitor);
     auto iterMnt = [](gpointer pMnt, gpointer userData) {
-        auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+        auto d = static_cast<DProtocolMonitorPrivate *>(userData);
         Q_ASSERT(d);
 
         GMount *mnt = static_cast<GMount *>(pMnt);
@@ -212,7 +212,7 @@ void DFMProtocolMonitorPrivate::initDeviceList()
         g_autoptr(GFile) root = g_mount_get_root(mnt);
         if (root) {
             g_autofree char *curi = g_file_get_uri(root);
-            if (!isNativeMount(DFMProtocolDevicePrivate::mountPoint(mnt)))
+            if (!isNativeMount(DProtocolDevicePrivate::mountPoint(mnt)))
                 d->cachedDevices.insert(curi);
         } else {
             g_autofree char *cname = g_mount_get_name(mnt);
@@ -223,14 +223,14 @@ void DFMProtocolMonitorPrivate::initDeviceList()
     g_list_free_full(mnts, g_object_unref);
 }
 
-void DFMProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
+void DProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
 {
     Q_UNUSED(monitor);
-    auto mpt = DFMProtocolDevicePrivate::mountPoint(mount);
+    auto mpt = DProtocolDevicePrivate::mountPoint(mount);
     if (isNativeMount(mpt) || hasDrive(mount))
         return;
 
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+    auto d = static_cast<DProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
     g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
@@ -243,26 +243,26 @@ void DFMProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *mo
     }
 }
 
-void DFMProtocolMonitorPrivate::onMountChanged(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
+void DProtocolMonitorPrivate::onMountChanged(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
 {
     Q_UNUSED(monitor);
     if (hasDrive(mount))   // don't handle real block devices
         return;
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+    auto d = static_cast<DProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
     qDebug() << __FUNCTION__;
 }
 
-void DFMProtocolMonitorPrivate::onMountRemoved(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
+void DProtocolMonitorPrivate::onMountRemoved(GVolumeMonitor *monitor, GMount *mount, gpointer userData)
 {
     Q_UNUSED(monitor);
     if (hasDrive(mount))   // don't handle real block devices
         return;
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+    auto d = static_cast<DProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
-    auto mpt = DFMProtocolDevicePrivate::mountPoint(mount);
+    auto mpt = DProtocolDevicePrivate::mountPoint(mount);
     //    if (!mpt.isEmpty() && isNativeMount(mpt))   // don't report block device unmounted.
     //        return;
 
@@ -277,12 +277,12 @@ void DFMProtocolMonitorPrivate::onMountRemoved(GVolumeMonitor *monitor, GMount *
     }
 }
 
-void DFMProtocolMonitorPrivate::onVolumeAdded(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
+void DProtocolMonitorPrivate::onVolumeAdded(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
 {
     Q_UNUSED(monitor);
     if (hasDrive(volume))   // don't handle real block devices
         return;
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+    auto d = static_cast<DProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
     g_autoptr(GFile) activationRoot = g_volume_get_activation_root(volume);
@@ -295,23 +295,23 @@ void DFMProtocolMonitorPrivate::onVolumeAdded(GVolumeMonitor *monitor, GVolume *
     }
 }
 
-void DFMProtocolMonitorPrivate::onVolumeChanged(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
+void DProtocolMonitorPrivate::onVolumeChanged(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
 {
     Q_UNUSED(monitor);
     if (hasDrive(volume))   // don't handle real block devices
         return;
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+    auto d = static_cast<DProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
     qDebug() << __FUNCTION__;
 }
 
-void DFMProtocolMonitorPrivate::onVolumeRemoved(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
+void DProtocolMonitorPrivate::onVolumeRemoved(GVolumeMonitor *monitor, GVolume *volume, gpointer userData)
 {
     Q_UNUSED(monitor);
     if (hasDrive(volume))   // don't handle real block devices
         return;
-    auto d = static_cast<DFMProtocolMonitorPrivate *>(userData);
+    auto d = static_cast<DProtocolMonitorPrivate *>(userData);
     Q_ASSERT(d);
 
     g_autoptr(GFile) activationRoot = g_volume_get_activation_root(volume);
@@ -324,7 +324,7 @@ void DFMProtocolMonitorPrivate::onVolumeRemoved(GVolumeMonitor *monitor, GVolume
     }
 }
 
-bool DFMProtocolMonitorPrivate::hasDrive(GMount *mount)
+bool DProtocolMonitorPrivate::hasDrive(GMount *mount)
 {
     if (!mount)
         return false;
@@ -332,7 +332,7 @@ bool DFMProtocolMonitorPrivate::hasDrive(GMount *mount)
     return drv ? true : false;
 }
 
-bool DFMProtocolMonitorPrivate::hasDrive(GVolume *volume)
+bool DProtocolMonitorPrivate::hasDrive(GVolume *volume)
 {
     if (!volume)
         return false;
@@ -340,7 +340,7 @@ bool DFMProtocolMonitorPrivate::hasDrive(GVolume *volume)
     return drv ? true : false;
 }
 
-bool DFMProtocolMonitorPrivate::isNativeMount(const QString &mpt)
+bool DProtocolMonitorPrivate::isNativeMount(const QString &mpt)
 {
     if (mpt.isEmpty())
         return false;
@@ -355,7 +355,7 @@ bool DFMProtocolMonitorPrivate::isNativeMount(const QString &mpt)
     return false;
 }
 
-bool DFMProtocolMonitorPrivate::isOrphanMount(GMount *mount)
+bool DProtocolMonitorPrivate::isOrphanMount(GMount *mount)
 {
     g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
     g_autofree char *curi = g_file_get_uri(mntRoot);

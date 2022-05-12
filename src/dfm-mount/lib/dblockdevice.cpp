@@ -21,20 +21,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "dfmblockdevice.h"
-#include "private/dfmblockdevice_p.h"
-#include "base/dfmmount_global.h"
-#include "base/dfmmountutils.h"
+#include "base/dmount_global.h"
+#include "base/dmountutils.h"
+#include "dblockdevice.h"
+#include "private/dblockdevice_p.h"
 
 #include <QStorageInfo>
 #include <QDebug>
 
 #include <functional>
+
+extern "C" {
 #include <udisks/udisks.h>
+}
 
 DFM_MOUNT_USE_NS
 
-inline void DFMBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info)
+inline void DBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info)
 {
     DeviceError err = DeviceError::NoError;
     if (!result) {
@@ -52,7 +55,7 @@ inline void DFMBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, b
     }
 }
 
-void DFMBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+void DBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
@@ -64,7 +67,7 @@ void DFMBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult 
     handleErrorAndRelease(proxy, result, err, mountPoint);   // ignore mount point, which will be notified by onPropertyChanged
 };
 
-void DFMBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+void DBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
@@ -75,7 +78,7 @@ void DFMBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResul
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+void DBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
     UDisksFilesystem *fs = UDISKS_FILESYSTEM(sourceObj);
     Q_ASSERT_X(fs, __FUNCTION__, "fs is not valid");
@@ -86,7 +89,7 @@ void DFMBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+void DBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
     UDisksDrive *drive = UDISKS_DRIVE(sourceObj);
     Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
@@ -97,7 +100,7 @@ void DFMBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult 
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+void DBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
     UDisksDrive *drive = UDISKS_DRIVE(sourceObj);
     Q_ASSERT_X(drive, __FUNCTION__, "drive is not valid");
@@ -108,7 +111,7 @@ void DFMBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResu
     handleErrorAndRelease(proxy, result, err);
 };
 
-void DFMBlockDevicePrivate::lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+void DBlockDevicePrivate::lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
     UDisksEncrypted *encrypted = UDISKS_ENCRYPTED(sourceObj);
     Q_ASSERT_X(encrypted, __FUNCTION__, "encrypted is not valid");
@@ -119,7 +122,7 @@ void DFMBlockDevicePrivate::lockAsyncCallback(GObject *sourceObj, GAsyncResult *
     handleErrorAndRelease(proxy, result, err);
 }
 
-void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+void DBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
     UDisksEncrypted *encrypted = UDISKS_ENCRYPTED(sourceObj);
     Q_ASSERT_X(encrypted, __FUNCTION__, "encrypted is not valid");
@@ -131,7 +134,7 @@ void DFMBlockDevicePrivate::unlockAsyncCallback(GObject *sourceObj, GAsyncResult
     handleErrorAndRelease(proxy, result, err, QString(clearTextDev));
 }
 
-void DFMBlockDevicePrivate::rescanAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
+void DBlockDevicePrivate::rescanAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
     UDisksBlock *block = UDISKS_BLOCK(sourceObj);
     Q_ASSERT_X(block, __FUNCTION__, "block is not valid");
@@ -142,7 +145,7 @@ void DFMBlockDevicePrivate::rescanAsyncCallback(GObject *sourceObj, GAsyncResult
     handleErrorAndRelease(proxy, result, err);
 }
 
-UDisksObject_autoptr DFMBlockDevicePrivate::getUDisksObject() const
+UDisksObject_autoptr DBlockDevicePrivate::getUDisksObject() const
 {
     Q_ASSERT(client);
     Q_ASSERT(!blkObjPath.isEmpty());
@@ -152,7 +155,7 @@ UDisksObject_autoptr DFMBlockDevicePrivate::getUDisksObject() const
     return obj;
 }
 
-UDisksBlock_autoptr DFMBlockDevicePrivate::getBlockHandler() const
+UDisksBlock_autoptr DBlockDevicePrivate::getBlockHandler() const
 {
     UDisksObject_autoptr obj = getUDisksObject();
     if (!obj) {
@@ -164,7 +167,7 @@ UDisksBlock_autoptr DFMBlockDevicePrivate::getBlockHandler() const
     return ret;
 }
 
-UDisksDrive_autoptr DFMBlockDevicePrivate::getDriveHandler() const
+UDisksDrive_autoptr DBlockDevicePrivate::getDriveHandler() const
 {
     Q_ASSERT(client);
 
@@ -178,7 +181,7 @@ UDisksDrive_autoptr DFMBlockDevicePrivate::getDriveHandler() const
     return ret;
 }
 
-UDisksLoop_autoptr DFMBlockDevicePrivate::getLoopHandler() const
+UDisksLoop_autoptr DBlockDevicePrivate::getLoopHandler() const
 {
     Q_ASSERT(client);
 
@@ -192,7 +195,7 @@ UDisksLoop_autoptr DFMBlockDevicePrivate::getLoopHandler() const
     return ret;
 }
 
-UDisksEncrypted_autoptr DFMBlockDevicePrivate::getEncryptedHandler() const
+UDisksEncrypted_autoptr DBlockDevicePrivate::getEncryptedHandler() const
 {
     UDisksObject_autoptr obj = getUDisksObject();
     if (!obj) {
@@ -204,7 +207,7 @@ UDisksEncrypted_autoptr DFMBlockDevicePrivate::getEncryptedHandler() const
     return ret;
 }
 
-UDisksPartition_autoptr DFMBlockDevicePrivate::getPartitionHandler() const
+UDisksPartition_autoptr DBlockDevicePrivate::getPartitionHandler() const
 {
     UDisksObject_autoptr obj = getUDisksObject();
     if (!obj) {
@@ -216,7 +219,7 @@ UDisksPartition_autoptr DFMBlockDevicePrivate::getPartitionHandler() const
     return ret;
 }
 
-UDisksPartitionTable_autoptr DFMBlockDevicePrivate::getPartitionTableHandler() const
+UDisksPartitionTable_autoptr DBlockDevicePrivate::getPartitionTableHandler() const
 {
     UDisksObject_autoptr obj = getUDisksObject();
     if (!obj) {
@@ -228,7 +231,7 @@ UDisksPartitionTable_autoptr DFMBlockDevicePrivate::getPartitionTableHandler() c
     return ret;
 }
 
-UDisksFilesystem_autoptr DFMBlockDevicePrivate::getFilesystemHandler() const
+UDisksFilesystem_autoptr DBlockDevicePrivate::getFilesystemHandler() const
 {
     UDisksObject_autoptr obj = getUDisksObject();
     if (!obj) {
@@ -240,10 +243,10 @@ UDisksFilesystem_autoptr DFMBlockDevicePrivate::getFilesystemHandler() const
     return ret;
 }
 
-DFMBlockDevice::DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent)
-    : DFMDevice(new DFMBlockDevicePrivate(cli, udisksObjPath, this), parent)
+DBlockDevice::DBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent)
+    : DDevice(new DBlockDevicePrivate(cli, udisksObjPath, this), parent)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (!dp) {
         qCritical() << "private pointer not valid" << __PRETTY_FUNCTION__;
         abort();
@@ -251,30 +254,30 @@ DFMBlockDevice::DFMBlockDevice(UDisksClient *cli, const QString &udisksObjPath, 
 
     using namespace std;
     using namespace std::placeholders;
-    registerPath(bind(&DFMBlockDevicePrivate::path, dp));
-    registerMount(bind(&DFMBlockDevicePrivate::mount, dp, _1));
-    registerMountAsync(bind(&DFMBlockDevicePrivate::mountAsync, dp, _1, _2));
-    registerUnmount(bind(&DFMBlockDevicePrivate::unmount, dp, _1));
-    registerUnmountAsync(bind(&DFMBlockDevicePrivate::unmountAsync, dp, _1, _2));
-    registerRename(bind(&DFMBlockDevicePrivate::rename, dp, _1, _2));
-    registerRenameAsync(bind(&DFMBlockDevicePrivate::renameAsync, dp, _1, _2, _3));
-    registerMountPoint(bind(&DFMBlockDevicePrivate::mountPoint, dp));
-    registerFileSystem(bind(&DFMBlockDevicePrivate::fileSystem, dp));
-    registerSizeTotal(bind(&DFMBlockDevicePrivate::sizeTotal, dp));
-    registerSizeUsage(bind(&DFMBlockDevicePrivate::sizeUsage, dp));
-    registerSizeFree(bind(&DFMBlockDevicePrivate::sizeFree, dp));
-    registerDeviceType(bind(&DFMBlockDevicePrivate::deviceType, dp));
-    registerGetProperty(bind(&DFMBlockDevicePrivate::getProperty, dp, _1));
-    registerDisplayName(bind(&DFMBlockDevicePrivate::displayName, dp));
+    registerPath(bind(&DBlockDevicePrivate::path, dp));
+    registerMount(bind(&DBlockDevicePrivate::mount, dp, _1));
+    registerMountAsync(bind(&DBlockDevicePrivate::mountAsync, dp, _1, _2));
+    registerUnmount(bind(&DBlockDevicePrivate::unmount, dp, _1));
+    registerUnmountAsync(bind(&DBlockDevicePrivate::unmountAsync, dp, _1, _2));
+    registerRename(bind(&DBlockDevicePrivate::rename, dp, _1, _2));
+    registerRenameAsync(bind(&DBlockDevicePrivate::renameAsync, dp, _1, _2, _3));
+    registerMountPoint(bind(&DBlockDevicePrivate::mountPoint, dp));
+    registerFileSystem(bind(&DBlockDevicePrivate::fileSystem, dp));
+    registerSizeTotal(bind(&DBlockDevicePrivate::sizeTotal, dp));
+    registerSizeUsage(bind(&DBlockDevicePrivate::sizeUsage, dp));
+    registerSizeFree(bind(&DBlockDevicePrivate::sizeFree, dp));
+    registerDeviceType(bind(&DBlockDevicePrivate::deviceType, dp));
+    registerGetProperty(bind(&DBlockDevicePrivate::getProperty, dp, _1));
+    registerDisplayName(bind(&DBlockDevicePrivate::displayName, dp));
 }
 
-DFMBlockDevice::~DFMBlockDevice()
+DBlockDevice::~DBlockDevice()
 {
 }
 
-bool DFMBlockDevice::eject(const QVariantMap &opts)
+bool DBlockDevice::eject(const QVariantMap &opts)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         return dp->eject(opts);
     } else {
@@ -283,9 +286,9 @@ bool DFMBlockDevice::eject(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::ejectAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevice::ejectAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         return dp->ejectAsync(opts, cb);
     } else {
@@ -293,9 +296,9 @@ void DFMBlockDevice::ejectAsync(const QVariantMap &opts, DeviceOperateCallback c
     }
 }
 
-bool DFMBlockDevice::powerOff(const QVariantMap &opts)
+bool DBlockDevice::powerOff(const QVariantMap &opts)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         return dp->powerOff(opts);
     } else {
@@ -304,9 +307,9 @@ bool DFMBlockDevice::powerOff(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::powerOffAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevice::powerOffAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         dp->powerOffAsync(opts, cb);
     } else {
@@ -314,9 +317,9 @@ void DFMBlockDevice::powerOffAsync(const QVariantMap &opts, DeviceOperateCallbac
     }
 }
 
-bool DFMBlockDevice::lock(const QVariantMap &opts)
+bool DBlockDevice::lock(const QVariantMap &opts)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         return dp->lock(opts);
     } else {
@@ -325,9 +328,9 @@ bool DFMBlockDevice::lock(const QVariantMap &opts)
     }
 }
 
-void DFMBlockDevice::lockAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevice::lockAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         dp->lockAsync(opts, cb);
     } else {
@@ -335,9 +338,9 @@ void DFMBlockDevice::lockAsync(const QVariantMap &opts, DeviceOperateCallback cb
     }
 }
 
-bool DFMBlockDevice::unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts)
+bool DBlockDevice::unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         return dp->unlock(passwd, clearTextDev, opts);
     } else {
@@ -346,9 +349,9 @@ bool DFMBlockDevice::unlock(const QString &passwd, QString &clearTextDev, const 
     }
 }
 
-void DFMBlockDevice::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
+void DBlockDevice::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         dp->unlockAsync(passwd, opts, cb);
     } else {
@@ -356,9 +359,9 @@ void DFMBlockDevice::unlockAsync(const QString &passwd, const QVariantMap &opts,
     }
 }
 
-bool DFMBlockDevice::rescan(const QVariantMap &opts)
+bool DBlockDevice::rescan(const QVariantMap &opts)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp)
         return dp->rescan(opts);
     else
@@ -366,9 +369,9 @@ bool DFMBlockDevice::rescan(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevice::rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevice::rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     if (dp) {
         dp->rescanAsync(opts, cb);
     } else {
@@ -378,97 +381,97 @@ void DFMBlockDevice::rescanAsync(const QVariantMap &opts, DeviceOperateCallback 
     }
 }
 
-QStringList DFMBlockDevice::mountPoints() const
+QStringList DBlockDevice::mountPoints() const
 {
     return getProperty(Property::FileSystemMountPoint).toStringList();
 }
 
-QString DFMBlockDevice::device() const
+QString DBlockDevice::device() const
 {
     return getProperty(Property::BlockDevice).toString();
 }
 
-QString DFMBlockDevice::drive() const
+QString DBlockDevice::drive() const
 {
     return getProperty(Property::BlockDrive).toString();
 }
 
-QString DFMBlockDevice::idLabel() const
+QString DBlockDevice::idLabel() const
 {
     return getProperty(Property::BlockIDLabel).toString();
 }
 
-bool DFMBlockDevice::removable() const
+bool DBlockDevice::removable() const
 {
     return getProperty(Property::DriveRemovable).toBool();
 }
 
-bool DFMBlockDevice::optical() const
+bool DBlockDevice::optical() const
 {
     return getProperty(Property::DriveOptical).toBool();
 }
 
-bool DFMBlockDevice::opticalBlank() const
+bool DBlockDevice::opticalBlank() const
 {
     return getProperty(Property::DriveOpticalBlank).toBool();
 }
 
-QStringList DFMBlockDevice::mediaCompatibility() const
+QStringList DBlockDevice::mediaCompatibility() const
 {
     return getProperty(Property::DriveMediaCompatibility).toStringList();
 }
 
-bool DFMBlockDevice::canPowerOff() const
+bool DBlockDevice::canPowerOff() const
 {
     return getProperty(Property::DriveCanPowerOff).toBool();
 }
 
-bool DFMBlockDevice::ejectable() const
+bool DBlockDevice::ejectable() const
 {
     return getProperty(Property::DriveEjectable).toBool();
 }
 
-bool DFMBlockDevice::isEncrypted() const
+bool DBlockDevice::isEncrypted() const
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     return dp ? dp->getEncryptedHandler() != nullptr : false;
 }
 
-bool DFMBlockDevice::hasFileSystem() const
+bool DBlockDevice::hasFileSystem() const
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     return dp ? dp->getFilesystemHandler() != nullptr : false;
 }
 
-bool DFMBlockDevice::hasPartitionTable() const
+bool DBlockDevice::hasPartitionTable() const
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     return dp ? dp->getPartitionTableHandler() != nullptr : false;
 }
 
-bool DFMBlockDevice::hasPartition() const
+bool DBlockDevice::hasPartition() const
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     return dp ? dp->getPartitionHandler() != nullptr : false;
 }
 
-bool DFMBlockDevice::isLoopDevice() const
+bool DBlockDevice::isLoopDevice() const
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     return dp ? dp->getLoopHandler() != nullptr : false;
 }
 
-bool DFMBlockDevice::hintIgnore() const
+bool DBlockDevice::hintIgnore() const
 {
     return getProperty(Property::BlockHintIgnore).toBool();
 }
 
-bool DFMBlockDevice::hintSystem() const
+bool DBlockDevice::hintSystem() const
 {
     return getProperty(Property::BlockHintSystem).toBool();
 }
 
-PartitionType DFMBlockDevice::partitionEType() const
+PartitionType DBlockDevice::partitionEType() const
 {
     auto typestr = partitionType();
     if (typestr.isEmpty())
@@ -486,32 +489,32 @@ PartitionType DFMBlockDevice::partitionEType() const
     }
 }
 
-QString DFMBlockDevice::partitionType() const
+QString DBlockDevice::partitionType() const
 {
     return getProperty(Property::PartitionType).toString();
 }
 
-bool DFMBlockDevice::hasBlock() const
+bool DBlockDevice::hasBlock() const
 {
-    auto dp = Utils::castClassFromTo<DFMDevicePrivate, DFMBlockDevicePrivate>(d.data());
+    auto dp = Utils::castClassFromTo<DDevicePrivate, DBlockDevicePrivate>(d.data());
     return dp ? dp->getBlockHandler() != nullptr : false;
 }
 
-DFMBlockDevicePrivate::DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq)
-    : DFMDevicePrivate(qq), blkObjPath(blkObjPath), client(cli)
+DBlockDevicePrivate::DBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DBlockDevice *qq)
+    : DDevicePrivate(qq), blkObjPath(blkObjPath), client(cli)
 {
 }
 
-DFMBlockDevicePrivate::~DFMBlockDevicePrivate()
+DBlockDevicePrivate::~DBlockDevicePrivate()
 {
 }
 
-QString DFMBlockDevicePrivate::path() const
+QString DBlockDevicePrivate::path() const
 {
     return blkObjPath;
 }
 
-QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
+QString DBlockDevicePrivate::mount(const QVariantMap &opts)
 {
     warningIfNotInMain();
 
@@ -541,7 +544,7 @@ QString DFMBlockDevicePrivate::mount(const QVariantMap &opts)
     return ret;
 }
 
-void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
+void DBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
@@ -570,7 +573,7 @@ void DFMBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCal
     udisks_filesystem_call_mount(fs, gopts, nullptr, mountAsyncCallback, proxy);
 }
 
-bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
+bool DBlockDevicePrivate::unmount(const QVariantMap &opts)
 {
     warningIfNotInMain();
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
@@ -596,7 +599,7 @@ bool DFMBlockDevicePrivate::unmount(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
@@ -626,7 +629,7 @@ void DFMBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateC
     udisks_filesystem_call_unmount(fs, gopts, nullptr, unmountAsyncCallback, proxy);
 }
 
-bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &opts)
+bool DBlockDevicePrivate::rename(const QString &newName, const QVariantMap &opts)
 {
     warningIfNotInMain();
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
@@ -656,7 +659,7 @@ bool DFMBlockDevicePrivate::rename(const QString &newName, const QVariantMap &op
     return false;
 }
 
-void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
@@ -686,7 +689,7 @@ void DFMBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMa
     udisks_filesystem_call_set_label(fs, label, gopts, nullptr, renameAsyncCallback, proxy);
 }
 
-bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
+bool DBlockDevicePrivate::eject(const QVariantMap &opts)
 {
     warningIfNotInMain();
     UDisksDrive_autoptr drv = getDriveHandler();
@@ -713,7 +716,7 @@ bool DFMBlockDevicePrivate::eject(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     bool ejectable = q->getProperty(Property::DriveEjectable).toBool();
@@ -741,7 +744,7 @@ void DFMBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCal
     udisks_drive_call_eject(drv, gopts, nullptr, ejectAsyncCallback, proxy);
 }
 
-bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
+bool DBlockDevicePrivate::powerOff(const QVariantMap &opts)
 {
     warningIfNotInMain();
     UDisksDrive_autoptr drv = getDriveHandler();
@@ -762,7 +765,7 @@ bool DFMBlockDevicePrivate::powerOff(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksDrive_autoptr drv = getDriveHandler();
@@ -779,7 +782,7 @@ void DFMBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperate
     udisks_drive_call_power_off(drv, gopts, nullptr, powerOffAsyncCallback, proxy);
 }
 
-bool DFMBlockDevicePrivate::lock(const QVariantMap &opts)
+bool DBlockDevicePrivate::lock(const QVariantMap &opts)
 {
     warningIfNotInMain();
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
@@ -799,7 +802,7 @@ bool DFMBlockDevicePrivate::lock(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
@@ -817,7 +820,7 @@ void DFMBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCall
     udisks_encrypted_call_lock(encrypted, gopts, nullptr, lockAsyncCallback, proxy);
 }
 
-bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts)
+bool DBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts)
 {
     warningIfNotInMain();
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
@@ -841,7 +844,7 @@ bool DFMBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev,
     return false;
 }
 
-void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
+void DBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
@@ -859,7 +862,7 @@ void DFMBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap
     udisks_encrypted_call_unlock(encrypted, passwd.toStdString().c_str(), gopts, nullptr, unlockAsyncCallback, proxy);
 }
 
-bool DFMBlockDevicePrivate::rescan(const QVariantMap &opts)
+bool DBlockDevicePrivate::rescan(const QVariantMap &opts)
 {
     UDisksBlock_autoptr blk = getBlockHandler();
     GError_autoptr err = nullptr;
@@ -874,7 +877,7 @@ bool DFMBlockDevicePrivate::rescan(const QVariantMap &opts)
     return false;
 }
 
-void DFMBlockDevicePrivate::rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb)
+void DBlockDevicePrivate::rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksBlock_autoptr blk = getBlockHandler();
@@ -888,7 +891,7 @@ void DFMBlockDevicePrivate::rescanAsync(const QVariantMap &opts, DeviceOperateCa
     }
 }
 
-inline void DFMBlockDevicePrivate::handleErrorAndRelease(GError *err)
+inline void DBlockDevicePrivate::handleErrorAndRelease(GError *err)
 {
     if (err) {
         lastError = Utils::castFromGError(err);
@@ -896,28 +899,28 @@ inline void DFMBlockDevicePrivate::handleErrorAndRelease(GError *err)
     }
 }
 
-QString DFMBlockDevicePrivate::mountPoint() const
+QString DBlockDevicePrivate::mountPoint() const
 {
     auto mpts = q->getProperty(Property::FileSystemMountPoint).toStringList();
     return mpts.isEmpty() ? QString() : mpts.first();
 }
 
-QString DFMBlockDevicePrivate::fileSystem() const
+QString DBlockDevicePrivate::fileSystem() const
 {
     return getProperty(Property::BlockIDType).toString();
 }
 
-qint64 DFMBlockDevicePrivate::sizeTotal() const
+qint64 DBlockDevicePrivate::sizeTotal() const
 {
     return q->getProperty(Property::BlockSize).toLongLong();
 }
 
-qint64 DFMBlockDevicePrivate::sizeUsage() const
+qint64 DBlockDevicePrivate::sizeUsage() const
 {
     return sizeTotal() - sizeFree();
 }
 
-qint64 DFMBlockDevicePrivate::sizeFree() const
+qint64 DBlockDevicePrivate::sizeFree() const
 {
     auto mpts = q->getProperty(Property::FileSystemMountPoint).toStringList();
     if (mpts.isEmpty()) {
@@ -930,12 +933,12 @@ qint64 DFMBlockDevicePrivate::sizeFree() const
     return info.bytesAvailable();
 }
 
-DeviceType DFMBlockDevicePrivate::deviceType() const
+DeviceType DBlockDevicePrivate::deviceType() const
 {
     return DeviceType::BlockDevice;
 }
 
-QVariant DFMBlockDevicePrivate::getProperty(Property name) const
+QVariant DBlockDevicePrivate::getProperty(Property name) const
 {
     if (name > Property::BlockProperty && name < Property::BlockPropertyEND)
         return getBlockProperty(name);
@@ -952,12 +955,12 @@ QVariant DFMBlockDevicePrivate::getProperty(Property name) const
     return QVariant();
 }
 
-QString DFMBlockDevicePrivate::displayName() const
+QString DBlockDevicePrivate::displayName() const
 {
     return getProperty(Property::BlockIDLabel).toString();
 }
 
-QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
+QVariant DBlockDevicePrivate::getBlockProperty(Property name) const
 {
     UDisksBlock_autoptr blk = getBlockHandler();
     if (!blk) {
@@ -1061,7 +1064,7 @@ QVariant DFMBlockDevicePrivate::getBlockProperty(Property name) const
     }
 }
 
-QVariant DFMBlockDevicePrivate::getDriveProperty(Property name) const
+QVariant DBlockDevicePrivate::getDriveProperty(Property name) const
 {
     UDisksDrive_autoptr drv = getDriveHandler();
     if (!drv) {
@@ -1160,7 +1163,7 @@ QVariant DFMBlockDevicePrivate::getDriveProperty(Property name) const
     }
 }
 
-QVariant DFMBlockDevicePrivate::getFileSystemProperty(Property name) const
+QVariant DBlockDevicePrivate::getFileSystemProperty(Property name) const
 {
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
     if (!fs) {
@@ -1178,7 +1181,7 @@ QVariant DFMBlockDevicePrivate::getFileSystemProperty(Property name) const
     }
 }
 
-QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
+QVariant DBlockDevicePrivate::getPartitionProperty(Property name) const
 {
     UDisksPartition_autoptr partition = getPartitionHandler();
 
@@ -1222,7 +1225,7 @@ QVariant DFMBlockDevicePrivate::getPartitionProperty(Property name) const
     }
 }
 
-QVariant DFMBlockDevicePrivate::getEncryptedProperty(Property name) const
+QVariant DBlockDevicePrivate::getEncryptedProperty(Property name) const
 {
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 

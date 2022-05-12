@@ -20,11 +20,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMPROTOCOLMONITOR_P_H
-#define DFMPROTOCOLMONITOR_P_H
+#ifndef DPROTOCOLMONITOR_P_H
+#define DPROTOCOLMONITOR_P_H
 
-#include "dfmprotocolmonitor.h"
-#include "private/dfmmonitor_p.h"
+#include "dprotocolmonitor.h"
+#include "private/ddevicemonitor_p.h"
 
 #include <QMap>
 #include <QDebug>
@@ -48,19 +48,19 @@ DFM_MOUNT_BEGIN_NS
 #define VOLUME_CHANGED "volume-changed"
 #define VOLUME_REMOVED "volume-removed"
 
-class DFMProtocolMonitorPrivate final : public DFMMonitorPrivate
+class DProtocolMonitorPrivate final : public DDeviceMonitorPrivate
 {
 
 public:
-    DFMProtocolMonitorPrivate(DFMProtocolMonitor *qq);
-    ~DFMProtocolMonitorPrivate();
+    DProtocolMonitorPrivate(DProtocolMonitor *qq);
+    ~DProtocolMonitorPrivate();
 
-    bool startMonitor() DFM_MNT_OVERRIDE;
-    bool stopMonitor() DFM_MNT_OVERRIDE;
-    DeviceType monitorObjectType() const DFM_MNT_OVERRIDE;
-    QStringList getDevices() DFM_MNT_OVERRIDE;
-    QSharedPointer<DFMDevice> createDevice(const QString &id) DFM_MNT_OVERRIDE;
-    QSharedPointer<DFMDevice> createDeviceByMount();
+    bool startMonitor() DMNT_OVERRIDE;
+    bool stopMonitor() DMNT_OVERRIDE;
+    DeviceType monitorObjectType() const DMNT_OVERRIDE;
+    QStringList getDevices() DMNT_OVERRIDE;
+    QSharedPointer<DDevice> createDevice(const QString &id) DMNT_OVERRIDE;
+    QSharedPointer<DDevice> createDeviceByMount();
 
 private:
     void initDeviceList();

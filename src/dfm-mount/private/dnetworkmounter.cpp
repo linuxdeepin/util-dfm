@@ -20,8 +20,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "base/dmountutils.h"
 #include "dnetworkmounter.h"
-#include "base/dfmmountutils.h"
 
 #include <QDBusInterface>
 #include <QDBusConnection>

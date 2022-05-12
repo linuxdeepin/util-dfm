@@ -20,10 +20,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMMONITOR_H
-#define DFMMONITOR_H
+#ifndef DDEVICEMONITOR_H
+#define DDEVICEMONITOR_H
 
-#include "dfmmount_global.h"
+#include "dmount_global.h"
 
 #include <QObject>
 #include <QSharedPointer>
@@ -32,27 +32,27 @@
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMDevice;
-class DFMMonitorPrivate;
-class DFMMonitor : public QObject
+class DDevice;
+class DDeviceMonitorPrivate;
+class DDeviceMonitor : public QObject
 {
     Q_OBJECT
 
 public:
     MonitorStatus status() const;
 
-    DFM_MNT_VIRTUAL bool startMonitor();
-    DFM_MNT_VIRTUAL bool stopMonitor();
-    DFM_MNT_VIRTUAL DeviceType monitorObjectType() const;
-    DFM_MNT_VIRTUAL QStringList getDevices() const;
-    DFM_MNT_VIRTUAL QSharedPointer<DFMDevice> createDeviceById(const QString &id) const;
+    DMNT_VIRTUAL bool startMonitor();
+    DMNT_VIRTUAL bool stopMonitor();
+    DMNT_VIRTUAL DeviceType monitorObjectType() const;
+    DMNT_VIRTUAL QStringList getDevices() const;
+    DMNT_VIRTUAL QSharedPointer<DDevice> createDeviceById(const QString &id) const;
 
 public:
     using StartMonitorFunc = std::function<bool()>;
     using StopMonitorFunc = std::function<bool()>;
     using MonitorObjectTypeFunc = std::function<DeviceType()>;
     using GetDevicesFunc = std::function<QStringList()>;
-    using CreateDeviceByIdFunc = std::function<QSharedPointer<DFMDevice>(const QString &)>;
+    using CreateDeviceByIdFunc = std::function<QSharedPointer<DDevice>(const QString &)>;
 
     void registerStartMonitor(const StartMonitorFunc &func);
     void registerStopMonitor(const StopMonitorFunc &func);
@@ -61,8 +61,8 @@ public:
     void registerCreateDeviceById(const CreateDeviceByIdFunc &func);
 
 protected:
-    DFMMonitor(DFMMonitorPrivate *dd, QObject *parent);
-    virtual ~DFMMonitor();
+    DDeviceMonitor(DDeviceMonitorPrivate *dd, QObject *parent);
+    virtual ~DDeviceMonitor();
 
 Q_SIGNALS:
     // TODO: complete protocol device id.
@@ -77,9 +77,9 @@ Q_SIGNALS:
     void propertyChanged(const QString &deviceId, const QMap<Property, QVariant> &changes);
 
 protected:
-    QScopedPointer<DFMMonitorPrivate> d;
+    QScopedPointer<DDeviceMonitorPrivate> d;
 };
 
 DFM_MOUNT_END_NS
 
-#endif   // DFMMONITOR_H
+#endif   // DDEVICEMONITOR_H

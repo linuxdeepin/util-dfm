@@ -18,28 +18,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef DFMDEVICEMANAGER_H
-#define DFMDEVICEMANAGER_H
+#ifndef DDEVICEMANAGER_H
+#define DDEVICEMANAGER_H
 
-#include "base/dfmmount_global.h"
+#include "base/dmount_global.h"
 
 #include <QObject>
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMMonitor;
-class DFMDevice;
-class DFMDeviceManagerPrivate;
-class DFMDeviceManager final : public QObject
+class DDeviceMonitor;
+class DDevice;
+class DDeviceManagerPrivate;
+class DDeviceManager final : public QObject
 {
     Q_OBJECT
 
 public:
-    static DFMDeviceManager *instance();
+    static DDeviceManager *instance();
 
     template<class DFMSubMonitor, typename... ConstructArgs>
     bool registerMonitor(ConstructArgs &&...);
-    QSharedPointer<DFMMonitor> getRegisteredMonitor(DeviceType type) const;
+    QSharedPointer<DDeviceMonitor> getRegisteredMonitor(DeviceType type) const;
     bool startMonitorWatch();
     bool stopMonitorWatch();
     MonitorError lastError() const;
@@ -55,12 +55,12 @@ Q_SIGNALS:
     void propertyChanged(const QString &deviceKey, const QMap<Property, QVariant> &changes, DeviceType type);
 
 private:
-    DFMDeviceManager(QObject *parent = nullptr);
-    ~DFMDeviceManager();
+    DDeviceManager(QObject *parent = nullptr);
+    ~DDeviceManager();
 
-    QScopedPointer<DFMDeviceManagerPrivate> d;
+    QScopedPointer<DDeviceManagerPrivate> d;
 };
 
 DFM_MOUNT_END_NS
 
-#endif   // DFMDEVICEMANAGER_H
+#endif   // DDEVICEMANAGER_H

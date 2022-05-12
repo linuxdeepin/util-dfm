@@ -20,11 +20,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMPROTOCOLDEVICE_H
-#define DFMPROTOCOLDEVICE_H
+#ifndef DPROTOCOLDEVICE_H
+#define DPROTOCOLDEVICE_H
 
-#include "base/dfmdevice.h"
-#include "dfmprotocolmonitor.h"
+#include "base/ddevice.h"
+#include "dprotocolmonitor.h"
 
 #include <QObject>
 
@@ -45,21 +45,21 @@ struct MountPassInfo
 using GetMountPassInfo = std::function<MountPassInfo(const QString &message, const QString &userDefault, const QString &domainDefault)>;
 using GetUserChoice = std::function<int(const QString &message, const QStringList &choices)>;
 
-class DFMProtocolDevicePrivate;
-class DFMProtocolDevice final : public DFMDevice
+class DProtocolDevicePrivate;
+class DProtocolDevice final : public DDevice
 {
     Q_OBJECT
-    friend class DFMProtocolMonitorPrivate;
+    friend class DProtocolMonitorPrivate;
 
 public:
-    ~DFMProtocolDevice();
+    ~DProtocolDevice();
     QStringList deviceIcons() const;
     static void mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int msecs = 0);
 
     void setOperatorTimeout(int msecs);
 
 private:
-    DFMProtocolDevice(const QString &id, GVolumeMonitor *monitor, QObject *parent = nullptr);
+    DProtocolDevice(const QString &id, GVolumeMonitor *monitor, QObject *parent = nullptr);
 
 private Q_SLOTS:
     void mounted(const QString &id);
@@ -68,4 +68,4 @@ private Q_SLOTS:
 
 DFM_MOUNT_END_NS
 
-#endif   // DFMPROTOCOLDEVICE_H
+#endif   // DPROTOCOLDEVICE_H

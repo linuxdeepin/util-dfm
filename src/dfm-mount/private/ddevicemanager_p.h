@@ -19,36 +19,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DFMDEVICEMANAGERPRIVATE_H
-#define DFMDEVICEMANAGERPRIVATE_H
+#ifndef DDEVICEMANAGERPRIVATE_H
+#define DDEVICEMANAGERPRIVATE_H
 
-#include "dfmdevicemanager.h"
-#include "dfmblockmonitor.h"
-#include "dfmprotocolmonitor.h"
-#include "base/dfmmount_global.h"
+#include "base/dmount_global.h"
+#include "ddevicemanager.h"
+#include "dblockmonitor.h"
+#include "dprotocolmonitor.h"
 
 #include <QMap>
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMDeviceManagerPrivate final
+class DDeviceManagerPrivate final
 {
 public:
-    DFMDeviceManagerPrivate(DFMDeviceManager *qq);
+    DDeviceManagerPrivate(DDeviceManager *qq);
 
     template<typename DFMSubMonitor, typename... ConstructArgs>
     bool registerMonitor(ConstructArgs &&... args);
-    QSharedPointer<DFMMonitor> getRegisteredMonitor(DeviceType type) const;
+    QSharedPointer<DDeviceMonitor> getRegisteredMonitor(DeviceType type) const;
     bool startMonitor();
     bool stopMonitor();
     QMap<DeviceType, QStringList> devices(DeviceType type);
 
-    QMap<DeviceType, QSharedPointer<DFMMonitor>> monitors;
+    QMap<DeviceType, QSharedPointer<DDeviceMonitor>> monitors;
     MonitorError lastError;
 
-    DFMDeviceManager *q = nullptr;
+    DDeviceManager *q = nullptr;
 };
 
 DFM_MOUNT_END_NS
 
-#endif   // DFMDEVICEMANAGERPRIVATE_H
+#endif   // DDEVICEMANAGERPRIVATE_H

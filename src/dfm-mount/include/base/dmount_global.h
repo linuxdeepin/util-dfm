@@ -20,17 +20,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMMOUNT_GLOBAL_H
-#define DFMMOUNT_GLOBAL_H
+#ifndef DMOUNT_GLOBAL_H
+#define DMOUNT_GLOBAL_H
 
 #include <QtCore/qglobal.h>
 #include <QtCore/qobjectdefs.h>
+
 #include <functional>
 
-#if defined(DFMMOUNT_LIBRARY)
-#    define DFMMOUNTSHARED_EXPORT Q_DECL_EXPORT
+#if defined(DMOUNT_LIBRARY)
+#    define DMOUNTSHARED_EXPORT Q_DECL_EXPORT
 #else
-#    define DFMMOUNTSHARED_EXPORT Q_DECL_IMPORT
+#    define DMOUNTSHARED_EXPORT Q_DECL_IMPORT
 #endif
 
 #define DFMMOUNT dfmmount
@@ -38,8 +39,8 @@
 #define DFM_MOUNT_END_NS }
 #define DFM_MOUNT_USE_NS using namespace DFMMOUNT;
 
-#define DFM_MNT_VIRTUAL
-#define DFM_MNT_OVERRIDE
+#define DMNT_VIRTUAL
+#define DMNT_OVERRIDE
 
 DFM_MOUNT_BEGIN_NS
 
@@ -633,4 +634,4 @@ using DeviceOperateCallback = std::function<void(bool, DeviceError)>;
 using DeviceOperateCallbackWithMessage = std::function<void(bool, DeviceError, QString)>;
 
 DFM_MOUNT_END_NS
-#endif   // DFMMOUNT_GLOBAL_H
+#endif   // DMOUNT_GLOBAL_H

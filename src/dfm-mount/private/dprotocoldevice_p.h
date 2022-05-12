@@ -20,12 +20,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMPROTOCOLDEVICE_P_H
-#define DFMPROTOCOLDEVICE_P_H
+#ifndef DPROTOCOLDEVICE_P_H
+#define DPROTOCOLDEVICE_P_H
 
-#include "base/dfmmount_global.h"
-#include "private/dfmdevice_p.h"
-#include "dfmprotocoldevice.h"
+#include "base/dmount_global.h"
+#include "private/ddevice_p.h"
+#include "dprotocoldevice.h"
 
 #include <QMutex>
 #include <QMutexLocker>
@@ -66,13 +66,13 @@ private:
     QScopedPointer<QTimer> timer { nullptr };
 };
 
-class DFMProtocolDevicePrivate final : public DFMDevicePrivate
+class DProtocolDevicePrivate final : public DDevicePrivate
 {
-    friend class DFMProtocolDevice;
+    friend class DProtocolDevice;
 
 public:
-    DFMProtocolDevicePrivate(const QString &id, GVolumeMonitor *monitor, DFMProtocolDevice *qq);
-    ~DFMProtocolDevicePrivate();
+    DProtocolDevicePrivate(const QString &id, GVolumeMonitor *monitor, DProtocolDevice *qq);
+    ~DProtocolDevicePrivate();
 
     QString path() const;
     QString mount(const QVariantMap &opts);
@@ -124,4 +124,4 @@ private:
 };
 DFM_MOUNT_END_NS
 
-#endif   // DFMPROTOCOLDEVICE_P_H
+#endif   // DPROTOCOLDEVICE_P_H

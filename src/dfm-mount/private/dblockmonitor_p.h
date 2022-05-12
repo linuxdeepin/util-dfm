@@ -20,16 +20,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKMONITOR_P_H
-#define DFMBLOCKMONITOR_P_H
+#ifndef DBLOCKMONITOR_P_H
+#define DBLOCKMONITOR_P_H
 
-#include "dfmblockmonitor.h"
-#include "private/dfmmonitor_p.h"
+#include "dblockmonitor.h"
+#include "private/ddevicemonitor_p.h"
 
 #include <QMap>
 #include <QSet>
 
+extern "C" {
 #include <udisks/udisks.h>
+}
 
 DFM_MOUNT_BEGIN_NS
 
@@ -39,18 +41,18 @@ DFM_MOUNT_BEGIN_NS
 #define INTERFACE_REMOVED "interface-removed"
 #define PROPERTY_CHANGED "interface-proxy-properties-changed"
 
-class DFMBlockDevice;
-class DFMBlockMonitorPrivate final : public DFMMonitorPrivate
+class DBlockDevice;
+class DBlockMonitorPrivate final : public DDeviceMonitorPrivate
 {
 public:
-    DFMBlockMonitorPrivate(DFMBlockMonitor *qq);
-    ~DFMBlockMonitorPrivate();
+    DBlockMonitorPrivate(DBlockMonitor *qq);
+    ~DBlockMonitorPrivate();
 
-    bool startMonitor() DFM_MNT_OVERRIDE;
-    bool stopMonitor() DFM_MNT_OVERRIDE;
-    DeviceType monitorObjectType() const DFM_MNT_OVERRIDE;
-    QStringList getDevices() DFM_MNT_OVERRIDE;
-    QSharedPointer<DFMDevice> createDeviceById(const QString &id) DFM_MNT_OVERRIDE;
+    bool startMonitor() DMNT_OVERRIDE;
+    bool stopMonitor() DMNT_OVERRIDE;
+    DeviceType monitorObjectType() const DMNT_OVERRIDE;
+    QStringList getDevices() DMNT_OVERRIDE;
+    QSharedPointer<DDevice> createDeviceById(const QString &id) DMNT_OVERRIDE;
 
     QStringList resolveDevice(const QVariantMap &devspec, const QVariantMap &opts);
     QStringList resolveDeviceNode(const QString &node, const QVariantMap &opts);
@@ -74,4 +76,4 @@ public:
 
 DFM_MOUNT_END_NS
 
-#endif   // DFMBLOCKMONITOR_P_H
+#endif   // DBLOCKMONITOR_P_H

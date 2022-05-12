@@ -20,36 +20,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKMONITOR_H
-#define DFMBLOCKMONITOR_H
+#ifndef DMONITORPRIVATE_H
+#define DMONITORPRIVATE_H
 
-#include "base/dfmmonitor.h"
+#include "base/dmount_global.h"
+#include "base/ddevicemonitor.h"
 
-#include <QObject>
+#include <QMap>
 
+#include <functional>
+
+using namespace std;
 DFM_MOUNT_BEGIN_NS
 
-class DFMBlockMonitorPrivate;
-class DFMBlockMonitor final : public DFMMonitor
+class DDeviceMonitorPrivate
 {
-    Q_OBJECT
-
 public:
-    DFMBlockMonitor(QObject *parent = nullptr);
-    ~DFMBlockMonitor();
+    DDeviceMonitorPrivate(DDeviceMonitor *qq);
+    virtual ~DDeviceMonitorPrivate();
 
-    QStringList resolveDevice(const QVariantMap &devspec, const QVariantMap &opts);
-    QStringList resolveDeviceNode(const QString &node, const QVariantMap &opts);
-    QStringList resolveDeviceFromDrive(const QString &drvObjPath);
+    DDeviceMonitor::StartMonitorFunc start = nullptr;
+    DDeviceMonitor::StopMonitorFunc stop = nullptr;
+    DDeviceMonitor::MonitorObjectTypeFunc monitorObjectType = nullptr;
+    DDeviceMonitor::GetDevicesFunc getDevices = nullptr;
+    DDeviceMonitor::CreateDeviceByIdFunc createDeviceById = nullptr;
 
-Q_SIGNALS:
-    void driveAdded(const QString &drvObjPath);
-    void driveRemoved(const QString &drvObjPath);
-    void fileSystemAdded(const QString &blkObjPath);
-    void fileSystemRemoved(const QString &blkObjPath);
-    void blockLocked(const QString &blkObjPath);
-    void blockUnlocked(const QString &blkObjPath, const QString &clearDevObjPath);
+    DDeviceMonitor *q = nullptr;
+    // for saving gsignals connections, key: singal_name, value: the handler returned by g_signal_connect
+    QMap<QString, ulong> connections;
+    MonitorStatus monitorStatus = MonitorStatus::Idle;
 };
+
 DFM_MOUNT_END_NS
 
-#endif   // DFMBLOCKMONITOR_H
+#endif   // DMONITORPRIVATE_H

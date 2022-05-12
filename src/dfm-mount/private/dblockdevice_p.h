@@ -20,39 +20,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBLOCKDEVICE_P_H
-#define DFMBLOCKDEVICE_P_H
+#ifndef DBLOCKDEVICE_P_H
+#define DBLOCKDEVICE_P_H
 
-#include "dfmblockdevice.h"
-#include "udisks/udisks-generated.h"
-#include "private/dfmdevice_p.h"
-#include "base/dfmmount_global.h"
+#include "base/dmount_global.h"
+#include "dblockdevice.h"
+#include "private/ddevice_p.h"
+
+extern "C" {
+#include <udisks/udisks-generated.h>
+}
 
 DFM_MOUNT_BEGIN_NS
 
-class DFMBlockDevicePrivate final : public DFMDevicePrivate
+class DBlockDevicePrivate final : public DDevicePrivate
 {
-    friend class DFMBlockDevice;
+    friend class DBlockDevice;
 
 public:
-    DFMBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DFMBlockDevice *qq);
-    ~DFMBlockDevicePrivate();
+    DBlockDevicePrivate(UDisksClient *cli, const QString &blkObjPath, DBlockDevice *qq);
+    ~DBlockDevicePrivate();
 
-    QString path() const DFM_MNT_OVERRIDE;
-    QString mount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb) DFM_MNT_OVERRIDE;
-    bool unmount(const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb) DFM_MNT_OVERRIDE;
-    bool rename(const QString &newName, const QVariantMap &opts) DFM_MNT_OVERRIDE;
-    void renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb) DFM_MNT_OVERRIDE;
-    QString mountPoint() const DFM_MNT_OVERRIDE;
-    QString fileSystem() const DFM_MNT_OVERRIDE;
-    qint64 sizeTotal() const DFM_MNT_OVERRIDE;
-    qint64 sizeUsage() const DFM_MNT_OVERRIDE;
-    qint64 sizeFree() const DFM_MNT_OVERRIDE;
-    DeviceType deviceType() const DFM_MNT_OVERRIDE;
-    QVariant getProperty(Property name) const DFM_MNT_OVERRIDE;
-    QString displayName() const DFM_MNT_OVERRIDE;
+    QString path() const DMNT_OVERRIDE;
+    QString mount(const QVariantMap &opts) DMNT_OVERRIDE;
+    void mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb) DMNT_OVERRIDE;
+    bool unmount(const QVariantMap &opts) DMNT_OVERRIDE;
+    void unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb) DMNT_OVERRIDE;
+    bool rename(const QString &newName, const QVariantMap &opts) DMNT_OVERRIDE;
+    void renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb) DMNT_OVERRIDE;
+    QString mountPoint() const DMNT_OVERRIDE;
+    QString fileSystem() const DMNT_OVERRIDE;
+    qint64 sizeTotal() const DMNT_OVERRIDE;
+    qint64 sizeUsage() const DMNT_OVERRIDE;
+    qint64 sizeFree() const DMNT_OVERRIDE;
+    DeviceType deviceType() const DMNT_OVERRIDE;
+    QVariant getProperty(Property name) const DMNT_OVERRIDE;
+    QString displayName() const DMNT_OVERRIDE;
 
     QVariant getBlockProperty(Property name) const;
     QVariant getDriveProperty(Property name) const;
@@ -100,4 +103,4 @@ private:
 };
 DFM_MOUNT_END_NS
 
-#endif   // DFMBLOCKDEVICE_P_H
+#endif   // DBLOCKDEVICE_P_H
