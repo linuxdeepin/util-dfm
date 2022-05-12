@@ -32,7 +32,9 @@
 #include <QEventLoop>
 #include <QTimer>
 
+extern "C" {
 #include <gio/gio.h>
+}
 
 DFM_MOUNT_BEGIN_NS
 class ASyncToSyncHelper
@@ -62,27 +64,6 @@ private:
     QVariant ret;
     QEventLoop *blocker { nullptr };
     QScopedPointer<QTimer> timer { nullptr };
-};
-
-struct AskPasswdHelper
-{
-    GetMountPassInfo callback { nullptr };
-    bool callOnceFlag { false };
-    bool anonymous { false };
-    DeviceError err { DeviceError::NoError };
-};
-
-struct AskQuestionHelper
-{
-    GetUserChoice callback { nullptr };
-    DeviceError err { DeviceError::NoError };
-};
-
-struct FinalizeHelper
-{
-    AskPasswdHelper *askPasswd { nullptr };
-    AskQuestionHelper *askQuestion { nullptr };
-    DeviceOperateCallbackWithMessage resultCallback;
 };
 
 class DFMProtocolDevicePrivate final : public DFMDevicePrivate
@@ -127,11 +108,6 @@ private:
 
     static void unmountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker);
     static void unmountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy);
-
-    static void mountNetworkDeviceAskQuestion(GMountOperation *self, const char *message, const char **choices, gpointer userData);
-    static void mountNetworkDeviceAskPasswd(GMountOperation *self, gchar *message, gchar *defaultUser, gchar *defaultDomain,
-                                            GAskPasswordFlags flags, gpointer userData);
-    static void mountNetworkDeviceCallback(GObject *srcObj, GAsyncResult *res, gpointer userData);
 
 private:
     QString deviceId;

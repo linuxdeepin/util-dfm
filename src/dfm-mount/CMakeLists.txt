@@ -19,7 +19,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 find_package(PkgConfig REQUIRED)
 
 # Use Qt modules
-set(QtFindModules Core Gui Widgets Concurrent)
+set(QtFindModules Core Gui Widgets Concurrent DBus)
 foreach(QtModule ${QtFindModules})
     find_package(Qt5 COMPONENTS ${QtModule} REQUIRED)
 
@@ -29,8 +29,8 @@ foreach(QtModule ${QtFindModules})
 endforeach()
 
 # Use PkgConfig modules
-pkg_check_modules(DEPENDS REQUIRED udisks2 glib-2.0 gio-unix-2.0)
-set(PkgConfigFindModules udisks2 glib-2.0 gio-unix-2.0)
+set(PkgConfigFindModules udisks2 glib-2.0 gio-unix-2.0 libsecret-1)
+pkg_check_modules(DEPENDS REQUIRED ${PkgConfigFindModules})
 foreach(PkgConfigModule ${PkgConfigFindModules})
     pkg_check_modules(PkgUseModuleVal REQUIRED ${PkgConfigModule})
     #can use target_link_libraries(xxx ${PkgUseModule})
@@ -40,39 +40,20 @@ endforeach(PkgConfigModule)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-set(LIB_BASE_HEADER
-    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmdevice.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmonitor.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmount_global.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/base/dfmmountutils.h
-    )
-
-set(LIB_HEADER
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfm-mount.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockdevice.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmblockmonitor.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmprotocoldevice.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmprotocolmonitor.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/dfmdevicemanager.h)
-
-set(LIB_P_HEADER
-    ${CMAKE_CURRENT_LIST_DIR}/private/dfmblockdevice_p.h
-    ${CMAKE_CURRENT_LIST_DIR}/private/dfmblockmonitor_p.h
-    ${CMAKE_CURRENT_LIST_DIR}/private/dfmprotocoldevice_p.h
-    ${CMAKE_CURRENT_LIST_DIR}/private/dfmprotocolmonitor_p.h
-    ${CMAKE_CURRENT_LIST_DIR}/private/dfmmonitor_p.h
-    ${CMAKE_CURRENT_LIST_DIR}/private/dfmdevice_p.h
-    ${CMAKE_CURRENT_LIST_DIR}/private/dfmdevicemanager_p.h)
-
-set(LIB_SRCS
-    ${CMAKE_CURRENT_LIST_DIR}/lib/base/dfmdevice.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/base/dfmmonitor.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/base/dfmmountutils.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockdevice.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmblockmonitor.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmprotocoldevice.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmprotocolmonitor.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/dfmdevicemanager.cpp)
+FILE(GLOB LIB_BASE_HEADER
+    ${CMAKE_CURRENT_LIST_DIR}/include/base/*.h
+)
+FILE(GLOB LIB_HEADER
+    ${CMAKE_CURRENT_LIST_DIR}/include/*.h
+)
+FILE(GLOB LIB_P_HEADER
+    ${CMAKE_CURRENT_LIST_DIR}/private/*.h
+)
+FILE(GLOB LIB_SRCS
+    ${CMAKE_CURRENT_LIST_DIR}/private/*.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/*.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/lib/*/*.cpp
+)
 
 # Build library
 add_library(${PROJECT_NAME} SHARED ${LIB_HEADER} ${LIB_BASE_HEADER} ${LIB_P_HEADER} ${LIB_SRCS})
@@ -84,9 +65,9 @@ set_target_properties(
 )
 
 target_link_libraries(${PROJECT_NAME}
-    Qt5::Core
     ${PkgUseModules}
-    ${QtUseModules})
+    ${QtUseModules}
+)
 
 include(GNUInstallDirs)
 
