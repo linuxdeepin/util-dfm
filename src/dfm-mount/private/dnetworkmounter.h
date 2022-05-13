@@ -46,6 +46,7 @@ public:
 private:
     static QString loginUser();
     static QList<QVariantMap> loginPasswd(const QString &address);
+    static void savePasswd(const QString &address, const MountPassInfo &info);
     static SecretSchema *smbSchema();
 
     static void mountByDaemon(const QString &, GetMountPassInfo, DeviceOperateCallbackWithMessage, int);

@@ -147,6 +147,28 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
     return passwds;
 }
 
+void DNetworkMounter::savePasswd(const QString &address, const MountPassInfo &info)
+{
+    QUrl u(address);
+    QString protocol = u.scheme();
+    QString server = u.host();
+    const char *collection = info.savePasswd == NetworkMountPasswdSaveMode::SaveBeforeLogout
+            ? SECRET_COLLECTION_SESSION
+            : SECRET_COLLECTION_DEFAULT;
+
+    if (protocol == "smb") {
+        GError_autoptr err { nullptr };
+        QString title = QString("%1@%2").arg(info.userName).arg(server);   // username@host, just like the way gvfs do.
+        secret_password_store_sync(smbSchema(), collection, title.toStdString().c_str(), info.passwd.toStdString().c_str(), nullptr, &err,
+                                   kSchemaDomain, info.domain.toStdString().c_str(),
+                                   kSchemaProtocol, protocol.toStdString().c_str(),
+                                   kSchemaServer, server.toStdString().c_str(),
+                                   kSchemaUser, info.userName.toStdString().c_str(), nullptr);
+        if (err)
+            qWarning() << "save passwd failed: " << err->message;
+    }
+}
+
 SecretSchema *DNetworkMounter::smbSchema()
 {
     static SecretSchema sche;
@@ -388,8 +410,12 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
     DeviceError err = info.anonymous
             ? DeviceError::UserErrorNetworkAnonymousNotAllowed
             : DeviceError::UserErrorNetworkWrongPasswd;
-    if (ok)
+    if (ok) {
         err = DeviceError::NoError;
+
+        if (!info.anonymous && info.savePasswd != NetworkMountPasswdSaveMode::NeverSavePasswd)
+            savePasswd(address, info);
+    }
 
     return { ok, err, mpt };
 }
