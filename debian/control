@@ -47,7 +47,8 @@ Section: libdevel
 Multi-Arch: same
 Depends:
  ${shlibs:Depends},
- ${misc:Depends}
+ ${misc:Depends},
+ libsecret-1
 Description: A libaray about mount and umount.
  A libaray that provides mount and umount interface.
 
