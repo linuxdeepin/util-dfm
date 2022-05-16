@@ -43,7 +43,7 @@ public:
     bool startMonitorWatch();
     bool stopMonitorWatch();
     MonitorError lastError() const;
-    QMap<DeviceType, QStringList> devices(DeviceType type = DeviceType::AllDevice);
+    QMap<DeviceType, QStringList> devices(DeviceType type = DeviceType::kAllDevice);
 
 Q_SIGNALS:
     // these signals are transferred from monitors, you can use them or connect directly from monitors,

@@ -48,7 +48,7 @@ public:
     DDeviceMonitor *q = nullptr;
     // for saving gsignals connections, key: singal_name, value: the handler returned by g_signal_connect
     QMap<QString, ulong> connections;
-    MonitorStatus monitorStatus = MonitorStatus::Idle;
+    MonitorStatus monitorStatus = MonitorStatus::kIdle;
 };
 
 DFM_MOUNT_END_NS

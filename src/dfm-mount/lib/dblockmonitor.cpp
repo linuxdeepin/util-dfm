@@ -116,7 +116,7 @@ bool DBlockMonitorPrivate::stopMonitor()
 
 DeviceType DBlockMonitorPrivate::monitorObjectType() const
 {
-    return DeviceType::BlockDevice;
+    return DeviceType::kBlockDevice;
 }
 
 QStringList DBlockMonitorPrivate::getDevices()
@@ -330,7 +330,7 @@ void DBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient
             auto key = iter.key();
             auto val = iter.value();
             Property type = Utils::getPropertyByName(key, ifaceName);
-            if (type == Property::NotInit) {
+            if (type == Property::kNotInit) {
                 qDebug() << "\tproperty: " << key << "has no mapped type, but value is" << val;
                 continue;
             }
@@ -344,8 +344,8 @@ void DBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient
     if (changes.isEmpty())
         return;
 
-    if (changes.contains(Property::FileSystemMountPoint)) {
-        auto mpts = changes.value(Property::FileSystemMountPoint).toStringList();
+    if (changes.contains(Property::kFileSystemMountPoint)) {
+        auto mpts = changes.value(Property::kFileSystemMountPoint).toStringList();
         Q_EMIT mpts.isEmpty() ? q->mountRemoved(objPath) : q->mountAdded(objPath, mpts.first());
     }
 

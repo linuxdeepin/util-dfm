@@ -125,7 +125,7 @@ bool DProtocolMonitorPrivate::stopMonitor()
 
 DeviceType DProtocolMonitorPrivate::monitorObjectType() const
 {
-    return DeviceType::ProtocolDevice;
+    return DeviceType::kProtocolDevice;
 }
 
 QStringList DProtocolMonitorPrivate::getDevices()

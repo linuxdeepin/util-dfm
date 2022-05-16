@@ -51,7 +51,7 @@ bool DDeviceMonitor::startMonitor()
 {
     Q_ASSERT_X(d->start, __PRETTY_FUNCTION__, "not register");
 
-    d->monitorStatus = MonitorStatus::Monitoring;
+    d->monitorStatus = MonitorStatus::kMonitoring;
     return d->start();
 }
 
@@ -59,7 +59,7 @@ bool DDeviceMonitor::stopMonitor()
 {
     Q_ASSERT_X(d->stop, __PRETTY_FUNCTION__, "not register");
 
-    d->monitorStatus = MonitorStatus::Idle;
+    d->monitorStatus = MonitorStatus::kIdle;
     return d->stop();
 }
 

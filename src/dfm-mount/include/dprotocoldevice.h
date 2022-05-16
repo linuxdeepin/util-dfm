@@ -39,7 +39,7 @@ struct MountPassInfo
     QString domain {};
     bool anonymous { false };
     bool cancelled { false };
-    NetworkMountPasswdSaveMode savePasswd { NetworkMountPasswdSaveMode::NeverSavePasswd };
+    NetworkMountPasswdSaveMode savePasswd { NetworkMountPasswdSaveMode::kNeverSavePasswd };
 };
 
 using GetMountPassInfo = std::function<MountPassInfo(const QString &message, const QString &userDefault, const QString &domainDefault)>;

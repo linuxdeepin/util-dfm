@@ -59,7 +59,7 @@ private:
     struct MountRet
     {
         bool ok { false };
-        DeviceError err { DeviceError::NoError };
+        DeviceError err { DeviceError::kNoError };
         QString mpt {};
         bool requestLoginInfo { false };
     };

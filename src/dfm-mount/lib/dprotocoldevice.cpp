@@ -225,7 +225,7 @@ QString DProtocolDevicePrivate::mount(const QVariantMap &opts)
         //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
         //        qInfo() << "mutexForMount locked" << __FUNCTION__;
-        lastError = DeviceError::UserErrorAlreadyMounted;
+        lastError = DeviceError::kUserErrorAlreadyMounted;
         return mountPoint(mountHandler);
     }
 
@@ -239,7 +239,7 @@ QString DProtocolDevicePrivate::mount(const QVariantMap &opts)
         //        qInfo() << "mutexForVolume locked" << __FUNCTION__;
 
         if (!g_volume_can_mount(volumeHandler)) {
-            lastError = DeviceError::UserErrorNotMountable;
+            lastError = DeviceError::kUserErrorNotMountable;
             return "";
         }
 
@@ -255,10 +255,10 @@ QString DProtocolDevicePrivate::mount(const QVariantMap &opts)
         } else if (ret == ASyncToSyncHelper::Timeout) {
             if (cancellable)
                 g_cancellable_cancel(cancellable);
-            lastError = DeviceError::UserErrorTimedOut;
+            lastError = DeviceError::kUserErrorTimedOut;
         }
     }
-    lastError = DeviceError::UserErrorNotMountable;
+    lastError = DeviceError::kUserErrorNotMountable;
     return "";
 }
 
@@ -268,7 +268,7 @@ void DProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCa
         //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
         //        qInfo() << "mutexForMount locked" << __FUNCTION__;
-        lastError = DeviceError::UserErrorAlreadyMounted;
+        lastError = DeviceError::kUserErrorAlreadyMounted;
         if (cb)
             cb(true, lastError, mountPoint(mountHandler));
         return;
@@ -276,7 +276,7 @@ void DProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCa
 
     if (volumeHandler) {
         if (!g_volume_can_mount(volumeHandler)) {
-            lastError = DeviceError::UserErrorNotMountable;
+            lastError = DeviceError::kUserErrorNotMountable;
             if (cb)
                 cb(false, lastError, "");
             return;
@@ -302,7 +302,7 @@ void DProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCa
 bool DProtocolDevicePrivate::unmount(const QVariantMap &opts)
 {
     if (!mountHandler) {
-        lastError = DeviceError::UserErrorNotMounted;
+        lastError = DeviceError::kUserErrorNotMounted;
         return true;
     } else {
         QString mpt = mountPoint(mountHandler);
@@ -326,7 +326,7 @@ bool DProtocolDevicePrivate::unmount(const QVariantMap &opts)
             if (ret == ASyncToSyncHelper::NoError) {
                 return true;
             } else if (ret == ASyncToSyncHelper::Timeout) {
-                lastError = DeviceError::UserErrorTimedOut;
+                lastError = DeviceError::kUserErrorTimedOut;
                 g_cancellable_cancel(cancellable);
                 return false;
             }
@@ -338,7 +338,7 @@ bool DProtocolDevicePrivate::unmount(const QVariantMap &opts)
 void DProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     if (!mountHandler) {
-        lastError = DeviceError::UserErrorNotMounted;
+        lastError = DeviceError::kUserErrorNotMounted;
         if (cb)
             cb(true, lastError);
         return;
@@ -419,7 +419,7 @@ long DProtocolDevicePrivate::sizeFree() const
 
 DeviceType DProtocolDevicePrivate::deviceType() const
 {
-    return DeviceType::ProtocolDevice;
+    return DeviceType::kProtocolDevice;
 }
 
 QString DProtocolDevicePrivate::displayName() const
@@ -439,7 +439,7 @@ QString DProtocolDevicePrivate::displayName() const
         return name;
     }
 
-    lastError = DeviceError::UserErrorNotMountable;
+    lastError = DeviceError::kUserErrorNotMountable;
     return "";
 }
 
@@ -476,7 +476,7 @@ QVariant DProtocolDevicePrivate::getAttr(DProtocolDevicePrivate::FsAttr type) co
 
     g_autoptr(GFile) mntFile = g_file_new_for_uri(deviceId.toStdString().data());
     if (!mntFile) {
-        lastError = DeviceError::UnhandledError;
+        lastError = DeviceError::kUnhandledError;
         qDebug() << "cannot create file handler for " << deviceId;
         return QVariant();
     }
@@ -608,7 +608,7 @@ void DProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncResul
     auto mnt = reinterpret_cast<GMount *>(sourceObj);
 
     GError *err { nullptr };
-    DeviceError derr = DeviceError::NoError;
+    DeviceError derr = DeviceError::kNoError;
     bool ret = g_mount_unmount_with_operation_finish(mnt, res, &err);
     if (err) {
         // TODO

@@ -59,13 +59,13 @@ struct AskPasswdHelper
     GetMountPassInfo callback { nullptr };
     bool callOnceFlag { false };
     bool anonymous { false };
-    DeviceError err { DeviceError::NoError };
+    DeviceError err { DeviceError::kNoError };
 };
 
 struct AskQuestionHelper
 {
     GetUserChoice callback { nullptr };
-    DeviceError err { DeviceError::NoError };
+    DeviceError err { DeviceError::kNoError };
 };
 
 struct FinalizeHelper
@@ -152,7 +152,7 @@ void DNetworkMounter::savePasswd(const QString &address, const MountPassInfo &in
     QUrl u(address);
     QString protocol = u.scheme();
     QString server = u.host();
-    const char *collection = info.savePasswd == NetworkMountPasswdSaveMode::SaveBeforeLogout
+    const char *collection = info.savePasswd == NetworkMountPasswdSaveMode::kSaveBeforeLogout
             ? SECRET_COLLECTION_SESSION
             : SECRET_COLLECTION_DEFAULT;
 
@@ -205,7 +205,7 @@ void DNetworkMounter::unmountNetworkDevAsync(const QString &mpt, DeviceOperateCa
         bool ret = watcher->result();
         watcher->deleteLater();
         if (cb)
-            cb(ret, ret ? DeviceError::NoError : DeviceError::UserError);
+            cb(ret, ret ? DeviceError::kNoError : DeviceError::kUserError);
     });
     watcher->setFuture(QtConcurrent::run(unmountNetworkDev, mpt));
 }
@@ -233,7 +233,7 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
         loginInfo = requestLoginInfo();
         if (loginInfo.cancelled && mountResult) {
             checkThread();
-            mountResult(false, DeviceError::UserErrorUserCancelled, "");
+            mountResult(false, DeviceError::kUserErrorUserCancelled, "");
             return;
         }
     }
@@ -246,7 +246,7 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
             auto loginInfo = requestLoginInfo();
             if (loginInfo.cancelled && mountResult) {
                 checkThread();
-                mountResult(false, DeviceError::UserErrorUserCancelled, "");
+                mountResult(false, DeviceError::kUserErrorUserCancelled, "");
                 return;
             }
             doLastMount(address, loginInfo, mountResult);
@@ -306,7 +306,7 @@ void DNetworkMounter::mountByGvfsAskQuestion(GMountOperation *self, const char *
     auto helper = reinterpret_cast<AskQuestionHelper *>(userData);
     if (!helper || !helper->callback) {
         if (helper)
-            helper->err = DeviceError::UserErrorFailed;
+            helper->err = DeviceError::kUserErrorFailed;
         g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
         return;
     }
@@ -331,7 +331,7 @@ void DNetworkMounter::mountByGvfsAskPasswd(GMountOperation *self, gchar *message
     auto helper = reinterpret_cast<AskPasswdHelper *>(userData);
     if (!helper || !helper->callback) {
         if (helper)
-            helper->err = DeviceError::UserErrorFailed;
+            helper->err = DeviceError::kUserErrorFailed;
         g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
         return;
     }
@@ -340,9 +340,9 @@ void DNetworkMounter::mountByGvfsAskPasswd(GMountOperation *self, gchar *message
         helper->callOnceFlag = true;
     } else {
         if (helper->anonymous)
-            helper->err = DeviceError::UserErrorNetworkAnonymousNotAllowed;
+            helper->err = DeviceError::kUserErrorNetworkAnonymousNotAllowed;
         else
-            helper->err = DeviceError::UserErrorNetworkWrongPasswd;
+            helper->err = DeviceError::kUserErrorNetworkWrongPasswd;
         g_mount_operation_reply(self, G_MOUNT_OPERATION_UNHANDLED);
         return;
     }
@@ -350,14 +350,14 @@ void DNetworkMounter::mountByGvfsAskPasswd(GMountOperation *self, gchar *message
     auto mountInfo = helper->callback(message, defaultUser, defaultDomain);
     if (mountInfo.cancelled) {
         g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
-        helper->err = DeviceError::UserErrorUserCancelled;
+        helper->err = DeviceError::kUserErrorUserCancelled;
         return;
     }
 
     if (mountInfo.anonymous) {
         // the flags seem to always be 31(0b11111)
         if (!(flags & G_ASK_PASSWORD_ANONYMOUS_SUPPORTED)) {
-            helper->err = DeviceError::UserErrorNetworkAnonymousNotAllowed;
+            helper->err = DeviceError::kUserErrorNetworkAnonymousNotAllowed;
             g_mount_operation_reply(self, G_MOUNT_OPERATION_UNHANDLED);
             return;
         }
@@ -385,7 +385,7 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
     auto file = reinterpret_cast<GFile *>(srcObj);
     GError_autoptr err = nullptr;
     bool ok = g_file_mount_enclosing_volume_finish(file, res, &err);
-    if (!ok && derr == DeviceError::NoError)
+    if (!ok && derr == DeviceError::kNoError)
         derr = Utils::castFromGError(err);
 
     g_autofree char *mntPath = g_file_get_path(file);
@@ -408,12 +408,12 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
     QString mpt = ret.value();
     bool ok = !mpt.isEmpty();
     DeviceError err = info.anonymous
-            ? DeviceError::UserErrorNetworkAnonymousNotAllowed
-            : DeviceError::UserErrorNetworkWrongPasswd;
+            ? DeviceError::kUserErrorNetworkAnonymousNotAllowed
+            : DeviceError::kUserErrorNetworkWrongPasswd;
     if (ok) {
-        err = DeviceError::NoError;
+        err = DeviceError::kNoError;
 
-        if (!info.anonymous && info.savePasswd != NetworkMountPasswdSaveMode::NeverSavePasswd)
+        if (!info.anonymous && info.savePasswd != NetworkMountPasswdSaveMode::kNeverSavePasswd)
             savePasswd(address, info);
     }
 
@@ -431,7 +431,7 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &ad
         QDBusReply<QString> ret = mntCtrl.call(kMountControlMount, address, param);
         QString mpt = ret.value();
         if (!mpt.isEmpty())
-            return { true, DeviceError::NoError, mpt };
+            return { true, DeviceError::kNoError, mpt };
     }
     // when all saved login data is tried, get info from user
     MountRet ret { .requestLoginInfo = true };

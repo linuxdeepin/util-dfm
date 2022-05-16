@@ -61,7 +61,7 @@ public:
     DDevice::GetPropertyFunc getProperty { nullptr };
     DDevice::DisplayNameFunc displayName { nullptr };
 
-    mutable DeviceError lastError { DeviceError::NoError };
+    mutable DeviceError lastError { DeviceError::kNoError };
 
 protected:
     DDevice *q = nullptr;

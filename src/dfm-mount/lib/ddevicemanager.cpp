@@ -35,7 +35,7 @@ DDeviceManagerPrivate::DDeviceManagerPrivate(DDeviceManager *qq)
 
 QSharedPointer<DDeviceMonitor> DDeviceManagerPrivate::getRegisteredMonitor(DeviceType type) const
 {
-    if (type == DeviceType::AllDevice) {
+    if (type == DeviceType::kAllDevice) {
         qWarning() << "DeviceType::AllDevice is not a specific type.";
         return nullptr;
     }
@@ -78,7 +78,7 @@ QMap<DeviceType, QStringList> DDeviceManagerPrivate::devices(DeviceType type)
             if (monitor)
                 ret.insert(monitor->monitorObjectType(), monitor->getDevices());
             else
-                lastError = MonitorError::MonitorNotRegister;
+                lastError = MonitorError::kMonitorNotRegister;
         }
         return ret;
     };
@@ -91,16 +91,16 @@ QMap<DeviceType, QStringList> DDeviceManagerPrivate::devices(DeviceType type)
             return ret;
         }
 
-        lastError = MonitorError::MonitorNotRegister;
+        lastError = MonitorError::kMonitorNotRegister;
         return ret;
     };
 
     switch (type) {
-    case DeviceType::AllDevice:
+    case DeviceType::kAllDevice:
         return getAllDev();
-    case DeviceType::NetDevice:   // by intentionally
-    case DeviceType::ProtocolDevice:
-    case DeviceType::BlockDevice:
+    case DeviceType::kNetDevice:   // by intentionally
+    case DeviceType::kProtocolDevice:
+    case DeviceType::kBlockDevice:
         return getDevsOfType(type);
     }
 
@@ -163,7 +163,7 @@ bool DDeviceManagerPrivate::registerMonitor(ConstructArgs &&... args)
 
     auto type = monitor->monitorObjectType();
     if (monitors.contains(type)) {
-        lastError = MonitorError::MonitorAlreadyRegistered;
+        lastError = MonitorError::kMonitorAlreadyRegistered;
         return false;
     }
     monitors.insert(type, monitor);
