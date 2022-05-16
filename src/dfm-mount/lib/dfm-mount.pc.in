@@ -6,7 +6,7 @@ includedir=${prefix}/include
 Name: dfm-mount
 Description: a lib for simply mount devices
 Version: @PROJECT_VERSION@
-Requires: udisks2 gio-2.0
+Requires: udisks2 gio-2.0 libsecret-1
 
 Libs: -L${libdir} -ldfm-mount
 Cflags: -I${includedir} -I${includedir}/dfm-mount
