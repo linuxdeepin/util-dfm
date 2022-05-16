@@ -96,9 +96,9 @@ bool DLocalEnumeratorPrivate::hasNext()
         return false;
 
     // sub dir enumerator
-    if (enumSubDir && dfileInfoNext && gfileNext && dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsDir).toBool()) {
+    if (enumSubDir && dfileInfoNext && gfileNext && dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool()) {
         bool showDir = true;
-        if (dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsSymlink).toBool()) {
+        if (dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool()) {
             // is symlink, need enumSymlink
             showDir = enumLinks;
         }
@@ -172,8 +172,8 @@ bool DLocalEnumeratorPrivate::checkFilter()
     if (!dfileInfoNext)
         return false;
 
-    const bool isDir = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsDir).toBool();
-    if ((dirFilters & DEnumerator::DirFilter::AllDirs) == kDirFilterAllDirs) {   // all dir, no apply filters rules
+    const bool isDir = dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool();
+    if ((dirFilters & DEnumerator::DirFilter::kAllDirs) == kDirFilterAllDirs) {   // all dir, no apply filters rules
         if (isDir)
             return true;
     }
@@ -181,32 +181,32 @@ bool DLocalEnumeratorPrivate::checkFilter()
     // dir filter
     bool ret = true;
 
-    const bool readable = dfileInfoNext->attribute(DFileInfo::AttributeID::AccessCanRead).toBool();
-    const bool writable = dfileInfoNext->attribute(DFileInfo::AttributeID::AccessCanWrite).toBool();
-    const bool executable = dfileInfoNext->attribute(DFileInfo::AttributeID::AccessCanExecute).toBool();
+    const bool readable = dfileInfoNext->attribute(DFileInfo::AttributeID::kAccessCanRead).toBool();
+    const bool writable = dfileInfoNext->attribute(DFileInfo::AttributeID::kAccessCanWrite).toBool();
+    const bool executable = dfileInfoNext->attribute(DFileInfo::AttributeID::kAccessCanExecute).toBool();
 
     auto checkRWE = [&]() -> bool {
-        if ((dirFilters & DEnumerator::DirFilter::Readable) == kDirFilterReadable) {
+        if ((dirFilters & DEnumerator::DirFilter::kReadable) == kDirFilterReadable) {
             if (!readable)
                 return false;
         }
-        if ((dirFilters & DEnumerator::DirFilter::Writable) == kDirFilterWritable) {
+        if ((dirFilters & DEnumerator::DirFilter::kWritable) == kDirFilterWritable) {
             if (!writable)
                 return false;
         }
-        if ((dirFilters & DEnumerator::DirFilter::Executable) == kDirFilterExecutable) {
+        if ((dirFilters & DEnumerator::DirFilter::kExecutable) == kDirFilterExecutable) {
             if (!executable)
                 return false;
         }
         return true;
     };
 
-    if ((dirFilters & DEnumerator::DirFilter::AllEntries) == kDirFilterAllEntries
-        || ((dirFilters & DEnumerator::DirFilter::Dirs) && (dirFilters & DEnumerator::DirFilter::Files))) {
+    if ((dirFilters & DEnumerator::DirFilter::kAllEntries) == kDirFilterAllEntries
+        || ((dirFilters & DEnumerator::DirFilter::kDirs) && (dirFilters & DEnumerator::DirFilter::kFiles))) {
         // 判断读写执行
         if (!checkRWE())
             ret = false;
-    } else if ((dirFilters & DEnumerator::DirFilter::Dirs) == kDirFilterDirs) {
+    } else if ((dirFilters & DEnumerator::DirFilter::kDirs) == kDirFilterDirs) {
         if (!isDir) {
             ret = false;
         } else {
@@ -214,8 +214,8 @@ bool DLocalEnumeratorPrivate::checkFilter()
             if (!checkRWE())
                 ret = false;
         }
-    } else if ((dirFilters & DEnumerator::DirFilter::Files) == kDirFilterFiles) {
-        const bool isFile = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsFile).toBool();
+    } else if ((dirFilters & DEnumerator::DirFilter::kFiles) == kDirFilterFiles) {
+        const bool isFile = dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsFile).toBool();
         if (!isFile) {
             ret = false;
         } else {
@@ -225,16 +225,16 @@ bool DLocalEnumeratorPrivate::checkFilter()
         }
     }
 
-    if ((dirFilters & DEnumerator::DirFilter::NoSymLinks) == kDirFilterNoSymLinks) {
-        const bool isSymlinks = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardIsSymlink).toBool();
+    if ((dirFilters & DEnumerator::DirFilter::kNoSymLinks) == kDirFilterNoSymLinks) {
+        const bool isSymlinks = dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool();
         if (isSymlinks)
             ret = false;
     }
 
-    const QString &fileInfoName = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardName).toString();
-    const bool showHidden = (dirFilters & DEnumerator::DirFilter::Hidden) == kDirFilterHidden;
+    const QString &fileInfoName = dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardName).toString();
+    const bool showHidden = (dirFilters & DEnumerator::DirFilter::kHidden) == kDirFilterHidden;
     if (!showHidden) {   // hide files
-        const QString &parentPath = dfileInfoNext->attribute(DFileInfo::AttributeID::StandardParentPath).toString();
+        const QString &parentPath = dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardParentPath).toString();
         const QUrl &urlHidden = QUrl::fromLocalFile(parentPath + "/.hidden");
 
         QSet<QString> hideList;
@@ -251,12 +251,12 @@ bool DLocalEnumeratorPrivate::checkFilter()
     }
 
     // filter name
-    const bool caseSensitive = (dirFilters & DEnumerator::DirFilter::CaseSensitive) == kDirFilterCaseSensitive;
+    const bool caseSensitive = (dirFilters & DEnumerator::DirFilter::kCaseSensitive) == kDirFilterCaseSensitive;
     if (nameFilters.contains(fileInfoName, caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive))
         ret = false;
 
-    const bool showDot = !((dirFilters & DEnumerator::DirFilter::NoDotAndDotDot) == kDirFilterNoDotAndDotDot) && !((dirFilters & DEnumerator::DirFilter::NoDot) == kDirFilterNoDot);
-    const bool showDotDot = !((dirFilters & DEnumerator::DirFilter::NoDotAndDotDot) == kDirFilterNoDotAndDotDot) && !((dirFilters & DEnumerator::DirFilter::NoDotDot) == kDirFilterNoDotDot);
+    const bool showDot = !((dirFilters & DEnumerator::DirFilter::kNoDotAndDotDot) == kDirFilterNoDotAndDotDot) && !((dirFilters & DEnumerator::DirFilter::kNoDot) == kDirFilterNoDot);
+    const bool showDotDot = !((dirFilters & DEnumerator::DirFilter::kNoDotAndDotDot) == kDirFilterNoDotAndDotDot) && !((dirFilters & DEnumerator::DirFilter::kNoDotDot) == kDirFilterNoDotDot);
     if (!showDot && fileInfoName == ".")
         ret = false;
     if (!showDotDot && fileInfoName == "..")
@@ -327,8 +327,8 @@ DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilte
     d->dirFilters = filters;
     d->iteratorFlags = flags;
 
-    d->enumSubDir = d->iteratorFlags & DEnumerator::IteratorFlag::Subdirectories;
-    d->enumLinks = d->iteratorFlags & DEnumerator::IteratorFlag::FollowSymlinks;
+    d->enumSubDir = d->iteratorFlags & DEnumerator::IteratorFlag::kSubdirectories;
+    d->enumLinks = d->iteratorFlags & DEnumerator::IteratorFlag::kFollowSymlinks;
 }
 
 DLocalEnumerator::~DLocalEnumerator()

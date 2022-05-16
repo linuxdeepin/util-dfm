@@ -51,8 +51,8 @@ public:
 
     QUrl uri;
     QStringList nameFilters;
-    DEnumerator::DirFilters dirFilters = DEnumerator::DirFilter::NoFilter;
-    DEnumerator::IteratorFlags iteratorFlags = DEnumerator::IteratorFlag::NoIteratorFlags;
+    DEnumerator::DirFilters dirFilters = DEnumerator::DirFilter::kNoFilter;
+    DEnumerator::IteratorFlags iteratorFlags = DEnumerator::IteratorFlag::kNoIteratorFlags;
 
     DEnumerator::FileInfoListFunc fileInfoListFunc = nullptr;
 };

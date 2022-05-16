@@ -59,7 +59,7 @@ public:
     void writeAllAsync(const char *data, int ioPriority = 0, DFile::WriteAllCallbackFunc func = nullptr, void *userData = nullptr);
     void writeQAsync(const QByteArray &byteArray, int ioPriority = 0, DFile::WriteQCallbackFunc func = nullptr, void *userData = nullptr);
 
-    bool seek(qint64 pos, DFile::DFMSeekType type = DFile::DFMSeekType::BEGIN);
+    bool seek(qint64 pos, DFile::SeekType type = DFile::SeekType::kBegin);
     qint64 pos();
     bool flush();
     qint64 size();

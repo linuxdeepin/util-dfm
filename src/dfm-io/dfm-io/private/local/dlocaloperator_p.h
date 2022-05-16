@@ -26,7 +26,6 @@
 #define DLOCALOPERATOR_P_H
 
 #include "dfmio_global.h"
-
 #include "core/doperator_p.h"
 
 #include "gio/gio.h"
@@ -43,12 +42,12 @@ public:
 
     bool renameFile(const QString &new_name);
     bool renameFile(const QUrl &toUrl);
-    bool copyFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
-    bool moveFile(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    bool copyFile(const QUrl &dstUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    bool moveFile(const QUrl &dstUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     void renameFileAsync(const QString &newName, int ioPriority = 0, DOperator::FileOperateCallbackFunc func = nullptr, void *userData = nullptr);
-    void copyFileAsync(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
+    void copyFileAsync(const QUrl &dstUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
                        int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
-    void moveFileAsync(const QUrl &dstUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
+    void moveFileAsync(const QUrl &dstUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
                        int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
 
     bool trashFile();

@@ -70,8 +70,8 @@ static void copy(const QUrl &url_src, const QUrl &url_dst)
     QSharedPointer<DFMIO::DIOFactory> factory_src = produceQSharedIOFactory(url_src.scheme(), static_cast<QUrl>(url_src));
     QSharedPointer<DFMIO::DIOFactory> factory_dst = produceQSharedIOFactory(url_dst.scheme(), static_cast<QUrl>(url_dst));
 
-    QSharedPointer<DFile> stream_src = make_stream(factory_src, DFile::OpenFlag::ReadOnly);
-    QSharedPointer<DFile> stream_dst = make_stream(factory_dst, DFile::OpenFlag::WriteOnly);
+    QSharedPointer<DFile> stream_src = make_stream(factory_src, DFile::OpenFlag::kReadOnly);
+    QSharedPointer<DFile> stream_dst = make_stream(factory_dst, DFile::OpenFlag::kWriteOnly);
 
     if (!stream_src || !stream_dst) {
         return;

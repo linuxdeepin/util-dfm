@@ -42,167 +42,167 @@ class DFileInfo : public QEnableSharedFromThis<DFileInfo>
 {
 public:
     enum class DFileType : uint16_t {
-        Unknown = 0,   // File's type is unknown.
-        Regular = 1,   // File handle represents a regular file.
-        Directory = 2,   // File handle represents a directory.
-        SymbolicLink = 3,   // File handle represents a symbolic link (Unix systems).
-        Special = 4,   // File is a "special" file, such as a socket, fifo, block device, or character device.
-        Shortcut = 5,   // File is a shortcut (Windows systems).
-        Mountable = 6,   // File is a mountable location.
+        kUnknown = 0,   // File's type is unknown.
+        kRegular = 1,   // File handle represents a regular file.
+        kDirectory = 2,   // File handle represents a directory.
+        kSymbolicLink = 3,   // File handle represents a symbolic link (Unix systems).
+        kSpecial = 4,   // File is a "special" file, such as a socket, fifo, block device, or character device.
+        kShortcut = 5,   // File is a shortcut (Windows systems).
+        kMountable = 6,   // File is a mountable location.
 
         // Reserved
-        UserType = 0x100
+        kUserType = 0x100
     };
 
     enum class DFileAttributeType : uint8_t {
-        TypeInvalid = 0,   // Indicates an invalid or uninitialized type
-        TypeString = 1,   // A null terminated UTF8 string
-        TypeByteString = 2,   // A zero terminated string of non-zero bytes
-        TypeBool = 3,   // A boolean value
-        TypeUInt32 = 4,   // An unsigned 4-byte/32-bit integer
-        TypeInt32 = 5,   // A signed 4-byte/32-bit integer
-        TypeUInt64 = 6,   // An unsigned 8-byte/64-bit integer
-        TypeInt64 = 7,   // A signed 8-byte/64-bit integer
-        TypeObject = 8,   // A Object
-        TypeStringV = 9   // A NULL terminated char **
+        kTypeInvalid = 0,   // Indicates an invalid or uninitialized type
+        kTypeString = 1,   // A null terminated UTF8 string
+        kTypeByteString = 2,   // A zero terminated string of non-zero bytes
+        kTypeBool = 3,   // A boolean value
+        kTypeUInt32 = 4,   // An unsigned 4-byte/32-bit integer
+        kTypeInt32 = 5,   // A signed 4-byte/32-bit integer
+        kTypeUInt64 = 6,   // An unsigned 8-byte/64-bit integer
+        kTypeInt64 = 7,   // A signed 8-byte/64-bit integer
+        kTypeObject = 8,   // A Object
+        kTypeStringV = 9   // A NULL terminated char **
     };
 
     enum class FileQueryInfoFlags : uint8_t {
-        TypeNone,
-        TypeNoFollowSymlinks
+        kTypeNone,
+        kTypeNoFollowSymlinks
     };
 
     enum class AttributeID : uint16_t {
-        StandardType = 0,   // uint32
-        StandardIsHidden = 1,   // boolean
-        StandardIsBackup = 2,   // boolean
-        StandardIsSymlink = 3,   // boolean
-        StandardIsVirtual = 4,   // boolean
-        StandardIsVolatile = 5,   // boolean
-        StandardName = 6,   // byte string
-        StandardDisplayName = 7,   // string
-        StandardEditName = 8,   // string
-        StandardCopyName = 9,   // string
-        StandardIcon = 10,   // QList<QString>
-        StandardSymbolicIcon = 11,   // QList<QString>
-        StandardContentType = 12,   // string
-        StandardFastContentType = 13,   // string
-        StandardSize = 14,   // uint64
-        StandardAllocatedSize = 15,   // uint64
-        StandardSymlinkTarget = 16,   // byte string
-        StandardTargetUri = 17,   // string
-        StandardSortOrder = 18,   // int32
-        StandardDescription = 19,   // string
+        kStandardType = 0,   // uint32
+        kStandardIsHidden = 1,   // boolean
+        kStandardIsBackup = 2,   // boolean
+        kStandardIsSymlink = 3,   // boolean
+        kStandardIsVirtual = 4,   // boolean
+        kStandardIsVolatile = 5,   // boolean
+        kStandardName = 6,   // byte string
+        kStandardDisplayName = 7,   // string
+        kStandardEditName = 8,   // string
+        kStandardCopyName = 9,   // string
+        kStandardIcon = 10,   // QList<QString>
+        kStandardSymbolicIcon = 11,   // QList<QString>
+        kStandardContentType = 12,   // string
+        kStandardFastContentType = 13,   // string
+        kStandardSize = 14,   // uint64
+        kStandardAllocatedSize = 15,   // uint64
+        kStandardSymlinkTarget = 16,   // byte string
+        kStandardTargetUri = 17,   // string
+        kStandardSortOrder = 18,   // int32
+        kStandardDescription = 19,   // string
 
-        EtagValue = 40,   // string
+        kEtagValue = 40,   // string
 
-        IdFile = 60,   // string
-        IdFilesystem = 61,   // string
+        kIdFile = 60,   // string
+        kIdFilesystem = 61,   // string
 
-        AccessCanRead = 100,   // boolean
-        AccessCanWrite = 101,   // boolean
-        AccessCanExecute = 102,   // boolean
-        AccessCanDelete = 103,   // boolean
-        AccessCanTrash = 104,   // boolean
-        AccessCanRename = 105,   // boolean
+        kAccessCanRead = 100,   // boolean
+        kAccessCanWrite = 101,   // boolean
+        kAccessCanExecute = 102,   // boolean
+        kAccessCanDelete = 103,   // boolean
+        kAccessCanTrash = 104,   // boolean
+        kAccessCanRename = 105,   // boolean
 
-        MountableCanMount = 130,   // boolean
-        MountableCanUnmount = 131,   // boolean
-        MountableCanEject = 132,   // boolean
-        MountableUnixDevice = 133,   // uint32
-        MountableUnixDeviceFile = 134,   // string
-        MountableHalUdi = 135,   // string
-        MountableCanPoll = 136,   // boolean
-        MountableIsMediaCheckAutomatic = 137,   // boolean
-        MountableCanStart = 138,   // boolean
-        MountableCanStartDegraded = 139,   // boolean
-        MountableCanStop = 140,   // boolean
-        MountableStartStopType = 141,   // uint32
+        kMountableCanMount = 130,   // boolean
+        kMountableCanUnmount = 131,   // boolean
+        kMountableCanEject = 132,   // boolean
+        kMountableUnixDevice = 133,   // uint32
+        kMountableUnixDeviceFile = 134,   // string
+        kMountableHalUdi = 135,   // string
+        kMountableCanPoll = 136,   // boolean
+        kMountableIsMediaCheckAutomatic = 137,   // boolean
+        kMountableCanStart = 138,   // boolean
+        kMountableCanStartDegraded = 139,   // boolean
+        kMountableCanStop = 140,   // boolean
+        kMountableStartStopType = 141,   // uint32
 
-        TimeModified = 200,   // uint64
-        TimeModifiedUsec = 201,   // uint32
-        TimeAccess = 202,   // uint64
-        TimeAccessUsec = 203,   // uint32
-        TimeChanged = 204,   // uint64
-        TimeChangedUsec = 205,   // uint32
-        TimeCreated = 206,   // uint64
-        TimeCreatedUsec = 207,   // uint32
+        kTimeModified = 200,   // uint64
+        kTimeModifiedUsec = 201,   // uint32
+        kTimeAccess = 202,   // uint64
+        kTimeAccessUsec = 203,   // uint32
+        kTimeChanged = 204,   // uint64
+        kTimeChangedUsec = 205,   // uint32
+        kTimeCreated = 206,   // uint64
+        kTimeCreatedUsec = 207,   // uint32
 
-        UnixDevice = 330,   // uint32
-        UnixInode = 331,   // uint64
-        UnixMode = 332,   // uint32
-        UnixNlink = 333,   // uint32
-        UnixUID = 334,   // uint32
-        UnixGID = 335,   // uint32
-        UnixRdev = 336,   // uint32
-        UnixBlockSize = 337,   // uint32
-        UnixBlocks = 338,   // uint64
-        UnixIsMountPoint = 339,   // boolean
+        kUnixDevice = 330,   // uint32
+        kUnixInode = 331,   // uint64
+        kUnixMode = 332,   // uint32
+        kUnixNlink = 333,   // uint32
+        kUnixUID = 334,   // uint32
+        kUnixGID = 335,   // uint32
+        kUnixRdev = 336,   // uint32
+        kUnixBlockSize = 337,   // uint32
+        kUnixBlocks = 338,   // uint64
+        kUnixIsMountPoint = 339,   // boolean
 
-        DosIsArchive = 360,   // boolean
-        DosIsSystem = 361,   // boolean
+        kDosIsArchive = 360,   // boolean
+        kDosIsSystem = 361,   // boolean
 
-        OwnerUser = 300,   // string
-        OwnerUserReal = 301,   // string
-        OwnerGroup = 302,   // string
+        kOwnerUser = 300,   // string
+        kOwnerUserReal = 301,   // string
+        kOwnerGroup = 302,   // string
 
-        ThumbnailPath = 390,   // byte string
-        ThumbnailFailed = 391,   // boolean
-        ThumbnailIsValid = 392,   // boolean
+        kThumbnailPath = 390,   // byte string
+        kThumbnailFailed = 391,   // boolean
+        kThumbnailIsValid = 392,   // boolean
 
-        PreviewIcon = 420,   // object
+        kPreviewIcon = 420,   // object
 
-        FileSystemSize = 440,   // uint64
-        FileSystemFree = 441,   // uint64
-        FileSystemUsed = 442,   // uint64
-        FileSystemType = 443,   // string
-        FileSystemReadOnly = 444,   // boolean
-        FileSystemUsePreview = 445,   // uint32
-        FileSystemRemote = 446,   // boolean
+        kFileSystemSize = 440,   // uint64
+        kFileSystemFree = 441,   // uint64
+        kFileSystemUsed = 442,   // uint64
+        kFileSystemType = 443,   // string
+        kFileSystemReadOnly = 444,   // boolean
+        kFileSystemUsePreview = 445,   // uint32
+        kFileSystemRemote = 446,   // boolean
 
-        GvfsBackend = 470,   // string
+        kGvfsBackend = 470,   // string
 
-        SelinuxContext = 490,   // string
+        kSelinuxContext = 490,   // string
 
-        TrashItemCount = 510,   // uint32
-        TrashDeletionDate = 511,   // string
-        TrashOrigPath = 512,   // string
+        kTrashItemCount = 510,   // uint32
+        kTrashDeletionDate = 511,   // string
+        kTrashOrigPath = 512,   // string
 
-        RecentModified = 540,   // uint64
+        kRecentModified = 540,   // uint64
 
-        CustomStart = 600,
+        kCustomStart = 600,
 
-        StandardIsFile = 610,
-        StandardIsDir = 611,
-        StandardIsRoot = 612,
-        StandardSuffix = 613,
-        StandardCompleteSuffix = 614,
-        StandardFilePath = 615,
-        StandardParentPath = 616,
-        StandardBaseName = 617,
-        StandardFileName = 618,
-        StandardCompleteBaseName = 619,
+        kStandardIsFile = 610,
+        kStandardIsDir = 611,
+        kStandardIsRoot = 612,
+        kStandardSuffix = 613,
+        kStandardCompleteSuffix = 614,
+        kStandardFilePath = 615,
+        kStandardParentPath = 616,
+        kStandardBaseName = 617,
+        kStandardFileName = 618,
+        kStandardCompleteBaseName = 619,
 
-        AttributeIDMax = 999,
+        kAttributeIDMax = 999,
     };
 
     enum class MediaType : uint8_t {
-        General,
-        Video,
-        Audio,
-        Text,
-        Other,
-        Image,
-        Menu,
+        kGeneral,
+        kVideo,
+        kAudio,
+        kText,
+        kOther,
+        kImage,
+        kMenu,
 
-        Max,
+        kMax,
     };
 
     enum class AttributeExtendID : uint8_t {
-        ExtendWordSize,   // xattr::word-size
-        ExtendMediaDuration,   // xattr::media-duration
-        ExtendMediaWidth,   // xattr::media-width
-        ExtendMediaHeight,   // xattr::media-height
+        kExtendWordSize,   // xattr::word-size
+        kExtendMediaDuration,   // xattr::media-duration
+        kExtendMediaWidth,   // xattr::media-width
+        kExtendMediaHeight,   // xattr::media-height
     };
 
     using AttributeInfoMap = std::unordered_map<DFileInfo::AttributeID, std::tuple<std::string, QVariant>>;
@@ -228,7 +228,7 @@ public:
 
 public:
     DFileInfo();
-    explicit DFileInfo(const QUrl &uri, const char *attributes = "*", const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNone);
+    explicit DFileInfo(const QUrl &uri, const char *attributes = "*", const FileQueryInfoFlags flag = FileQueryInfoFlags::kTypeNone);
     explicit DFileInfo(const DFileInfo &info);
     virtual ~DFileInfo();
     DFileInfo &operator=(const DFileInfo &info);
@@ -247,7 +247,7 @@ public:
     DFM_VIRTUAL DFile::Permissions permissions();
 
     // custom attribute
-    DFM_VIRTUAL bool setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNone);
+    DFM_VIRTUAL bool setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag = FileQueryInfoFlags::kTypeNone);
     DFM_VIRTUAL QVariant customAttribute(const char *key, const DFileAttributeType type);
 
     // extend attribute

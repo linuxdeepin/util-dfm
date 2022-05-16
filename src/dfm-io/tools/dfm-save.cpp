@@ -62,7 +62,7 @@ static void save(const QUrl &url)
 {
     QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
 
-    QSharedPointer<DFile> stream = make_stream(factory, DFile::OpenFlag::WriteOnly);
+    QSharedPointer<DFile> stream = make_stream(factory, DFile::OpenFlag::kWriteOnly);
     if (!stream) {
         err_msg("make stream failed.");
         return;

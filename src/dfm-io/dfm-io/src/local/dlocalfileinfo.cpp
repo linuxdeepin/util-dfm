@@ -37,7 +37,7 @@ USING_IO_NAMESPACE
 DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
     : q(q)
 {
-    attributesRealizationSelf.push_back(DFileInfo::AttributeID::StandardIsHidden);
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::kStandardIsHidden);
 }
 
 DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
@@ -140,7 +140,7 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
 
     QVariant retValue;
     if (attributesCache.count(id) == 0) {
-        if (id > DFileInfo::AttributeID::CustomStart) {
+        if (id > DFileInfo::AttributeID::kCustomStart) {
             const QString &path = q->uri().path();
             retValue = DLocalHelper::customAttributeFromPath(path, id);
         } else {
@@ -215,7 +215,7 @@ QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
 {
     QVariant retValue;
     switch (id) {
-    case DFileInfo::AttributeID::StandardIsHidden: {
+    case DFileInfo::AttributeID::kStandardIsHidden: {
         retValue = DLocalHelper::fileIsHidden(q->sharedFromThis(), {});
         break;
     }
@@ -259,14 +259,14 @@ DFile::Permissions DLocalFileInfoPrivate::permissions()
     QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
     if (!factory) {
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_NOT_INITIALIZED);
-        return DFile::Permission::NoPermission;
+        return DFile::Permission::kNoPermission;
     }
 
     QSharedPointer<DFile> dfile = factory->createFile();
 
     if (!dfile) {
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_NOT_INITIALIZED);
-        return DFile::Permission::NoPermission;
+        return DFile::Permission::kNoPermission;
     }
 
     return dfile->permissions();
@@ -297,35 +297,35 @@ QVariant DLocalFileInfoPrivate::customAttribute(const char *key, const DFileInfo
         return QVariant();
 
     switch (type) {
-    case DFileInfo::DFileAttributeType::TypeString: {
+    case DFileInfo::DFileAttributeType::kTypeString: {
         const char *ret = g_file_info_get_attribute_string(gfileinfo, key);
         return QVariant(ret);
     }
-    case DFileInfo::DFileAttributeType::TypeByteString: {
+    case DFileInfo::DFileAttributeType::kTypeByteString: {
         const char *ret = g_file_info_get_attribute_byte_string(gfileinfo, key);
         return QVariant(ret);
     }
-    case DFileInfo::DFileAttributeType::TypeBool: {
+    case DFileInfo::DFileAttributeType::kTypeBool: {
         bool ret = g_file_info_get_attribute_boolean(gfileinfo, key);
         return QVariant(ret);
     }
-    case DFileInfo::DFileAttributeType::TypeUInt32: {
+    case DFileInfo::DFileAttributeType::kTypeUInt32: {
         uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key);
         return QVariant(ret);
     }
-    case DFileInfo::DFileAttributeType::TypeInt32: {
+    case DFileInfo::DFileAttributeType::kTypeInt32: {
         int32_t ret = g_file_info_get_attribute_int32(gfileinfo, key);
         return QVariant(ret);
     }
-    case DFileInfo::DFileAttributeType::TypeUInt64: {
+    case DFileInfo::DFileAttributeType::kTypeUInt64: {
         uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key);
         return QVariant(qulonglong(ret));
     }
-    case DFileInfo::DFileAttributeType::TypeInt64: {
+    case DFileInfo::DFileAttributeType::kTypeInt64: {
         int64_t ret = g_file_info_get_attribute_int64(gfileinfo, key);
         return QVariant(qulonglong(ret));
     }
-    case DFileInfo::DFileAttributeType::TypeStringV: {
+    case DFileInfo::DFileAttributeType::kTypeStringV: {
         char **ret = g_file_info_get_attribute_stringv(gfileinfo, key);
         QStringList retValue;
         for (int i = 0; ret && ret[i]; ++i) {

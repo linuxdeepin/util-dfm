@@ -35,7 +35,7 @@ class DLocalEnumeratorPrivate;
 class DLocalEnumerator : public DEnumerator
 {
 public:
-    explicit DLocalEnumerator(const QUrl &uri, const QStringList &nameFilters = QStringList(), DirFilters filters = DirFilter::NoFilter, IteratorFlags flags = IteratorFlag::NoIteratorFlags);
+    explicit DLocalEnumerator(const QUrl &uri, const QStringList &nameFilters = QStringList(), DirFilters filters = DirFilter::kNoFilter, IteratorFlags flags = IteratorFlag::kNoIteratorFlags);
     ~DLocalEnumerator();
 
     bool hasNext() const DFM_OVERRIDE;

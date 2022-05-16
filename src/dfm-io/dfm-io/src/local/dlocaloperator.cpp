@@ -91,7 +91,7 @@ bool DLocalOperatorPrivate::renameFile(const QUrl &toUrl)
     return g_rename(fromStr.c_str(), toStr.c_str()) == 0;
 }
 
-bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
+bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
 {
     GError *gerror = nullptr;
 
@@ -129,7 +129,7 @@ bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DOperator::CopyFlag flag
     return ret;
 }
 
-bool DLocalOperatorPrivate::moveFile(const QUrl &to, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
+bool DLocalOperatorPrivate::moveFile(const QUrl &to, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
 {
     g_autoptr(GError) gerror = nullptr;
 
@@ -203,7 +203,7 @@ void CopyCallback(GObject *source_object,
         data->callback(succ, user_data);
 }
 
-void DLocalOperatorPrivate::copyFileAsync(const QUrl &urlTo, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+void DLocalOperatorPrivate::copyFileAsync(const QUrl &urlTo, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
                                           int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     const QUrl &urlFrom = q->uri();
@@ -230,7 +230,7 @@ void DLocalOperatorPrivate::copyFileAsync(const QUrl &urlTo, DOperator::CopyFlag
     g_file_copy_async(gfile_from, gfileTarget, GFileCopyFlags(flag), ioPriority, gcancellable, func, progressCallbackData, CopyCallback, data);
 }
 
-void DLocalOperatorPrivate::moveFileAsync(const QUrl &to, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc progressFunc, void *progressData,
+void DLocalOperatorPrivate::moveFileAsync(const QUrl &to, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc progressFunc, void *progressData,
                                           int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     Q_UNUSED(ioPriority)
@@ -312,7 +312,7 @@ bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackFunc func, vo
     url_dest.setPath(QString::fromStdString(src_path.c_str()));
     url_dest.setScheme(QString("file"));
 
-    bool ret = moveFile(url_dest, DOperator::CopyFlag::None, func, progressCallbackData);
+    bool ret = moveFile(url_dest, DFile::CopyFlag::kNone, func, progressCallbackData);
 
     g_object_unref(gfileinfo);
 
@@ -620,12 +620,12 @@ bool DLocalOperator::renameFile(const QUrl &toUrl)
     return d->renameFile(toUrl);
 }
 
-bool DLocalOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
+bool DLocalOperator::copyFile(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
     return d->copyFile(destUri, flag, func, progressCallbackData);
 }
 
-bool DLocalOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
+bool DLocalOperator::moveFile(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
     return d->moveFile(destUri, flag, func, progressCallbackData);
 }
@@ -635,13 +635,13 @@ void DLocalOperator::renameFileAsync(const QString &newName, int ioPriority, Fil
     d->renameFileAsync(newName, ioPriority, func, userData);
 }
 
-void DLocalOperator::copyFileAsync(const QUrl &destUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+void DLocalOperator::copyFileAsync(const QUrl &destUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
                                    int ioPriority, FileOperateCallbackFunc operatefunc, void *userData)
 {
     d->copyFileAsync(destUri, flag, func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
-void DLocalOperator::moveFileAsync(const QUrl &destUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+void DLocalOperator::moveFileAsync(const QUrl &destUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
                                    int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     d->moveFileAsync(destUri, flag, func, progressCallbackData, ioPriority, operatefunc, userData);

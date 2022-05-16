@@ -57,11 +57,11 @@ public:
     QUrl uri() const;
 
     DFM_VIRTUAL QSharedPointer<DFileInfo> createFileInfo(const char *attributes = "*",
-                                                         const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone) const;
+                                                         const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::kTypeNone) const;
     DFM_VIRTUAL QSharedPointer<DFile> createFile() const;
     DFM_VIRTUAL QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(),
-                                                             DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter,
-                                                             DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::NoIteratorFlags) const;
+                                                             DEnumerator::DirFilters filters = DEnumerator::DirFilter::kNoFilter,
+                                                             DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::kNoIteratorFlags) const;
     DFM_VIRTUAL QSharedPointer<DWatcher> createWatcher() const;
     DFM_VIRTUAL QSharedPointer<DOperator> createOperator() const;
 

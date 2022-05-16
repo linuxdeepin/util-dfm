@@ -24,6 +24,7 @@
 #define DOPERATOR_H
 
 #include "dfmio_global.h"
+#include "core/dfile.h"
 #include "error/error.h"
 
 #include <QUrl>
@@ -39,18 +40,6 @@ class DFileInfo;
 class DOperator
 {
 public:
-    enum class CopyFlag : uint8_t {
-        None = 0,
-        Overwrite = 1,
-        Backup = 2,
-        NoFollowSymlinks = 3,
-        AllMetadata = 4,
-        NofallbackForMove = 5,
-        TargetDefaultPerms = 6,
-
-        UserFlag = 0x10
-    };
-
     // callback, use function pointer
     using ProgressCallbackFunc = void (*)(int64_t, int64_t, void *);   // current_num_bytes, total_num_bytes, user_data
     using FileOperateCallbackFunc = void (*)(bool, void *);
@@ -59,10 +48,10 @@ public:
     using RenameFileFunc = std::function<bool(const QString &)>;
     using RenameFileByStdFunc = std::function<bool(const QUrl &)>;
     using RenameFileFuncAsync = std::function<void(const QString &, int, FileOperateCallbackFunc, void *)>;
-    using CopyFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackFunc, void *)>;
-    using CopyFileFuncAsync = std::function<void(const QUrl &, CopyFlag, ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
-    using MoveFileFunc = std::function<bool(const QUrl &, CopyFlag, ProgressCallbackFunc, void *)>;
-    using MoveFileFuncAsync = std::function<void(const QUrl &, CopyFlag, ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
+    using CopyFileFunc = std::function<bool(const QUrl &, DFile::CopyFlag, ProgressCallbackFunc, void *)>;
+    using CopyFileFuncAsync = std::function<void(const QUrl &, DFile::CopyFlag, ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
+    using MoveFileFunc = std::function<bool(const QUrl &, DFile::CopyFlag, ProgressCallbackFunc, void *)>;
+    using MoveFileFuncAsync = std::function<void(const QUrl &, DFile::CopyFlag, ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
 
     using TrashFileFunc = std::function<bool()>;
     using TrashFileFuncAsync = std::function<void(int, FileOperateCallbackFunc, void *)>;
@@ -91,13 +80,13 @@ public:
 
     DFM_VIRTUAL bool renameFile(const QString &newName);
     DFM_VIRTUAL bool renameFile(const QUrl &toUrl);
-    DFM_VIRTUAL bool copyFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
-    DFM_VIRTUAL bool moveFile(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    DFM_VIRTUAL bool copyFile(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    DFM_VIRTUAL bool moveFile(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     // async
     DFM_VIRTUAL void renameFileAsync(const QString &newName, int ioPriority = 0, FileOperateCallbackFunc func = nullptr, void *userData = nullptr);
-    DFM_VIRTUAL void copyFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc progressfunc = nullptr, void *progressCallbackData = nullptr,
+    DFM_VIRTUAL void copyFileAsync(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc progressfunc = nullptr, void *progressCallbackData = nullptr,
                                    int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
-    DFM_VIRTUAL void moveFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
+    DFM_VIRTUAL void moveFileAsync(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
                                    int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
 
     DFM_VIRTUAL bool trashFile();

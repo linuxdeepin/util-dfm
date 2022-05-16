@@ -199,7 +199,7 @@ void DFile::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile::Writ
     d->writeQFuncAsync(byteArray, ioPriority, func, userData);
 }
 
-bool DFile::seek(qint64 pos, DFMSeekType type)
+bool DFile::seek(qint64 pos, SeekType type)
 {
     if (!d->seekFunc)
         return -1;
@@ -243,7 +243,7 @@ DFile::Permissions DFile::permissions() const
 {
     if (d->permissionFunc)
         return d->permissionFunc();
-    return DFile::Permission::NoPermission;
+    return DFile::Permission::kNoPermission;
 }
 
 bool DFile::setPermissions(DFile::Permissions permission)

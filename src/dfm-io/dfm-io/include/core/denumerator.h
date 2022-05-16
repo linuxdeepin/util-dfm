@@ -62,33 +62,33 @@ class DEnumerator
 {
 public:
     enum class DirFilter : int16_t {
-        NoFilter = kDirFilterNofilter,   // no filter
-        Dirs = kDirFilterDirs,   // List directories that match the filters.
-        Files = kDirFilterFiles,   // List files.
-        Drives = kDirFilterDrives,   // List disk drives (ignored under Unix).
-        AllEntries = kDirFilterAllEntries,   // List directories, files, drives and symlinks (this does not list broken symlinks unless you specify System).
-        NoSymLinks = kDirFilterNoSymLinks,   // Do not list symbolic links (ignored by operating systems that don't support symbolic links).
+        kNoFilter = kDirFilterNofilter,   // no filter
+        kDirs = kDirFilterDirs,   // List directories that match the filters.
+        kFiles = kDirFilterFiles,   // List files.
+        kDrives = kDirFilterDrives,   // List disk drives (ignored under Unix).
+        kAllEntries = kDirFilterAllEntries,   // List directories, files, drives and symlinks (this does not list broken symlinks unless you specify System).
+        kNoSymLinks = kDirFilterNoSymLinks,   // Do not list symbolic links (ignored by operating systems that don't support symbolic links).
 
-        Readable = kDirFilterReadable,   // List files for which the application has read access. The Readable value needs to be combined with Dirs or Files.
-        Writable = kDirFilterWritable,   // List files for which the application has write access. The Writable value needs to be combined with Dirs or Files.
-        Executable = kDirFilterExecutable,   // List files for which the application has execute access. The Executable value needs to be combined with Dirs or Files.
-        Modified = kDirFilterModified,   // Only list files that have been modified (ignored on Unix).
+        kReadable = kDirFilterReadable,   // List files for which the application has read access. The Readable value needs to be combined with Dirs or Files.
+        kWritable = kDirFilterWritable,   // List files for which the application has write access. The Writable value needs to be combined with Dirs or Files.
+        kExecutable = kDirFilterExecutable,   // List files for which the application has execute access. The Executable value needs to be combined with Dirs or Files.
+        kModified = kDirFilterModified,   // Only list files that have been modified (ignored on Unix).
 
-        Hidden = kDirFilterHidden,   // List hidden files (on Unix, files starting with a ".").
-        System = kDirFilterSystem,   // List system files (on Unix, FIFOs, sockets and device files are included; on Windows, .lnk files are included)
-        AllDirs = kDirFilterAllDirs,   // List all directories; i.e. don't apply the filters to directory names.
-        CaseSensitive = kDirFilterCaseSensitive,   // The filter should be case sensitive.
+        kHidden = kDirFilterHidden,   // List hidden files (on Unix, files starting with a ".").
+        kSystem = kDirFilterSystem,   // List system files (on Unix, FIFOs, sockets and device files are included; on Windows, .lnk files are included)
+        kAllDirs = kDirFilterAllDirs,   // List all directories; i.e. don't apply the filters to directory names.
+        kCaseSensitive = kDirFilterCaseSensitive,   // The filter should be case sensitive.
 
-        NoDot = kDirFilterNoDot,   // Do not list the special entry ".".
-        NoDotDot = kDirFilterNoDotDot,   // Do not list the special entry "..".
-        NoDotAndDotDot = kDirFilterNoDotAndDotDot,   // Do not list the special entries "." and "..".
+        kNoDot = kDirFilterNoDot,   // Do not list the special entry ".".
+        kNoDotDot = kDirFilterNoDotDot,   // Do not list the special entry "..".
+        kNoDotAndDotDot = kDirFilterNoDotAndDotDot,   // Do not list the special entries "." and "..".
     };
     Q_DECLARE_FLAGS(DirFilters, DirFilter)
 
     enum class IteratorFlag : uint8_t {
-        NoIteratorFlags = 0x00,   // The default value, representing no flags. The iterator will return entries for the assigned path.
-        FollowSymlinks = 0x01,   // When combined with Subdirectories, this flag enables iterating through all subdirectories of the assigned path, following all symbolic links. Symbolic link loops (e.g., "link" => "." or "link" => "..") are automatically detected and ignored.
-        Subdirectories = 0x02,   // List entries inside all subdirectories as well.
+        kNoIteratorFlags = 0x00,   // The default value, representing no flags. The iterator will return entries for the assigned path.
+        kFollowSymlinks = 0x01,   // When combined with Subdirectories, this flag enables iterating through all subdirectories of the assigned path, following all symbolic links. Symbolic link loops (e.g., "link" => "." or "link" => "..") are automatically detected and ignored.
+        kSubdirectories = 0x02,   // List entries inside all subdirectories as well.
     };
     Q_DECLARE_FLAGS(IteratorFlags, IteratorFlag)
 
@@ -99,7 +99,7 @@ public:
     using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
-    DEnumerator(const QUrl &uri, const QStringList &nameFilters = QStringList(), DirFilters filters = DirFilter::NoFilter, IteratorFlags flags = IteratorFlag::NoIteratorFlags);
+    DEnumerator(const QUrl &uri, const QStringList &nameFilters = QStringList(), DirFilters filters = DirFilter::kNoFilter, IteratorFlags flags = IteratorFlag::kNoIteratorFlags);
 
     virtual ~DEnumerator();
 

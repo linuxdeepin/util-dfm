@@ -40,12 +40,12 @@ public:
 
     QSharedPointer<DFile> createFile() const DFM_OVERRIDE;
     QSharedPointer<DFileInfo> createFileInfo(const char *attributes = "*",
-                                             const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone) const DFM_OVERRIDE;
+                                             const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::kTypeNone) const DFM_OVERRIDE;
     QSharedPointer<DWatcher> createWatcher() const DFM_OVERRIDE;
     QSharedPointer<DOperator> createOperator() const DFM_OVERRIDE;
     QSharedPointer<DEnumerator> createEnumerator(const QStringList &nameFilters = QStringList(),
-                                                 DEnumerator::DirFilters filters = DEnumerator::DirFilter::NoFilter,
-                                                 DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::NoIteratorFlags) const DFM_OVERRIDE;
+                                                 DEnumerator::DirFilters filters = DEnumerator::DirFilter::kNoFilter,
+                                                 DEnumerator::IteratorFlags flags = DEnumerator::IteratorFlag::kNoIteratorFlags) const DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalIOFactoryPrivate> d = nullptr;

@@ -37,7 +37,7 @@ class DLocalFileInfo : public DFileInfo
 {
 public:
     explicit DLocalFileInfo(const QUrl &uri, const char *attributes = "*",
-                            const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone);
+                            const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::kTypeNone);
     virtual ~DLocalFileInfo();
 
     void queryInfoAsync(int ioPriority = 0, QueryInfoAsyncCallback func = nullptr, void *userData = nullptr) const DFM_OVERRIDE;
@@ -51,7 +51,7 @@ public:
     bool clearCache() DFM_OVERRIDE;
     DFile::Permissions permissions() DFM_OVERRIDE;
     // custom attribute
-    bool setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag = FileQueryInfoFlags::TypeNone) DFM_OVERRIDE;
+    bool setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag = FileQueryInfoFlags::kTypeNone) DFM_OVERRIDE;
     QVariant customAttribute(const char *key, const DFileAttributeType type) DFM_OVERRIDE;
     DFMIOError lastError() const DFM_OVERRIDE;
 

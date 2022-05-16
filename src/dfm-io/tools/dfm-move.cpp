@@ -25,6 +25,7 @@
 #include "dfmio_global.h"
 #include "dfmio_register.h"
 
+#include "core/dfile.h"
 #include "core/diofactory.h"
 #include "core/diofactory_p.h"
 
@@ -56,7 +57,7 @@ static bool move_file(const QUrl &url_src, const QUrl &url_dst)
         return false;
     }
 
-    bool success = op->moveFile(url_dst, DOperator::CopyFlag::None);
+    bool success = op->moveFile(url_dst, DFile::CopyFlag::kNone);
     if (!success) {
         err_msg("move file failed.");
         return false;

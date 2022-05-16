@@ -166,7 +166,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
         return QVariant();
 
     // check custom attribute
-    if (id > DFileInfo::AttributeID::CustomStart) {
+    if (id > DFileInfo::AttributeID::kCustomStart) {
         return QVariant();
     }
 
@@ -180,108 +180,108 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
 
     switch (id) {
     // uint32_t
-    case DFileInfo::AttributeID::StandardType:
-    case DFileInfo::AttributeID::MountableUnixDevice:
-    case DFileInfo::AttributeID::MountableStartStopType:
-    case DFileInfo::AttributeID::TimeModifiedUsec:
-    case DFileInfo::AttributeID::TimeAccessUsec:
-    case DFileInfo::AttributeID::TimeChangedUsec:
-    case DFileInfo::AttributeID::TimeCreatedUsec:
-    case DFileInfo::AttributeID::UnixDevice:
-    case DFileInfo::AttributeID::UnixMode:
-    case DFileInfo::AttributeID::UnixNlink:
-    case DFileInfo::AttributeID::UnixUID:
-    case DFileInfo::AttributeID::UnixGID:
-    case DFileInfo::AttributeID::UnixRdev:
-    case DFileInfo::AttributeID::UnixBlockSize:
-    case DFileInfo::AttributeID::FileSystemUsePreview:
-    case DFileInfo::AttributeID::TrashItemCount: {
+    case DFileInfo::AttributeID::kStandardType:
+    case DFileInfo::AttributeID::kMountableUnixDevice:
+    case DFileInfo::AttributeID::kMountableStartStopType:
+    case DFileInfo::AttributeID::kTimeModifiedUsec:
+    case DFileInfo::AttributeID::kTimeAccessUsec:
+    case DFileInfo::AttributeID::kTimeChangedUsec:
+    case DFileInfo::AttributeID::kTimeCreatedUsec:
+    case DFileInfo::AttributeID::kUnixDevice:
+    case DFileInfo::AttributeID::kUnixMode:
+    case DFileInfo::AttributeID::kUnixNlink:
+    case DFileInfo::AttributeID::kUnixUID:
+    case DFileInfo::AttributeID::kUnixGID:
+    case DFileInfo::AttributeID::kUnixRdev:
+    case DFileInfo::AttributeID::kUnixBlockSize:
+    case DFileInfo::AttributeID::kFileSystemUsePreview:
+    case DFileInfo::AttributeID::kTrashItemCount: {
         uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // int32_t
-    case DFileInfo::AttributeID::StandardSortOrder: {
+    case DFileInfo::AttributeID::kStandardSortOrder: {
         int32_t ret = g_file_info_get_attribute_int32(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // uint64_t
-    case DFileInfo::AttributeID::StandardSize:
-    case DFileInfo::AttributeID::StandardAllocatedSize:
-    case DFileInfo::AttributeID::TimeModified:
-    case DFileInfo::AttributeID::TimeAccess:
-    case DFileInfo::AttributeID::TimeChanged:
-    case DFileInfo::AttributeID::TimeCreated:
-    case DFileInfo::AttributeID::UnixInode:
-    case DFileInfo::AttributeID::UnixBlocks:
-    case DFileInfo::AttributeID::FileSystemSize:
-    case DFileInfo::AttributeID::FileSystemFree:
-    case DFileInfo::AttributeID::FileSystemUsed:
-    case DFileInfo::AttributeID::RecentModified: {
+    case DFileInfo::AttributeID::kStandardSize:
+    case DFileInfo::AttributeID::kStandardAllocatedSize:
+    case DFileInfo::AttributeID::kTimeModified:
+    case DFileInfo::AttributeID::kTimeAccess:
+    case DFileInfo::AttributeID::kTimeChanged:
+    case DFileInfo::AttributeID::kTimeCreated:
+    case DFileInfo::AttributeID::kUnixInode:
+    case DFileInfo::AttributeID::kUnixBlocks:
+    case DFileInfo::AttributeID::kFileSystemSize:
+    case DFileInfo::AttributeID::kFileSystemFree:
+    case DFileInfo::AttributeID::kFileSystemUsed:
+    case DFileInfo::AttributeID::kRecentModified: {
         uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
         return QVariant(qulonglong(ret));
     }
     // bool
-    case DFileInfo::AttributeID::StandardIsHidden:
-    case DFileInfo::AttributeID::StandardIsBackup:
-    case DFileInfo::AttributeID::StandardIsSymlink:
-    case DFileInfo::AttributeID::StandardIsVirtual:
-    case DFileInfo::AttributeID::StandardIsVolatile:
-    case DFileInfo::AttributeID::AccessCanRead:
-    case DFileInfo::AttributeID::AccessCanWrite:
-    case DFileInfo::AttributeID::AccessCanExecute:
-    case DFileInfo::AttributeID::AccessCanDelete:
-    case DFileInfo::AttributeID::AccessCanTrash:
-    case DFileInfo::AttributeID::AccessCanRename:
-    case DFileInfo::AttributeID::MountableCanMount:
-    case DFileInfo::AttributeID::MountableCanUnmount:
-    case DFileInfo::AttributeID::MountableCanEject:
-    case DFileInfo::AttributeID::MountableCanPoll:
-    case DFileInfo::AttributeID::MountableIsMediaCheckAutomatic:
-    case DFileInfo::AttributeID::MountableCanStart:
-    case DFileInfo::AttributeID::MountableCanStartDegraded:
-    case DFileInfo::AttributeID::MountableCanStop:
-    case DFileInfo::AttributeID::UnixIsMountPoint:
-    case DFileInfo::AttributeID::DosIsArchive:
-    case DFileInfo::AttributeID::DosIsSystem:
-    case DFileInfo::AttributeID::FileSystemReadOnly:
-    case DFileInfo::AttributeID::FileSystemRemote: {
+    case DFileInfo::AttributeID::kStandardIsHidden:
+    case DFileInfo::AttributeID::kStandardIsBackup:
+    case DFileInfo::AttributeID::kStandardIsSymlink:
+    case DFileInfo::AttributeID::kStandardIsVirtual:
+    case DFileInfo::AttributeID::kStandardIsVolatile:
+    case DFileInfo::AttributeID::kAccessCanRead:
+    case DFileInfo::AttributeID::kAccessCanWrite:
+    case DFileInfo::AttributeID::kAccessCanExecute:
+    case DFileInfo::AttributeID::kAccessCanDelete:
+    case DFileInfo::AttributeID::kAccessCanTrash:
+    case DFileInfo::AttributeID::kAccessCanRename:
+    case DFileInfo::AttributeID::kMountableCanMount:
+    case DFileInfo::AttributeID::kMountableCanUnmount:
+    case DFileInfo::AttributeID::kMountableCanEject:
+    case DFileInfo::AttributeID::kMountableCanPoll:
+    case DFileInfo::AttributeID::kMountableIsMediaCheckAutomatic:
+    case DFileInfo::AttributeID::kMountableCanStart:
+    case DFileInfo::AttributeID::kMountableCanStartDegraded:
+    case DFileInfo::AttributeID::kMountableCanStop:
+    case DFileInfo::AttributeID::kUnixIsMountPoint:
+    case DFileInfo::AttributeID::kDosIsArchive:
+    case DFileInfo::AttributeID::kDosIsSystem:
+    case DFileInfo::AttributeID::kFileSystemReadOnly:
+    case DFileInfo::AttributeID::kFileSystemRemote: {
         bool ret = g_file_info_get_attribute_boolean(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // byte string
-    case DFileInfo::AttributeID::StandardName:
-    case DFileInfo::AttributeID::StandardSymlinkTarget:
-    case DFileInfo::AttributeID::ThumbnailPath: {
+    case DFileInfo::AttributeID::kStandardName:
+    case DFileInfo::AttributeID::kStandardSymlinkTarget:
+    case DFileInfo::AttributeID::kThumbnailPath: {
         const char *ret = g_file_info_get_attribute_byte_string(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // string
-    case DFileInfo::AttributeID::StandardDisplayName:
-    case DFileInfo::AttributeID::StandardEditName:
-    case DFileInfo::AttributeID::StandardCopyName:
-    case DFileInfo::AttributeID::StandardContentType:
-    case DFileInfo::AttributeID::StandardFastContentType:
-    case DFileInfo::AttributeID::StandardTargetUri:
-    case DFileInfo::AttributeID::StandardDescription:
-    case DFileInfo::AttributeID::EtagValue:
-    case DFileInfo::AttributeID::IdFile:
-    case DFileInfo::AttributeID::IdFilesystem:
-    case DFileInfo::AttributeID::MountableUnixDeviceFile:
-    case DFileInfo::AttributeID::MountableHalUdi:
-    case DFileInfo::AttributeID::OwnerUser:
-    case DFileInfo::AttributeID::OwnerUserReal:
-    case DFileInfo::AttributeID::OwnerGroup:
-    case DFileInfo::AttributeID::FileSystemType:
-    case DFileInfo::AttributeID::GvfsBackend:
-    case DFileInfo::AttributeID::SelinuxContext:
-    case DFileInfo::AttributeID::TrashDeletionDate:
-    case DFileInfo::AttributeID::TrashOrigPath: {
+    case DFileInfo::AttributeID::kStandardDisplayName:
+    case DFileInfo::AttributeID::kStandardEditName:
+    case DFileInfo::AttributeID::kStandardCopyName:
+    case DFileInfo::AttributeID::kStandardContentType:
+    case DFileInfo::AttributeID::kStandardFastContentType:
+    case DFileInfo::AttributeID::kStandardTargetUri:
+    case DFileInfo::AttributeID::kStandardDescription:
+    case DFileInfo::AttributeID::kEtagValue:
+    case DFileInfo::AttributeID::kIdFile:
+    case DFileInfo::AttributeID::kIdFilesystem:
+    case DFileInfo::AttributeID::kMountableUnixDeviceFile:
+    case DFileInfo::AttributeID::kMountableHalUdi:
+    case DFileInfo::AttributeID::kOwnerUser:
+    case DFileInfo::AttributeID::kOwnerUserReal:
+    case DFileInfo::AttributeID::kOwnerGroup:
+    case DFileInfo::AttributeID::kFileSystemType:
+    case DFileInfo::AttributeID::kGvfsBackend:
+    case DFileInfo::AttributeID::kSelinuxContext:
+    case DFileInfo::AttributeID::kTrashDeletionDate:
+    case DFileInfo::AttributeID::kTrashOrigPath: {
         const char *ret = g_file_info_get_attribute_string(gfileinfo, key.c_str());
         return QVariant(ret);
     }
     // object
-    case DFileInfo::AttributeID::StandardIcon:
-    case DFileInfo::AttributeID::StandardSymbolicIcon: {
+    case DFileInfo::AttributeID::kStandardIcon:
+    case DFileInfo::AttributeID::kStandardSymbolicIcon: {
         QList<QString> ret;
 
         GObject *icon = g_file_info_get_attribute_object(gfileinfo, key.c_str());
@@ -291,7 +291,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
 
         return QVariant(ret);
     }
-    case DFileInfo::AttributeID::PreviewIcon: {
+    case DFileInfo::AttributeID::kPreviewIcon: {
         GObject *ret = g_file_info_get_attribute_object(gfileinfo, key.c_str());
         Q_UNUSED(ret);
         // TODO(lanxs)
@@ -305,38 +305,38 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
 
 QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::AttributeID id)
 {
-    if (id < DFileInfo::AttributeID::CustomStart)
+    if (id < DFileInfo::AttributeID::kCustomStart)
         return QVariant();
 
     switch (id) {
-    case DFileInfo::AttributeID::StandardIsFile: {
+    case DFileInfo::AttributeID::kStandardIsFile: {
         return LocalFunc::isFile(path);
     }
-    case DFileInfo::AttributeID::StandardIsDir: {
+    case DFileInfo::AttributeID::kStandardIsDir: {
         return LocalFunc::isDir(path);
     }
-    case DFileInfo::AttributeID::StandardIsRoot: {
+    case DFileInfo::AttributeID::kStandardIsRoot: {
         return LocalFunc::isRoot(path);
     }
-    case DFileInfo::AttributeID::StandardSuffix: {
+    case DFileInfo::AttributeID::kStandardSuffix: {
         return LocalFunc::suffix(path);
     }
-    case DFileInfo::AttributeID::StandardCompleteSuffix: {
+    case DFileInfo::AttributeID::kStandardCompleteSuffix: {
         return LocalFunc::completeSuffix(path);
     }
-    case DFileInfo::AttributeID::StandardFilePath: {
+    case DFileInfo::AttributeID::kStandardFilePath: {
         return LocalFunc::filePath(path);
     }
-    case DFileInfo::AttributeID::StandardParentPath: {
+    case DFileInfo::AttributeID::kStandardParentPath: {
         return LocalFunc::parentPath(path);
     }
-    case DFileInfo::AttributeID::StandardBaseName: {
+    case DFileInfo::AttributeID::kStandardBaseName: {
         return LocalFunc::baseName(path);
     }
-    case DFileInfo::AttributeID::StandardFileName: {
+    case DFileInfo::AttributeID::kStandardFileName: {
         return LocalFunc::fileName(path);
     }
-    case DFileInfo::AttributeID::StandardCompleteBaseName: {
+    case DFileInfo::AttributeID::kStandardCompleteBaseName: {
         return LocalFunc::completeBaseName(path);
     }
     default:
@@ -358,22 +358,22 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
 
     switch (id) {
     // uint32_t
-    case DFileInfo::AttributeID::StandardType:
-    case DFileInfo::AttributeID::MountableUnixDevice:
-    case DFileInfo::AttributeID::MountableStartStopType:
-    case DFileInfo::AttributeID::TimeModifiedUsec:
-    case DFileInfo::AttributeID::TimeAccessUsec:
-    case DFileInfo::AttributeID::TimeChangedUsec:
-    case DFileInfo::AttributeID::TimeCreatedUsec:
-    case DFileInfo::AttributeID::UnixDevice:
-    case DFileInfo::AttributeID::UnixMode:
-    case DFileInfo::AttributeID::UnixNlink:
-    case DFileInfo::AttributeID::UnixUID:
-    case DFileInfo::AttributeID::UnixGID:
-    case DFileInfo::AttributeID::UnixRdev:
-    case DFileInfo::AttributeID::UnixBlockSize:
-    case DFileInfo::AttributeID::FileSystemUsePreview:
-    case DFileInfo::AttributeID::TrashItemCount: {
+    case DFileInfo::AttributeID::kStandardType:
+    case DFileInfo::AttributeID::kMountableUnixDevice:
+    case DFileInfo::AttributeID::kMountableStartStopType:
+    case DFileInfo::AttributeID::kTimeModifiedUsec:
+    case DFileInfo::AttributeID::kTimeAccessUsec:
+    case DFileInfo::AttributeID::kTimeChangedUsec:
+    case DFileInfo::AttributeID::kTimeCreatedUsec:
+    case DFileInfo::AttributeID::kUnixDevice:
+    case DFileInfo::AttributeID::kUnixMode:
+    case DFileInfo::AttributeID::kUnixNlink:
+    case DFileInfo::AttributeID::kUnixUID:
+    case DFileInfo::AttributeID::kUnixGID:
+    case DFileInfo::AttributeID::kUnixRdev:
+    case DFileInfo::AttributeID::kUnixBlockSize:
+    case DFileInfo::AttributeID::kFileSystemUsePreview:
+    case DFileInfo::AttributeID::kTrashItemCount: {
         g_file_set_attribute_uint32(gfile, key.c_str(), value.toUInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             g_autofree gchar *url = g_file_get_uri(gfile);
@@ -384,7 +384,7 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         return true;
     }
     // int32_t
-    case DFileInfo::AttributeID::StandardSortOrder: {
+    case DFileInfo::AttributeID::kStandardSortOrder: {
         g_file_set_attribute_int32(gfile, key.c_str(), value.toInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             g_autofree gchar *url = g_file_get_uri(gfile);
@@ -394,18 +394,18 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         return true;
     }
     // uint64_t
-    case DFileInfo::AttributeID::StandardSize:
-    case DFileInfo::AttributeID::StandardAllocatedSize:
-    case DFileInfo::AttributeID::TimeModified:
-    case DFileInfo::AttributeID::TimeAccess:
-    case DFileInfo::AttributeID::TimeChanged:
-    case DFileInfo::AttributeID::TimeCreated:
-    case DFileInfo::AttributeID::UnixInode:
-    case DFileInfo::AttributeID::UnixBlocks:
-    case DFileInfo::AttributeID::FileSystemSize:
-    case DFileInfo::AttributeID::FileSystemFree:
-    case DFileInfo::AttributeID::FileSystemUsed:
-    case DFileInfo::AttributeID::RecentModified: {
+    case DFileInfo::AttributeID::kStandardSize:
+    case DFileInfo::AttributeID::kStandardAllocatedSize:
+    case DFileInfo::AttributeID::kTimeModified:
+    case DFileInfo::AttributeID::kTimeAccess:
+    case DFileInfo::AttributeID::kTimeChanged:
+    case DFileInfo::AttributeID::kTimeCreated:
+    case DFileInfo::AttributeID::kUnixInode:
+    case DFileInfo::AttributeID::kUnixBlocks:
+    case DFileInfo::AttributeID::kFileSystemSize:
+    case DFileInfo::AttributeID::kFileSystemFree:
+    case DFileInfo::AttributeID::kFileSystemUsed:
+    case DFileInfo::AttributeID::kRecentModified: {
         g_file_set_attribute_uint64(gfile, key.c_str(), value.toULongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             g_autofree gchar *url = g_file_get_uri(gfile);
@@ -415,30 +415,30 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         return true;
     }
     // bool
-    case DFileInfo::AttributeID::StandardIsHidden:
-    case DFileInfo::AttributeID::StandardIsBackup:
-    case DFileInfo::AttributeID::StandardIsSymlink:
-    case DFileInfo::AttributeID::StandardIsVirtual:
-    case DFileInfo::AttributeID::StandardIsVolatile:
-    case DFileInfo::AttributeID::AccessCanRead:
-    case DFileInfo::AttributeID::AccessCanWrite:
-    case DFileInfo::AttributeID::AccessCanExecute:
-    case DFileInfo::AttributeID::AccessCanDelete:
-    case DFileInfo::AttributeID::AccessCanTrash:
-    case DFileInfo::AttributeID::AccessCanRename:
-    case DFileInfo::AttributeID::MountableCanMount:
-    case DFileInfo::AttributeID::MountableCanUnmount:
-    case DFileInfo::AttributeID::MountableCanEject:
-    case DFileInfo::AttributeID::MountableCanPoll:
-    case DFileInfo::AttributeID::MountableIsMediaCheckAutomatic:
-    case DFileInfo::AttributeID::MountableCanStart:
-    case DFileInfo::AttributeID::MountableCanStartDegraded:
-    case DFileInfo::AttributeID::MountableCanStop:
-    case DFileInfo::AttributeID::UnixIsMountPoint:
-    case DFileInfo::AttributeID::DosIsArchive:
-    case DFileInfo::AttributeID::DosIsSystem:
-    case DFileInfo::AttributeID::FileSystemReadOnly:
-    case DFileInfo::AttributeID::FileSystemRemote: {
+    case DFileInfo::AttributeID::kStandardIsHidden:
+    case DFileInfo::AttributeID::kStandardIsBackup:
+    case DFileInfo::AttributeID::kStandardIsSymlink:
+    case DFileInfo::AttributeID::kStandardIsVirtual:
+    case DFileInfo::AttributeID::kStandardIsVolatile:
+    case DFileInfo::AttributeID::kAccessCanRead:
+    case DFileInfo::AttributeID::kAccessCanWrite:
+    case DFileInfo::AttributeID::kAccessCanExecute:
+    case DFileInfo::AttributeID::kAccessCanDelete:
+    case DFileInfo::AttributeID::kAccessCanTrash:
+    case DFileInfo::AttributeID::kAccessCanRename:
+    case DFileInfo::AttributeID::kMountableCanMount:
+    case DFileInfo::AttributeID::kMountableCanUnmount:
+    case DFileInfo::AttributeID::kMountableCanEject:
+    case DFileInfo::AttributeID::kMountableCanPoll:
+    case DFileInfo::AttributeID::kMountableIsMediaCheckAutomatic:
+    case DFileInfo::AttributeID::kMountableCanStart:
+    case DFileInfo::AttributeID::kMountableCanStartDegraded:
+    case DFileInfo::AttributeID::kMountableCanStop:
+    case DFileInfo::AttributeID::kUnixIsMountPoint:
+    case DFileInfo::AttributeID::kDosIsArchive:
+    case DFileInfo::AttributeID::kDosIsSystem:
+    case DFileInfo::AttributeID::kFileSystemReadOnly:
+    case DFileInfo::AttributeID::kFileSystemRemote: {
         gboolean b = value.toBool();
         gpointer gpValue = &b;
         g_file_set_attribute(gfile, key.c_str(), G_FILE_ATTRIBUTE_TYPE_BOOLEAN, gpValue, G_FILE_QUERY_INFO_NONE, nullptr, gerror);
@@ -450,9 +450,9 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         return true;
     }
     // byte string
-    case DFileInfo::AttributeID::StandardName:
-    case DFileInfo::AttributeID::StandardSymlinkTarget:
-    case DFileInfo::AttributeID::ThumbnailPath: {
+    case DFileInfo::AttributeID::kStandardName:
+    case DFileInfo::AttributeID::kStandardSymlinkTarget:
+    case DFileInfo::AttributeID::kThumbnailPath: {
         g_file_set_attribute_byte_string(gfile, key.c_str(), value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             g_autofree gchar *url = g_file_get_uri(gfile);
@@ -462,26 +462,26 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         return true;
     }
     // string
-    case DFileInfo::AttributeID::StandardDisplayName:
-    case DFileInfo::AttributeID::StandardEditName:
-    case DFileInfo::AttributeID::StandardCopyName:
-    case DFileInfo::AttributeID::StandardContentType:
-    case DFileInfo::AttributeID::StandardFastContentType:
-    case DFileInfo::AttributeID::StandardTargetUri:
-    case DFileInfo::AttributeID::StandardDescription:
-    case DFileInfo::AttributeID::EtagValue:
-    case DFileInfo::AttributeID::IdFile:
-    case DFileInfo::AttributeID::IdFilesystem:
-    case DFileInfo::AttributeID::MountableUnixDeviceFile:
-    case DFileInfo::AttributeID::MountableHalUdi:
-    case DFileInfo::AttributeID::OwnerUser:
-    case DFileInfo::AttributeID::OwnerUserReal:
-    case DFileInfo::AttributeID::OwnerGroup:
-    case DFileInfo::AttributeID::FileSystemType:
-    case DFileInfo::AttributeID::GvfsBackend:
-    case DFileInfo::AttributeID::SelinuxContext:
-    case DFileInfo::AttributeID::TrashDeletionDate:
-    case DFileInfo::AttributeID::TrashOrigPath: {
+    case DFileInfo::AttributeID::kStandardDisplayName:
+    case DFileInfo::AttributeID::kStandardEditName:
+    case DFileInfo::AttributeID::kStandardCopyName:
+    case DFileInfo::AttributeID::kStandardContentType:
+    case DFileInfo::AttributeID::kStandardFastContentType:
+    case DFileInfo::AttributeID::kStandardTargetUri:
+    case DFileInfo::AttributeID::kStandardDescription:
+    case DFileInfo::AttributeID::kEtagValue:
+    case DFileInfo::AttributeID::kIdFile:
+    case DFileInfo::AttributeID::kIdFilesystem:
+    case DFileInfo::AttributeID::kMountableUnixDeviceFile:
+    case DFileInfo::AttributeID::kMountableHalUdi:
+    case DFileInfo::AttributeID::kOwnerUser:
+    case DFileInfo::AttributeID::kOwnerUserReal:
+    case DFileInfo::AttributeID::kOwnerGroup:
+    case DFileInfo::AttributeID::kFileSystemType:
+    case DFileInfo::AttributeID::kGvfsBackend:
+    case DFileInfo::AttributeID::kSelinuxContext:
+    case DFileInfo::AttributeID::kTrashDeletionDate:
+    case DFileInfo::AttributeID::kTrashOrigPath: {
         g_file_set_attribute_string(gfile, key.c_str(), value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
         if (gerror) {
             g_autofree gchar *url = g_file_get_uri(gfile);
@@ -491,9 +491,9 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         return true;
     }
     // object
-    case DFileInfo::AttributeID::StandardIcon:
-    case DFileInfo::AttributeID::StandardSymbolicIcon:
-    case DFileInfo::AttributeID::PreviewIcon: {
+    case DFileInfo::AttributeID::kStandardIcon:
+    case DFileInfo::AttributeID::kStandardSymbolicIcon:
+    case DFileInfo::AttributeID::kPreviewIcon: {
         //g_file_info_set_attribute_object(gfileinfo, key, value.object());
         // TODO(lanxs)
         return true;
@@ -518,109 +518,109 @@ bool DLocalHelper::setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::Attr
 
     switch (id) {
     // uint32_t
-    case DFileInfo::AttributeID::StandardType:
-    case DFileInfo::AttributeID::MountableUnixDevice:
-    case DFileInfo::AttributeID::MountableStartStopType:
-    case DFileInfo::AttributeID::TimeModifiedUsec:
-    case DFileInfo::AttributeID::TimeAccessUsec:
-    case DFileInfo::AttributeID::TimeChangedUsec:
-    case DFileInfo::AttributeID::TimeCreatedUsec:
-    case DFileInfo::AttributeID::UnixDevice:
-    case DFileInfo::AttributeID::UnixMode:
-    case DFileInfo::AttributeID::UnixNlink:
-    case DFileInfo::AttributeID::UnixUID:
-    case DFileInfo::AttributeID::UnixGID:
-    case DFileInfo::AttributeID::UnixRdev:
-    case DFileInfo::AttributeID::UnixBlockSize:
-    case DFileInfo::AttributeID::FileSystemUsePreview:
-    case DFileInfo::AttributeID::TrashItemCount: {
+    case DFileInfo::AttributeID::kStandardType:
+    case DFileInfo::AttributeID::kMountableUnixDevice:
+    case DFileInfo::AttributeID::kMountableStartStopType:
+    case DFileInfo::AttributeID::kTimeModifiedUsec:
+    case DFileInfo::AttributeID::kTimeAccessUsec:
+    case DFileInfo::AttributeID::kTimeChangedUsec:
+    case DFileInfo::AttributeID::kTimeCreatedUsec:
+    case DFileInfo::AttributeID::kUnixDevice:
+    case DFileInfo::AttributeID::kUnixMode:
+    case DFileInfo::AttributeID::kUnixNlink:
+    case DFileInfo::AttributeID::kUnixUID:
+    case DFileInfo::AttributeID::kUnixGID:
+    case DFileInfo::AttributeID::kUnixRdev:
+    case DFileInfo::AttributeID::kUnixBlockSize:
+    case DFileInfo::AttributeID::kFileSystemUsePreview:
+    case DFileInfo::AttributeID::kTrashItemCount: {
         g_file_info_set_attribute_uint32(gfileinfo, key.c_str(), value.toUInt());
         return true;
     }
     // int32_t
-    case DFileInfo::AttributeID::StandardSortOrder: {
+    case DFileInfo::AttributeID::kStandardSortOrder: {
         g_file_info_set_attribute_int32(gfileinfo, key.c_str(), value.toInt());
         return true;
     }
     // uint64_t
-    case DFileInfo::AttributeID::StandardSize:
-    case DFileInfo::AttributeID::StandardAllocatedSize:
-    case DFileInfo::AttributeID::TimeModified:
-    case DFileInfo::AttributeID::TimeAccess:
-    case DFileInfo::AttributeID::TimeChanged:
-    case DFileInfo::AttributeID::TimeCreated:
-    case DFileInfo::AttributeID::UnixInode:
-    case DFileInfo::AttributeID::UnixBlocks:
-    case DFileInfo::AttributeID::FileSystemSize:
-    case DFileInfo::AttributeID::FileSystemFree:
-    case DFileInfo::AttributeID::FileSystemUsed:
-    case DFileInfo::AttributeID::RecentModified: {
+    case DFileInfo::AttributeID::kStandardSize:
+    case DFileInfo::AttributeID::kStandardAllocatedSize:
+    case DFileInfo::AttributeID::kTimeModified:
+    case DFileInfo::AttributeID::kTimeAccess:
+    case DFileInfo::AttributeID::kTimeChanged:
+    case DFileInfo::AttributeID::kTimeCreated:
+    case DFileInfo::AttributeID::kUnixInode:
+    case DFileInfo::AttributeID::kUnixBlocks:
+    case DFileInfo::AttributeID::kFileSystemSize:
+    case DFileInfo::AttributeID::kFileSystemFree:
+    case DFileInfo::AttributeID::kFileSystemUsed:
+    case DFileInfo::AttributeID::kRecentModified: {
         g_file_info_set_attribute_uint64(gfileinfo, key.c_str(), value.toULongLong());
         return true;
     }
     // bool
-    case DFileInfo::AttributeID::StandardIsHidden:
-    case DFileInfo::AttributeID::StandardIsBackup:
-    case DFileInfo::AttributeID::StandardIsSymlink:
-    case DFileInfo::AttributeID::StandardIsVirtual:
-    case DFileInfo::AttributeID::StandardIsVolatile:
-    case DFileInfo::AttributeID::AccessCanRead:
-    case DFileInfo::AttributeID::AccessCanWrite:
-    case DFileInfo::AttributeID::AccessCanExecute:
-    case DFileInfo::AttributeID::AccessCanDelete:
-    case DFileInfo::AttributeID::AccessCanTrash:
-    case DFileInfo::AttributeID::AccessCanRename:
-    case DFileInfo::AttributeID::MountableCanMount:
-    case DFileInfo::AttributeID::MountableCanUnmount:
-    case DFileInfo::AttributeID::MountableCanEject:
-    case DFileInfo::AttributeID::MountableCanPoll:
-    case DFileInfo::AttributeID::MountableIsMediaCheckAutomatic:
-    case DFileInfo::AttributeID::MountableCanStart:
-    case DFileInfo::AttributeID::MountableCanStartDegraded:
-    case DFileInfo::AttributeID::MountableCanStop:
-    case DFileInfo::AttributeID::UnixIsMountPoint:
-    case DFileInfo::AttributeID::DosIsArchive:
-    case DFileInfo::AttributeID::DosIsSystem:
-    case DFileInfo::AttributeID::FileSystemReadOnly:
-    case DFileInfo::AttributeID::FileSystemRemote: {
+    case DFileInfo::AttributeID::kStandardIsHidden:
+    case DFileInfo::AttributeID::kStandardIsBackup:
+    case DFileInfo::AttributeID::kStandardIsSymlink:
+    case DFileInfo::AttributeID::kStandardIsVirtual:
+    case DFileInfo::AttributeID::kStandardIsVolatile:
+    case DFileInfo::AttributeID::kAccessCanRead:
+    case DFileInfo::AttributeID::kAccessCanWrite:
+    case DFileInfo::AttributeID::kAccessCanExecute:
+    case DFileInfo::AttributeID::kAccessCanDelete:
+    case DFileInfo::AttributeID::kAccessCanTrash:
+    case DFileInfo::AttributeID::kAccessCanRename:
+    case DFileInfo::AttributeID::kMountableCanMount:
+    case DFileInfo::AttributeID::kMountableCanUnmount:
+    case DFileInfo::AttributeID::kMountableCanEject:
+    case DFileInfo::AttributeID::kMountableCanPoll:
+    case DFileInfo::AttributeID::kMountableIsMediaCheckAutomatic:
+    case DFileInfo::AttributeID::kMountableCanStart:
+    case DFileInfo::AttributeID::kMountableCanStartDegraded:
+    case DFileInfo::AttributeID::kMountableCanStop:
+    case DFileInfo::AttributeID::kUnixIsMountPoint:
+    case DFileInfo::AttributeID::kDosIsArchive:
+    case DFileInfo::AttributeID::kDosIsSystem:
+    case DFileInfo::AttributeID::kFileSystemReadOnly:
+    case DFileInfo::AttributeID::kFileSystemRemote: {
         g_file_info_set_attribute_boolean(gfileinfo, key.c_str(), value.toBool());
         return true;
     }
     // byte string
-    case DFileInfo::AttributeID::StandardName:
-    case DFileInfo::AttributeID::StandardSymlinkTarget:
-    case DFileInfo::AttributeID::ThumbnailPath: {
+    case DFileInfo::AttributeID::kStandardName:
+    case DFileInfo::AttributeID::kStandardSymlinkTarget:
+    case DFileInfo::AttributeID::kThumbnailPath: {
         g_file_info_set_attribute_byte_string(gfileinfo, key.c_str(), value.toString().toLocal8Bit().data());
         return true;
     }
     // string
-    case DFileInfo::AttributeID::StandardDisplayName:
-    case DFileInfo::AttributeID::StandardEditName:
-    case DFileInfo::AttributeID::StandardCopyName:
-    case DFileInfo::AttributeID::StandardContentType:
-    case DFileInfo::AttributeID::StandardFastContentType:
-    case DFileInfo::AttributeID::StandardTargetUri:
-    case DFileInfo::AttributeID::StandardDescription:
-    case DFileInfo::AttributeID::EtagValue:
-    case DFileInfo::AttributeID::IdFile:
-    case DFileInfo::AttributeID::IdFilesystem:
-    case DFileInfo::AttributeID::MountableUnixDeviceFile:
-    case DFileInfo::AttributeID::MountableHalUdi:
-    case DFileInfo::AttributeID::OwnerUser:
-    case DFileInfo::AttributeID::OwnerUserReal:
-    case DFileInfo::AttributeID::OwnerGroup:
-    case DFileInfo::AttributeID::FileSystemType:
-    case DFileInfo::AttributeID::GvfsBackend:
-    case DFileInfo::AttributeID::SelinuxContext:
-    case DFileInfo::AttributeID::TrashDeletionDate:
-    case DFileInfo::AttributeID::TrashOrigPath: {
+    case DFileInfo::AttributeID::kStandardDisplayName:
+    case DFileInfo::AttributeID::kStandardEditName:
+    case DFileInfo::AttributeID::kStandardCopyName:
+    case DFileInfo::AttributeID::kStandardContentType:
+    case DFileInfo::AttributeID::kStandardFastContentType:
+    case DFileInfo::AttributeID::kStandardTargetUri:
+    case DFileInfo::AttributeID::kStandardDescription:
+    case DFileInfo::AttributeID::kEtagValue:
+    case DFileInfo::AttributeID::kIdFile:
+    case DFileInfo::AttributeID::kIdFilesystem:
+    case DFileInfo::AttributeID::kMountableUnixDeviceFile:
+    case DFileInfo::AttributeID::kMountableHalUdi:
+    case DFileInfo::AttributeID::kOwnerUser:
+    case DFileInfo::AttributeID::kOwnerUserReal:
+    case DFileInfo::AttributeID::kOwnerGroup:
+    case DFileInfo::AttributeID::kFileSystemType:
+    case DFileInfo::AttributeID::kGvfsBackend:
+    case DFileInfo::AttributeID::kSelinuxContext:
+    case DFileInfo::AttributeID::kTrashDeletionDate:
+    case DFileInfo::AttributeID::kTrashOrigPath: {
         g_file_info_set_attribute_string(gfileinfo, key.c_str(), value.toString().toLocal8Bit().data());
         return true;
     }
     // object
-    case DFileInfo::AttributeID::StandardIcon:
-    case DFileInfo::AttributeID::StandardSymbolicIcon:
-    case DFileInfo::AttributeID::PreviewIcon: {
+    case DFileInfo::AttributeID::kStandardIcon:
+    case DFileInfo::AttributeID::kStandardSymbolicIcon:
+    case DFileInfo::AttributeID::kPreviewIcon: {
         //g_file_info_set_attribute_object(gfileinfo, key, value.object());
         // TODO(lanxs)
         return true;
@@ -667,12 +667,12 @@ bool DLocalHelper::fileIsHidden(const QSharedPointer<DFileInfo> &dfileinfo, cons
     if (!dfileinfo)
         return false;
 
-    const QString &fileName = dfileinfo->attribute(DFileInfo::AttributeID::StandardName, nullptr).toString();
+    const QString &fileName = dfileinfo->attribute(DFileInfo::AttributeID::kStandardName, nullptr).toString();
     if (fileName.startsWith(".")) {
         return true;
     } else {
         if (hideList.isEmpty()) {
-            const QString &hiddenPath = dfileinfo->attribute(DFileInfo::AttributeID::StandardParentPath, nullptr).toString() + "/.hidden";
+            const QString &hiddenPath = dfileinfo->attribute(DFileInfo::AttributeID::kStandardParentPath, nullptr).toString() + "/.hidden";
             const QSet<QString> &hideList = DLocalHelper::hideListFromUrl(QUrl::fromLocalFile(hiddenPath));
 
             if (hideList.contains(fileName))

@@ -40,55 +40,57 @@ class DFile
 {
 public:
     enum class OpenFlag : uint16_t {
-        NotOpen = 0x0000,
-        ReadOnly = 0x0001,
-        WriteOnly = 0x0002,   // auto create
-        ReadWrite = ReadOnly | WriteOnly,   // auto create
-        Append = 0x0004,
-        Truncate = 0x0008,
-        Text = 0x0010,
-        Unbuffered = 0x0020,
-        NewOnly = 0x0040,
-        ExistingOnly = 0x0080,
+        kNotOpen = 0x0000,
+        kReadOnly = 0x0001,
+        kWriteOnly = 0x0002,   // auto create
+        kReadWrite = kReadOnly | kWriteOnly,   // auto create
+        kAppend = 0x0004,
+        kTruncate = 0x0008,
+        kText = 0x0010,
+        kUnbuffered = 0x0020,
+        kNewOnly = 0x0040,
+        kExistingOnly = 0x0080,
 
-        CustomStart = 0x0100,
+        kCustomStart = 0x0100,
     };
     Q_DECLARE_FLAGS(OpenFlags, OpenFlag)
 
     enum class CopyFlag : uint8_t {
-        copyNone = 0x00,   // No flags set.
-        copyOverwrite = 0x01,   // Overwrite any existing files.
-        copyBackup = 0x02,   // Make a backup of any existing files.
-        copyNofollowSymlinks = 0x03,   // Don’t follow symlinks.
-        copyAllMetadata = 0x04,   // Copy all file metadata instead of just default set used for copy.
-        copyNoFallbackForMove = 0x05,   // Don’t use copy and delete fallback if native move not supported.
-        copyTargetDefaultPerms = 0x06,   // Leaves target file with default perms, instead of setting the source file perms.
+        kNone = 0,   // No flags set.
+        kOverwrite = 1,   // Overwrite any existing files.
+        kBackup = 2,   // Make a backup of any existing files.
+        kNoFollowSymlinks = 3,   // Don’t follow symlinks.
+        kAllMetadata = 4,   // Copy all file metadata instead of just default set used for copy.
+        kNoFallbackForMove = 5,   // Don’t use copy and delete fallback if native move not supported.
+        kTargetDefaultPerms = 6,   // Leaves target file with default perms, instead of setting the source file perms.
+
+        kUserFlag = 0x10
     };
 
-    enum class DFMSeekType : uint8_t {
-        BEGIN = 0x00,
-        CURRENT = 0x01,
-        END = 0x02
+    enum class SeekType : uint8_t {
+        kBegin = 0x00,
+        kCurrent = 0x01,
+        kEnd = 0x02
     };
 
     enum class Permission : uint16_t {
-        NoPermission = 0x0000,
+        kNoPermission = 0x0000,
 
-        ExeOther = 0x0001,
-        WriteOther = 0x0002,
-        ReadOther = 0x0004,
+        kExeOther = 0x0001,
+        kWriteOther = 0x0002,
+        kReadOther = 0x0004,
 
-        ExeGroup = 0x0010,
-        WriteGroup = 0x0020,
-        ReadGroup = 0x0040,
+        kExeGroup = 0x0010,
+        kWriteGroup = 0x0020,
+        kReadGroup = 0x0040,
 
-        ExeUser = 0x0100,
-        WriteUser = 0x0200,
-        ReadUser = 0x0400,
+        kExeUser = 0x0100,
+        kWriteUser = 0x0200,
+        kReadUser = 0x0400,
 
-        ExeOwner = 0x1000,
-        WriteOwner = 0x2000,
-        ReadOwner = 0x4000,
+        kExeOwner = 0x1000,
+        kWriteOwner = 0x2000,
+        kReadOwner = 0x4000,
     };
     Q_DECLARE_FLAGS(Permissions, Permission)
 
@@ -121,7 +123,7 @@ public:
     using WriteAllFuncAsync = std::function<void(const char *, int, WriteAllCallbackFunc, void *)>;
     using WriteQFuncAsync = std::function<void(const QByteArray &, int, WriteQCallbackFunc, void *)>;
 
-    using SeekFunc = std::function<bool(qint64, DFMSeekType)>;
+    using SeekFunc = std::function<bool(qint64, SeekType)>;
     using PosFunc = std::function<qint64()>;
     using FlushFunc = std::function<bool()>;
     using SizeFunc = std::function<qint64()>;
@@ -155,7 +157,7 @@ public:
     DFM_VIRTUAL void writeAllAsync(const char *data, int ioPriority = 0, WriteAllCallbackFunc func = nullptr, void *userData = nullptr);
     DFM_VIRTUAL void writeQAsync(const QByteArray &byteArray, int ioPriority = 0, WriteQCallbackFunc func = nullptr, void *userData = nullptr);
 
-    DFM_VIRTUAL bool seek(qint64 pos, DFMSeekType type = DFMSeekType::BEGIN);
+    DFM_VIRTUAL bool seek(qint64 pos, SeekType type = SeekType::kBegin);
     DFM_VIRTUAL qint64 pos();
     DFM_VIRTUAL bool flush();
     DFM_VIRTUAL qint64 size();

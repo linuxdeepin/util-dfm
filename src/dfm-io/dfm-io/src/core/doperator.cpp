@@ -63,7 +63,7 @@ bool DOperator::renameFile(const QUrl &toUrl)
     return d->renameFileByStdFunc(toUrl);
 }
 
-bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
+bool DOperator::copyFile(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
     if (!d->copyFileFunc)
         return false;
@@ -71,7 +71,7 @@ bool DOperator::copyFile(const QUrl &destUri, DOperator::CopyFlag flag, Progress
     return d->copyFileFunc(destUri, flag, func, progressCallbackData);
 }
 
-bool DOperator::moveFile(const QUrl &destUri, DOperator::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
+bool DOperator::moveFile(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func, void *progressCallbackData)
 {
     if (!d->moveFileFunc)
         return false;
@@ -87,7 +87,7 @@ void DOperator::renameFileAsync(const QString &newName, int ioPriority, FileOper
     d->renameFileFuncAsync(newName, ioPriority, func, progressCallbackData);
 }
 
-void DOperator::copyFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallbackFunc progressfunc, void *progressCallbackData,
+void DOperator::copyFileAsync(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc progressfunc, void *progressCallbackData,
                               int ioPriority, FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->copyFileFuncAsync)
@@ -96,7 +96,7 @@ void DOperator::copyFileAsync(const QUrl &destUri, CopyFlag flag, ProgressCallba
     d->copyFileFuncAsync(destUri, flag, progressfunc, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
-void DOperator::moveFileAsync(const QUrl &destUri, DOperator::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
+void DOperator::moveFileAsync(const QUrl &destUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
                               int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     if (!d->moveFileFuncAsync)

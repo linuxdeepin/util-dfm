@@ -58,7 +58,7 @@ public:
     bool clearCache();
     DFile::Permissions permissions();
 
-    bool setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNone);
+    bool setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::kTypeNone);
     QVariant customAttribute(const char *key, const DFileInfo::DFileAttributeType type);
 
     DFMIOError lastError();

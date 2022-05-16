@@ -74,7 +74,7 @@ static void cat(const QUrl &url)
         return;
     }
 
-    QSharedPointer<DFile> stream = make_stream(factory, DFile::OpenFlag::ReadOnly);
+    QSharedPointer<DFile> stream = make_stream(factory, DFile::OpenFlag::kReadOnly);
     if (!stream) {
         err_msg("make stream failed.");
         return;

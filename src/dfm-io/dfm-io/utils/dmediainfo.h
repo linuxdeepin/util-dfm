@@ -42,7 +42,7 @@ public:
     explicit DMediaInfo(const QString &fileName);
     ~DMediaInfo();
 
-    QString value(const QString &key, DFileInfo::MediaType meidiaType = DFileInfo::MediaType::General);
+    QString value(const QString &key, DFileInfo::MediaType meidiaType = DFileInfo::MediaType::kGeneral);
 
     void startReadInfo(FinishedCallback callback);
     void stopReadInfo();

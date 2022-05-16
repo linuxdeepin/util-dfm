@@ -63,11 +63,11 @@ public:
 
     QUrl uri;
     char *attributes;
-    DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::TypeNone;
+    DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::kTypeNone;
 
     QSharedPointer<DFMIO::DMediaInfo> mediaInfo = nullptr;
     QList<DFileInfo::AttributeExtendID> extendIDs;
-    DFileInfo::MediaType mediaType = DFileInfo::MediaType::General;
+    DFileInfo::MediaType mediaType = DFileInfo::MediaType::kGeneral;
     DFileInfo::AttributeExtendFuncCallback attributeExtendFuncCallback = nullptr;
 
     DFileInfo::AttributeFunc attributeFunc = nullptr;

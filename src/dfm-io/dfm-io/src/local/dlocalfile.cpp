@@ -61,7 +61,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
     g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
     g_autoptr(GError) gerror = nullptr;
 
-    if (mode & DFile::OpenFlag::ReadOnly && !(mode & DFile::OpenFlag::WriteOnly)) {
+    if (mode & DFile::OpenFlag::kReadOnly && !(mode & DFile::OpenFlag::kWriteOnly)) {
         if (!exists()) {
             return false;
         }
@@ -73,8 +73,8 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
             return false;
         }
         return true;
-    } else if (mode & DFile::OpenFlag::WriteOnly && !(mode & DFile::OpenFlag::ReadOnly)) {
-        if (mode & DFile::OpenFlag::NewOnly) {
+    } else if (mode & DFile::OpenFlag::kWriteOnly && !(mode & DFile::OpenFlag::kReadOnly)) {
+        if (mode & DFile::OpenFlag::kNewOnly) {
             oStream = (GOutputStream *)g_file_create(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
@@ -82,7 +82,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
             if (!oStream) {
                 return false;
             }
-        } else if (mode & DFile::OpenFlag::Append) {
+        } else if (mode & DFile::OpenFlag::kAppend) {
             oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
@@ -101,8 +101,8 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
         }
 
         return true;
-    } else if (mode & DFile::OpenFlag::ReadOnly && mode & DFile::OpenFlag::WriteOnly) {
-        if (mode & DFile::OpenFlag::NewOnly) {
+    } else if (mode & DFile::OpenFlag::kReadOnly && mode & DFile::OpenFlag::kWriteOnly) {
+        if (mode & DFile::OpenFlag::kNewOnly) {
             ioStream = (GIOStream *)g_file_create_readwrite(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
@@ -110,7 +110,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
             if (!ioStream) {
                 return false;
             }
-        } else if (mode & DFile::OpenFlag::ExistingOnly) {
+        } else if (mode & DFile::OpenFlag::kExistingOnly) {
             ioStream = (GIOStream *)g_file_open_readwrite(gfile, nullptr, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
@@ -517,7 +517,7 @@ void DLocalFilePrivate::writeQAsync(const QByteArray &byteArray, int ioPriority,
     writeAllAsync(byteArray.data(), ioPriority, func, userData);
 }
 
-bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
+bool DLocalFilePrivate::seek(qint64 pos, DFile::SeekType type)
 {
     GInputStream *inputStream = this->inputStream();
     if (!inputStream) {
@@ -540,10 +540,10 @@ bool DLocalFilePrivate::seek(qint64 pos, DFile::DFMSeekType type)
     GError *gerror = nullptr;
     GSeekType gtype = G_SEEK_CUR;
     switch (type) {
-    case DFile::DFMSeekType::BEGIN:
+    case DFile::SeekType::kBegin:
         gtype = G_SEEK_SET;
         break;
-    case DFile::DFMSeekType::END:
+    case DFile::SeekType::kEnd:
         gtype = G_SEEK_END;
         break;
 
@@ -636,7 +636,7 @@ bool DLocalFilePrivate::exists()
 
 DFile::Permissions DLocalFilePrivate::permissions()
 {
-    DFile::Permissions retValue = DFile::Permission::NoPermission;
+    DFile::Permissions retValue = DFile::Permission::kNoPermission;
     // 获取系统默认权限
     const QUrl &&url = q->uri();
     const char *path = url.toLocalFile().toLocal8Bit().data();
@@ -645,25 +645,25 @@ DFile::Permissions DLocalFilePrivate::permissions()
     stat(path, &buf);
 
     if ((buf.st_mode & S_IXUSR) == S_IXUSR)
-        retValue |= DFile::Permission::ExeOwner;
+        retValue |= DFile::Permission::kExeOwner;
     if ((buf.st_mode & S_IWUSR) == S_IWUSR)
-        retValue |= DFile::Permission::WriteOwner;
+        retValue |= DFile::Permission::kWriteOwner;
     if ((buf.st_mode & S_IRUSR) == S_IRUSR)
-        retValue |= DFile::Permission::ReadOwner;
+        retValue |= DFile::Permission::kReadOwner;
 
     if ((buf.st_mode & S_IXGRP) == S_IXGRP)
-        retValue |= DFile::Permission::ExeGroup;
+        retValue |= DFile::Permission::kExeGroup;
     if ((buf.st_mode & S_IWGRP) == S_IWGRP)
-        retValue |= DFile::Permission::WriteGroup;
+        retValue |= DFile::Permission::kWriteGroup;
     if ((buf.st_mode & S_IRGRP) == S_IRGRP)
-        retValue |= DFile::Permission::ReadGroup;
+        retValue |= DFile::Permission::kReadGroup;
 
     if ((buf.st_mode & S_IXOTH) == S_IXOTH)
-        retValue |= DFile::Permission::ExeOther;
+        retValue |= DFile::Permission::kExeOther;
     if ((buf.st_mode & S_IWOTH) == S_IWOTH)
-        retValue |= DFile::Permission::WriteOther;
+        retValue |= DFile::Permission::kWriteOther;
     if ((buf.st_mode & S_IROTH) == S_IROTH)
-        retValue |= DFile::Permission::ReadOther;
+        retValue |= DFile::Permission::kReadOther;
 
     retValue |= permissionsFromGio();
 
@@ -677,25 +677,25 @@ bool DLocalFilePrivate::setPermissions(DFile::Permissions permission)
 
     struct stat buf;
     buf.st_mode = 0000;
-    if (permission.testFlag(DFile::Permission::ExeOwner) | permission.testFlag(DFile::Permission::ExeUser))
+    if (permission.testFlag(DFile::Permission::kExeOwner) | permission.testFlag(DFile::Permission::kExeUser))
         buf.st_mode |= S_IXUSR;
-    if (permission.testFlag(DFile::Permission::WriteOwner) | permission.testFlag(DFile::Permission::WriteUser))
+    if (permission.testFlag(DFile::Permission::kWriteOwner) | permission.testFlag(DFile::Permission::kWriteUser))
         buf.st_mode |= S_IWUSR;
-    if (permission.testFlag(DFile::Permission::ReadOwner) | permission.testFlag(DFile::Permission::ReadUser))
+    if (permission.testFlag(DFile::Permission::kReadOwner) | permission.testFlag(DFile::Permission::kReadUser))
         buf.st_mode |= S_IRUSR;
 
-    if (permission.testFlag(DFile::Permission::ExeGroup))
+    if (permission.testFlag(DFile::Permission::kExeGroup))
         buf.st_mode |= S_IXGRP;
-    if (permission.testFlag(DFile::Permission::WriteGroup))
+    if (permission.testFlag(DFile::Permission::kWriteGroup))
         buf.st_mode |= S_IWGRP;
-    if (permission.testFlag(DFile::Permission::ReadGroup))
+    if (permission.testFlag(DFile::Permission::kReadGroup))
         buf.st_mode |= S_IRGRP;
 
-    if (permission.testFlag(DFile::Permission::ExeOther))
+    if (permission.testFlag(DFile::Permission::kExeOther))
         buf.st_mode |= S_IXOTH;
-    if (permission.testFlag(DFile::Permission::WriteOther))
+    if (permission.testFlag(DFile::Permission::kWriteOther))
         buf.st_mode |= S_IWOTH;
-    if (permission.testFlag(DFile::Permission::ReadOther))
+    if (permission.testFlag(DFile::Permission::kReadOther))
         buf.st_mode |= S_IROTH;
 
     return ::chmod(path, buf.st_mode) == 0;
@@ -713,7 +713,7 @@ void DLocalFilePrivate::setError(DFMIOError error)
 
 DFile::Permissions DLocalFilePrivate::permissionsFromGio()
 {
-    DFile::Permissions retValue = DFile::Permission::NoPermission;
+    DFile::Permissions retValue = DFile::Permission::kNoPermission;
 
     const QUrl &&url = q->uri();
     const QString &&path = url.toString();
@@ -734,11 +734,11 @@ DFile::Permissions DLocalFilePrivate::permissionsFromGio()
 
     if (gfileinfo) {
         if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-execute"))
-            retValue |= DFile::Permission::ExeUser;
+            retValue |= DFile::Permission::kExeUser;
         if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-write"))
-            retValue |= DFile::Permission::WriteUser;
+            retValue |= DFile::Permission::kWriteUser;
         if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-read"))
-            retValue |= DFile::Permission::ReadUser;
+            retValue |= DFile::Permission::kReadUser;
 
         g_object_unref(gfileinfo);
     }
@@ -754,35 +754,35 @@ bool DLocalFilePrivate::checkOpenFlags(DFile::OpenFlags *modeIn)
 {
     DFile::OpenFlags &mode = *modeIn;
 
-    if (mode & DFile::OpenFlag::NewOnly) {
+    if (mode & DFile::OpenFlag::kNewOnly) {
         if (exists()) {
             error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
             return false;
         }
     }
-    if (mode & DFile::OpenFlag::ExistingOnly) {
+    if (mode & DFile::OpenFlag::kExistingOnly) {
         if (!exists()) {
             error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
             return false;
         }
     }
-    if ((mode & DFile::OpenFlag::NewOnly) && (mode & DFile::OpenFlag::ExistingOnly)) {
+    if ((mode & DFile::OpenFlag::kNewOnly) && (mode & DFile::OpenFlag::kExistingOnly)) {
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
         return false;
     }
 
     // WriteOnly implies Truncate when ReadOnly, Append, and NewOnly are not set.
-    if ((mode & DFile::OpenFlag::WriteOnly) && !(mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::Append | DFile::OpenFlag::NewOnly)))
-        mode |= DFile::OpenFlag::Truncate;
+    if ((mode & DFile::OpenFlag::kWriteOnly) && !(mode & (DFile::OpenFlag::kReadOnly | DFile::OpenFlag::kAppend | DFile::OpenFlag::kNewOnly)))
+        mode |= DFile::OpenFlag::kTruncate;
 
-    if (mode & (DFile::OpenFlag::Append | DFile::OpenFlag::NewOnly))
-        mode |= DFile::OpenFlag::WriteOnly;
+    if (mode & (DFile::OpenFlag::kAppend | DFile::OpenFlag::kNewOnly))
+        mode |= DFile::OpenFlag::kWriteOnly;
 
-    if ((mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::WriteOnly)) == 0) {
+    if ((mode & (DFile::OpenFlag::kReadOnly | DFile::OpenFlag::kWriteOnly)) == 0) {
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
         return false;
     }
-    if ((mode & DFile::OpenFlag::ExistingOnly) && !(mode & (DFile::OpenFlag::ReadOnly | DFile::OpenFlag::WriteOnly))) {
+    if ((mode & DFile::OpenFlag::kExistingOnly) && !(mode & (DFile::OpenFlag::kReadOnly | DFile::OpenFlag::kWriteOnly))) {
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FLAG_ERROR);
         return false;
     }
@@ -942,7 +942,7 @@ void DLocalFile::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile:
     d->writeQAsync(byteArray, ioPriority, func, userData);
 }
 
-bool DLocalFile::seek(qint64 pos, DFile::DFMSeekType type)
+bool DLocalFile::seek(qint64 pos, DFile::SeekType type)
 {
     return d->seek(pos, type);
 }
