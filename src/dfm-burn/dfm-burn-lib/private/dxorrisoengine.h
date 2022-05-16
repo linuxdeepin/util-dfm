@@ -23,7 +23,7 @@
 #ifndef XORRISOENGINE_H
 #define XORRISOENGINE_H
 
-#include "dfmburn_global.h"
+#include "dburn_global.h"
 
 #include <QObject>
 
@@ -31,7 +31,7 @@
 
 DFM_BURN_BEGIN_NS
 
-class XorrisoEngine : public QObject
+class DXorrisoEngine : public QObject
 {
     Q_OBJECT
 
@@ -52,8 +52,8 @@ public:
     };
 
 public:
-    explicit XorrisoEngine(QObject *parent = nullptr);
-    ~XorrisoEngine();
+    explicit DXorrisoEngine(QObject *parent = nullptr);
+    ~DXorrisoEngine();
 
     bool acquireDevice(QString dev);
     void releaseDevice();

@@ -21,8 +21,8 @@
 #ifndef OPTICALDISCINFO_P_H
 #define OPTICALDISCINFO_P_H
 
-#include "dfmburn_global.h"
-#include "xorrisoengine.h"
+#include "dburn_global.h"
+#include "dxorrisoengine.h"
 
 #include <QSharedData>
 
@@ -30,30 +30,30 @@
 
 DFM_BURN_BEGIN_NS
 
-class OpticalDiscInfoPrivate : public QSharedData
+class DOpticalDiscInfoPrivate : public QSharedData
 {
 public:
-    inline OpticalDiscInfoPrivate()
+    inline DOpticalDiscInfoPrivate()
         : QSharedData()
     {
     }
 
-    inline explicit OpticalDiscInfoPrivate(const QString &dev)
-        : isoEngine(std::make_unique<XorrisoEngine>()), devid(dev)
+    inline explicit DOpticalDiscInfoPrivate(const QString &dev)
+        : isoEngine(std::make_unique<DXorrisoEngine>()), devid(dev)
     {
         initData();
     }
 
-    inline OpticalDiscInfoPrivate(const OpticalDiscInfoPrivate &copy)
+    inline DOpticalDiscInfoPrivate(const DOpticalDiscInfoPrivate &copy)
         : QSharedData(copy)
     {
     }
 
-    inline ~OpticalDiscInfoPrivate() {}
+    inline ~DOpticalDiscInfoPrivate() {}
 
     void initData();
 
-    std::unique_ptr<XorrisoEngine> const isoEngine;
+    std::unique_ptr<DXorrisoEngine> const isoEngine;
 
     /** \brief True when the media in device is blank or false otherwise.*/
     bool formatted {};

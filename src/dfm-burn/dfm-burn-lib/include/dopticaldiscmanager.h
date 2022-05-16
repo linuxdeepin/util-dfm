@@ -23,7 +23,7 @@
 #ifndef OPTICALDISCMANAGER_H
 #define OPTICALDISCMANAGER_H
 
-#include "dfmburn_global.h"
+#include "dburn_global.h"
 
 #include <QObject>
 #include <QHash>
@@ -31,19 +31,19 @@
 
 DFM_BURN_BEGIN_NS
 
-class OpticalDiscInfo;
-class OpticalDiscManagerPrivate;
-class OpticalDiscManager : public QObject
+class DOpticalDiscInfo;
+class DOpticalDiscManagerPrivate;
+class DOpticalDiscManager : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(OpticalDiscManager)
+    Q_DISABLE_COPY(DOpticalDiscManager)
 
 public:
-    static OpticalDiscInfo *createOpticalInfo(const QString &dev);
+    static DOpticalDiscInfo *createOpticalInfo(const QString &dev);
 
 public:
-    explicit OpticalDiscManager(const QString &dev, QObject *parent = nullptr);
-    ~OpticalDiscManager();
+    explicit DOpticalDiscManager(const QString &dev, QObject *parent = nullptr);
+    ~DOpticalDiscManager();
 
     bool setStageFile(const QString &diskPath, const QString &isoPath = "/");
     bool commit(const BurnOptions &opts, int speed = 0, const QString &volId = "ISOIMAGE");
@@ -56,7 +56,7 @@ signals:
     void jobStatusChanged(JobStatus status, int progress, QString speed, QStringList message);
 
 private:
-    QScopedPointer<OpticalDiscManagerPrivate> dptr;
+    QScopedPointer<DOpticalDiscManagerPrivate> dptr;
 };
 
 DFM_BURN_END_NS

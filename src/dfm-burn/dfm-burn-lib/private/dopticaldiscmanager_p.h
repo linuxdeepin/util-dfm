@@ -23,13 +23,13 @@
 #ifndef OPTICALDISCMANAGER_P_H
 #define OPTICALDISCMANAGER_P_H
 
-#include "dfmburn_global.h"
+#include "dburn_global.h"
 
 #include <QPair>
 
 DFM_BURN_BEGIN_NS
 
-class OpticalDiscManagerPrivate
+class DOpticalDiscManagerPrivate
 {
 public:
     QString errorMsg;

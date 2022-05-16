@@ -20,7 +20,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "xorrisoengine.h"
+#include "dxorrisoengine.h"
 
 #include <QHash>
 #include <QRegularExpression>
@@ -41,7 +41,7 @@ static inline int XORRISO_OPT(struct XorrisO *x, std::function<int()> opt)
     return Xorriso_eval_problem_status(x, r, 0);
 }
 
-static inline bool JOBFAILED_IF(XorrisoEngine *engine, int r, struct XorrisO *x)
+static inline bool JOBFAILED_IF(DXorrisoEngine *engine, int r, struct XorrisO *x)
 {
     if (r <= 0) {
         Xorriso_option_end(x, 1);
@@ -53,7 +53,7 @@ static inline bool JOBFAILED_IF(XorrisoEngine *engine, int r, struct XorrisO *x)
 
 static int xorrisoResultHandler(void *handle, char *text)
 {
-    (static_cast<XorrisoEngine *>(handle))->messageReceived(0, text);
+    (static_cast<DXorrisoEngine *>(handle))->messageReceived(0, text);
     return 1;
 }
 static int xorrisoInfoHandler(void *handle, char *text)
@@ -62,11 +62,11 @@ static int xorrisoInfoHandler(void *handle, char *text)
     if (strstr(text, "DEBUG : Concurrent message watcher")) {
         return 1;
     }
-    (static_cast<XorrisoEngine *>(handle))->messageReceived(1, text);
+    (static_cast<DXorrisoEngine *>(handle))->messageReceived(1, text);
     return 1;
 }
 
-XorrisoEngine::XorrisoEngine(QObject *parent)
+DXorrisoEngine::DXorrisoEngine(QObject *parent)
     : QObject(parent)
 {
     int r = Xorriso_new(&xorriso, PCHAR("xorriso"), 0);
@@ -85,7 +85,7 @@ XorrisoEngine::XorrisoEngine(QObject *parent)
     Xorriso_start_msg_watcher(xorriso, xorrisoResultHandler, this, xorrisoInfoHandler, this, 0);
 }
 
-XorrisoEngine::~XorrisoEngine()
+DXorrisoEngine::~DXorrisoEngine()
 {
     if (xorriso) {
         Xorriso_stop_msg_watcher(xorriso, 0);
@@ -106,7 +106,7 @@ XorrisoEngine::~XorrisoEngine()
  * \return true on success. If this function fails, it
  * is usually because the device is currently in use.
  */
-bool XorrisoEngine::acquireDevice(QString dev)
+bool DXorrisoEngine::acquireDevice(QString dev)
 {
     if (!dev.isEmpty()) {
         curDev = dev;
@@ -126,18 +126,18 @@ bool XorrisoEngine::acquireDevice(QString dev)
 /*!
  * \brief Release the drive currently held.
  */
-void XorrisoEngine::releaseDevice()
+void DXorrisoEngine::releaseDevice()
 {
     curDev = "";
     Xorriso_option_end(xorriso, 0);
 }
 
-void XorrisoEngine::clearResult()
+void DXorrisoEngine::clearResult()
 {
     Xorriso_sieve_clear_results(xorriso, 0);
 }
 
-MediaType XorrisoEngine::mediaTypeProperty() const
+MediaType DXorrisoEngine::mediaTypeProperty() const
 {
     MediaType devMedia { MediaType::kNoMedia };
     if (curDev.isEmpty())
@@ -179,7 +179,7 @@ MediaType XorrisoEngine::mediaTypeProperty() const
     return devMedia;
 }
 
-void XorrisoEngine::mediaStorageProperty(quint64 *usedSize, quint64 *availSize, quint64 *blocks) const
+void DXorrisoEngine::mediaStorageProperty(quint64 *usedSize, quint64 *availSize, quint64 *blocks) const
 {
     if (curDev.isEmpty())
         return;
@@ -196,7 +196,7 @@ void XorrisoEngine::mediaStorageProperty(quint64 *usedSize, quint64 *availSize, 
     Xorriso__dispose_words(&ac, &av);
 }
 
-bool XorrisoEngine::mediaFormattedProperty() const
+bool DXorrisoEngine::mediaFormattedProperty() const
 {
     bool formatted { true };
     if (curDev.isEmpty())
@@ -214,7 +214,7 @@ bool XorrisoEngine::mediaFormattedProperty() const
     return formatted;
 }
 
-QString XorrisoEngine::mediaVolIdProperty() const
+QString DXorrisoEngine::mediaVolIdProperty() const
 {
     QString volId;
     if (curDev.isEmpty())
@@ -229,7 +229,7 @@ QString XorrisoEngine::mediaVolIdProperty() const
     return volId;
 }
 
-QStringList XorrisoEngine::mediaSpeedProperty() const
+QStringList DXorrisoEngine::mediaSpeedProperty() const
 {
     QStringList writeSpeed;
     if (curDev.isEmpty())
@@ -261,14 +261,14 @@ QStringList XorrisoEngine::mediaSpeedProperty() const
  *
  * \return a list of messages from xorriso since the last command.
  */
-QStringList XorrisoEngine::takeInfoMessages()
+QStringList DXorrisoEngine::takeInfoMessages()
 {
     QStringList ret = xorrisomsg;
     xorrisomsg.clear();
     return ret;
 }
 
-bool XorrisoEngine::doErase()
+bool DXorrisoEngine::doErase()
 {
     Q_EMIT jobStatusChanged(JobStatus::kRunning, 0, curspeed);
     xorrisomsg.clear();
@@ -285,7 +285,7 @@ bool XorrisoEngine::doErase()
     return true;
 }
 
-bool XorrisoEngine::doWriteISO(const QString &isoPath, int speed)
+bool DXorrisoEngine::doWriteISO(const QString &isoPath, int speed)
 {
     Q_EMIT jobStatusChanged(JobStatus::kStalled, 0, curspeed);
     xorrisomsg.clear();
@@ -323,7 +323,7 @@ bool XorrisoEngine::doWriteISO(const QString &isoPath, int speed)
  *
  * The values returned should add up to 1 (or very close to 1).
  */
-bool XorrisoEngine::doCheckmedia(quint64 dataBlocks, double *qgood, double *qslow, double *qbad)
+bool DXorrisoEngine::doCheckmedia(quint64 dataBlocks, double *qgood, double *qslow, double *qbad)
 {
     curDatablocks = dataBlocks;
     if (dataBlocks == 0)
@@ -379,7 +379,7 @@ bool XorrisoEngine::doCheckmedia(quint64 dataBlocks, double *qgood, double *qslo
     return true;
 }
 
-bool XorrisoEngine::doBurn(const QPair<QString, QString> files, int speed, QString volId, XorrisoEngine::JolietSupport joliet, XorrisoEngine::RockRageSupport rockRage, XorrisoEngine::KeepAppendable appendable)
+bool DXorrisoEngine::doBurn(const QPair<QString, QString> files, int speed, QString volId, DXorrisoEngine::JolietSupport joliet, DXorrisoEngine::RockRageSupport rockRage, DXorrisoEngine::KeepAppendable appendable)
 {
     if (files.first.isEmpty())
         return false;
@@ -451,7 +451,7 @@ bool XorrisoEngine::doBurn(const QPair<QString, QString> files, int speed, QStri
     return true;
 }
 
-void XorrisoEngine::messageReceived(int type, char *text)
+void DXorrisoEngine::messageReceived(int type, char *text)
 {
     Q_UNUSED(type);
 

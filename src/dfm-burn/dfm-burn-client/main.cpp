@@ -24,8 +24,8 @@
 #include <QCoreApplication>
 #include <QDebug>
 
-#include <opticaldiscmanager.h>
-#include <opticaldiscinfo.h>
+#include <dopticaldiscmanager.h>
+#include <dopticaldiscinfo.h>
 
 DFM_BURN_USE_NS
 
@@ -33,8 +33,8 @@ DFM_BURN_USE_NS
 
 static void erase(const QString &dev)
 {
-    OpticalDiscManager manager(dev);
-    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+    DOpticalDiscManager manager(dev);
+    QObject::connect(&manager, &DOpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
         qDebug() << int(status) << progress << speed << message;
     });
     manager.erase();
@@ -42,7 +42,7 @@ static void erase(const QString &dev)
 
 static void showInfo(const QString &dev)
 {
-    QScopedPointer<OpticalDiscInfo> info { OpticalDiscManager::createOpticalInfo(dev) };
+    QScopedPointer<DOpticalDiscInfo> info { DOpticalDiscManager::createOpticalInfo(dev) };
     qDebug() << info->device();
     qDebug() << int(info->mediaType());
     qDebug() << info->writeSpeed();
@@ -51,8 +51,8 @@ static void showInfo(const QString &dev)
 
 static void commit()
 {
-    OpticalDiscManager manager("/dev/sr0");
-    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+    DOpticalDiscManager manager("/dev/sr0");
+    QObject::connect(&manager, &DOpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
         qDebug() << int(status) << progress << speed << message;
     });
     manager.setStageFile("/home/zhangs/.cache/deepin/discburn/_dev_sr0");
@@ -64,8 +64,8 @@ static void commit()
 
 static void commitUDF()
 {
-    OpticalDiscManager manager("/dev/sr0");
-    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+    DOpticalDiscManager manager("/dev/sr0");
+    QObject::connect(&manager, &DOpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
         qDebug() << int(status) << progress << speed << message;
     });
     manager.setStageFile("/home/zhangs/test/1/git_pro");
@@ -76,8 +76,8 @@ static void commitUDF()
 }
 static void writeISO()
 {
-    OpticalDiscManager manager("/dev/sr0");
-    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+    DOpticalDiscManager manager("/dev/sr0");
+    QObject::connect(&manager, &DOpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
         qDebug() << int(status) << progress << speed << message;
     });
     manager.writeISO("/home/zhangs/Downloads/deb/20200413_214350.iso");
@@ -85,8 +85,8 @@ static void writeISO()
 
 static void check()
 {
-    OpticalDiscManager manager("/dev/sr0");
-    QObject::connect(&manager, &OpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+    DOpticalDiscManager manager("/dev/sr0");
+    QObject::connect(&manager, &DOpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
         qDebug() << int(status) << progress << speed << message;
     });
     double gud, slo, bad;

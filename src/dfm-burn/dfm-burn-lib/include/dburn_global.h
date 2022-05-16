@@ -20,8 +20,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef DFMBURN_GLOBAL_H
-#define DFMBURN_GLOBAL_H
+#ifndef DBURN_GLOBAL_H
+#define DBURN_GLOBAL_H
 
 #include <QObject>
 
@@ -71,4 +71,4 @@ enum class JobStatus : int {
 
 DFM_BURN_END_NS
 
-#endif   // DFMBURN_GLOBAL_H
+#endif   // DBURN_GLOBAL_H

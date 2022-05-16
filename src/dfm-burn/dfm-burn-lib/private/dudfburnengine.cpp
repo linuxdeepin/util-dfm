@@ -20,7 +20,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "udfburnengine.h"
+#include "dudfburnengine.h"
 
 #include <QDebug>
 
@@ -60,7 +60,7 @@ static uburn_redirect_output ub_redirect_output = nullptr;
 
 }   // namespace
 
-UDFBurnEngine::UDFBurnEngine(QObject *parent)
+DUDFBurnEngine::DUDFBurnEngine(QObject *parent)
     : QObject(parent)
 {
     lib.setFileName("udfburn");
@@ -94,13 +94,13 @@ UDFBurnEngine::UDFBurnEngine(QObject *parent)
     qInfo() << "[dfm-burn] udf load func " << (funcsLoaded ? "success" : "failed");
 }
 
-UDFBurnEngine::~UDFBurnEngine()
+DUDFBurnEngine::~DUDFBurnEngine()
 {
     if (libLoaded)
         lib.unload();
 }
 
-bool UDFBurnEngine::doBurn(const QString &dev, const QPair<QString, QString> files, QString volId)
+bool DUDFBurnEngine::doBurn(const QString &dev, const QPair<QString, QString> files, QString volId)
 {
     if (!canSafeUse())
         return false;
@@ -139,12 +139,12 @@ bool UDFBurnEngine::doBurn(const QString &dev, const QPair<QString, QString> fil
     return true;
 }
 
-QStringList UDFBurnEngine::lastErrorMessage() const
+QStringList DUDFBurnEngine::lastErrorMessage() const
 {
     return message;
 }
 
-bool UDFBurnEngine::canSafeUse() const
+bool DUDFBurnEngine::canSafeUse() const
 {
     return libLoaded && funcsLoaded;
 }

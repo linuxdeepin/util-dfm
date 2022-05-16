@@ -18,10 +18,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef OPTICALDISCINFO_H
-#define OPTICALDISCINFO_H
+#ifndef DOPTICALDISCINFO_H
+#define DOPTICALDISCINFO_H
 
-#include "dfmburn_global.h"
+#include "dburn_global.h"
 
 #include <QObject>
 #include <QString>
@@ -29,17 +29,17 @@
 
 DFM_BURN_BEGIN_NS
 
-class OpticalDiscInfoPrivate;
+class DOpticalDiscInfoPrivate;
 
-class OpticalDiscInfo
+class DOpticalDiscInfo
 {
-    friend class OpticalDiscInfoPrivate;
-    friend class OpticalDiscManager;
+    friend class DOpticalDiscInfoPrivate;
+    friend class DOpticalDiscManager;
 
 public:
-    OpticalDiscInfo(const OpticalDiscInfo &info);
-    OpticalDiscInfo &operator=(const OpticalDiscInfo &info);
-    ~OpticalDiscInfo();
+    DOpticalDiscInfo(const DOpticalDiscInfo &info);
+    DOpticalDiscInfo &operator=(const DOpticalDiscInfo &info);
+    ~DOpticalDiscInfo();
 
     bool blank() const;
     QString device() const;
@@ -52,13 +52,13 @@ public:
     QStringList writeSpeed() const;
 
 protected:
-    OpticalDiscInfo();
-    OpticalDiscInfo(const QString &dev);
+    DOpticalDiscInfo();
+    DOpticalDiscInfo(const QString &dev);
 
 protected:
-    QSharedDataPointer<OpticalDiscInfoPrivate> d_ptr;
+    QSharedDataPointer<DOpticalDiscInfoPrivate> d_ptr;
 };
 
 DFM_BURN_END_NS
 
-#endif   // OPTICALDISCINFO_H
+#endif   // DOPTICALDISCINFO_H

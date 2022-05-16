@@ -23,19 +23,19 @@
 #ifndef UDFBURNENGINE_H
 #define UDFBURNENGINE_H
 
-#include "dfmburn_global.h"
+#include "dburn_global.h"
 
 #include <QObject>
 #include <QLibrary>
 
 DFM_BURN_BEGIN_NS
 
-class UDFBurnEngine : public QObject
+class DUDFBurnEngine : public QObject
 {
     Q_OBJECT
 public:
-    explicit UDFBurnEngine(QObject *parent = nullptr);
-    ~UDFBurnEngine();
+    explicit DUDFBurnEngine(QObject *parent = nullptr);
+    ~DUDFBurnEngine();
 
     bool doBurn(const QString &dev, const QPair<QString, QString> files, QString volId);
     QStringList lastErrorMessage() const;

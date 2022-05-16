@@ -20,11 +20,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "opticaldiscmanager.h"
-#include "opticaldiscinfo.h"
-#include "private/opticaldiscmanager_p.h"
-#include "private/xorrisoengine.h"
-#include "private/udfburnengine.h"
+#include "dopticaldiscmanager.h"
+#include "dopticaldiscinfo.h"
+#include "private/dopticaldiscmanager_p.h"
+#include "private/dxorrisoengine.h"
+#include "private/dudfburnengine.h"
 
 #include <QDebug>
 #include <QUrl>
@@ -32,17 +32,17 @@
 
 DFM_BURN_USE_NS
 
-OpticalDiscManager::OpticalDiscManager(const QString &dev, QObject *parent)
-    : QObject(parent), dptr(new OpticalDiscManagerPrivate)
+DOpticalDiscManager::DOpticalDiscManager(const QString &dev, QObject *parent)
+    : QObject(parent), dptr(new DOpticalDiscManagerPrivate)
 {
     dptr->curDev = dev;
 }
 
-OpticalDiscManager::~OpticalDiscManager()
+DOpticalDiscManager::~DOpticalDiscManager()
 {
 }
 
-bool OpticalDiscManager::setStageFile(const QString &diskPath, const QString &isoPath)
+bool DOpticalDiscManager::setStageFile(const QString &diskPath, const QString &isoPath)
 {
     QUrl diskUrl { diskPath };
     QUrl isoUrl { isoPath };
@@ -69,13 +69,13 @@ bool OpticalDiscManager::setStageFile(const QString &diskPath, const QString &is
  * \param volId  volume name of the disc
  * \return       true on success, false on failure
  */
-bool OpticalDiscManager::commit(const BurnOptions &opts, int speed, const QString &volId)
+bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QString &volId)
 {
     bool ret { false };
 
     if (opts.testFlag(BurnOption::kUDF102Supported)) {
-        QScopedPointer<UDFBurnEngine> udfEngine { new UDFBurnEngine };
-        connect(udfEngine.data(), &UDFBurnEngine::jobStatusChanged, this,
+        QScopedPointer<DUDFBurnEngine> udfEngine { new DUDFBurnEngine };
+        connect(udfEngine.data(), &DUDFBurnEngine::jobStatusChanged, this,
                 [this, ptr = QPointer(udfEngine.data())](JobStatus status, int progress) {
                     if (ptr) {
                         if (status == JobStatus::kFailed)
@@ -87,8 +87,8 @@ bool OpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStrin
                 Qt::DirectConnection);
         ret = udfEngine->doBurn(dptr->curDev, dptr->files, volId);
     } else {
-        QScopedPointer<XorrisoEngine> xorrisoEngine { new XorrisoEngine };
-        connect(xorrisoEngine.data(), &XorrisoEngine::jobStatusChanged, this,
+        QScopedPointer<DXorrisoEngine> xorrisoEngine { new DXorrisoEngine };
+        connect(xorrisoEngine.data(), &DXorrisoEngine::jobStatusChanged, this,
                 [this, ptr = QPointer(xorrisoEngine.data())](JobStatus status, int progress, QString speed) {
                     if (ptr)
                         emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -100,9 +100,9 @@ bool OpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStrin
             return ret;
         }
 
-        using XJolietSupport = XorrisoEngine::JolietSupport;
-        using XRockRageSupport = XorrisoEngine::RockRageSupport;
-        using XKeepAppendable = XorrisoEngine::KeepAppendable;
+        using XJolietSupport = DXorrisoEngine::JolietSupport;
+        using XRockRageSupport = DXorrisoEngine::RockRageSupport;
+        using XKeepAppendable = DXorrisoEngine::KeepAppendable;
         XJolietSupport joliet = opts.testFlag(BurnOption::kJolietSupport)
                 ? XJolietSupport::kTrue
                 : XJolietSupport::kFalse;
@@ -120,11 +120,11 @@ bool OpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStrin
     return ret;
 }
 
-bool OpticalDiscManager::erase()
+bool DOpticalDiscManager::erase()
 {
     bool ret { false };
-    QScopedPointer<XorrisoEngine> engine { new XorrisoEngine };
-    connect(engine.data(), &XorrisoEngine::jobStatusChanged, this,
+    QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
+    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
                     emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -142,20 +142,20 @@ bool OpticalDiscManager::erase()
     return ret;
 }
 
-bool OpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
+bool DOpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
 {
     bool ret { false };
     quint64 blocks { 0 };
 
     {
-        QScopedPointer<OpticalDiscInfo> info { OpticalDiscManager::createOpticalInfo(dptr->curDev) };
+        QScopedPointer<DOpticalDiscInfo> info { DOpticalDiscManager::createOpticalInfo(dptr->curDev) };
         if (!info)
             return ret;
         blocks = info->dataBlocks();
     }
 
-    QScopedPointer<XorrisoEngine> engine { new XorrisoEngine };
-    connect(engine.data(), &XorrisoEngine::jobStatusChanged, this,
+    QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
+    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
                     emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -173,11 +173,11 @@ bool OpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
     return ret;
 }
 
-bool OpticalDiscManager::writeISO(const QString &isoPath, int speed)
+bool DOpticalDiscManager::writeISO(const QString &isoPath, int speed)
 {
     bool ret { false };
-    QScopedPointer<XorrisoEngine> engine { new XorrisoEngine };
-    connect(engine.data(), &XorrisoEngine::jobStatusChanged, this,
+    QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
+    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
                     emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -201,14 +201,14 @@ bool OpticalDiscManager::writeISO(const QString &isoPath, int speed)
     return ret;
 }
 
-QString OpticalDiscManager::lastError() const
+QString DOpticalDiscManager::lastError() const
 {
     return dptr->errorMsg;
 }
 
-OpticalDiscInfo *OpticalDiscManager::createOpticalInfo(const QString &dev)
+DOpticalDiscInfo *DOpticalDiscManager::createOpticalInfo(const QString &dev)
 {
-    auto info = new OpticalDiscInfo(dev);
+    auto info = new DOpticalDiscInfo(dev);
     if (info->device().isEmpty())
         return nullptr;
 
