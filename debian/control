@@ -47,8 +47,7 @@ Section: libdevel
 Multi-Arch: same
 Depends:
  ${shlibs:Depends},
- ${misc:Depends},
- libsecret-1
+ ${misc:Depends}
 Description: A libaray about mount and umount.
  A libaray that provides mount and umount interface.
 
@@ -59,7 +58,9 @@ Multi-Arch: same
 Depends:
  ${shlibs:Depends}, 
  ${misc:Depends},
- libdfm-mount
+ libdfm-mount,
+ libsecret-1-dev,
+ libudisks2-dev
 Description: A libaray about mount and umount dev.
  A libaray that provides mount and umount interface dev.
 
