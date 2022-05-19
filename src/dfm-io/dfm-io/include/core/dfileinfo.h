@@ -219,7 +219,7 @@ public:
     using RemoveAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
     using AttributeListFunc = std::function<QList<DFileInfo::AttributeID>()>;
     using ExistsFunc = std::function<bool()>;
-    using FlushFunc = std::function<bool()>;
+    using RefreshFunc = std::function<bool()>;
     using ClearCacheFunc = std::function<bool()>;
     using SetCustomAttributeFunc = std::function<bool(const char *, const DFileAttributeType, const void *, const FileQueryInfoFlags)>;
     using CustomAttributeFunc = std::function<QVariant(const char *, const DFileAttributeType)>;
@@ -242,7 +242,7 @@ public:
     DFM_VIRTUAL QList<DFileInfo::AttributeID> attributeIDList() const;
 
     DFM_VIRTUAL bool exists() const;
-    DFM_VIRTUAL bool flush();
+    DFM_VIRTUAL bool refresh();
     DFM_VIRTUAL bool clearCache();
     DFM_VIRTUAL DFile::Permissions permissions();
 
@@ -263,7 +263,7 @@ public:
     void registerRemoveAttribute(const RemoveAttributeFunc &func);
     void registerAttributeList(const AttributeListFunc &func);
     void registerExists(const ExistsFunc &func);
-    void registerFlush(const FlushFunc &func);
+    void registerRefresh(const RefreshFunc &func);
     void registerClearCache(const ClearCacheFunc &func);
     void registerPermissions(const DFile::PermissionFunc &func);
     void registerSetCustomAttribute(const SetCustomAttributeFunc &func);

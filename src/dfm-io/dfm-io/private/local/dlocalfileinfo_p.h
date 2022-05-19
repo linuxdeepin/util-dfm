@@ -54,7 +54,7 @@ public:
     bool removeAttribute(DFileInfo::AttributeID id);
     QList<DFileInfo::AttributeID> attributeIDList() const;
     bool exists() const;
-    bool flush();
+    bool refresh();
     bool clearCache();
     DFile::Permissions permissions();
 

@@ -76,7 +76,7 @@ public:
     DFileInfo::RemoveAttributeFunc removeAttributeFunc = nullptr;
     DFileInfo::AttributeListFunc attributeListFunc = nullptr;
     DFileInfo::ExistsFunc existsFunc = nullptr;
-    DFileInfo::FlushFunc flushFunc = nullptr;
+    DFileInfo::RefreshFunc refreshFunc = nullptr;
     DFileInfo::ClearCacheFunc clearCacheFunc = nullptr;
     DFileInfo::SetCustomAttributeFunc setCustomAttributeFunc = nullptr;
     DFileInfo::CustomAttributeFunc customAttributeFunc = nullptr;

@@ -241,7 +241,7 @@ bool DLocalFileInfoPrivate::exists() const
     return exists;
 }
 
-bool DLocalFileInfoPrivate::flush()
+bool DLocalFileInfoPrivate::refresh()
 {
     return queryInfoSync();
 }
@@ -367,7 +367,7 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri,
     registerRemoveAttribute(std::bind(&DLocalFileInfo::removeAttribute, this, std::placeholders::_1));
     registerAttributeList(std::bind(&DLocalFileInfo::attributeIDList, this));
     registerExists(std::bind(&DLocalFileInfo::exists, this));
-    registerFlush(std::bind(&DLocalFileInfo::flush, this));
+    registerRefresh(std::bind(&DLocalFileInfo::refresh, this));
     registerClearCache(std::bind(&DLocalFileInfo::clearCache, this));
     registerPermissions(std::bind(&DLocalFileInfo::permissions, this));
     registerSetCustomAttribute(std::bind(&DLocalFileInfo::setCustomAttribute, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
@@ -417,9 +417,9 @@ bool DLocalFileInfo::exists() const
     return d->exists();
 }
 
-bool DLocalFileInfo::flush()
+bool DLocalFileInfo::refresh()
 {
-    return d->flush();
+    return d->refresh();
 }
 
 bool DLocalFileInfo::clearCache()

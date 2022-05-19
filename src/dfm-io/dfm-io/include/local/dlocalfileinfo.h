@@ -47,7 +47,7 @@ public:
     bool removeAttribute(DFileInfo::AttributeID id) DFM_OVERRIDE;
     QList<DFileInfo::AttributeID> attributeIDList() const DFM_OVERRIDE;
     bool exists() const DFM_OVERRIDE;
-    bool flush() DFM_OVERRIDE;
+    bool refresh() DFM_OVERRIDE;
     bool clearCache() DFM_OVERRIDE;
     DFile::Permissions permissions() DFM_OVERRIDE;
     // custom attribute

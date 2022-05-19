@@ -224,14 +224,14 @@ bool DFileInfo::exists() const
 }
 
 /*!
- * @brief flush attribute by @setAttribute to disk
+ * @brief refresh attribute by @setAttribute to disk
  * @param
  * @return
  */
-bool DFileInfo::flush()
+bool DFileInfo::refresh()
 {
-    if (d->flushFunc)
-        return d->flushFunc();
+    if (d->refreshFunc)
+        return d->refreshFunc();
     return false;
 }
 
@@ -305,9 +305,9 @@ void DFileInfo::registerExists(const DFileInfo::ExistsFunc &func)
     d->existsFunc = func;
 }
 
-void DFileInfo::registerFlush(const DFileInfo::FlushFunc &func)
+void DFileInfo::registerRefresh(const DFileInfo::RefreshFunc &func)
 {
-    d->flushFunc = func;
+    d->refreshFunc = func;
 }
 
 void DFileInfo::registerClearCache(const DFileInfo::ClearCacheFunc &func)
