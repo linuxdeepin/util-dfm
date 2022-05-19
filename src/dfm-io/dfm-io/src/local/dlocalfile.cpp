@@ -246,9 +246,10 @@ QByteArray DLocalFilePrivate::readAll()
         if (bytesRead == 0)
             break;
 
-        dataRet.append(data);
+        dataRet.append(data, size);
     }
 
+    dataRet.append('\0');
     return dataRet;
 }
 
