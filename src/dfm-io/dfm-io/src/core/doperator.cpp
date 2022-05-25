@@ -211,7 +211,7 @@ bool DOperator::setFileInfo(const DFileInfo &fileInfo)
 
 bool DOperator::cancel()
 {
-    if (!d->setFileInfoFunc)
+    if (!d->cancelFunc)
         return false;
 
     return d->cancelFunc();

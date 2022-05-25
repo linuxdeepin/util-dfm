@@ -67,7 +67,7 @@ public:
     void makeDirectoryAsync(int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr) DFM_OVERRIDE;
     void createLinkAsync(const QUrl &link, int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr) DFM_OVERRIDE;
 
-    bool setErrorFromGError(const DFileInfo &fileInfo) DFM_OVERRIDE;
+    bool setFileInfo(const DFileInfo &fileInfo) DFM_OVERRIDE;
 
     bool cancel() DFM_OVERRIDE;
     DFMIOError lastError() const DFM_OVERRIDE;

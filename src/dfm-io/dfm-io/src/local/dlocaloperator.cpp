@@ -600,7 +600,7 @@ DLocalOperator::DLocalOperator(const QUrl &uri)
     registerMakeDirectoryAsync(bind_field(this, &DLocalOperator::makeDirectoryAsync));
     registerCreateLinkAsync(bind_field(this, &DLocalOperator::createLinkAsync));
 
-    registerSetFileInfo(bind_field(this, &DLocalOperator::setErrorFromGError));
+    registerSetFileInfo(bind_field(this, &DLocalOperator::setFileInfo));
 
     registerCancel(bind_field(this, &DLocalOperator::cancel));
     registerLastError(bind_field(this, &DLocalOperator::lastError));
@@ -708,7 +708,7 @@ void DLocalOperator::createLinkAsync(const QUrl &link, int ioPriority, DOperator
     d->createLinkAsync(link, ioPriority, operateFunc, userData);
 }
 
-bool DLocalOperator::setErrorFromGError(const DFileInfo &fileInfo)
+bool DLocalOperator::setFileInfo(const DFileInfo &fileInfo)
 {
     return d->setFileInfo(fileInfo);
 }
