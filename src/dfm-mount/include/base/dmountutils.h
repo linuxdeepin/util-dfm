@@ -62,6 +62,8 @@ public:
 
     static DeviceError castFromGError(const GError *const err);
 
+    static DeviceError castFromJobOperation(const QString &op);
+
     static QString errorMessage(DeviceError err);
 
     static QString errorMessage(MonitorError err);

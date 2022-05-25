@@ -98,6 +98,12 @@ private:
     UDisksPartitionTable_autoptr getPartitionTableHandler() const;
     UDisksFilesystem_autoptr getFilesystemHandler() const;
 
+    enum JobType {
+        kBlockJob,
+        kDriveJob
+    };
+    bool findJob(JobType type);
+
     QString blkObjPath;   // path of block device object
     UDisksClient *client { nullptr };
 };

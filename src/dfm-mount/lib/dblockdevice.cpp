@@ -243,6 +243,43 @@ UDisksFilesystem_autoptr DBlockDevicePrivate::getFilesystemHandler() const
     return ret;
 }
 
+bool DBlockDevicePrivate::findJob(JobType type)
+{
+    QString objPath = blkObjPath;
+    if (type == kDriveJob)
+        objPath = getBlockProperty(Property::kBlockDrive).toString();
+
+    if (objPath == "/")   // loop devices' drive field is '/'
+        return false;
+
+    UDisksObject_autoptr obj = udisks_client_get_object(client, objPath.toStdString().c_str());
+    if (!obj)
+        return false;
+
+    struct UserData
+    {
+        DBlockDevicePrivate *d { nullptr };
+        QString objPath;
+        bool hasJob = false;
+    };
+
+    UserData data { this, blkObjPath, false };
+    GList_autoptr jobs = udisks_client_get_jobs_for_object(client, obj);
+    g_list_foreach(jobs, [](void *item, void *that) {
+        UDisksJob *job = static_cast<UDisksJob *>(item);
+        UserData *d = static_cast<UserData *>(that);
+        if (!job || !d)
+            return;
+        QString op(udisks_job_get_operation(job));
+        qInfo() << "Working now..." << d->objPath << op;
+        d->hasJob = true;
+        d->d->lastError = Utils::castFromJobOperation(op);
+    },
+                   &data);
+
+    return data.hasJob;
+}
+
 DBlockDevice::DBlockDevice(UDisksClient *cli, const QString &udisksObjPath, QObject *parent)
     : DDevice(new DBlockDevicePrivate(cli, udisksObjPath, this), parent)
 {
@@ -518,6 +555,9 @@ QString DBlockDevicePrivate::mount(const QVariantMap &opts)
 {
     warningIfNotInMain();
 
+    if (findJob(kBlockJob))
+        return "";
+
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
     if (!fs) {
         lastError = DeviceError::kUserErrorNotMountable;
@@ -546,6 +586,12 @@ QString DBlockDevicePrivate::mount(const QVariantMap &opts)
 
 void DBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
+    if (findJob(kBlockJob)) {
+        if (cb)
+            cb(false, lastError, "");
+        return;
+    }
+
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
@@ -576,6 +622,9 @@ void DBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallb
 bool DBlockDevicePrivate::unmount(const QVariantMap &opts)
 {
     warningIfNotInMain();
+    if (findJob(kBlockJob))
+        return false;
+
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
     if (!fs) {
@@ -601,6 +650,12 @@ bool DBlockDevicePrivate::unmount(const QVariantMap &opts)
 
 void DBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
+    if (findJob(kBlockJob)) {
+        if (cb)
+            cb(false, lastError);
+        return;
+    }
+
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
@@ -632,6 +687,9 @@ void DBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCal
 bool DBlockDevicePrivate::rename(const QString &newName, const QVariantMap &opts)
 {
     warningIfNotInMain();
+    if (findJob(kBlockJob))
+        return false;
+
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
     if (!fs) {
@@ -661,6 +719,12 @@ bool DBlockDevicePrivate::rename(const QString &newName, const QVariantMap &opts
 
 void DBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap &opts, DeviceOperateCallback cb)
 {
+    if (findJob(kBlockJob)) {
+        if (cb)
+            cb(false, lastError);
+        return;
+    }
+
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
@@ -692,6 +756,9 @@ void DBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap 
 bool DBlockDevicePrivate::eject(const QVariantMap &opts)
 {
     warningIfNotInMain();
+    if (findJob(kBlockJob))
+        return false;
+
     UDisksDrive_autoptr drv = getDriveHandler();
     if (!drv) {
         lastError = DeviceError::kUserErrorNoDriver;
@@ -718,6 +785,12 @@ bool DBlockDevicePrivate::eject(const QVariantMap &opts)
 
 void DBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
+    if (findJob(kBlockJob)) {
+        if (cb)
+            cb(false, lastError);
+        return;
+    }
+
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     bool ejectable = q->getProperty(Property::kDriveEjectable).toBool();
     if (!ejectable) {
@@ -747,6 +820,9 @@ void DBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCallb
 bool DBlockDevicePrivate::powerOff(const QVariantMap &opts)
 {
     warningIfNotInMain();
+    if (findJob(kBlockJob) || findJob(kDriveJob))
+        return false;
+
     UDisksDrive_autoptr drv = getDriveHandler();
 
     if (!drv) {
@@ -767,6 +843,12 @@ bool DBlockDevicePrivate::powerOff(const QVariantMap &opts)
 
 void DBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
+    if (findJob(kBlockJob) || findJob(kDriveJob)) {
+        if (cb)
+            cb(false, lastError);
+        return;
+    }
+
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksDrive_autoptr drv = getDriveHandler();
 
@@ -785,6 +867,9 @@ void DBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperateCa
 bool DBlockDevicePrivate::lock(const QVariantMap &opts)
 {
     warningIfNotInMain();
+    if (findJob(kBlockJob))
+        return false;
+
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
@@ -804,6 +889,12 @@ bool DBlockDevicePrivate::lock(const QVariantMap &opts)
 
 void DBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
+    if (findJob(kBlockJob)) {
+        if (cb)
+            cb(false, lastError);
+        return;
+    }
+
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
@@ -823,6 +914,9 @@ void DBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCallba
 bool DBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev, const QVariantMap &opts)
 {
     warningIfNotInMain();
+    if (findJob(kBlockJob))
+        return false;
+
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
@@ -846,6 +940,12 @@ bool DBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev, c
 
 void DBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &opts, DeviceOperateCallbackWithMessage cb)
 {
+    if (findJob(kBlockJob)) {
+        if (cb)
+            cb(false, lastError, "");
+        return;
+    }
+
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
@@ -864,6 +964,10 @@ void DBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &
 
 bool DBlockDevicePrivate::rescan(const QVariantMap &opts)
 {
+    warningIfNotInMain();
+
+    if (findJob(kBlockJob)) return false;
+
     UDisksBlock_autoptr blk = getBlockHandler();
     GError_autoptr err = nullptr;
     if (blk) {
@@ -879,6 +983,12 @@ bool DBlockDevicePrivate::rescan(const QVariantMap &opts)
 
 void DBlockDevicePrivate::rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
+    if (findJob(kBlockJob)) {
+        if (cb)
+            cb(false, lastError);
+        return;
+    }
+
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     UDisksBlock_autoptr blk = getBlockHandler();
 
