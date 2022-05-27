@@ -236,9 +236,8 @@ bool DLocalFileInfoPrivate::exists() const
     const QString &uri = url.toString();
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toLocal8Bit().data());
-    const bool exists = g_file_query_exists(gfile, nullptr);
 
-    return exists;
+    return g_file_query_file_type(gfile, G_FILE_QUERY_INFO_NONE, nullptr) != G_FILE_TYPE_UNKNOWN;
 }
 
 bool DLocalFileInfoPrivate::refresh()
