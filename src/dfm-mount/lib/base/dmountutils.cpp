@@ -28,6 +28,8 @@
 extern "C" {
 #include <glib.h>
 }
+#include <unistd.h>
+#include <pwd.h>
 
 DFM_MOUNT_USE_NS
 
@@ -862,4 +864,12 @@ QStringList Utils::gcharvToQStringList(char **tmp)
     g_strfreev(tmp);
     tmp = nullptr;
     return ret;
+}
+
+QString Utils::currentUser()
+{
+    auto userInfo = getpwuid(getuid());
+    if (userInfo)
+        return userInfo->pw_name;
+    return "";
 }

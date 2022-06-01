@@ -30,7 +30,8 @@
 #include <QUuid>
 #include <QDebug>
 #include <QThread>
-#include <QApplication>
+#include <QCoreApplication>
+#include <QRegularExpression>
 
 extern "C" {
 #include <gio/gio.h>
@@ -212,7 +213,8 @@ void DProtocolMonitorPrivate::initDeviceList()
         g_autoptr(GFile) root = g_mount_get_root(mnt);
         if (root) {
             g_autofree char *curi = g_file_get_uri(root);
-            if (!isNativeMount(DProtocolDevicePrivate::mountPoint(mnt)))
+            auto mpt = DProtocolDevicePrivate::mountPoint(mnt);
+            if (!isNativeMount(mpt) && !isMountByOther(mpt))
                 d->cachedDevices.insert(curi);
         } else {
             g_autofree char *cname = g_mount_get_name(mnt);
@@ -227,7 +229,7 @@ void DProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *moun
 {
     Q_UNUSED(monitor);
     auto mpt = DProtocolDevicePrivate::mountPoint(mount);
-    if (isNativeMount(mpt) || hasDrive(mount))
+    if (isNativeMount(mpt) || hasDrive(mount) || isMountByOther(mpt))
         return;
 
     auto d = static_cast<DProtocolMonitorPrivate *>(userData);
@@ -353,6 +355,17 @@ bool DProtocolMonitorPrivate::isNativeMount(const QString &mpt)
             return true;
     }
     return false;
+}
+
+bool DProtocolMonitorPrivate::isMountByOther(const QString &mpt)
+{
+    QRegularExpression re("^/media/(.*)/smbmounts");
+    auto match = re.match(mpt);
+    if (!match.hasMatch())   // mount which not mouted at preseted path regards as a normal mount
+        return false;
+
+    auto user = match.captured(1);
+    return user != Utils::currentUser();
 }
 
 bool DProtocolMonitorPrivate::isOrphanMount(GMount *mount)

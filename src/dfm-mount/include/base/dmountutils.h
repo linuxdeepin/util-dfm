@@ -88,6 +88,8 @@ public:
         auto pPointer = dynamic_cast<ToClass *>(p);
         return pPointer;
     }
+
+    static QString currentUser();
 };
 
 DFM_MOUNT_END_NS

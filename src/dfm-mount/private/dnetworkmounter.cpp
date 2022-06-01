@@ -31,8 +31,7 @@
 #include <QTimer>
 #include <QtConcurrent>
 
-#include <pwd.h>
-#include <unistd.h>
+#include <libmount.h>
 
 DFM_MOUNT_USE_NS
 
@@ -74,15 +73,6 @@ struct FinalizeHelper
     AskQuestionHelper *askQuestion { nullptr };
     DeviceOperateCallbackWithMessage resultCallback;
 };
-
-QString DNetworkMounter::loginUser()
-{
-    auto uid = getuid();
-    auto pwd = getpwuid(uid);
-    if (pwd)
-        return pwd->pw_name;
-    return "";
-}
 
 bool DNetworkMounter::isDaemonMountEnable()
 {
@@ -220,14 +210,24 @@ void DNetworkMounter::unmountNetworkDevAsync(const QString &mpt, DeviceOperateCa
 void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo getPassInfo, DeviceOperateCallbackWithMessage mountResult, int msecs)
 {
     auto requestLoginInfo = [address, getPassInfo] {
-        return getPassInfo(QObject::tr("need authorization to access %1").arg(address), loginUser(), "WORKGROUP");
+        if (getPassInfo)
+            return getPassInfo(QObject::tr("need authorization to access %1").arg(address), Utils::currentUser(), "WORKGROUP");
+        return MountPassInfo();
     };
     auto checkThread = [] {
         if (QThread::currentThread() != qApp->thread())
             qWarning() << "invoking callback in non-main-thread!!!";
     };
 
-    auto logins = loginPasswd(address);
+    QString mpt;
+    QString addr(address.toLower());
+    if (isMounted(addr, mpt)) {
+        if (mountResult)
+            mountResult(false, DeviceError::kGIOErrorAlreadyMounted, mpt);
+        return;
+    }
+
+    auto logins = loginPasswd(addr);
     MountPassInfo loginInfo;
     if (logins.isEmpty()) {
         loginInfo = requestLoginInfo();
@@ -249,7 +249,7 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
                 mountResult(false, DeviceError::kUserErrorUserCancelled, "");
                 return;
             }
-            doLastMount(address, loginInfo, mountResult);
+            doLastMount(addr, loginInfo, mountResult);
         } else {
             if (mountResult) {
                 checkThread();
@@ -260,9 +260,9 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
 
     auto fu = QtConcurrent::run([=] {
         if (logins.isEmpty())   // try mount with user's input (loginInfo)
-            return mountWithUserInput(address, loginInfo);
+            return mountWithUserInput(addr, loginInfo);
         else
-            return mountWithSavedInfos(address, logins);
+            return mountWithSavedInfos(addr, logins);
     });
     watcher->setFuture(fu);
 }
@@ -450,4 +450,49 @@ void DNetworkMounter::doLastMount(const QString &address, const MountPassInfo in
             cb(mntRet.ok, mntRet.err, mntRet.mpt);
         }
     });
+}
+
+bool DNetworkMounter::isMounted(const QString &address, QString &mpt)
+{
+    class Helper
+    {
+    public:
+        Helper() { tab = mnt_new_table(); }
+        ~Helper() { mnt_free_table(tab); }
+        libmnt_table *tab { nullptr };
+    };
+    Helper d;
+    auto tab = d.tab;
+    int ret = mnt_table_parse_mtab(tab, nullptr);
+    qDebug() << "parse mtab: " << ret;
+
+    QString stdAddr(address);
+    stdAddr.remove("smb:");
+    std::string aPath = stdAddr.toStdString();
+    auto fs = mnt_table_find_source(tab, aPath.c_str(), MNT_ITER_BACKWARD);
+    if (!fs)
+        fs = mnt_table_find_target(tab, aPath.c_str(), MNT_ITER_BACKWARD);
+    qDebug() << "find mount: " << fs << aPath.c_str();
+
+    if (fs) {
+        mpt = mnt_fs_get_target(fs);
+        qDebug() << "find mounted at: " << mpt << address;
+        QRegularExpression reg("^/media/(.*)/smbmounts/");
+        QRegularExpressionMatch match = reg.match(mpt);
+
+        if (match.hasMatch()) {
+            auto user = match.captured(1);
+            qDebug() << "the mounted mount is mounted by " << user << address;
+            auto currUser = Utils::currentUser();
+            if (currUser == user) {
+                return true;
+            } else {
+                return false;   // if not mounted by current user, treat it as not mounted.
+            }
+        } else {
+            return false;   // if not mounted at preseted mountpoint, treat it as not mounted.
+        }
+    } else {
+        return false;
+    }
 }

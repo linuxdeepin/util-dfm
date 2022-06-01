@@ -44,7 +44,6 @@ public:
     static void unmountNetworkDevAsync(const QString &, DeviceOperateCallback);
 
 private:
-    static QString loginUser();
     static QList<QVariantMap> loginPasswd(const QString &address);
     static void savePasswd(const QString &address, const MountPassInfo &info);
     static SecretSchema *smbSchema();
@@ -66,6 +65,8 @@ private:
     static MountRet mountWithUserInput(const QString &address, const MountPassInfo info);
     static MountRet mountWithSavedInfos(const QString &address, const QList<QVariantMap> &infos);
     static void doLastMount(const QString &address, const MountPassInfo info, DeviceOperateCallbackWithMessage cb);
+
+    static bool isMounted(const QString &address, QString &mpt);
 };
 
 DFM_MOUNT_END_NS
