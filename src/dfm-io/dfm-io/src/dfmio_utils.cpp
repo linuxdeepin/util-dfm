@@ -68,7 +68,10 @@ QString DFMUtils::fsTypeFromUrl(const QUrl &url)
         return QString();
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
-    g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
+    g_autofree char *path = g_file_get_path(gfile);
+    if (!path)
+        return QString();
+    g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(path, nullptr);
     if (mount)
         return QString::fromLocal8Bit(g_unix_mount_get_fs_type(mount));
     return QString();
