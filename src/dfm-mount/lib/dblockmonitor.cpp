@@ -33,6 +33,7 @@
 #include <QMapIterator>
 #include <QMap>
 #include <QTime>
+#include <QTimer>
 
 DFM_MOUNT_USE_NS
 
@@ -346,7 +347,8 @@ void DBlockMonitorPrivate::onPropertyChanged(GDBusObjectManagerClient *mngClient
 
     if (changes.contains(Property::kFileSystemMountPoint)) {
         auto mpts = changes.value(Property::kFileSystemMountPoint).toStringList();
-        Q_EMIT mpts.isEmpty() ? q->mountRemoved(objPath) : q->mountAdded(objPath, mpts.first());
+        // make a short delay to emit (un)mounted signal, in case that at the moment device handler is created, the property is not ready.
+        QTimer::singleShot(100, q, [=] { Q_EMIT mpts.isEmpty() ? q->mountRemoved(objPath) : q->mountAdded(objPath, mpts.first()); });
     }
 
     if (isBlockChanged) {
