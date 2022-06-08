@@ -69,7 +69,6 @@ public:
 
     GInputStream *inputStream();
     GOutputStream *outputStream();
-    DFile::Permissions permissionsFromGio();
 
     DFMIOError lastError();
     void setError(DFMIOError error);

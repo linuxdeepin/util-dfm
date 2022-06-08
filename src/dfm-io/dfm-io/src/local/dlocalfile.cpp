@@ -645,12 +645,18 @@ DFile::Permissions DLocalFilePrivate::permissions()
     struct stat buf;
     stat(path.data(), &buf);
 
-    if ((buf.st_mode & S_IXUSR) == S_IXUSR)
+    if ((buf.st_mode & S_IXUSR) == S_IXUSR) {
         retValue |= DFile::Permission::kExeOwner;
-    if ((buf.st_mode & S_IWUSR) == S_IWUSR)
+        retValue |= DFile::Permission::kExeUser;
+    }
+    if ((buf.st_mode & S_IWUSR) == S_IWUSR) {
         retValue |= DFile::Permission::kWriteOwner;
-    if ((buf.st_mode & S_IRUSR) == S_IRUSR)
+        retValue |= DFile::Permission::kWriteUser;
+    }
+    if ((buf.st_mode & S_IRUSR) == S_IRUSR) {
         retValue |= DFile::Permission::kReadOwner;
+        retValue |= DFile::Permission::kReadUser;
+    }
 
     if ((buf.st_mode & S_IXGRP) == S_IXGRP)
         retValue |= DFile::Permission::kExeGroup;
@@ -665,8 +671,6 @@ DFile::Permissions DLocalFilePrivate::permissions()
         retValue |= DFile::Permission::kWriteOther;
     if ((buf.st_mode & S_IROTH) == S_IROTH)
         retValue |= DFile::Permission::kReadOther;
-
-    retValue |= permissionsFromGio();
 
     return retValue;
 }
@@ -710,40 +714,6 @@ DFMIOError DLocalFilePrivate::lastError()
 void DLocalFilePrivate::setError(DFMIOError error)
 {
     this->error = error;
-}
-
-DFile::Permissions DLocalFilePrivate::permissionsFromGio()
-{
-    DFile::Permissions retValue = DFile::Permission::kNoPermission;
-
-    const QUrl &&url = q->uri();
-    const QString &&path = url.toString();
-
-    GFile *file = g_file_new_for_uri(path.toLocal8Bit().data());
-
-    g_autoptr(GError) gerror = nullptr;
-
-    GFileInfo *gfileinfo = g_file_query_info(file, "access::*", G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
-    g_object_unref(file);
-
-    if (gerror) {
-        setErrorFromGError(gerror);
-    }
-
-    if (!gfileinfo)
-        return retValue;
-
-    if (gfileinfo) {
-        if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-execute"))
-            retValue |= DFile::Permission::kExeUser;
-        if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-write"))
-            retValue |= DFile::Permission::kWriteUser;
-        if (g_file_info_get_attribute_boolean(gfileinfo, "access::can-read"))
-            retValue |= DFile::Permission::kReadUser;
-
-        g_object_unref(gfileinfo);
-    }
-    return retValue;
 }
 
 void DLocalFilePrivate::setErrorFromGError(GError *gerror)
