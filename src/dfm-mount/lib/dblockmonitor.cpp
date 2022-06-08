@@ -203,6 +203,8 @@ QStringList DBlockMonitorPrivate::resolveDeviceNode(const QString &node, const Q
 
 QStringList DBlockMonitorPrivate::resolveDeviceOfDrive(const QString &drvObjPath)
 {
+    if (q->status() != MonitorStatus::kMonitoring)
+        initDevices();
     return blksOfDrive.value(drvObjPath).toList();
 }
 
@@ -394,6 +396,7 @@ void DBlockMonitorPrivate::onInterfaceRemoved(GDBusObjectManager *mng, GDBusObje
 
 void DBlockMonitorPrivate::initDevices()
 {
+    blksOfDrive.clear();
     auto lst = getDevices();
     for (const auto &blk : lst) {
         std::string str = blk.toStdString();
