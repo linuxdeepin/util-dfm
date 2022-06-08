@@ -88,7 +88,13 @@ bool DLocalOperatorPrivate::renameFile(const QUrl &toUrl)
     const std::string &fromStr = fromUrl.toLocalFile().toStdString();
     const std::string &toStr = toUrl.toLocalFile().toStdString();
 
-    return g_rename(fromStr.c_str(), toStr.c_str()) == 0;
+    const bool ret = g_rename(fromStr.c_str(), toStr.c_str()) == 0;
+
+    // set error info
+    if (!ret)
+        error.setCode(DFMIOErrorCode(DFM_IO_ERROR_PERMISSION_DENIED));
+
+    return ret;
 }
 
 bool DLocalOperatorPrivate::copyFile(const QUrl &urlTo, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)

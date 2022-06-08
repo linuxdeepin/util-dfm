@@ -640,10 +640,10 @@ DFile::Permissions DLocalFilePrivate::permissions()
     DFile::Permissions retValue = DFile::Permission::kNoPermission;
     // 获取系统默认权限
     const QUrl &&url = q->uri();
-    const char *path = url.toLocalFile().toLocal8Bit().data();
+    const QByteArray &path = url.toLocalFile().toLocal8Bit();
 
     struct stat buf;
-    stat(path, &buf);
+    stat(path.data(), &buf);
 
     if ((buf.st_mode & S_IXUSR) == S_IXUSR)
         retValue |= DFile::Permission::kExeOwner;
@@ -674,7 +674,7 @@ DFile::Permissions DLocalFilePrivate::permissions()
 bool DLocalFilePrivate::setPermissions(DFile::Permissions permission)
 {
     const QUrl &&url = q->uri();
-    const char *path = url.toLocalFile().toLocal8Bit().data();
+    const QByteArray &path = url.toLocalFile().toLocal8Bit();
 
     struct stat buf;
     buf.st_mode = 0000;
@@ -699,7 +699,7 @@ bool DLocalFilePrivate::setPermissions(DFile::Permissions permission)
     if (permission.testFlag(DFile::Permission::kReadOther))
         buf.st_mode |= S_IROTH;
 
-    return ::chmod(path, buf.st_mode) == 0;
+    return ::chmod(path.data(), buf.st_mode) == 0;
 }
 
 DFMIOError DLocalFilePrivate::lastError()
