@@ -209,8 +209,10 @@ QString DOpticalDiscManager::lastError() const
 DOpticalDiscInfo *DOpticalDiscManager::createOpticalInfo(const QString &dev)
 {
     auto info = new DOpticalDiscInfo(dev);
-    if (info->device().isEmpty())
+    if (info && info->device().isEmpty()) {
+        delete info;
         return nullptr;
+    }
 
     return info;
 }
