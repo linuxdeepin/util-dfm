@@ -35,13 +35,15 @@
 #include <QSet>
 #include <QStack>
 #include <QSharedPointer>
+#include <QMutex>
+#include <QWaitCondition>
 
 BEGIN_IO_NAMESPACE
 
 class DLocalEnumerator;
 class DFileInfo;
 
-class DLocalEnumeratorPrivate
+class DLocalEnumeratorPrivate : public QObject
 {
 public:
     explicit DLocalEnumeratorPrivate(DLocalEnumerator *q);
@@ -53,11 +55,14 @@ public:
     bool hasNext();
     QString next() const;
     QSharedPointer<DFileInfo> fileInfo() const;
+    quint64 fileCount();
     bool checkFilter();
 
     DFMIOError lastError();
     void setErrorFromGError(GError *gerror);
     void clean();
+
+    void createEnumeratorInThread(const QUrl &url);
 
 public:
     QList<QSharedPointer<DFileInfo>> list_;
@@ -73,6 +78,9 @@ public:
     DEnumerator::IteratorFlags iteratorFlags = DEnumerator::IteratorFlag::kNoIteratorFlags;
 
     QMap<QUrl, QSet<QString>> hideListMap;
+
+    QWaitCondition waitCondition;
+    QMutex mutex;
 
     DFMIOError error;
 };

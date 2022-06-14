@@ -91,6 +91,13 @@ QSharedPointer<DFileInfo> DEnumerator::fileInfo() const
     return nullptr;
 }
 
+quint64 DEnumerator::fileCount()
+{
+    if (d->fileCountFunc)
+        return d->fileCountFunc();
+    return 0;
+}
+
 void DEnumerator::registerFileInfoList(const FileInfoListFunc &func)
 {
     d->fileInfoListFunc = func;
@@ -109,6 +116,11 @@ void DEnumerator::registerNext(const DEnumerator::NextFunc &func)
 void DEnumerator::registerFileInfo(const DEnumerator::FileInfoFunc &func)
 {
     d->fileInfoFunc = func;
+}
+
+void DEnumerator::registerFileCount(const DEnumerator::FileCountFunc &func)
+{
+    d->fileCountFunc = func;
 }
 
 void DEnumerator::registerLastError(const DEnumerator::LastErrorFunc &func)

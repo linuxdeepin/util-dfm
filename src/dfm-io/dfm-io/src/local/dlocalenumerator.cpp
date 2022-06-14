@@ -30,7 +30,12 @@
 
 #include <gio/gio.h>
 
+#include <QPointer>
+#include <QtConcurrent/QtConcurrentRun>
 #include <QDebug>
+
+#define FILE_DEFAULT_ATTRIBUTES "standard::*,etag::*,id::*,access::*,mountable::*,time::*,unix::*,dos::*,owner::*,thumbnail::*,preview::*,filesystem::*,gvfs::*,selinux::*,trash::*,recent::*"
+#define ENUMERATOR_TIME_OUT 2000
 
 USING_IO_NAMESPACE
 
@@ -52,8 +57,8 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
     g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
 
     enumerator = g_file_enumerate_children(gfile,
-                                           "*",
-                                           G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                                           FILE_DEFAULT_ATTRIBUTES,
+                                           enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
                                            nullptr,
                                            &gerror);
 
@@ -103,30 +108,24 @@ bool DLocalEnumeratorPrivate::hasNext()
             showDir = enumLinks;
         }
         if (showDir) {
-            g_autoptr(GError) gerror = nullptr;
-            GFileEnumerator *genumerator = g_file_enumerate_children(gfileNext,
-                                                                     "*",
-                                                                     G_FILE_QUERY_INFO_NONE,
-                                                                     nullptr,
-                                                                     &gerror);
-            if (nullptr == genumerator) {
-                if (gerror) {
-                    setErrorFromGError(gerror);
-                }
-            } else {
-                stackEnumerator.push_back(genumerator);
-            }
+            mutex.lock();
+            createEnumeratorInThread(QUrl(g_file_get_uri(gfileNext)));
+            bool succ = waitCondition.wait(&mutex, ENUMERATOR_TIME_OUT);
+            mutex.unlock();
+            if (!succ)
+                qWarning() << "createEnumeratorInThread failed, url: " << g_file_get_uri(gfileNext);
         }
     }
+    if (stackEnumerator.isEmpty())
+        return false;
 
     GFileEnumerator *enumerator = stackEnumerator.top();
 
-    g_autoptr(GError) gerror = nullptr;
     GFileInfo *gfileInfo = nullptr;
 
+    g_autoptr(GError) gerror = nullptr;
     bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfileNext, nullptr, &gerror);
     if (hasNext) {
-
         if (!gfileInfo) {
             GFileEnumerator *enumeratorPop = stackEnumerator.pop();
             g_object_unref(enumeratorPop);
@@ -136,6 +135,7 @@ bool DLocalEnumeratorPrivate::hasNext()
         g_autofree gchar *uri = g_file_get_uri(gfileNext);
         const QUrl &url = QUrl(QString::fromLocal8Bit(uri));
         dfileInfoNext = DLocalHelper::createFileInfoByUri(url);
+
         if (!checkFilter())
             return this->hasNext();
 
@@ -162,6 +162,17 @@ QString DLocalEnumeratorPrivate::next() const
 QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
 {
     return dfileInfoNext;
+}
+
+quint64 DLocalEnumeratorPrivate::fileCount()
+{
+    quint64 count = 0;
+
+    while (hasNext()) {
+        ++count;
+    }
+
+    return count;
 }
 
 bool DLocalEnumeratorPrivate::checkFilter()
@@ -272,32 +283,17 @@ DFMIOError DLocalEnumeratorPrivate::lastError()
 
 void DLocalEnumeratorPrivate::init()
 {
-    const QString &&uriPath = q->uri().toString();
-
-    g_autoptr(GError) gerror = nullptr;
-
-    g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
-
-    GFileEnumerator *genumerator = g_file_enumerate_children(gfile,
-                                                             "*",
-                                                             G_FILE_QUERY_INFO_NONE,
-                                                             nullptr,
-                                                             &gerror);
-
-    if (nullptr == genumerator) {
-        if (gerror) {
-            setErrorFromGError(gerror);
-        }
-    } else {
-        stackEnumerator.push_back(genumerator);
-    }
+    mutex.lock();
+    createEnumeratorInThread(q->uri());
+    bool succ = waitCondition.wait(&mutex, ENUMERATOR_TIME_OUT);
+    mutex.unlock();
+    if (!succ)
+        qWarning() << "createEnumeratorInThread failed, url: " << q->uri();
 }
 
 void DLocalEnumeratorPrivate::setErrorFromGError(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
-
-    //qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 void DLocalEnumeratorPrivate::clean()
@@ -312,6 +308,30 @@ void DLocalEnumeratorPrivate::clean()
     }
 }
 
+void DLocalEnumeratorPrivate::createEnumeratorInThread(const QUrl &url)
+{
+    QtConcurrent::run([this, url]() {
+        const QString &uriPath = url.toString();
+
+        g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+
+        g_autoptr(GError) gerror = nullptr;
+        GFileEnumerator *genumerator = g_file_enumerate_children(gfile,
+                                                                 FILE_DEFAULT_ATTRIBUTES,
+                                                                 enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                                                                 nullptr,
+                                                                 &gerror);
+        if (!genumerator || gerror) {
+            if (gerror) {
+                setErrorFromGError(gerror);
+            }
+        } else {
+            stackEnumerator.push_back(genumerator);
+        }
+        waitCondition.wakeAll();
+    });
+}
+
 DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilters, DirFilters filters, IteratorFlags flags)
     : DEnumerator(uri, nameFilters, filters, flags), d(new DLocalEnumeratorPrivate(this))
 {
@@ -319,9 +339,8 @@ DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilte
     registerHasNext(std::bind(&DLocalEnumerator::hasNext, this));
     registerNext(std::bind(&DLocalEnumerator::next, this));
     registerFileInfo(std::bind(&DLocalEnumerator::fileInfo, this));
+    registerFileCount(std::bind(&DLocalEnumerator::fileCount, this));
     registerLastError(std::bind(&DLocalEnumerator::lastError, this));
-
-    d->init();
 
     d->nameFilters = nameFilters;
     d->dirFilters = filters;
@@ -329,6 +348,8 @@ DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilte
 
     d->enumSubDir = d->iteratorFlags & DEnumerator::IteratorFlag::kSubdirectories;
     d->enumLinks = d->iteratorFlags & DEnumerator::IteratorFlag::kFollowSymlinks;
+
+    d->init();
 }
 
 DLocalEnumerator::~DLocalEnumerator()
@@ -348,6 +369,11 @@ QString DLocalEnumerator::next() const
 QSharedPointer<DFileInfo> DLocalEnumerator::fileInfo() const
 {
     return d->fileInfo();
+}
+
+quint64 DLocalEnumerator::fileCount()
+{
+    return d->fileCount();
 }
 
 DFMIOError DLocalEnumerator::lastError() const

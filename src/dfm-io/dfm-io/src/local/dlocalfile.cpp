@@ -765,6 +765,7 @@ void DLocalFilePrivate::freeCancellable(GCancellable *gcancellable)
 {
     if (gcancellable) {
         g_cancellable_reset(gcancellable);
+        g_object_unref(gcancellable);
         gcancellable = nullptr;
     }
 }

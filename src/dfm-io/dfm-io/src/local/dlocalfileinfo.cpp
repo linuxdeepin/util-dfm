@@ -69,12 +69,9 @@ bool DLocalFileInfoPrivate::queryInfoSync()
     const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
 
     g_autoptr(GError) gerror = nullptr;
-
     GFileInfo *gfileinfo = g_file_query_info(gfile, attributes, GFileQueryInfoFlags(flag), nullptr, &gerror);
-
     if (gerror)
         setErrorFromGError(gerror);
-
     if (!gfileinfo)
         return false;
 
@@ -82,10 +79,9 @@ bool DLocalFileInfoPrivate::queryInfoSync()
         g_object_unref(this->gfileinfo);
         this->gfileinfo = nullptr;
     }
-
     this->gfileinfo = gfileinfo;
-
     initFinished = true;
+
     return true;
 }
 
@@ -351,6 +347,7 @@ void DLocalFileInfoPrivate::freeCancellable(GCancellable *gcancellable)
 {
     if (gcancellable) {
         g_cancellable_reset(gcancellable);
+        g_object_unref(gcancellable);
         gcancellable = nullptr;
     }
 }

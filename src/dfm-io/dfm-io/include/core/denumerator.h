@@ -96,6 +96,8 @@ public:
     using HasNextFunc = std::function<bool()>;
     using NextFunc = std::function<QString()>;
     using FileInfoFunc = std::function<QSharedPointer<DFileInfo>()>;
+    using FileCountFunc = std::function<quint64()>;
+
     using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
@@ -111,6 +113,7 @@ public:
     DFM_VIRTUAL bool hasNext() const;
     DFM_VIRTUAL QString next() const;
     DFM_VIRTUAL QSharedPointer<DFileInfo> fileInfo() const;
+    DFM_VIRTUAL quint64 fileCount();
 
     DFM_VIRTUAL DFMIOError lastError() const;
 
@@ -119,6 +122,7 @@ public:
     void registerHasNext(const HasNextFunc &func);
     void registerNext(const NextFunc &func);
     void registerFileInfo(const FileInfoFunc &func);
+    void registerFileCount(const FileCountFunc &func);
     void registerLastError(const LastErrorFunc &func);
 
 private:
