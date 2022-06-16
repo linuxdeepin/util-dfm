@@ -42,7 +42,6 @@ DLocalFilePrivate::DLocalFilePrivate(DLocalFile *q)
 
 DLocalFilePrivate::~DLocalFilePrivate()
 {
-    freeCancellable(gcancellable);
 }
 
 bool DLocalFilePrivate::open(DFile::OpenFlags mode)
@@ -282,9 +281,6 @@ void DLocalFilePrivate::readAsync(char *data, qint64 maxSize, int ioPriority, DF
         return;
     }
 
-    freeCancellable(gcancellable);
-    gcancellable = g_cancellable_new();
-
     ReadAsyncOp *dataOp = g_new0(ReadAsyncOp, 1);
     dataOp->callback = func;
     dataOp->user_data = userData;
@@ -293,7 +289,7 @@ void DLocalFilePrivate::readAsync(char *data, qint64 maxSize, int ioPriority, DF
                               data,
                               static_cast<gsize>(maxSize),
                               ioPriority,
-                              gcancellable,
+                              nullptr,
                               ReadAsyncCallback,
                               dataOp);
 }
@@ -331,9 +327,6 @@ void DLocalFilePrivate::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQC
     char data[maxSize + 1];
     memset(&data, 0, maxSize + 1);
 
-    freeCancellable(gcancellable);
-    gcancellable = g_cancellable_new();
-
     ReadQAsyncOp *dataOp = g_new0(ReadQAsyncOp, 1);
     dataOp->callback = func;
     dataOp->user_data = userData;
@@ -343,7 +336,7 @@ void DLocalFilePrivate::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQC
                               data,
                               static_cast<gsize>(maxSize),
                               ioPriority,
-                              gcancellable,
+                              nullptr,
                               ReadQAsyncCallback,
                               dataOp);
 }
@@ -395,8 +388,6 @@ void DLocalFilePrivate::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc 
     }
 
     const gsize size = 8192;
-    freeCancellable(gcancellable);
-    gcancellable = g_cancellable_new();
 
     char data[size + 1];
     memset(data, 0, size + 1);
@@ -412,7 +403,7 @@ void DLocalFilePrivate::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc 
                                   data,
                                   size,
                                   ioPriority,
-                                  gcancellable,
+                                  nullptr,
                                   ReadAllAsyncCallback,
                                   dataOp);
 }
@@ -493,9 +484,6 @@ void DLocalFilePrivate::writeAsync(const char *data, qint64 maxSize, int ioPrior
         return;
     }
 
-    freeCancellable(gcancellable);
-    gcancellable = g_cancellable_new();
-
     WriteAsyncOp *dataOp = g_new0(WriteAsyncOp, 1);
     dataOp->callback = func;
     dataOp->user_data = userData;
@@ -504,7 +492,7 @@ void DLocalFilePrivate::writeAsync(const char *data, qint64 maxSize, int ioPrior
                                 data,
                                 static_cast<gsize>(maxSize),
                                 ioPriority,
-                                gcancellable,
+                                nullptr,
                                 WriteAsyncCallback,
                                 dataOp);
 }
@@ -764,10 +752,6 @@ bool DLocalFilePrivate::checkOpenFlags(DFile::OpenFlags *modeIn)
 
 void DLocalFilePrivate::freeCancellable(GCancellable *gcancellable)
 {
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
 }
 
 GInputStream *DLocalFilePrivate::inputStream()

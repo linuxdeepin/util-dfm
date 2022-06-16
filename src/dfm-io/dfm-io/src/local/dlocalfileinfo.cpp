@@ -42,7 +42,6 @@ DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
 
 DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
 {
-    freeCancellable(gcancellable);
     if (gfileinfo) {
         g_object_unref(gfileinfo);
         gfileinfo = nullptr;
@@ -116,15 +115,12 @@ void DLocalFileInfoPrivate::queryInfoAsync(int ioPriority, DFileInfo::QueryInfoA
     const char *attributes = q->queryAttributes();
     const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
 
-    freeCancellable(gcancellable);
-    gcancellable = g_cancellable_new();
-
     queryInfoAsyncOp *dataOp = g_new0(queryInfoAsyncOp, 1);
     dataOp->callback = func;
     dataOp->user_data = userData;
     dataOp->me = this;
 
-    g_file_query_info_async(this->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, gcancellable, queryInfoAsyncCallback, dataOp);
+    g_file_query_info_async(this->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, nullptr, queryInfoAsyncCallback, dataOp);
 }
 
 QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *success)
@@ -346,10 +342,6 @@ void DLocalFileInfoPrivate::setErrorFromGError(GError *gerror)
 
 void DLocalFileInfoPrivate::freeCancellable(GCancellable *gcancellable)
 {
-    if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
-    }
 }
 
 DLocalFileInfo::DLocalFileInfo(const QUrl &uri,
