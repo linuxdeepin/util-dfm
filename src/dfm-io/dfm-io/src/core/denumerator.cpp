@@ -57,11 +57,11 @@ bool DEnumerator::hasNext() const
     return false;
 }
 
-QString DEnumerator::next() const
+QUrl DEnumerator::next() const
 {
     if (d->nextFunc)
         return d->nextFunc();
-    return QString();
+    return QUrl();
 }
 
 QUrl DEnumerator::uri() const

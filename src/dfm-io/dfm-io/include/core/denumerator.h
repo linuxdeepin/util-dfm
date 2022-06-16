@@ -94,7 +94,7 @@ public:
 
     using FileInfoListFunc = std::function<QList<QSharedPointer<DFileInfo>>()>;
     using HasNextFunc = std::function<bool()>;
-    using NextFunc = std::function<QString()>;
+    using NextFunc = std::function<QUrl()>;
     using FileInfoFunc = std::function<QSharedPointer<DFileInfo>()>;
     using FileCountFunc = std::function<quint64()>;
 
@@ -111,7 +111,7 @@ public:
     IteratorFlags iteratorFlags() const;
 
     DFM_VIRTUAL bool hasNext() const;
-    DFM_VIRTUAL QString next() const;
+    DFM_VIRTUAL QUrl next() const;
     DFM_VIRTUAL QSharedPointer<DFileInfo> fileInfo() const;
     DFM_VIRTUAL quint64 fileCount();
 

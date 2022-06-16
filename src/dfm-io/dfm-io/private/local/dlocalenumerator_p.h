@@ -53,7 +53,7 @@ public:
 
     QList<QSharedPointer<DFileInfo>> fileInfoList();
     bool hasNext();
-    QString next() const;
+    QUrl next() const;
     QSharedPointer<DFileInfo> fileInfo() const;
     quint64 fileCount();
     bool checkFilter();
@@ -69,7 +69,7 @@ public:
     DLocalEnumerator *q = nullptr;
     QStack<GFileEnumerator *> stackEnumerator;
     QSharedPointer<DFileInfo> dfileInfoNext = nullptr;
-    GFile *gfileNext = nullptr;
+    QUrl nextUrl;
     bool enumSubDir = false;
     bool enumLinks = false;
 

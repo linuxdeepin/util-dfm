@@ -58,8 +58,8 @@ static void enum_uri(const QUrl &url)
     }
 
     while (enumerator->hasNext()) {
-        const QString &path = enumerator->next();
-        qInfo() << path;
+        const QUrl &url = enumerator->next();
+        qInfo() << url;
     }
 }
 

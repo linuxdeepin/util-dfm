@@ -39,7 +39,7 @@ public:
     ~DLocalEnumerator();
 
     bool hasNext() const DFM_OVERRIDE;
-    QString next() const DFM_OVERRIDE;
+    QUrl next() const DFM_OVERRIDE;
     QSharedPointer<DFileInfo> fileInfo() const DFM_OVERRIDE;
     quint64 fileCount() DFM_OVERRIDE;
     DFMIOError lastError() const DFM_OVERRIDE;

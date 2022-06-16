@@ -101,7 +101,7 @@ bool DLocalEnumeratorPrivate::hasNext()
         return false;
 
     // sub dir enumerator
-    if (enumSubDir && dfileInfoNext && gfileNext && dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool()) {
+    if (enumSubDir && dfileInfoNext && dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool()) {
         bool showDir = true;
         if (dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool()) {
             // is symlink, need enumSymlink
@@ -109,11 +109,11 @@ bool DLocalEnumeratorPrivate::hasNext()
         }
         if (showDir) {
             mutex.lock();
-            createEnumeratorInThread(QUrl(g_file_get_uri(gfileNext)));
+            createEnumeratorInThread(nextUrl);
             bool succ = waitCondition.wait(&mutex, ENUMERATOR_TIME_OUT);
             mutex.unlock();
             if (!succ)
-                qWarning() << "createEnumeratorInThread failed, url: " << g_file_get_uri(gfileNext);
+                qWarning() << "createEnumeratorInThread failed, url: " << nextUrl;
         }
     }
     if (stackEnumerator.isEmpty())
@@ -122,19 +122,25 @@ bool DLocalEnumeratorPrivate::hasNext()
     GFileEnumerator *enumerator = stackEnumerator.top();
 
     GFileInfo *gfileInfo = nullptr;
+    GFile *gfile = nullptr;
 
     g_autoptr(GError) gerror = nullptr;
-    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfileNext, nullptr, &gerror);
+    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfile, nullptr, &gerror);
     if (hasNext) {
-        if (!gfileInfo) {
+        if (!gfileInfo || !gfile) {
             GFileEnumerator *enumeratorPop = stackEnumerator.pop();
             g_object_unref(enumeratorPop);
             return this->hasNext();
         }
 
-        g_autofree gchar *uri = g_file_get_uri(gfileNext);
-        const QUrl &url = QUrl(QString::fromLocal8Bit(uri));
-        dfileInfoNext = DLocalHelper::createFileInfoByUri(url);
+        g_autofree gchar *path = g_file_get_path(gfile);
+        if (path) {
+            nextUrl = QUrl::fromLocalFile(QString::fromLocal8Bit(path));
+        } else {
+            g_autofree gchar *uri = g_file_get_uri(gfile);
+            nextUrl = QUrl(QString::fromLocal8Bit(uri));
+        }
+        dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl);
 
         if (!checkFilter())
             return this->hasNext();
@@ -148,15 +154,9 @@ bool DLocalEnumeratorPrivate::hasNext()
     return false;
 }
 
-QString DLocalEnumeratorPrivate::next() const
+QUrl DLocalEnumeratorPrivate::next() const
 {
-    g_autofree gchar *gpath = g_file_get_path(gfileNext);
-    if (gpath != nullptr) {
-        return QString::fromLocal8Bit(gpath);
-    } else {
-        g_autofree gchar *uri = g_file_get_uri(gfileNext);
-        return QString::fromLocal8Bit(QByteArray::fromPercentEncoding(uri));
-    }
+    return nextUrl;
 }
 
 QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
@@ -361,7 +361,7 @@ bool DLocalEnumerator::hasNext() const
     return d->hasNext();
 }
 
-QString DLocalEnumerator::next() const
+QUrl DLocalEnumerator::next() const
 {
     return d->next();
 }
