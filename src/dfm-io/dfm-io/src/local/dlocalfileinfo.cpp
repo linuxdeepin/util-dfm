@@ -42,6 +42,7 @@ DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
 
 DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
 {
+    freeCancellable(gcancellable);
     if (gfileinfo) {
         g_object_unref(gfileinfo);
         gfileinfo = nullptr;
@@ -346,7 +347,6 @@ void DLocalFileInfoPrivate::setErrorFromGError(GError *gerror)
 void DLocalFileInfoPrivate::freeCancellable(GCancellable *gcancellable)
 {
     if (gcancellable) {
-        g_cancellable_reset(gcancellable);
         g_object_unref(gcancellable);
         gcancellable = nullptr;
     }

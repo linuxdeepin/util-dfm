@@ -42,6 +42,7 @@ DLocalFilePrivate::DLocalFilePrivate(DLocalFile *q)
 
 DLocalFilePrivate::~DLocalFilePrivate()
 {
+    freeCancellable(gcancellable);
 }
 
 bool DLocalFilePrivate::open(DFile::OpenFlags mode)
@@ -764,7 +765,6 @@ bool DLocalFilePrivate::checkOpenFlags(DFile::OpenFlags *modeIn)
 void DLocalFilePrivate::freeCancellable(GCancellable *gcancellable)
 {
     if (gcancellable) {
-        g_cancellable_reset(gcancellable);
         g_object_unref(gcancellable);
         gcancellable = nullptr;
     }
