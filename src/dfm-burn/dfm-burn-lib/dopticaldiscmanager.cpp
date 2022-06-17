@@ -95,10 +95,8 @@ bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStri
                 },
                 Qt::DirectConnection);
 
-        if (!xorrisoEngine->acquireDevice(dptr->curDev)) {
-            dptr->errorMsg = "Cannot acquire device";
-            return ret;
-        }
+        if (!xorrisoEngine->acquireDevice(dptr->curDev))
+            qWarning() << "Cannot acquire device";
 
         using XJolietSupport = DXorrisoEngine::JolietSupport;
         using XRockRageSupport = DXorrisoEngine::RockRageSupport;
@@ -131,10 +129,8 @@ bool DOpticalDiscManager::erase()
             },
             Qt::DirectConnection);
 
-    if (!engine->acquireDevice(dptr->curDev)) {
-        dptr->errorMsg = "Cannot acquire device";
-        return ret;
-    }
+    if (!engine->acquireDevice(dptr->curDev))
+        qWarning() << "Cannot acquire device";
 
     ret = engine->doErase();
 
@@ -161,10 +157,9 @@ bool DOpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
                     emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
             },
             Qt::DirectConnection);
-    if (!engine->acquireDevice(dptr->curDev)) {
-        dptr->errorMsg = "Cannot acquire device";
-        return ret;
-    }
+
+    if (!engine->acquireDevice(dptr->curDev))
+        qWarning() << "Cannot acquire device";
 
     ret = engine->doCheckmedia(blocks, qgood, qslow, qbad);
 
@@ -184,10 +179,8 @@ bool DOpticalDiscManager::writeISO(const QString &isoPath, int speed)
             },
             Qt::DirectConnection);
 
-    if (!engine->acquireDevice(dptr->curDev)) {
-        dptr->errorMsg = "Cannot acquire device";
-        return ret;
-    }
+    if (!engine->acquireDevice(dptr->curDev))
+        qWarning() << "Cannot acquire device";
 
     if (QUrl(isoPath).isEmpty() || !QUrl(isoPath).isValid()) {
         dptr->errorMsg = QString("[dfm-burn]: Invalid path: %1 ").arg(isoPath);
