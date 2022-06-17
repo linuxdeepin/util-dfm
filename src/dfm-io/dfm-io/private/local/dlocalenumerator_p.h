@@ -63,6 +63,7 @@ public:
     void clean();
 
     void createEnumeratorInThread(const QUrl &url);
+    void createEnumerator(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me);
 
 public:
     QList<QSharedPointer<DFileInfo>> list_;

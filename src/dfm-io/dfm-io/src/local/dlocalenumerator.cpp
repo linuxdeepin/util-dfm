@@ -108,9 +108,13 @@ bool DLocalEnumeratorPrivate::hasNext()
             showDir = enumLinks;
         }
         if (showDir) {
+            QPointer<DLocalEnumeratorPrivate> me = this;
+            auto future = QtConcurrent::run([this, me]() {
+                createEnumerator(nextUrl, me);
+            });
             mutex.lock();
-            createEnumeratorInThread(nextUrl);
             bool succ = waitCondition.wait(&mutex, ENUMERATOR_TIME_OUT);
+            future.cancel();
             mutex.unlock();
             if (!succ)
                 qWarning() << "createEnumeratorInThread failed, url: " << nextUrl;
@@ -283,9 +287,13 @@ DFMIOError DLocalEnumeratorPrivate::lastError()
 
 void DLocalEnumeratorPrivate::init()
 {
+    QPointer<DLocalEnumeratorPrivate> me = this;
+    auto future = QtConcurrent::run([this, me]() {
+        createEnumerator(q->uri(), me);
+    });
     mutex.lock();
-    createEnumeratorInThread(q->uri());
     bool succ = waitCondition.wait(&mutex, ENUMERATOR_TIME_OUT);
+    future.cancel();
     mutex.unlock();
     if (!succ)
         qWarning() << "createEnumeratorInThread failed, url: " << q->uri();
@@ -310,26 +318,30 @@ void DLocalEnumeratorPrivate::clean()
 
 void DLocalEnumeratorPrivate::createEnumeratorInThread(const QUrl &url)
 {
-    QtConcurrent::run([this, url]() {
-        const QString &uriPath = url.toString();
+}
 
-        g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+void DLocalEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me)
+{
+    const QString &uriPath = url.toString();
 
-        g_autoptr(GError) gerror = nullptr;
-        GFileEnumerator *genumerator = g_file_enumerate_children(gfile,
-                                                                 FILE_DEFAULT_ATTRIBUTES,
-                                                                 enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-                                                                 nullptr,
-                                                                 &gerror);
-        if (!genumerator || gerror) {
-            if (gerror) {
-                setErrorFromGError(gerror);
-            }
-        } else {
-            stackEnumerator.push_back(genumerator);
+    g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+
+    g_autoptr(GError) gerror = nullptr;
+    GFileEnumerator *genumerator = g_file_enumerate_children(gfile,
+                                                             FILE_DEFAULT_ATTRIBUTES,
+                                                             enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                                                             nullptr,
+                                                             &gerror);
+    if (!me)
+        return;
+    if (!genumerator || gerror) {
+        if (gerror) {
+            setErrorFromGError(gerror);
         }
-        waitCondition.wakeAll();
-    });
+    } else {
+        stackEnumerator.push_back(genumerator);
+    }
+    waitCondition.wakeAll();
 }
 
 DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilters, DirFilters filters, IteratorFlags flags)
