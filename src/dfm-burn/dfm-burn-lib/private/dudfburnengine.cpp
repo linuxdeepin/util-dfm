@@ -23,6 +23,9 @@
 #include "dudfburnengine.h"
 
 #include <QDebug>
+#include <QDir>
+#include <QRegularExpression>
+#include <QStandardPaths>
 
 DFM_BURN_USE_NS
 
@@ -124,12 +127,11 @@ bool DUDFBurnEngine::doBurn(const QString &dev, const QPair<QString, QString> fi
         char **errors = ub_get_errors(&err_count);
         if (errors != nullptr && err_count > 0) {
             QStringList errMsg;
-            for (int i = err_count - 1; i >= 0; i--) {
+            for (int i = err_count - 1; i >= 0; i--)
                 errMsg.append(errors[i]);
-                errMsg.append(";");
-            }
             message = errMsg;
         }
+        message.append(readErrorsFromLog());
         Q_EMIT jobStatusChanged(JobStatus::kFailed, 100);
         return false;
     }
@@ -147,4 +149,38 @@ QStringList DUDFBurnEngine::lastErrorMessage() const
 bool DUDFBurnEngine::canSafeUse() const
 {
     return libLoaded && funcsLoaded;
+}
+
+QStringList DUDFBurnEngine::readErrorsFromLog() const
+{
+    auto &&homePaths { QStandardPaths::standardLocations(QStandardPaths::HomeLocation) };
+    if (homePaths.isEmpty())
+        return {};
+
+    auto &&logPath { homePaths.at(0) + "/.cache/deepin/discburn/uburn/" };
+    QDir logDir(logPath);
+    if (!logDir.exists())
+        return {};
+
+    auto &&burns { logDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot, QDir::SortFlag::Time) };
+    if (burns.count() == 0)
+        return {};
+
+    auto &&lastBurn { burns.first() };
+    auto &&logFilePath { logPath + lastBurn + "/log" };
+    QFile logFile(logFilePath);
+    if (!logFile.exists())
+        return {};
+
+    QStringList ret;
+    logFile.open(QIODevice::ReadOnly | QIODevice::Text);
+    while (!logFile.atEnd()) {
+        QString &&line(logFile.readLine());
+        if (line.startsWith("Warning") || line.startsWith("Error")) {
+            line.remove(QRegularExpression("/home/.*/.cache/deepin/discburn/_dev_sr[0-9]*/"));
+            ret << line;
+        }
+    }
+    logFile.close();
+    return ret;
 }

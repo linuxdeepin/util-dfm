@@ -53,7 +53,7 @@ public:
 
 public:
     explicit DXorrisoEngine(QObject *parent = nullptr);
-    ~DXorrisoEngine();
+    virtual ~DXorrisoEngine() override;
 
     bool acquireDevice(QString dev);
     void releaseDevice();

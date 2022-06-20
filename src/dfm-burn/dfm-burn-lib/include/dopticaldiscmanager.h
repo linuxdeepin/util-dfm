@@ -43,7 +43,7 @@ public:
 
 public:
     explicit DOpticalDiscManager(const QString &dev, QObject *parent = nullptr);
-    ~DOpticalDiscManager();
+    virtual ~DOpticalDiscManager() override;
 
     bool setStageFile(const QString &diskPath, const QString &isoPath = "/");
     bool commit(const BurnOptions &opts, int speed = 0, const QString &volId = "ISOIMAGE");

@@ -35,7 +35,7 @@ class DUDFBurnEngine : public QObject
     Q_OBJECT
 public:
     explicit DUDFBurnEngine(QObject *parent = nullptr);
-    ~DUDFBurnEngine();
+    virtual ~DUDFBurnEngine() override;
 
     bool doBurn(const QString &dev, const QPair<QString, QString> files, QString volId);
     QStringList lastErrorMessage() const;
@@ -45,6 +45,7 @@ signals:
 
 private:
     bool canSafeUse() const;
+    QStringList readErrorsFromLog() const;
 
 private:
     QLibrary lib;
