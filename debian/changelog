@@ -1,3 +1,9 @@
+util-dfm (1.1.0) unstable; urgency=low
+
+  * Initial release for v23
+
+ -- ZhangSheng <zhangsheng@uniontech.com>  Wed, 22 Jun 2022 09:44:40 +0000
+
 util-dfm (1.0.0) unstable; urgency=medium
 
   * Initial release
