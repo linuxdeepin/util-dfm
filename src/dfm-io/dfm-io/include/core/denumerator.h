@@ -109,6 +109,8 @@ public:
     QStringList nameFilters() const;
     DirFilters dirFilters();
     IteratorFlags iteratorFlags() const;
+    void setTimeout(ulong timeout);
+    ulong timeout() const;
 
     DFM_VIRTUAL bool hasNext() const;
     DFM_VIRTUAL QUrl next() const;

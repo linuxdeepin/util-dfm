@@ -84,6 +84,16 @@ DEnumerator::IteratorFlags DEnumerator::iteratorFlags() const
     return d->iteratorFlags;
 }
 
+void DEnumerator::setTimeout(ulong timeout)
+{
+    d->enumTimeout = timeout;
+}
+
+ulong DEnumerator::timeout() const
+{
+    return d->enumTimeout;
+}
+
 QSharedPointer<DFileInfo> DEnumerator::fileInfo() const
 {
     if (d->fileInfoFunc)

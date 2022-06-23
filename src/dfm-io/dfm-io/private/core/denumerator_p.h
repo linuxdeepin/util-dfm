@@ -49,13 +49,13 @@ public:
     DEnumerator::FileInfoFunc fileInfoFunc = nullptr;
     DEnumerator::FileCountFunc fileCountFunc = nullptr;
     DEnumerator::LastErrorFunc lastErrorFunc = nullptr;
+    DEnumerator::FileInfoListFunc fileInfoListFunc = nullptr;
 
     QUrl uri;
     QStringList nameFilters;
     DEnumerator::DirFilters dirFilters = DEnumerator::DirFilter::kNoFilter;
     DEnumerator::IteratorFlags iteratorFlags = DEnumerator::IteratorFlag::kNoIteratorFlags;
-
-    DEnumerator::FileInfoListFunc fileInfoListFunc = nullptr;
+    ulong enumTimeout { 0 };
 };
 
 END_IO_NAMESPACE

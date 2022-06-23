@@ -35,7 +35,8 @@
 #include <QDebug>
 
 #define FILE_DEFAULT_ATTRIBUTES "standard::*,etag::*,id::*,access::*,mountable::*,time::*,unix::*,dos::*,owner::*,thumbnail::*,preview::*,filesystem::*,gvfs::*,selinux::*,trash::*,recent::*"
-#define ENUMERATOR_TIME_OUT 2000
+
+static constexpr ulong kDefaultTimeOut { 2 * 60 * 1000 };   // 2 minites
 
 USING_IO_NAMESPACE
 
@@ -113,7 +114,8 @@ bool DLocalEnumeratorPrivate::hasNext()
                 createEnumerator(nextUrl, me);
             });
             mutex.lock();
-            bool succ = waitCondition.wait(&mutex, ENUMERATOR_TIME_OUT);
+            ulong timtout = q->timeout() == 0 ? kDefaultTimeOut : q->timeout();
+            bool succ = waitCondition.wait(&mutex, timtout);
             future.cancel();
             mutex.unlock();
             if (!succ)
@@ -292,7 +294,8 @@ void DLocalEnumeratorPrivate::init()
         createEnumerator(q->uri(), me);
     });
     mutex.lock();
-    bool succ = waitCondition.wait(&mutex, ENUMERATOR_TIME_OUT);
+    ulong timtout = q->timeout() == 0 ? kDefaultTimeOut : q->timeout();
+    bool succ = waitCondition.wait(&mutex, timtout);
     future.cancel();
     mutex.unlock();
     if (!succ)
