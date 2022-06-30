@@ -49,7 +49,7 @@ public:
     explicit DLocalEnumeratorPrivate(DLocalEnumerator *q);
     ~DLocalEnumeratorPrivate();
 
-    void init();
+    void init(const QUrl &url);
 
     QList<QSharedPointer<DFileInfo>> fileInfoList();
     bool hasNext();

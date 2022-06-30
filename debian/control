@@ -37,6 +37,8 @@ Architecture: any
 Section: libdevel
 Multi-Arch: same
 Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
  libdfm-io
 Description: A libaray about I/O dev.
  A libaray that provides I/O interface dev.

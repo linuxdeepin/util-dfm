@@ -36,8 +36,6 @@
 
 #define FILE_DEFAULT_ATTRIBUTES "standard::*,etag::*,id::*,access::*,mountable::*,time::*,unix::*,dos::*,owner::*,thumbnail::*,preview::*,filesystem::*,gvfs::*,selinux::*,trash::*,recent::*"
 
-static constexpr ulong kDefaultTimeOut { 2 * 60 * 1000 };   // 2 minites
-
 USING_IO_NAMESPACE
 
 DLocalEnumeratorPrivate::DLocalEnumeratorPrivate(DLocalEnumerator *q)
@@ -109,17 +107,7 @@ bool DLocalEnumeratorPrivate::hasNext()
             showDir = enumLinks;
         }
         if (showDir) {
-            QPointer<DLocalEnumeratorPrivate> me = this;
-            auto future = QtConcurrent::run([this, me]() {
-                createEnumerator(nextUrl, me);
-            });
-            mutex.lock();
-            ulong timtout = q->timeout() == 0 ? kDefaultTimeOut : q->timeout();
-            bool succ = waitCondition.wait(&mutex, timtout);
-            future.cancel();
-            mutex.unlock();
-            if (!succ)
-                qWarning() << "createEnumeratorInThread failed, url: " << nextUrl;
+            init(nextUrl);
         }
     }
     if (stackEnumerator.isEmpty())
@@ -287,19 +275,22 @@ DFMIOError DLocalEnumeratorPrivate::lastError()
     return error;
 }
 
-void DLocalEnumeratorPrivate::init()
+void DLocalEnumeratorPrivate::init(const QUrl &url)
 {
     QPointer<DLocalEnumeratorPrivate> me = this;
-    auto future = QtConcurrent::run([this, me]() {
-        createEnumerator(q->uri(), me);
-    });
-    mutex.lock();
-    ulong timtout = q->timeout() == 0 ? kDefaultTimeOut : q->timeout();
-    bool succ = waitCondition.wait(&mutex, timtout);
-    future.cancel();
-    mutex.unlock();
-    if (!succ)
-        qWarning() << "createEnumeratorInThread failed, url: " << q->uri();
+    const bool needTimeOut = q->timeout() != 0;
+    if (!needTimeOut) {
+        createEnumerator(url, me);
+    } else {
+        mutex.lock();
+        QtConcurrent::run([this, me, url]() {
+            createEnumerator(url, me);
+        });
+        bool succ = waitCondition.wait(&mutex, q->timeout());
+        mutex.unlock();
+        if (!succ)
+            qWarning() << "createEnumeratorInThread failed, url: " << url;
+    }
 }
 
 void DLocalEnumeratorPrivate::setErrorFromGError(GError *gerror)
@@ -364,7 +355,7 @@ DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilte
     d->enumSubDir = d->iteratorFlags & DEnumerator::IteratorFlag::kSubdirectories;
     d->enumLinks = d->iteratorFlags & DEnumerator::IteratorFlag::kFollowSymlinks;
 
-    d->init();
+    d->init(uri);
 }
 
 DLocalEnumerator::~DLocalEnumerator()
