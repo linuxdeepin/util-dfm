@@ -194,6 +194,41 @@ bool DOpticalDiscManager::writeISO(const QString &isoPath, int speed)
     return ret;
 }
 
+bool DOpticalDiscManager::dumpISO(const QString &isoPath)
+{
+    bool ret { false };
+    quint64 blocks { 0 };
+
+    {
+        QScopedPointer<DOpticalDiscInfo> info { DOpticalDiscManager::createOpticalInfo(dptr->curDev) };
+        if (!info)
+            return ret;
+        blocks = info->dataBlocks();
+    }
+
+    QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
+    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
+            [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
+                if (ptr)
+                    emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
+            },
+            Qt::DirectConnection);
+
+    if (!engine->acquireDevice(dptr->curDev))
+        qWarning() << "[dfm-burn] Cannot acquire device";
+
+    if (QUrl(isoPath).isEmpty() || !QUrl(isoPath).isValid()) {
+        dptr->errorMsg = QString("[dfm-burn]: Invalid path: %1 ").arg(isoPath);
+        return ret;
+    }
+
+    ret = engine->doDumpISO(blocks, isoPath);
+
+    engine->releaseDevice();
+
+    return ret;
+}
+
 QString DOpticalDiscManager::lastError() const
 {
     return dptr->errorMsg;

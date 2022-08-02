@@ -50,6 +50,7 @@ public:
     bool erase();
     bool checkmedia(double *qgood, double *qslow, double *qbad);
     bool writeISO(const QString &isoPath, int speed = 0);
+    bool dumpISO(const QString &isoPath);
     QString lastError() const;
 
 signals:

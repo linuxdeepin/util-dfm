@@ -307,6 +307,38 @@ bool DXorrisoEngine::doWriteISO(const QString &isoPath, int speed)
         return Xorriso_option_as(xorriso, 6, av, &dummy, 1);
     });
 
+    for (int i = 0; i < 6; ++i)
+        free(av[i]);
+    delete[] av;
+
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    return true;
+}
+
+bool DXorrisoEngine::doDumpISO(quint64 dataBlocks, const QString &isoPath)
+{
+    curDatablocks = dataBlocks;
+    if (dataBlocks == 0)
+        return false;
+
+    Q_EMIT jobStatusChanged(JobStatus::kStalled, 0, curspeed);
+    xorrisomsg.clear();
+
+    char **av = new char *[2];
+    av[0] = strdup((QString("use=outdev")).toUtf8().data());
+    av[1] = strdup((QString("data_to=") + isoPath).toUtf8().data());
+
+    int r = XORRISO_OPT(xorriso, [this, av]() {
+        int dummy { 0 };
+        return Xorriso_option_check_media(xorriso, 2, av, &dummy, 0);
+    });
+
+    for (int i = 0; i < 2; ++i)
+        free(av[i]);
+    delete[] av;
+
     if (JOBFAILED_IF(this, r, xorriso))
         return false;
 

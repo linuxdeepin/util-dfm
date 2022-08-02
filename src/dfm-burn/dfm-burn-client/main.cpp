@@ -88,13 +88,22 @@ DFM_BURN_USE_NS
 //{
 //    DOpticalDiscManager manager("/dev/sr0");
 //    QObject::connect(&manager, &DOpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
-//        qDebug() << int(status) << progress << speed << message;
+//        qInfo() << int(status) << progress << speed << message;
 //    });
 //    double gud, slo, bad;
 //    manager.checkmedia(&gud, &slo, &bad);
 //    bool check { true };
 //    bool checkRet { !(check && (bad > (2 + 1e-6))) };
 //    qDebug() << "check ret" << checkRet;
+//}
+
+//static void dumpISO()
+//{
+//    DOpticalDiscManager manager("/dev/sr0");
+//    QObject::connect(&manager, &DOpticalDiscManager::jobStatusChanged, [](JobStatus status, int progress, QString speed, QStringList message) {
+//        qInfo() << int(status) << progress << speed << message;
+//    });
+//    manager.dumpISO("/home/zhangs/tmp/aabb.iso");
 //}
 
 int main(int argc, char *argv[])
@@ -106,5 +115,6 @@ int main(int argc, char *argv[])
     // commit();
     // commitUDF();
     // check();
+    // dumpISO();
     return a.exec();
 }

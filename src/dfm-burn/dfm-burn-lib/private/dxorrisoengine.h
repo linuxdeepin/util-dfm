@@ -66,6 +66,7 @@ public:
     QStringList takeInfoMessages();
     bool doErase();
     bool doWriteISO(const QString &isoPath, int speed);
+    bool doDumpISO(quint64 dataBlocks, const QString &isoPath);
     bool doCheckmedia(quint64 dataBlocks, double *qgood, double *qslow, double *qbad);
     bool doBurn(const QPair<QString, QString> files, int speed, QString volId,
                 JolietSupport joliet, RockRageSupport rockRage, KeepAppendable appendable);
