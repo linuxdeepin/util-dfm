@@ -57,9 +57,12 @@ class DLocalHelper
 public:
     static QSharedPointer<DFileInfo> createFileInfoByUri(const QUrl &uri, const char *attributes = "*",
                                                          const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::kTypeNone);
+    static QSharedPointer<DFileInfo> createFileInfoByUri(const QUrl &uri, GFileInfo *gfileInfo, const char *attributes = "*",
+                                                         const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::kTypeNone);
 
     static QVariant attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode);
     static QVariant customAttributeFromPath(const QString &path, DFileInfo::AttributeID id);
+    static QVariant customAttributeFromPathAndInfo(const QString &path, GFileInfo *fileInfo, DFileInfo::AttributeID id);
     static bool setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, const QVariant &value, GError **error);
     static bool setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value);
     static std::string attributeStringById(DFileInfo::AttributeID id);

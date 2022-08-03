@@ -79,9 +79,9 @@ bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStri
                 [this, ptr = QPointer(udfEngine.data())](JobStatus status, int progress) {
                     if (ptr) {
                         if (status == JobStatus::kFailed)
-                            emit jobStatusChanged(status, progress, {}, ptr->lastErrorMessage());
+                            Q_EMIT jobStatusChanged(status, progress, {}, ptr->lastErrorMessage());
                         else
-                            emit jobStatusChanged(status, progress, {}, {});
+                            Q_EMIT jobStatusChanged(status, progress, {}, {});
                     }
                 },
                 Qt::DirectConnection);
@@ -91,7 +91,7 @@ bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStri
         connect(xorrisoEngine.data(), &DXorrisoEngine::jobStatusChanged, this,
                 [this, ptr = QPointer(xorrisoEngine.data())](JobStatus status, int progress, QString speed) {
                     if (ptr)
-                        emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
+                        Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
                 },
                 Qt::DirectConnection);
 
@@ -125,7 +125,7 @@ bool DOpticalDiscManager::erase()
     connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
-                    emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
+                    Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
             },
             Qt::DirectConnection);
 
@@ -154,7 +154,7 @@ bool DOpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
     connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
-                    emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
+                    Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
             },
             Qt::DirectConnection);
 
@@ -175,7 +175,7 @@ bool DOpticalDiscManager::writeISO(const QString &isoPath, int speed)
     connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
-                    emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
+                    Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
             },
             Qt::DirectConnection);
 

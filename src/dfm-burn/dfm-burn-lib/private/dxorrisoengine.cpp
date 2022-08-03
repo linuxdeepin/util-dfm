@@ -45,7 +45,7 @@ static inline bool JOBFAILED_IF(DXorrisoEngine *engine, int r, struct XorrisO *x
 {
     if (r <= 0) {
         Xorriso_option_end(x, 1);
-        emit engine->jobStatusChanged(JobStatus::kFailed, -1, "");
+        Q_EMIT engine->jobStatusChanged(JobStatus::kFailed, -1, "");
         return true;
     }
     return false;

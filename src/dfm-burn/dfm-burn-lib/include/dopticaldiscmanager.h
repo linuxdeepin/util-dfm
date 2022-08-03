@@ -53,7 +53,7 @@ public:
     bool dumpISO(const QString &isoPath);
     QString lastError() const;
 
-signals:
+Q_SIGNALS:
     void jobStatusChanged(JobStatus status, int progress, QString speed, QStringList message);
 
 private:

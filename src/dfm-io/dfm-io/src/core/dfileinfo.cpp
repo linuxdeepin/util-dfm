@@ -158,6 +158,7 @@ DFileInfo::DFileInfo(const DFileInfo &info)
 
 DFileInfo::~DFileInfo()
 {
+    free(d->attributes);
 }
 
 DFileInfo &DFileInfo::operator=(const DFileInfo &info)

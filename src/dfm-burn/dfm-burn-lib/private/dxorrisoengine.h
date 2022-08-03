@@ -71,10 +71,10 @@ public:
     bool doBurn(const QPair<QString, QString> files, int speed, QString volId,
                 JolietSupport joliet, RockRageSupport rockRage, KeepAppendable appendable);
 
-public slots:
+public Q_SLOTS:
     void messageReceived(int type, char *text);
 
-signals:
+Q_SIGNALS:
     /**
      * \brief Indicates a change of current job status.
      *

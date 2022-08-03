@@ -40,7 +40,7 @@ public:
     bool doBurn(const QString &dev, const QPair<QString, QString> files, QString volId);
     QStringList lastErrorMessage() const;
 
-signals:
+Q_SIGNALS:
     void jobStatusChanged(JobStatus status, int progress);
 
 private:

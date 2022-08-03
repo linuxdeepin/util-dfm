@@ -76,6 +76,7 @@ public:
     GFile *gfile = nullptr;
     GFileInfo *gfileinfo = nullptr;
     bool initFinished = false;
+    bool infoReseted = false;
     GCancellable *gcancellable = nullptr;
 
     DFMIOError error;

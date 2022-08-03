@@ -34,25 +34,18 @@ USING_IO_NAMESPACE
 
 namespace LocalFunc {
 
-bool isFile(const QString &path)
+bool isFile(GFileInfo *fileInfo)
 {
-    g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
-    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_REGULAR);
-    return ret;
+    if (!fileInfo)
+        return false;
+    return g_file_info_get_file_type(fileInfo) == G_FILE_TYPE_REGULAR;
 }
 
-bool isDir(const QString &path)
+bool isDir(GFileInfo *fileInfo)
 {
-    g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
-    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_DIRECTORY);
-    return ret;
-}
-
-bool isSymlink(const QString &path)
-{
-    g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
-    const bool ret = DLocalHelper::checkGFileType(file, G_FILE_TYPE_SYMBOLIC_LINK);
-    return ret;
+    if (!fileInfo)
+        return false;
+    return g_file_info_get_file_type(fileInfo) == G_FILE_TYPE_DIRECTORY;
 }
 
 bool isRoot(const QString &path)
@@ -67,11 +60,11 @@ QString fileName(const QString &path)
     return QString::fromLocal8Bit(baseName);
 }
 
-QString baseName(const QString &path)
+QString baseName(const QString &path, GFileInfo *fileInfo)
 {
     const QString &fullName = fileName(path);
 
-    if (isDir(path))
+    if (isDir(fileInfo))
         return fullName;
 
     int pos2 = fullName.indexOf(".");
@@ -81,11 +74,11 @@ QString baseName(const QString &path)
         return fullName.left(pos2);
 }
 
-QString completeBaseName(const QString &path)
+QString completeBaseName(const QString &path, GFileInfo *fileInfo)
 {
     const QString &fullName = fileName(path);
 
-    if (isDir(path))
+    if (isDir(fileInfo))
         return fullName;
 
     int pos2 = fullName.lastIndexOf(".");
@@ -95,10 +88,10 @@ QString completeBaseName(const QString &path)
         return fullName.left(pos2);
 }
 
-QString suffix(const QString &path)
+QString suffix(const QString &path, GFileInfo *fileInfo)
 {
     // path
-    if (isDir(path))
+    if (isDir(fileInfo))
         return "";
 
     const QString &fullName = fileName(path);
@@ -110,9 +103,9 @@ QString suffix(const QString &path)
         return fullName.mid(pos2 + 1);
 }
 
-QString completeSuffix(const QString &path)
+QString completeSuffix(const QString &path, GFileInfo *fileInfo)
 {
-    if (isDir(path))
+    if (isDir(fileInfo))
         return "";
 
     const QString &fullName = fileName(path);
@@ -158,6 +151,11 @@ QSharedPointer<DFileInfo> DLocalHelper::createFileInfoByUri(const QUrl &uri, con
                                                             const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone*/)
 {
     return QSharedPointer<DFileInfo>(new DLocalFileInfo(uri, attributes, flag));
+}
+
+QSharedPointer<DFileInfo> DLocalHelper::createFileInfoByUri(const QUrl &uri, GFileInfo *gfileInfo, const char *attributes, const DFileInfo::FileQueryInfoFlags flag)
+{
+    return QSharedPointer<DFileInfo>(new DLocalFileInfo(uri, gfileInfo, attributes, flag));
 }
 
 QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, DFMIOErrorCode &errorcode)
@@ -303,26 +301,26 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     }
 }
 
-QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::AttributeID id)
+QVariant DLocalHelper::customAttributeFromPathAndInfo(const QString &path, GFileInfo *fileInfo, DFileInfo::AttributeID id)
 {
     if (id < DFileInfo::AttributeID::kCustomStart)
         return QVariant();
 
     switch (id) {
     case DFileInfo::AttributeID::kStandardIsFile: {
-        return LocalFunc::isFile(path);
+        return LocalFunc::isFile(fileInfo);
     }
     case DFileInfo::AttributeID::kStandardIsDir: {
-        return LocalFunc::isDir(path);
+        return LocalFunc::isDir(fileInfo);
     }
     case DFileInfo::AttributeID::kStandardIsRoot: {
         return LocalFunc::isRoot(path);
     }
     case DFileInfo::AttributeID::kStandardSuffix: {
-        return LocalFunc::suffix(path);
+        return LocalFunc::suffix(path, fileInfo);
     }
     case DFileInfo::AttributeID::kStandardCompleteSuffix: {
-        return LocalFunc::completeSuffix(path);
+        return LocalFunc::completeSuffix(path, fileInfo);
     }
     case DFileInfo::AttributeID::kStandardFilePath: {
         return LocalFunc::filePath(path);
@@ -331,17 +329,24 @@ QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::A
         return LocalFunc::parentPath(path);
     }
     case DFileInfo::AttributeID::kStandardBaseName: {
-        return LocalFunc::baseName(path);
+        return LocalFunc::baseName(path, fileInfo);
     }
     case DFileInfo::AttributeID::kStandardFileName: {
         return LocalFunc::fileName(path);
     }
     case DFileInfo::AttributeID::kStandardCompleteBaseName: {
-        return LocalFunc::completeBaseName(path);
+        return LocalFunc::completeBaseName(path, fileInfo);
     }
     default:
         return QVariant();
     }
+}
+
+QVariant DLocalHelper::customAttributeFromPath(const QString &path, DFileInfo::AttributeID id)
+{
+    Q_UNUSED(path)
+    Q_UNUSED(id)
+    return QVariant();
 }
 
 bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, const QVariant &value, GError **gerror)
@@ -687,16 +692,13 @@ bool DLocalHelper::fileIsHidden(const QSharedPointer<DFileInfo> &dfileinfo, cons
 
 bool DLocalHelper::checkGFileType(GFile *file, GFileType type)
 {
-    GError *gerror = nullptr;
-    GFileInfo *gfileinfo = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
+    if (!file)
+        return false;
 
-    if (gerror)
-        g_error_free(gerror);
+    g_autoptr(GFileInfo) gfileinfo = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, nullptr);
 
     if (!gfileinfo)
         return false;
 
-    bool ret = g_file_info_get_file_type(gfileinfo) == type;
-    g_object_unref(gfileinfo);
-    return ret;
+    return g_file_info_get_file_type(gfileinfo) == type;
 }

@@ -134,7 +134,8 @@ bool DLocalEnumeratorPrivate::hasNext()
             g_autofree gchar *uri = g_file_get_uri(gfile);
             nextUrl = QUrl(QString::fromLocal8Bit(uri));
         }
-        dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl);
+        dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
+                                                          enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
 
         if (!checkFilter())
             return this->hasNext();

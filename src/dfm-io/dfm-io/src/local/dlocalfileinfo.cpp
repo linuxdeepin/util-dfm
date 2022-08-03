@@ -65,6 +65,11 @@ void DLocalFileInfoPrivate::initNormal()
 
 bool DLocalFileInfoPrivate::queryInfoSync()
 {
+    if (!infoReseted && this->gfileinfo) {
+        initFinished = true;
+        return true;
+    }
+
     const char *attributes = q->queryAttributes();
     const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
 
@@ -112,6 +117,14 @@ void queryInfoAsyncCallback(GObject *source_object,
 
 void DLocalFileInfoPrivate::queryInfoAsync(int ioPriority, DFileInfo::QueryInfoAsyncCallback func, void *userData)
 {
+    if (!infoReseted && this->gfileinfo) {
+        initFinished = true;
+
+        if (func)
+            func(true, userData);
+        return;
+    }
+
     const char *attributes = q->queryAttributes();
     const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
 
@@ -135,7 +148,7 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
     if (attributesCache.count(id) == 0) {
         if (id > DFileInfo::AttributeID::kCustomStart) {
             const QString &path = q->uri().path();
-            retValue = DLocalHelper::customAttributeFromPath(path, id);
+            retValue = DLocalHelper::customAttributeFromPathAndInfo(path, gfileinfo, id);
         } else {
             if (gfileinfo) {
                 DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
@@ -235,7 +248,11 @@ bool DLocalFileInfoPrivate::exists() const
 
 bool DLocalFileInfoPrivate::refresh()
 {
-    return queryInfoSync();
+    infoReseted = true;
+    bool ret = queryInfoSync();
+    infoReseted = false;
+
+    return ret;
 }
 
 bool DLocalFileInfoPrivate::clearCache()
@@ -364,6 +381,12 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri,
     registerQueryInfoAsync(bind_field(this, &DLocalFileInfo::queryInfoAsync));
 
     d->initNormal();
+}
+
+DLocalFileInfo::DLocalFileInfo(const QUrl &uri, void *fileInfo, const char *attributes, const DFileInfo::FileQueryInfoFlags flag)
+    : DLocalFileInfo(uri, attributes, flag)
+{
+    d->gfileinfo = static_cast<GFileInfo *>(fileInfo);
 }
 
 DLocalFileInfo::~DLocalFileInfo()
