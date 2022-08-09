@@ -238,12 +238,14 @@ QList<DFileInfo::AttributeID> DLocalFileInfoPrivate::attributeIDList() const
 
 bool DLocalFileInfoPrivate::exists() const
 {
-    const QUrl &url = q->uri();
+    /*const QUrl &url = q->uri();
     const QString &uri = url.toString();
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toLocal8Bit().data());
 
-    return g_file_query_file_type(gfile, G_FILE_QUERY_INFO_NONE, nullptr) != G_FILE_TYPE_UNKNOWN;
+    return g_file_query_file_type(gfile, G_FILE_QUERY_INFO_NONE, nullptr) != G_FILE_TYPE_UNKNOWN;*/
+    // g_file_query_file_type will block io, use g_file_info_get_file_type instead
+    return g_file_info_get_file_type(gfileinfo) != G_FILE_TYPE_UNKNOWN;
 }
 
 bool DLocalFileInfoPrivate::refresh()
