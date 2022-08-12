@@ -617,11 +617,8 @@ qint64 DLocalFilePrivate::size()
 bool DLocalFilePrivate::exists()
 {
     const QUrl &&uri = q->uri();
-    GFile *gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
-    const bool exists = g_file_query_exists(gfile, nullptr);
-
-    g_object_unref(gfile);
-    return exists;
+    g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
+    return g_file_query_file_type(gfile, G_FILE_QUERY_INFO_NONE, nullptr) != G_FILE_TYPE_UNKNOWN;
 }
 
 DFile::Permissions DLocalFilePrivate::permissions()

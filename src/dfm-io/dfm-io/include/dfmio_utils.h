@@ -39,6 +39,7 @@ public:
     static QString fsTypeFromUrl(const QUrl &url);
     static QUrl directParentUrl(const QUrl &url, const bool localFirst = true);
     static bool fileIsRemovable(const QUrl &url);
+    static QSet<QString> hideListFromUrl(const QUrl &url);
 };
 
 END_IO_NAMESPACE

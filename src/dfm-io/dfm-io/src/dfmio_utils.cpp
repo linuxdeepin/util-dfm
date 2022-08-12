@@ -22,11 +22,13 @@
 */
 
 #include "dfmio_utils.h"
+#include "local/dlocalhelper.h"
 
 #include <gio/gio.h>
 #include <gio-unix-2.0/gio/gunixmounts.h>
 
 #include <QUrl>
+#include <QSet>
 
 USING_IO_NAMESPACE
 
@@ -120,4 +122,9 @@ bool DFMUtils::fileIsRemovable(const QUrl &url)
     }
 
     return false;
+}
+
+QSet<QString> DFMUtils::hideListFromUrl(const QUrl &url)
+{
+    return DLocalHelper::hideListFromUrl(url);
 }
