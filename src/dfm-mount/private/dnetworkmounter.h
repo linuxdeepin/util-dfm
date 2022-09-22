@@ -63,7 +63,7 @@ private:
         bool requestLoginInfo { false };
     };
     static MountRet mountWithUserInput(const QString &address, const MountPassInfo info);
-    static MountRet mountWithSavedInfos(const QString &address, const QList<QVariantMap> &infos);
+    static MountRet mountWithSavedInfos(const QString &address, const QList<QVariantMap> &infos, int secs = 0);
     static void doLastMount(const QString &address, const MountPassInfo info, DeviceOperateCallbackWithMessage cb);
 
     static bool isMounted(const QString &address, QString &mpt);

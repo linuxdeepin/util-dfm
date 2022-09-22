@@ -19,7 +19,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 #include "base/dmountutils.h"
 #include "dnetworkmounter.h"
 
@@ -52,6 +52,7 @@ static constexpr char kSchemaServer[] { "server" };
 static constexpr char kLoginUser[] { "user" };
 static constexpr char kLoginDomain[] { "domain" };
 static constexpr char kLoginPasswd[] { "passwd" };
+static constexpr char kLoginTimeout[] { "timeout" };
 
 struct AskPasswdHelper
 {
@@ -83,7 +84,8 @@ bool DNetworkMounter::isDaemonMountEnable()
     if (!systemBusIFace->isServiceRegistered(kDaemonService))
         return false;
 
-    QDBusInterface daemonIface(kDaemonService, kDaemonPath, kDaemonIntro, QDBusConnection::systemBus());
+    QDBusInterface daemonIface(kDaemonService, kDaemonPath, kDaemonIntro,
+                               QDBusConnection::systemBus());
     QDBusReply<QString> reply = daemonIface.call(kDaemonIntroMethod);
     return reply.value().contains("<node name=\"MountControl\"/>");
 }
@@ -100,19 +102,22 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
 
     QList<QVariantMap> passwds;
     GError_autoptr err { nullptr };
-    GList_autoptr items = secret_service_search_sync(nullptr, smbSchema(), query, SECRET_SEARCH_ALL, nullptr, &err);
+    GList_autoptr items = secret_service_search_sync(nullptr, smbSchema(), query, SECRET_SEARCH_ALL,
+                                                     nullptr, &err);
     while (items) {
         auto item = static_cast<SecretItem *>(items->data);
         GHashTable_autoptr itemAttrs = secret_item_get_attributes(item);
         QVariantMap attr;
-        g_hash_table_foreach(itemAttrs, [](gpointer k, gpointer v, gpointer vm) {
-            auto info = static_cast<QVariantMap *>(vm);
-            if (!info)
-                return;
-            info->insert(static_cast<char *>(k), static_cast<char *>(v));
-            qDebug() << "######" << *info;
-        },
-                             &attr);
+        g_hash_table_foreach(
+                itemAttrs,
+                [](gpointer k, gpointer v, gpointer vm) {
+                    auto info = static_cast<QVariantMap *>(vm);
+                    if (!info)
+                        return;
+                    info->insert(static_cast<char *>(k), static_cast<char *>(v));
+                    qDebug() << "######" << *info;
+                },
+                &attr);
         passwds.append(attr);
         items = items->next;
     }
@@ -124,11 +129,10 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
         std::string domain = passwd.value(kSchemaDomain).toString().toStdString();
 
         GError_autoptr err { nullptr };
-        g_autofree char *pwd = secret_password_lookup_sync(smbSchema(), nullptr, &err,
-                                                           kSchemaServer, server.c_str(),
-                                                           kSchemaProtocol, protocol.c_str(),
-                                                           kSchemaUser, user.c_str(),
-                                                           kSchemaDomain, domain.c_str(), nullptr);
+        g_autofree char *pwd = secret_password_lookup_sync(
+                smbSchema(), nullptr, &err, kSchemaServer, server.c_str(), kSchemaProtocol,
+                protocol.c_str(), kSchemaUser, user.c_str(), kSchemaDomain, domain.c_str(),
+                nullptr);
         if (err)
             qDebug() << "query password failed: " << passwd << err->message;
         else
@@ -148,12 +152,15 @@ void DNetworkMounter::savePasswd(const QString &address, const MountPassInfo &in
 
     if (protocol == "smb") {
         GError_autoptr err { nullptr };
-        QString title = QString("%1@%2").arg(info.userName).arg(server);   // username@host, just like the way gvfs do.
-        secret_password_store_sync(smbSchema(), collection, title.toStdString().c_str(), info.passwd.toStdString().c_str(), nullptr, &err,
-                                   kSchemaDomain, info.domain.toStdString().c_str(),
-                                   kSchemaProtocol, protocol.toStdString().c_str(),
-                                   kSchemaServer, server.toStdString().c_str(),
-                                   kSchemaUser, info.userName.toStdString().c_str(), nullptr);
+        QString title = QString("%1@%2")
+                                .arg(info.userName)
+                                .arg(server);   // username@host, just like the way gvfs do.
+        secret_password_store_sync(smbSchema(), collection, title.toStdString().c_str(),
+                                   info.passwd.toStdString().c_str(), nullptr, &err, kSchemaDomain,
+                                   info.domain.toStdString().c_str(), kSchemaProtocol,
+                                   protocol.toStdString().c_str(), kSchemaServer,
+                                   server.toStdString().c_str(), kSchemaUser,
+                                   info.userName.toStdString().c_str(), nullptr);
         if (err)
             qWarning() << "save passwd failed: " << err->message;
     }
@@ -171,19 +178,22 @@ SecretSchema *DNetworkMounter::smbSchema()
     return &sche;
 }
 
-void DNetworkMounter::mountNetworkDev(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int msecs)
+void DNetworkMounter::mountNetworkDev(const QString &address, GetMountPassInfo getPassInfo,
+                                      GetUserChoice getUserChoice,
+                                      DeviceOperateCallbackWithMessage mountResult, int secs)
 {
     QUrl u(address);
     // don't mount samba's root by Daemon
     if (u.scheme() == "smb" && !u.path().remove("/").isEmpty() && isDaemonMountEnable())
-        mountByDaemon(address, getPassInfo, mountResult, msecs);
+        mountByDaemon(address, getPassInfo, mountResult, secs);
     else
-        mountByGvfs(address, getPassInfo, getUserChoice, mountResult, msecs);
+        mountByGvfs(address, getPassInfo, getUserChoice, mountResult, secs);
 }
 
 bool DNetworkMounter::unmountNetworkDev(const QString &mpt)
 {
-    QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace, QDBusConnection::systemBus());
+    QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace,
+                           QDBusConnection::systemBus());
     QDBusReply<bool> ret = mntCtrl.call(kMountControlUnmount, mpt);
     return ret.value();
 }
@@ -201,17 +211,16 @@ void DNetworkMounter::unmountNetworkDevAsync(const QString &mpt, DeviceOperateCa
 }
 
 /*!
- * \brief DNetworkMounter::mountByDaemon, mount network device (smb/ftp/webdav) by dde-file-manager-daemon.
- * \param address
- * \param getPassInfo
- * \param mountResult
- * \param msecs
+ * \brief DNetworkMounter::mountByDaemon, mount network device (smb/ftp/webdav) by
+ * dde-file-manager-daemon. \param address \param getPassInfo \param mountResult \param msecs
  */
-void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo getPassInfo, DeviceOperateCallbackWithMessage mountResult, int msecs)
+void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo getPassInfo,
+                                    DeviceOperateCallbackWithMessage mountResult, int secs)
 {
     auto requestLoginInfo = [address, getPassInfo] {
         if (getPassInfo)
-            return getPassInfo(QObject::tr("need authorization to access %1").arg(address), Utils::currentUser(), "WORKGROUP");
+            return getPassInfo(QObject::tr("need authorization to access %1").arg(address),
+                               Utils::currentUser(), "WORKGROUP");
         return MountPassInfo();
     };
     auto checkThread = [] {
@@ -244,6 +253,7 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
         watcher->deleteLater();
         if (mntRet.requestLoginInfo) {
             auto loginInfo = requestLoginInfo();
+            loginInfo.timeout = secs;
             if (loginInfo.cancelled && mountResult) {
                 checkThread();
                 mountResult(false, DeviceError::kUserErrorUserCancelled, "");
@@ -258,50 +268,64 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
         }
     });
 
+    loginInfo.timeout = secs;
     auto fu = QtConcurrent::run([=] {
         if (logins.isEmpty())   // try mount with user's input (loginInfo)
             return mountWithUserInput(addr, loginInfo);
         else
-            return mountWithSavedInfos(addr, logins);
+            return mountWithSavedInfos(addr, logins, loginInfo.timeout);
     });
     watcher->setFuture(fu);
 }
 
-void DNetworkMounter::mountByGvfs(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int msecs)
+void DNetworkMounter::mountByGvfs(const QString &address, GetMountPassInfo getPassInfo,
+                                  GetUserChoice getUserChoice,
+                                  DeviceOperateCallbackWithMessage mountResult, int msecs)
 {
-    GFile_autoptr file = g_file_new_for_uri(address.toStdString().c_str());
+    auto newAddr = address;
+    if (address.startsWith("ftp") && msecs != 0) {   // only ftp-gvfs supports timeout param now.
+        int sec = msecs < 1000 && msecs != 0 ? 1 : msecs / 1000;
+        newAddr += QString("?socket_timeout=%1").arg(sec);
+    }
+
+    GFile_autoptr file = g_file_new_for_uri(newAddr.toStdString().c_str());
     if (!file) {
-        qWarning() << "protocol: cannot generate location for" << address;
+        qWarning() << "protocol: cannot generate location for" << newAddr;
         return;
     }
 
     AskPasswdHelper *passwdHelper = new AskPasswdHelper();
     passwdHelper->callback = getPassInfo;
-    passwdHelper->callOnceFlag = false;   // make sure the signal will not emit continuously when validate failed.
+    passwdHelper->callOnceFlag =
+            false;   // make sure the signal will not emit continuously when validate failed.
 
     AskQuestionHelper *questionHelper = new AskQuestionHelper();
     questionHelper->callback = getUserChoice;
 
     GMountOperation_autoptr op = g_mount_operation_new();
-    g_signal_connect(op, "ask_question", G_CALLBACK(DNetworkMounter::mountByGvfsAskQuestion), questionHelper);
-    g_signal_connect(op, "ask_password", G_CALLBACK(DNetworkMounter::mountByGvfsAskPasswd), passwdHelper);
+    g_signal_connect(op, "ask_question", G_CALLBACK(DNetworkMounter::mountByGvfsAskQuestion),
+                     questionHelper);
+    g_signal_connect(op, "ask_password", G_CALLBACK(DNetworkMounter::mountByGvfsAskPasswd),
+                     passwdHelper);
 
     FinalizeHelper *finalizeHelper = new FinalizeHelper;
     finalizeHelper->askPasswd = passwdHelper;
     finalizeHelper->askQuestion = questionHelper;
     finalizeHelper->resultCallback = mountResult;
 
-    GCancellable_autoptr cancellable = g_cancellable_new();
-    if (msecs > 0) {
-        QTimer::singleShot(msecs, [cancellable] {
-            if (cancellable)
-                g_cancellable_cancel(cancellable);
-        });
-    }
-    g_file_mount_enclosing_volume(file, G_MOUNT_MOUNT_NONE, op, cancellable, &DNetworkMounter::mountByGvfsCallback, finalizeHelper);
+    GCancellable_autoptr cancellable = nullptr; /*g_cancellable_new();
+     if (msecs > 0) {
+         QTimer::singleShot(msecs, [cancellable] {
+             if (cancellable)
+                 g_cancellable_cancel(cancellable);
+         });
+     }*/
+    g_file_mount_enclosing_volume(file, G_MOUNT_MOUNT_NONE, op, cancellable,
+                                  &DNetworkMounter::mountByGvfsCallback, finalizeHelper);
 }
 
-void DNetworkMounter::mountByGvfsAskQuestion(GMountOperation *self, const char *message, const char **choices, gpointer userData)
+void DNetworkMounter::mountByGvfsAskQuestion(GMountOperation *self, const char *message,
+                                             const char **choices, gpointer userData)
 {
     auto helper = reinterpret_cast<AskQuestionHelper *>(userData);
     if (!helper || !helper->callback) {
@@ -326,7 +350,9 @@ void DNetworkMounter::mountByGvfsAskQuestion(GMountOperation *self, const char *
     g_mount_operation_reply(self, G_MOUNT_OPERATION_HANDLED);
 }
 
-void DNetworkMounter::mountByGvfsAskPasswd(GMountOperation *self, gchar *message, gchar *defaultUser, gchar *defaultDomain, GAskPasswordFlags flags, gpointer userData)
+void DNetworkMounter::mountByGvfsAskPasswd(GMountOperation *self, gchar *message,
+                                           gchar *defaultUser, gchar *defaultDomain,
+                                           GAskPasswordFlags flags, gpointer userData)
 {
     auto helper = reinterpret_cast<AskPasswdHelper *>(userData);
     if (!helper || !helper->callback) {
@@ -397,19 +423,21 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
     delete finalize;
 }
 
-DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &address, const MountPassInfo info)
+DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &address,
+                                                              const MountPassInfo info)
 {
     QVariantMap param { { kLoginUser, info.userName },
                         { kLoginDomain, info.domain },
-                        { kLoginPasswd, info.passwd } };
+                        { kLoginPasswd, info.passwd },
+                        { kLoginTimeout, info.timeout } };
 
-    QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace, QDBusConnection::systemBus());
+    QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace,
+                           QDBusConnection::systemBus());
     QDBusReply<QString> ret = mntCtrl.call(kMountControlMount, address, param);
     QString mpt = ret.value();
     bool ok = !mpt.isEmpty();
-    DeviceError err = info.anonymous
-            ? DeviceError::kUserErrorNetworkAnonymousNotAllowed
-            : DeviceError::kUserErrorNetworkWrongPasswd;
+    DeviceError err = info.anonymous ? DeviceError::kUserErrorNetworkAnonymousNotAllowed
+                                     : DeviceError::kUserErrorNetworkWrongPasswd;
     if (ok) {
         err = DeviceError::kNoError;
 
@@ -420,13 +448,17 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
     return { ok, err, mpt };
 }
 
-DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &address, const QList<QVariantMap> &infos)
+DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &address,
+                                                               const QList<QVariantMap> &infos,
+                                                               int secs)
 {
-    QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace, QDBusConnection::systemBus());
+    QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace,
+                           QDBusConnection::systemBus());
     for (const auto &login : infos) {
         QVariantMap param { { kLoginUser, login.value(kSchemaUser) },
                             { kLoginDomain, login.value(kSchemaDomain) },
-                            { kLoginPasswd, login.value(kLoginPasswd) } };
+                            { kLoginPasswd, login.value(kLoginPasswd) },
+                            { kLoginTimeout, secs } };
 
         QDBusReply<QString> ret = mntCtrl.call(kMountControlMount, address, param);
         QString mpt = ret.value();
@@ -438,7 +470,8 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &ad
     return ret;
 }
 
-void DNetworkMounter::doLastMount(const QString &address, const MountPassInfo info, DeviceOperateCallbackWithMessage cb)
+void DNetworkMounter::doLastMount(const QString &address, const MountPassInfo info,
+                                  DeviceOperateCallbackWithMessage cb)
 {
     QFutureWatcher<MountRet> *watcher { new QFutureWatcher<MountRet>() };
     QObject::connect(watcher, &QFutureWatcher<MountRet>::finished, [cb, watcher] {
@@ -450,6 +483,7 @@ void DNetworkMounter::doLastMount(const QString &address, const MountPassInfo in
             cb(mntRet.ok, mntRet.err, mntRet.mpt);
         }
     });
+    watcher->setFuture(QtConcurrent::run([=] { return mountWithUserInput(address, info); }));
 }
 
 bool DNetworkMounter::isMounted(const QString &address, QString &mpt)

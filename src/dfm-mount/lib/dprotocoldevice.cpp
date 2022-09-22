@@ -19,7 +19,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #include "base/dmount_global.h"
 #include "base/dmountutils.h"
@@ -43,9 +43,9 @@ struct CallbackProxyWithData
 {
     CallbackProxyWithData() = delete;
     explicit CallbackProxyWithData(DeviceOperateCallback cb)
-        : caller(cb) {}
+        : caller(cb) { }
     explicit CallbackProxyWithData(DeviceOperateCallbackWithMessage cb)
-        : caller(cb) {}
+        : caller(cb) { }
     CallbackProxy caller;
     QPointer<DProtocolDevice> data;
     DProtocolDevicePrivate *d { nullptr };
@@ -160,9 +160,9 @@ QStringList DProtocolDevice::deviceIcons() const
  * \param getPassInfo   an passwd-asking dialog should be exec in this function, and return a struct object which contains the passwd
  * \param mountResult   when mount finished, this function will be invoked.
  */
-void DProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int msecs)
+void DProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int secs)
 {
-    DNetworkMounter::mountNetworkDev(address, getPassInfo, getUserChoice, mountResult, msecs);
+    DNetworkMounter::mountNetworkDev(address, getPassInfo, getUserChoice, mountResult, secs);
 }
 
 void DProtocolDevice::setOperatorTimeout(int msecs)

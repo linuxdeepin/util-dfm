@@ -19,7 +19,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 #ifndef DPROTOCOLDEVICE_H
 #define DPROTOCOLDEVICE_H
 
@@ -39,10 +39,12 @@ struct MountPassInfo
     QString domain {};
     bool anonymous { false };
     bool cancelled { false };
+    int timeout = 0;
     NetworkMountPasswdSaveMode savePasswd { NetworkMountPasswdSaveMode::kNeverSavePasswd };
 };
 
-using GetMountPassInfo = std::function<MountPassInfo(const QString &message, const QString &userDefault, const QString &domainDefault)>;
+using GetMountPassInfo = std::function<MountPassInfo(
+        const QString &message, const QString &userDefault, const QString &domainDefault)>;
 using GetUserChoice = std::function<int(const QString &message, const QStringList &choices)>;
 
 class DProtocolDevicePrivate;
@@ -54,7 +56,9 @@ class DProtocolDevice final : public DDevice
 public:
     ~DProtocolDevice();
     QStringList deviceIcons() const;
-    static void mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int msecs = 0);
+    static void mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo,
+                                   GetUserChoice getUserChoice,
+                                   DeviceOperateCallbackWithMessage mountResult, int secs = 0);
 
     void setOperatorTimeout(int msecs);
 
