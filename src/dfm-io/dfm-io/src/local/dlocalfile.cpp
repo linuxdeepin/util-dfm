@@ -253,22 +253,18 @@ QByteArray DLocalFilePrivate::readAll()
     return dataRet;
 }
 
-typedef struct
+void DLocalFilePrivate::readAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    DFile::ReadCallbackFunc callback;
-    gpointer user_data;
-} ReadAsyncOp;
-
-void ReadAsyncCallback(GObject *source_object,
-                       GAsyncResult *res,
-                       gpointer user_data)
-{
-    ReadAsyncOp *data = static_cast<ReadAsyncOp *>(user_data);
-    GInputStream *stream = (GInputStream *)(source_object);
+    ReadAsyncOp *data = static_cast<ReadAsyncOp *>(userData);
+    GInputStream *stream = (GInputStream *)(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     gssize size = g_input_stream_read_finish(stream, res, &gerror);
     if (data->callback)
-        data->callback(size, data->user_data);
+        data->callback(size, data->userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    g_free(data);
 }
 
 void DLocalFilePrivate::readAsync(char *data, qint64 maxSize, int ioPriority, DFile::ReadCallbackFunc func, void *userData)
@@ -283,35 +279,31 @@ void DLocalFilePrivate::readAsync(char *data, qint64 maxSize, int ioPriority, DF
 
     ReadAsyncOp *dataOp = g_new0(ReadAsyncOp, 1);
     dataOp->callback = func;
-    dataOp->user_data = userData;
+    dataOp->userData = userData;
 
     g_input_stream_read_async(inputStream,
                               data,
                               static_cast<gsize>(maxSize),
                               ioPriority,
                               nullptr,
-                              ReadAsyncCallback,
+                              readAsyncCallback,
                               dataOp);
 }
 
-typedef struct
+void DLocalFilePrivate::readQAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    DFile::ReadQCallbackFunc callback;
-    char *data;
-    gpointer user_data;
-} ReadQAsyncOp;
-
-void ReadQAsyncCallback(GObject *source_object,
-                        GAsyncResult *res,
-                        gpointer user_data)
-{
-    ReadQAsyncOp *data = static_cast<ReadQAsyncOp *>(user_data);
-    GInputStream *stream = (GInputStream *)(source_object);
+    ReadQAsyncOp *data = static_cast<ReadQAsyncOp *>(userData);
+    GInputStream *stream = (GInputStream *)(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     gssize size = g_input_stream_read_finish(stream, res, &gerror);
     QByteArray dataRet = size >= 0 ? QByteArray(data->data) : QByteArray();
     if (data->callback)
-        data->callback(dataRet, data->user_data);
+        data->callback(dataRet, data->userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    data->data = nullptr;
+    g_free(data);
 }
 
 void DLocalFilePrivate::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQCallbackFunc func, void *userData)
@@ -329,7 +321,7 @@ void DLocalFilePrivate::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQC
 
     ReadQAsyncOp *dataOp = g_new0(ReadQAsyncOp, 1);
     dataOp->callback = func;
-    dataOp->user_data = userData;
+    dataOp->userData = userData;
     dataOp->data = data;
 
     g_input_stream_read_async(inputStream,
@@ -337,44 +329,39 @@ void DLocalFilePrivate::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQC
                               static_cast<gsize>(maxSize),
                               ioPriority,
                               nullptr,
-                              ReadQAsyncCallback,
+                              readQAsyncCallback,
                               dataOp);
 }
 
-typedef struct
+void DLocalFilePrivate::readAllAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    char *data;
-    int ioPriority;
-    DFile::ReadAllCallbackFunc callback;
-    gpointer user_data;
-    QPointer<DLocalFilePrivate> me;
-
-} ReadAllAsyncOp;
-
-void ReadAllAsyncCallback(GObject *source_object,
-                          GAsyncResult *res,
-                          gpointer user_data)
-{
-    ReadAllAsyncOp *data = static_cast<ReadAllAsyncOp *>(user_data);
-    GInputStream *stream = (GInputStream *)(source_object);
+    ReadAllAsyncOp *data = static_cast<ReadAllAsyncOp *>(userData);
+    GInputStream *stream = (GInputStream *)(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     gsize size = 0;
     bool succ = g_input_stream_read_all_finish(stream, res, &size, &gerror);
     if (!succ || gerror) {
         if (data->callback)
-            data->callback(QByteArray(), data->user_data);
+            data->callback(QByteArray(), data->userData);
     }
     if (size == 0) {
         if (data->callback) {
             if (data->me)
-                data->callback(data->me->readAllAsyncRet, data->user_data);
+                data->callback(data->me->readAllAsyncRet, data->userData);
         }
     }
 
     if (data->me) {
         data->me->readAllAsyncRet.append(data->data);
-        data->me->readAllAsync(data->ioPriority, data->callback, data->user_data);
+        data->me->readAllAsync(data->ioPriority, data->callback, data->userData);
     }
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    data->data = nullptr;
+    data->ioPriority = 0;
+    data->me = nullptr;
+    g_free(data);
 }
 
 void DLocalFilePrivate::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc func, void *userData)
@@ -394,7 +381,7 @@ void DLocalFilePrivate::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc 
 
     ReadAllAsyncOp *dataOp = g_new0(ReadAllAsyncOp, 1);
     dataOp->callback = func;
-    dataOp->user_data = userData;
+    dataOp->userData = userData;
     dataOp->data = data;
     dataOp->ioPriority = ioPriority;
     dataOp->me = this;
@@ -404,7 +391,7 @@ void DLocalFilePrivate::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc 
                                   size,
                                   ioPriority,
                                   nullptr,
-                                  ReadAllAsyncCallback,
+                                  readAllAsyncCallback,
                                   dataOp);
 }
 
@@ -456,22 +443,18 @@ qint64 DLocalFilePrivate::write(const QByteArray &data)
     return write(data.data());
 }
 
-typedef struct
+void DLocalFilePrivate::writeAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    DFile::WriteCallbackFunc callback;
-    gpointer user_data;
-} WriteAsyncOp;
-
-void WriteAsyncCallback(GObject *source_object,
-                        GAsyncResult *res,
-                        gpointer user_data)
-{
-    WriteAsyncOp *data = static_cast<WriteAsyncOp *>(user_data);
-    GOutputStream *stream = (GOutputStream *)(source_object);
+    WriteAsyncOp *data = static_cast<WriteAsyncOp *>(userData);
+    GOutputStream *stream = (GOutputStream *)(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     gssize size = g_output_stream_write_finish(stream, res, &gerror);
     if (data->callback)
-        data->callback(size, data->user_data);
+        data->callback(size, data->userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    g_free(data);
 }
 
 void DLocalFilePrivate::writeAsync(const char *data, qint64 maxSize, int ioPriority, DFile::WriteCallbackFunc func, void *userData)
@@ -486,14 +469,14 @@ void DLocalFilePrivate::writeAsync(const char *data, qint64 maxSize, int ioPrior
 
     WriteAsyncOp *dataOp = g_new0(WriteAsyncOp, 1);
     dataOp->callback = func;
-    dataOp->user_data = userData;
+    dataOp->userData = userData;
 
     g_output_stream_write_async(outputStream,
                                 data,
                                 static_cast<gsize>(maxSize),
                                 ioPriority,
                                 nullptr,
-                                WriteAsyncCallback,
+                                writeAsyncCallback,
                                 dataOp);
 }
 
@@ -745,10 +728,6 @@ bool DLocalFilePrivate::checkOpenFlags(DFile::OpenFlags *modeIn)
     }
 
     return true;
-}
-
-void DLocalFilePrivate::freeCancellable(GCancellable *gcancellable)
-{
 }
 
 GInputStream *DLocalFilePrivate::inputStream()

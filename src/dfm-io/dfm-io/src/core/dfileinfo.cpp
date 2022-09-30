@@ -167,12 +167,6 @@ DFileInfo &DFileInfo::operator=(const DFileInfo &info)
     return *this;
 }
 
-void DFileInfo::queryInfoAsync(int ioPriority, DFileInfo::QueryInfoAsyncCallback func, void *userData) const
-{
-    if (d->queryInfoAsyncFunc)
-        d->queryInfoAsyncFunc(ioPriority, func, userData);
-}
-
 QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
 {
     if (d->attributeFunc)
@@ -181,6 +175,18 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
     if (success)
         *success = false;
     return std::get<1>(DFileInfo::attributeInfoMap.at(id));
+}
+
+void DFileInfo::attributeAsync(DFileInfo::AttributeID id, bool *success, int ioPriority, DFileInfo::AttributeAsyncCallback func, void *userData) const
+{
+    if (d->attributeAsyncFunc)
+        return d->attributeAsyncFunc(id, success, ioPriority, func, userData);
+
+    if (success)
+        *success = false;
+    const QVariant &value = std::get<1>(DFileInfo::attributeInfoMap.at(id));
+    if (func)
+        func(success, userData, value);
 }
 
 bool DFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
@@ -197,22 +203,6 @@ bool DFileInfo::hasAttribute(DFileInfo::AttributeID id) const
         return false;
 
     return d->hasAttributeFunc(id);
-}
-
-bool DFileInfo::removeAttribute(DFileInfo::AttributeID id)
-{
-    if (!d->removeAttributeFunc)
-        return false;
-
-    return d->removeAttributeFunc(id);
-}
-
-QList<DFileInfo::AttributeID> DFileInfo::attributeIDList() const
-{
-    if (!d->attributeListFunc)
-        return QList<DFileInfo::AttributeID>();
-
-    return d->attributeListFunc();
 }
 
 bool DFileInfo::exists() const
@@ -236,14 +226,7 @@ bool DFileInfo::refresh()
     return false;
 }
 
-bool DFileInfo::clearCache()
-{
-    if (d->clearCacheFunc)
-        return d->clearCacheFunc();
-    return false;
-}
-
-DFile::Permissions DFileInfo::permissions()
+DFile::Permissions DFileInfo::permissions() const
 {
     if (d->permissionFunc)
         return d->permissionFunc();
@@ -258,7 +241,7 @@ bool DFileInfo::setCustomAttribute(const char *key, const DFileAttributeType typ
     return d->setCustomAttributeFunc(key, type, value, flag);
 }
 
-QVariant DFileInfo::customAttribute(const char *key, const DFileInfo::DFileAttributeType type)
+QVariant DFileInfo::customAttribute(const char *key, const DFileInfo::DFileAttributeType type) const
 {
     if (!d->customAttributeFunc)
         return false;
@@ -281,6 +264,11 @@ void DFileInfo::registerAttribute(const DFileInfo::AttributeFunc &func)
     d->attributeFunc = func;
 }
 
+void DFileInfo::registerAttributeAsync(const DFileInfo::AttributeAsyncFunc &func)
+{
+    d->attributeAsyncFunc = func;
+}
+
 void DFileInfo::registerSetAttribute(const DFileInfo::SetAttributeFunc &func)
 {
     d->setAttributeFunc = func;
@@ -291,16 +279,6 @@ void DFileInfo::registerHasAttribute(const DFileInfo::HasAttributeFunc &func)
     d->hasAttributeFunc = func;
 }
 
-void DFileInfo::registerRemoveAttribute(const DFileInfo::RemoveAttributeFunc &func)
-{
-    d->removeAttributeFunc = func;
-}
-
-void DFileInfo::registerAttributeList(const DFileInfo::AttributeListFunc &func)
-{
-    d->attributeListFunc = func;
-}
-
 void DFileInfo::registerExists(const DFileInfo::ExistsFunc &func)
 {
     d->existsFunc = func;
@@ -309,11 +287,6 @@ void DFileInfo::registerExists(const DFileInfo::ExistsFunc &func)
 void DFileInfo::registerRefresh(const DFileInfo::RefreshFunc &func)
 {
     d->refreshFunc = func;
-}
-
-void DFileInfo::registerClearCache(const DFileInfo::ClearCacheFunc &func)
-{
-    d->clearCacheFunc = func;
 }
 
 void DFileInfo::registerPermissions(const DFile::PermissionFunc &func)
@@ -334,11 +307,6 @@ void DFileInfo::registerCustomAttribute(const DFileInfo::CustomAttributeFunc &fu
 void DFileInfo::registerLastError(const DFileInfo::LastErrorFunc &func)
 {
     d->lastErrorFunc = func;
-}
-
-void DFileInfo::registerQueryInfoAsync(const DFileInfo::QueryInfoAsyncFunc &func)
-{
-    d->queryInfoAsyncFunc = func;
 }
 
 QUrl DFileInfo::uri() const

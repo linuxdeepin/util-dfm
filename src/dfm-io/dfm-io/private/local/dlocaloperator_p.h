@@ -40,6 +40,12 @@ public:
     explicit DLocalOperatorPrivate(DLocalOperator *q);
     ~DLocalOperatorPrivate();
 
+    typedef struct
+    {
+        DOperator::FileOperateCallbackFunc callback;
+        gpointer userData;
+    } OperateFileOp;
+
     bool renameFile(const QString &new_name);
     bool renameFile(const QUrl &toUrl);
     bool copyFile(const QUrl &dstUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
@@ -72,7 +78,13 @@ public:
     void setErrorFromGError(GError *gerror);
 
     GFile *makeGFile(const QUrl &url);
-    void freeCancellable(GCancellable *gcancellable);
+
+    static void renameCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void copyCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void trashCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void deleteCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void touchCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void makeDirCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
 
 private:
     DLocalOperator *q = nullptr;

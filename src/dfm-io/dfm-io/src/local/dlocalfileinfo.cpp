@@ -74,48 +74,23 @@ bool DLocalFileInfoPrivate::queryInfoSync()
     const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
 
     g_autoptr(GError) gerror = nullptr;
-    GFileInfo *gfileinfo = g_file_query_info(gfile, attributes, GFileQueryInfoFlags(flag), nullptr, &gerror);
+    GFileInfo *fileinfo = g_file_query_info(gfile, attributes, GFileQueryInfoFlags(flag), nullptr, &gerror);
     if (gerror)
         setErrorFromGError(gerror);
-    if (!gfileinfo)
+    if (!fileinfo)
         return false;
 
     if (this->gfileinfo) {
         g_object_unref(this->gfileinfo);
         this->gfileinfo = nullptr;
     }
-    this->gfileinfo = gfileinfo;
+    this->gfileinfo = fileinfo;
     initFinished = true;
 
     return true;
 }
 
-typedef struct
-{
-    DFileInfo::QueryInfoAsyncCallback callback;
-    gpointer user_data;
-    QPointer<DLocalFileInfoPrivate> me;
-} queryInfoAsyncOp;
-
-void queryInfoAsyncCallback(GObject *source_object,
-                            GAsyncResult *res,
-                            gpointer user_data)
-{
-    queryInfoAsyncOp *data = static_cast<queryInfoAsyncOp *>(user_data);
-    GFile *file = (GFile *)(source_object);
-    g_autoptr(GError) gerror = nullptr;
-    GFileInfo *fileinfo = g_file_query_info_finish(file, res, &gerror);
-
-    if (data->me) {
-        data->me->gfileinfo = fileinfo;
-        data->me->initFinished = true;
-    }
-
-    if (data->callback)
-        data->callback(fileinfo ? true : false, data->user_data);
-}
-
-void DLocalFileInfoPrivate::queryInfoAsync(int ioPriority, DFileInfo::QueryInfoAsyncCallback func, void *userData)
+void DLocalFileInfoPrivate::queryInfoAsync(int ioPriority, DLocalFileInfo::QueryInfoAsyncCallback func, void *userData)
 {
     if (!infoReseted && this->gfileinfo) {
         initFinished = true;
@@ -128,9 +103,9 @@ void DLocalFileInfoPrivate::queryInfoAsync(int ioPriority, DFileInfo::QueryInfoA
     const char *attributes = q->queryAttributes();
     const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
 
-    queryInfoAsyncOp *dataOp = g_new0(queryInfoAsyncOp, 1);
+    QueryInfoAsyncOp *dataOp = g_new0(QueryInfoAsyncOp, 1);
     dataOp->callback = func;
-    dataOp->user_data = userData;
+    dataOp->userData = userData;
     dataOp->me = this;
 
     g_file_query_info_async(this->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, nullptr, queryInfoAsyncCallback, dataOp);
@@ -145,48 +120,87 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
     }
 
     QVariant retValue;
-    if (attributesCache.count(id) == 0) {
-        if (id > DFileInfo::AttributeID::kCustomStart) {
-            const QString &path = q->uri().path();
-            retValue = DLocalHelper::customAttributeFromPathAndInfo(path, gfileinfo, id);
-        } else {
-            if (gfileinfo) {
-                DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
-                if (!attributesRealizationSelf.contains(id)) {
-                    retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
-                    if (errorCode != DFM_IO_ERROR_NONE)
-                        error.setCode(errorCode);
-                } else {
-                    retValue = attributesBySelf(id);
-                }
+    if (id > DFileInfo::AttributeID::kCustomStart) {
+        const QString &path = q->uri().path();
+        retValue = DLocalHelper::customAttributeFromPathAndInfo(path, gfileinfo, id);
+    } else {
+        if (gfileinfo) {
+            DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
+            if (!attributesRealizationSelf.contains(id)) {
+                retValue = DLocalHelper::attributeFromGFileInfo(gfileinfo, id, errorCode);
+                if (errorCode != DFM_IO_ERROR_NONE)
+                    error.setCode(errorCode);
+            } else {
+                retValue = attributesBySelf(id);
             }
         }
-        if (retValue.isValid())
-            cacheAttribute(id, retValue);
-
-        if (success)
-            *success = retValue.isValid();
-        if (!retValue.isValid())
-            retValue = std::get<1>(DFileInfo::attributeInfoMap.at(id));
-        return retValue;
     }
+
     if (success)
-        *success = true;
-    return attributesCache.value(id);
+        *success = retValue.isValid();
+
+    if (!retValue.isValid())
+        retValue = std::get<1>(DFileInfo::attributeInfoMap.at(id));
+
+    return retValue;
+}
+
+typedef struct
+{
+    DFileInfo::AttributeAsyncCallback callback;
+    gpointer user_data;
+    DFileInfo::AttributeID id;
+    QPointer<DLocalFileInfoPrivate> me;
+} QueryFileInfoFromAttributeOp;
+
+void queryFileInfoFromAttributeCallback(bool ok, void *userData)
+{
+    QueryFileInfoFromAttributeOp *dataOp = static_cast<QueryFileInfoFromAttributeOp *>(userData);
+    if (!dataOp)
+        return;
+
+    if (dataOp->callback) {
+        if (ok) {
+            bool success = false;
+            const QVariant &value = dataOp->me->attribute(dataOp->id, &success);
+            dataOp->callback(success, dataOp->user_data, value);
+        } else {
+            dataOp->callback(false, dataOp->user_data, QVariant());
+        }
+    }
+
+    dataOp->callback = nullptr;
+    dataOp->user_data = nullptr;
+    dataOp->me = nullptr;
+    g_free(dataOp);
+}
+
+void DLocalFileInfoPrivate::attributeAsync(DFileInfo::AttributeID id, bool *success, int ioPriority, DFileInfo::AttributeAsyncCallback func, void *userData)
+{
+    if (!initFinished) {
+        // query async
+        QueryFileInfoFromAttributeOp *dataOp = g_new0(QueryFileInfoFromAttributeOp, 1);
+        dataOp->callback = func;
+        dataOp->user_data = userData;
+        dataOp->id = id;
+        dataOp->me = this;
+
+        queryInfoAsync(ioPriority, queryFileInfoFromAttributeCallback, dataOp);
+        return;
+    }
+
+    const QVariant &value = attribute(id, success);
+    if (func)
+        func(success, userData, value);
 }
 
 bool DLocalFileInfoPrivate::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 {
-    cacheAttribute(id, value);
-    DLocalHelper::setAttributeByGFileInfo(gfileinfo, id, value);
-    return true;
+    return DLocalHelper::setAttributeByGFileInfo(gfileinfo, id, value);
 }
 
 bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
 {
-    if (attributesCache.count(id) > 0)
-        return true;
-
     if (!initFinished) {
         bool succ = queryInfoSync();
         if (!succ)
@@ -199,22 +213,6 @@ bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
     }
 
     return false;
-}
-
-bool DLocalFileInfoPrivate::removeAttribute(DFileInfo::AttributeID id)
-{
-    if (attributesCache.count(id) > 0)
-        attributesCache.remove(id);
-    return true;
-}
-
-bool DLocalFileInfoPrivate::cacheAttribute(DFileInfo::AttributeID id, const QVariant &value)
-{
-    if (attributesCache.count(id) > 0)
-        attributesCache.remove(id);
-
-    attributesCache.insert(id, value);
-    return true;
 }
 
 QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
@@ -231,20 +229,18 @@ QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
     return retValue;
 }
 
-QList<DFileInfo::AttributeID> DLocalFileInfoPrivate::attributeIDList() const
+void DLocalFileInfoPrivate::freeQueryInfoAsyncOp(QueryInfoAsyncOp *op)
 {
-    return attributesCache.keys();
+    op->callback = nullptr;
+    op->userData = nullptr;
+    op->me = nullptr;
+    g_free(op);
 }
 
 bool DLocalFileInfoPrivate::exists() const
 {
-    /*const QUrl &url = q->uri();
-    const QString &uri = url.toString();
-
-    g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toLocal8Bit().data());
-
-    return g_file_query_file_type(gfile, G_FILE_QUERY_INFO_NONE, nullptr) != G_FILE_TYPE_UNKNOWN;*/
-    // g_file_query_file_type will block io, use g_file_info_get_file_type instead
+    if (!gfileinfo)
+        return false;
     return g_file_info_get_file_type(gfileinfo) != G_FILE_TYPE_UNKNOWN;
 }
 
@@ -255,12 +251,6 @@ bool DLocalFileInfoPrivate::refresh()
     infoReseted = false;
 
     return ret;
-}
-
-bool DLocalFileInfoPrivate::clearCache()
-{
-    attributesCache.clear();
-    return true;
 }
 
 DFile::Permissions DLocalFileInfoPrivate::permissions()
@@ -359,8 +349,36 @@ void DLocalFileInfoPrivate::setErrorFromGError(GError *gerror)
     error.setCode(DFMIOErrorCode(gerror->code));
 }
 
-void DLocalFileInfoPrivate::freeCancellable(GCancellable *gcancellable)
+void DLocalFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
+    QueryInfoAsyncOp *data = static_cast<QueryInfoAsyncOp *>(userData);
+    if (!data)
+        return;
+
+    GFile *file = G_FILE(sourceObject);
+    if (!file) {
+        freeQueryInfoAsyncOp(data);
+        return;
+    }
+
+    g_autoptr(GError) gerror = nullptr;
+    GFileInfo *fileinfo = g_file_query_info_finish(file, res, &gerror);
+
+    if (gerror) {
+        data->me->setErrorFromGError(gerror);
+        freeQueryInfoAsyncOp(data);
+        return;
+    }
+
+    if (data->me) {
+        data->me->gfileinfo = fileinfo;
+        data->me->initFinished = true;
+    }
+
+    if (data->callback)
+        data->callback(fileinfo ? true : false, data->userData);
+
+    freeQueryInfoAsyncOp(data);
 }
 
 DLocalFileInfo::DLocalFileInfo(const QUrl &uri,
@@ -369,18 +387,15 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri,
     : DFileInfo(uri, attributes, flag), d(new DLocalFileInfoPrivate(this))
 {
     registerAttribute(std::bind(&DLocalFileInfo::attribute, this, std::placeholders::_1, std::placeholders::_2));
+    registerAttributeAsync(bind_field(this, &DLocalFileInfo::attributeAsync));
     registerSetAttribute(std::bind(&DLocalFileInfo::setAttribute, this, std::placeholders::_1, std::placeholders::_2));
     registerHasAttribute(std::bind(&DLocalFileInfo::hasAttribute, this, std::placeholders::_1));
-    registerRemoveAttribute(std::bind(&DLocalFileInfo::removeAttribute, this, std::placeholders::_1));
-    registerAttributeList(std::bind(&DLocalFileInfo::attributeIDList, this));
     registerExists(std::bind(&DLocalFileInfo::exists, this));
     registerRefresh(std::bind(&DLocalFileInfo::refresh, this));
-    registerClearCache(std::bind(&DLocalFileInfo::clearCache, this));
     registerPermissions(std::bind(&DLocalFileInfo::permissions, this));
     registerSetCustomAttribute(std::bind(&DLocalFileInfo::setCustomAttribute, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     registerCustomAttribute(std::bind(&DLocalFileInfo::customAttribute, this, std::placeholders::_1, std::placeholders::_2));
     registerLastError(std::bind(&DLocalFileInfo::lastError, this));
-    registerQueryInfoAsync(bind_field(this, &DLocalFileInfo::queryInfoAsync));
 
     d->initNormal();
 }
@@ -395,14 +410,14 @@ DLocalFileInfo::~DLocalFileInfo()
 {
 }
 
-void DLocalFileInfo::queryInfoAsync(int ioPriority, DFileInfo::QueryInfoAsyncCallback func, void *userData) const
-{
-    d->queryInfoAsync(ioPriority, func, userData);
-}
-
-QVariant DLocalFileInfo::attribute(DFileInfo::AttributeID id, bool *success /*= nullptr */)
+QVariant DLocalFileInfo::attribute(DFileInfo::AttributeID id, bool *success /*= nullptr */) const
 {
     return d->attribute(id, success);
+}
+
+void DLocalFileInfo::attributeAsync(DFileInfo::AttributeID id, bool *success, int ioPriority, DFileInfo::AttributeAsyncCallback func, void *userData) const
+{
+    d->attributeAsync(id, success, ioPriority, func, userData);
 }
 
 bool DLocalFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
@@ -410,19 +425,9 @@ bool DLocalFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &val
     return d->setAttribute(id, value);
 }
 
-bool DLocalFileInfo::hasAttribute(DFileInfo::AttributeID id)
+bool DLocalFileInfo::hasAttribute(DFileInfo::AttributeID id) const
 {
     return d->hasAttribute(id);
-}
-
-bool DLocalFileInfo::removeAttribute(DFileInfo::AttributeID id)
-{
-    return d->removeAttribute(id);
-}
-
-QList<DFileInfo::AttributeID> DLocalFileInfo::attributeIDList() const
-{
-    return d->attributeIDList();
 }
 
 bool DLocalFileInfo::exists() const
@@ -435,12 +440,7 @@ bool DLocalFileInfo::refresh()
     return d->refresh();
 }
 
-bool DLocalFileInfo::clearCache()
-{
-    return d->clearCache();
-}
-
-DFile::Permissions DLocalFileInfo::permissions()
+DFile::Permissions DLocalFileInfo::permissions() const
 {
     return d->permissions();
 }
@@ -450,7 +450,7 @@ bool DLocalFileInfo::setCustomAttribute(const char *key, const DFileInfo::DFileA
     return d->setCustomAttribute(key, type, value, flag);
 }
 
-QVariant DLocalFileInfo::customAttribute(const char *key, const DFileInfo::DFileAttributeType type)
+QVariant DLocalFileInfo::customAttribute(const char *key, const DFileInfo::DFileAttributeType type) const
 {
     return d->customAttribute(key, type);
 }

@@ -33,6 +33,7 @@
 #include "core/dfileinfo.h"
 
 #include <QMap>
+#include <QPointer>
 
 BEGIN_IO_NAMESPACE
 
@@ -44,18 +45,25 @@ public:
     explicit DLocalFileInfoPrivate(DLocalFileInfo *q);
     ~DLocalFileInfoPrivate();
 
-    void initNormal();
-    bool queryInfoSync();
+    typedef struct
+    {
+        DLocalFileInfo::QueryInfoAsyncCallback callback;
+        gpointer userData;
+        QPointer<DLocalFileInfoPrivate> me;
+    } QueryInfoAsyncOp;
 
-    void queryInfoAsync(int ioPriority = 0, DFileInfo::QueryInfoAsyncCallback func = nullptr, void *userData = nullptr);
+    void initNormal();
+
+    bool queryInfoSync();
+    void queryInfoAsync(int ioPriority = 0, DLocalFileInfo::QueryInfoAsyncCallback func = nullptr, void *userData = nullptr);
+
     QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr);
+    void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, DFileInfo::AttributeAsyncCallback func = nullptr, void *userData = nullptr);
+
     bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
     bool hasAttribute(DFileInfo::AttributeID id);
-    bool removeAttribute(DFileInfo::AttributeID id);
-    QList<DFileInfo::AttributeID> attributeIDList() const;
     bool exists() const;
     bool refresh();
-    bool clearCache();
     DFile::Permissions permissions();
 
     bool setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::kTypeNone);
@@ -64,14 +72,12 @@ public:
     DFMIOError lastError();
     void setErrorFromGError(GError *gerror);
 
-    void freeCancellable(GCancellable *gcancellable);
+    static void queryInfoAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void freeQueryInfoAsyncOp(QueryInfoAsyncOp *op);
 
-private:
-    bool cacheAttribute(DFileInfo::AttributeID id, const QVariant &value);
     QVariant attributesBySelf(DFileInfo::AttributeID id);
 
 public:
-    QMap<DFileInfo::AttributeID, QVariant> attributesCache;
     QList<DFileInfo::AttributeID> attributesRealizationSelf;
     GFile *gfile = nullptr;
     GFileInfo *gfileinfo = nullptr;

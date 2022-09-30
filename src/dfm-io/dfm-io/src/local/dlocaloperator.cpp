@@ -139,23 +139,19 @@ bool DLocalOperatorPrivate::moveFile(const QUrl &to, DFile::CopyFlag flag, DOper
     return ret;
 }
 
-typedef struct
+void DLocalOperatorPrivate::renameCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    DOperator::FileOperateCallbackFunc callback;
-    gpointer user_data;
-} OperateFileOp;
-
-void RenameCallback(GObject *source_object,
-                    GAsyncResult *res,
-                    gpointer user_data)
-{
-    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
-    GFile *gfile = (GFile *)(source_object);
+    OperateFileOp *data = static_cast<OperateFileOp *>(userData);
+    GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     GFile *gfileRet = g_file_set_display_name_finish(gfile, res, &gerror);
     g_object_unref(gfileRet);
     if (data->callback)
-        data->callback(!gerror, user_data);
+        data->callback(!gerror, userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    g_free(data);
 }
 
 void DLocalOperatorPrivate::renameFileAsync(const QString &newName, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
@@ -169,21 +165,23 @@ void DLocalOperatorPrivate::renameFileAsync(const QString &newName, int ioPriori
 
     OperateFileOp *data = g_new0(OperateFileOp, 1);
     data->callback = operatefunc;
-    data->user_data = userData;
+    data->userData = userData;
 
-    g_file_set_display_name_async(gfile, gname, ioPriority, nullptr, RenameCallback, data);
+    g_file_set_display_name_async(gfile, gname, ioPriority, nullptr, renameCallback, data);
 }
 
-void CopyCallback(GObject *source_object,
-                  GAsyncResult *res,
-                  gpointer user_data)
+void DLocalOperatorPrivate::copyCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
-    GFile *gfile = (GFile *)(source_object);
+    OperateFileOp *data = static_cast<OperateFileOp *>(userData);
+    GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     gboolean succ = g_file_copy_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(succ, user_data);
+        data->callback(succ, userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    g_free(data);
 }
 
 void DLocalOperatorPrivate::copyFileAsync(const QUrl &urlTo, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData,
@@ -204,20 +202,23 @@ void DLocalOperatorPrivate::copyFileAsync(const QUrl &urlTo, DFile::CopyFlag fla
 
     OperateFileOp *data = g_new0(OperateFileOp, 1);
     data->callback = operatefunc;
-    data->user_data = userData;
+    data->userData = userData;
 
-    g_file_copy_async(gfile_from, gfileTarget, GFileCopyFlags(flag), ioPriority, nullptr, func, progressCallbackData, CopyCallback, data);
+    g_file_copy_async(gfile_from, gfileTarget, GFileCopyFlags(flag), ioPriority, nullptr, func, progressCallbackData, copyCallback, data);
 }
 
 void DLocalOperatorPrivate::moveFileAsync(const QUrl &to, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc progressFunc, void *progressData,
                                           int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
+    // since 2.72, but current gio version is 2.58
+    //g_file_move_async(gfile_from, gfile_to, GFileCopyFlags(flag), ioPriority, nullptr, progressFunc, progressData, nullptr, userData);
+
     Q_UNUSED(ioPriority)
     Q_UNUSED(operatefunc)
     Q_UNUSED(userData)
-
-    // TODO(lanxs) gio no move async func
-    moveFile(to, flag, progressFunc, progressData);
+    bool ret = moveFile(to, flag, progressFunc, progressData);
+    if (operatefunc)
+        operatefunc(ret, userData);
 }
 
 bool DLocalOperatorPrivate::trashFile()
@@ -286,16 +287,18 @@ bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackFunc func, vo
     return ret;
 }
 
-void TrashCallback(GObject *source_object,
-                   GAsyncResult *res,
-                   gpointer user_data)
+void DLocalOperatorPrivate::trashCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
-    GFile *gfile = (GFile *)(source_object);
+    OperateFileOp *data = static_cast<OperateFileOp *>(userData);
+    GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     bool succ = g_file_trash_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(succ, user_data);
+        data->callback(succ, userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    g_free(data);
 }
 
 void DLocalOperatorPrivate::trashFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
@@ -305,21 +308,23 @@ void DLocalOperatorPrivate::trashFileAsync(int ioPriority, DOperator::FileOperat
 
     OperateFileOp *data = g_new0(OperateFileOp, 1);
     data->callback = operatefunc;
-    data->user_data = userData;
+    data->userData = userData;
 
-    g_file_trash_async(gfile, ioPriority, nullptr, TrashCallback, data);
+    g_file_trash_async(gfile, ioPriority, nullptr, trashCallback, data);
 }
 
-void DeleteCallback(GObject *source_object,
-                    GAsyncResult *res,
-                    gpointer user_data)
+void DLocalOperatorPrivate::deleteCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
-    GFile *gfile = (GFile *)(source_object);
+    OperateFileOp *data = static_cast<OperateFileOp *>(userData);
+    GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     bool succ = g_file_delete_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(succ, user_data);
+        data->callback(succ, userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    g_free(data);
 }
 
 void DLocalOperatorPrivate::deleteFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
@@ -329,9 +334,9 @@ void DLocalOperatorPrivate::deleteFileAsync(int ioPriority, DOperator::FileOpera
 
     OperateFileOp *data = g_new0(OperateFileOp, 1);
     data->callback = operatefunc;
-    data->user_data = userData;
+    data->userData = userData;
 
-    g_file_delete_async(gfile, ioPriority, nullptr, DeleteCallback, data);
+    g_file_delete_async(gfile, ioPriority, nullptr, deleteCallback, data);
 }
 
 void DLocalOperatorPrivate::restoreFileAsync(DOperator::ProgressCallbackFunc progressFunc, void *progressData,
@@ -394,42 +399,44 @@ bool DLocalOperatorPrivate::createLink(const QUrl &link)
     return ret;
 }
 
-void TouchCallback(GObject *source_object,
-                   GAsyncResult *res,
-                   gpointer user_data)
+void DLocalOperatorPrivate::touchCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
-    GFile *gfile = (GFile *)(source_object);
+    OperateFileOp *data = static_cast<OperateFileOp *>(userData);
+    GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     g_autoptr(GFileOutputStream) stream = g_file_create_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(!stream, user_data);
+        data->callback(!stream, userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    g_free(data);
 }
 
 void DLocalOperatorPrivate::touchFileAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
-    g_autoptr(GError) gerror = nullptr;
-
     const QUrl &uri = q->uri();
     g_autoptr(GFile) gfile = makeGFile(uri);
 
     OperateFileOp *data = g_new0(OperateFileOp, 1);
     data->callback = operatefunc;
-    data->user_data = userData;
+    data->userData = userData;
 
-    g_file_create_async(gfile, GFileCreateFlags::G_FILE_CREATE_REPLACE_DESTINATION, ioPriority, nullptr, TouchCallback, data);
+    g_file_create_async(gfile, GFileCreateFlags::G_FILE_CREATE_REPLACE_DESTINATION, ioPriority, nullptr, touchCallback, data);
 }
 
-void MakeDirCallback(GObject *source_object,
-                     GAsyncResult *res,
-                     gpointer user_data)
+void DLocalOperatorPrivate::makeDirCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
-    OperateFileOp *data = static_cast<OperateFileOp *>(user_data);
-    GFile *gfile = (GFile *)(source_object);
+    OperateFileOp *data = static_cast<OperateFileOp *>(userData);
+    GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     bool succ = g_file_make_directory_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(succ, user_data);
+        data->callback(succ, userData);
+
+    data->callback = nullptr;
+    data->userData = nullptr;
+    g_free(data);
 }
 
 void DLocalOperatorPrivate::makeDirectoryAsync(int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
@@ -440,9 +447,9 @@ void DLocalOperatorPrivate::makeDirectoryAsync(int ioPriority, DOperator::FileOp
 
     OperateFileOp *data = g_new0(OperateFileOp, 1);
     data->callback = operatefunc;
-    data->user_data = userData;
+    data->userData = userData;
 
-    g_file_make_directory_async(gfile, ioPriority, nullptr, MakeDirCallback, data);
+    g_file_make_directory_async(gfile, ioPriority, nullptr, makeDirCallback, data);
 }
 
 void DLocalOperatorPrivate::createLinkAsync(const QUrl &link, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
@@ -485,10 +492,6 @@ DFMIOError DLocalOperatorPrivate::lastError()
 GFile *DLocalOperatorPrivate::makeGFile(const QUrl &url)
 {
     return g_file_new_for_uri(url.toString().toLocal8Bit().data());
-}
-
-void DLocalOperatorPrivate::freeCancellable(GCancellable *gcancellable)
-{
 }
 
 void DLocalOperatorPrivate::setErrorFromGError(GError *gerror)

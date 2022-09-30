@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    const char* uri = argv[1];
+    const char *uri = argv[1];
     QUrl url(QString::fromLocal8Bit(uri));
 
     if (!url.isValid())

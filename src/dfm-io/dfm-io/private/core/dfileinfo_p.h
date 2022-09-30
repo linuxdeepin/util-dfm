@@ -71,18 +71,15 @@ public:
     DFileInfo::AttributeExtendFuncCallback attributeExtendFuncCallback = nullptr;
 
     DFileInfo::AttributeFunc attributeFunc = nullptr;
+    DFileInfo::AttributeAsyncFunc attributeAsyncFunc = nullptr;
     DFileInfo::SetAttributeFunc setAttributeFunc = nullptr;
     DFileInfo::HasAttributeFunc hasAttributeFunc = nullptr;
-    DFileInfo::RemoveAttributeFunc removeAttributeFunc = nullptr;
-    DFileInfo::AttributeListFunc attributeListFunc = nullptr;
     DFileInfo::ExistsFunc existsFunc = nullptr;
     DFileInfo::RefreshFunc refreshFunc = nullptr;
-    DFileInfo::ClearCacheFunc clearCacheFunc = nullptr;
     DFileInfo::SetCustomAttributeFunc setCustomAttributeFunc = nullptr;
     DFileInfo::CustomAttributeFunc customAttributeFunc = nullptr;
     DFile::PermissionFunc permissionFunc = nullptr;
     DFileInfo::LastErrorFunc lastErrorFunc = nullptr;
-    DFileInfo::QueryInfoAsyncFunc queryInfoAsyncFunc = nullptr;
 };
 
 END_IO_NAMESPACE

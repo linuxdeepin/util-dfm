@@ -36,6 +36,9 @@ class DLocalFileInfoPrivate;
 class DLocalFileInfo : public DFileInfo
 {
 public:
+    // callback, use function pointer
+    using QueryInfoAsyncCallback = std::function<void(bool, void *)>;
+
     explicit DLocalFileInfo(const QUrl &uri, const char *attributes = "*",
                             const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::kTypeNone);
     explicit DLocalFileInfo(const QUrl &uri, void *fileInfo,
@@ -43,19 +46,17 @@ public:
 
     virtual ~DLocalFileInfo();
 
-    void queryInfoAsync(int ioPriority = 0, QueryInfoAsyncCallback func = nullptr, void *userData = nullptr) const DFM_OVERRIDE;
-    QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) DFM_OVERRIDE;
+    QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) const DFM_OVERRIDE;
+    void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, AttributeAsyncCallback func = nullptr, void *userData = nullptr) const DFM_OVERRIDE;
+
     bool setAttribute(DFileInfo::AttributeID id, const QVariant &value) DFM_OVERRIDE;
-    bool hasAttribute(DFileInfo::AttributeID id) DFM_OVERRIDE;
-    bool removeAttribute(DFileInfo::AttributeID id) DFM_OVERRIDE;
-    QList<DFileInfo::AttributeID> attributeIDList() const DFM_OVERRIDE;
+    bool hasAttribute(DFileInfo::AttributeID id) const DFM_OVERRIDE;
     bool exists() const DFM_OVERRIDE;
     bool refresh() DFM_OVERRIDE;
-    bool clearCache() DFM_OVERRIDE;
-    DFile::Permissions permissions() DFM_OVERRIDE;
+    DFile::Permissions permissions() const DFM_OVERRIDE;
     // custom attribute
     bool setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag = FileQueryInfoFlags::kTypeNone) DFM_OVERRIDE;
-    QVariant customAttribute(const char *key, const DFileAttributeType type) DFM_OVERRIDE;
+    QVariant customAttribute(const char *key, const DFileAttributeType type) const DFM_OVERRIDE;
     DFMIOError lastError() const DFM_OVERRIDE;
 
 private:

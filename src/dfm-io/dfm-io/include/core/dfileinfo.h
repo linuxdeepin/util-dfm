@@ -209,22 +209,19 @@ public:
     static AttributeInfoMap attributeInfoMap;
 
     // callback, use function pointer
-    using QueryInfoAsyncCallback = std::function<void(bool, void *)>;
+    using AttributeAsyncCallback = std::function<void(bool, void *, QVariant)>;
     using AttributeExtendFuncCallback = std::function<void(bool, QMap<AttributeExtendID, QVariant>)>;
 
     // register function, use std::function
     using AttributeFunc = std::function<QVariant(DFileInfo::AttributeID, bool *)>;
+    using AttributeAsyncFunc = std::function<void(DFileInfo::AttributeID, bool *success, int ioPriority, AttributeAsyncCallback func, void *userData)>;
     using SetAttributeFunc = std::function<bool(DFileInfo::AttributeID, const QVariant &)>;
     using HasAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
-    using RemoveAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
-    using AttributeListFunc = std::function<QList<DFileInfo::AttributeID>()>;
     using ExistsFunc = std::function<bool()>;
     using RefreshFunc = std::function<bool()>;
-    using ClearCacheFunc = std::function<bool()>;
     using SetCustomAttributeFunc = std::function<bool(const char *, const DFileAttributeType, const void *, const FileQueryInfoFlags)>;
     using CustomAttributeFunc = std::function<QVariant(const char *, const DFileAttributeType)>;
     using LastErrorFunc = std::function<DFMIOError()>;
-    using QueryInfoAsyncFunc = std::function<void(int, QueryInfoAsyncCallback, void *)>;
 
 public:
     DFileInfo();
@@ -233,22 +230,19 @@ public:
     virtual ~DFileInfo();
     DFileInfo &operator=(const DFileInfo &info);
 
-    DFM_VIRTUAL void queryInfoAsync(int ioPriority = 0, QueryInfoAsyncCallback func = nullptr, void *userData = nullptr) const;
-
     DFM_VIRTUAL QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) const;
+    DFM_VIRTUAL void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, AttributeAsyncCallback func = nullptr, void *userData = nullptr) const;
+
     DFM_VIRTUAL bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
     DFM_VIRTUAL bool hasAttribute(DFileInfo::AttributeID id) const;
-    DFM_VIRTUAL bool removeAttribute(DFileInfo::AttributeID id);
-    DFM_VIRTUAL QList<DFileInfo::AttributeID> attributeIDList() const;
 
     DFM_VIRTUAL bool exists() const;
     DFM_VIRTUAL bool refresh();
-    DFM_VIRTUAL bool clearCache();
-    DFM_VIRTUAL DFile::Permissions permissions();
+    DFM_VIRTUAL DFile::Permissions permissions() const;
 
     // custom attribute
     DFM_VIRTUAL bool setCustomAttribute(const char *key, const DFileAttributeType type, const void *value, const FileQueryInfoFlags flag = FileQueryInfoFlags::kTypeNone);
-    DFM_VIRTUAL QVariant customAttribute(const char *key, const DFileAttributeType type);
+    DFM_VIRTUAL QVariant customAttribute(const char *key, const DFileAttributeType type) const;
 
     // extend attribute
     void attributeExtend(MediaType type, QList<AttributeExtendID> ids, AttributeExtendFuncCallback callback = nullptr);
@@ -258,18 +252,15 @@ public:
 
     // register
     void registerAttribute(const AttributeFunc &func);
+    void registerAttributeAsync(const AttributeAsyncFunc &func);
     void registerSetAttribute(const SetAttributeFunc &func);
     void registerHasAttribute(const HasAttributeFunc &func);
-    void registerRemoveAttribute(const RemoveAttributeFunc &func);
-    void registerAttributeList(const AttributeListFunc &func);
     void registerExists(const ExistsFunc &func);
     void registerRefresh(const RefreshFunc &func);
-    void registerClearCache(const ClearCacheFunc &func);
     void registerPermissions(const DFile::PermissionFunc &func);
     void registerSetCustomAttribute(const SetCustomAttributeFunc &func);
     void registerCustomAttribute(const CustomAttributeFunc &func);
     void registerLastError(const LastErrorFunc &func);
-    void registerQueryInfoAsync(const QueryInfoAsyncFunc &func);
 
     QUrl uri() const;
     char *queryAttributes() const;

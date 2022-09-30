@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2020 ~ 2021 Uniontech Software Technology Co., Ltd.
  *
  * Author:     dengkeyun<dengkeyun@uniontech.com>
@@ -31,6 +31,8 @@
 
 #include "gio/gio.h"
 
+#include <QPointer>
+
 BEGIN_IO_NAMESPACE
 
 class DLocalFile;
@@ -40,6 +42,34 @@ class DLocalFilePrivate : public QObject
 public:
     explicit DLocalFilePrivate(DLocalFile *q);
     ~DLocalFilePrivate();
+
+    typedef struct
+    {
+        DFile::ReadCallbackFunc callback;
+        gpointer userData;
+    } ReadAsyncOp;
+
+    typedef struct
+    {
+        DFile::ReadQCallbackFunc callback;
+        char *data;
+        gpointer userData;
+    } ReadQAsyncOp;
+
+    typedef struct
+    {
+        char *data;
+        int ioPriority;
+        DFile::ReadAllCallbackFunc callback;
+        gpointer userData;
+        QPointer<DLocalFilePrivate> me;
+    } ReadAllAsyncOp;
+
+    typedef struct
+    {
+        DFile::WriteCallbackFunc callback;
+        gpointer userData;
+    } WriteAsyncOp;
 
     bool open(DFile::OpenFlags mode);
     bool close();
@@ -76,7 +106,10 @@ public:
 
     bool checkOpenFlags(DFile::OpenFlags *mode);
 
-    void freeCancellable(GCancellable *gcancellable);
+    static void readAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void readQAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void readAllAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void writeAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
 
 public:
     GIOStream *ioStream = nullptr;

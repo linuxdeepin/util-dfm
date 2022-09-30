@@ -34,35 +34,37 @@ USING_IO_NAMESPACE
 
 namespace LocalFunc {
 
-bool isFile(GFileInfo *fileInfo)
+static bool isFile(GFileInfo *fileInfo)
 {
     if (!fileInfo)
         return false;
     return g_file_info_get_file_type(fileInfo) == G_FILE_TYPE_REGULAR;
 }
 
-bool isDir(GFileInfo *fileInfo)
+static bool isDir(GFileInfo *fileInfo)
 {
     if (!fileInfo)
         return false;
     return g_file_info_get_file_type(fileInfo) == G_FILE_TYPE_DIRECTORY;
 }
 
-bool isRoot(const QString &path)
+static bool isRoot(const QString &path)
 {
     return path == "/";
 }
 
-QString fileName(const QString &path)
+static QString fileName(GFileInfo *fileInfo)
 {
-    g_autoptr(GFile) gfile = g_file_new_for_path(path.toLocal8Bit().data());
-    g_autofree gchar *baseName = g_file_get_basename(gfile);
-    return QString::fromLocal8Bit(baseName);
+    if (!fileInfo)
+        return QString();
+
+    const char *name = g_file_info_get_name(fileInfo);
+    return QString::fromLocal8Bit(name);
 }
 
-QString baseName(const QString &path, GFileInfo *fileInfo)
+static QString baseName(GFileInfo *fileInfo)
 {
-    const QString &fullName = fileName(path);
+    const QString &fullName = fileName(fileInfo);
 
     if (isDir(fileInfo))
         return fullName;
@@ -74,9 +76,9 @@ QString baseName(const QString &path, GFileInfo *fileInfo)
         return fullName.left(pos2);
 }
 
-QString completeBaseName(const QString &path, GFileInfo *fileInfo)
+static QString completeBaseName(GFileInfo *fileInfo)
 {
-    const QString &fullName = fileName(path);
+    const QString &fullName = fileName(fileInfo);
 
     if (isDir(fileInfo))
         return fullName;
@@ -88,13 +90,13 @@ QString completeBaseName(const QString &path, GFileInfo *fileInfo)
         return fullName.left(pos2);
 }
 
-QString suffix(const QString &path, GFileInfo *fileInfo)
+static QString suffix(GFileInfo *fileInfo)
 {
     // path
     if (isDir(fileInfo))
         return "";
 
-    const QString &fullName = fileName(path);
+    const QString &fullName = fileName(fileInfo);
 
     int pos2 = fullName.lastIndexOf(".");
     if (pos2 == -1)
@@ -103,12 +105,12 @@ QString suffix(const QString &path, GFileInfo *fileInfo)
         return fullName.mid(pos2 + 1);
 }
 
-QString completeSuffix(const QString &path, GFileInfo *fileInfo)
+static QString completeSuffix(GFileInfo *fileInfo)
 {
     if (isDir(fileInfo))
         return "";
 
-    const QString &fullName = fileName(path);
+    const QString &fullName = fileName(fileInfo);
 
     int pos2 = fullName.indexOf(".");
     if (pos2 == -1)
@@ -117,35 +119,25 @@ QString completeSuffix(const QString &path, GFileInfo *fileInfo)
         return fullName.mid(pos2 + 1);
 }
 
-bool exists(const QString &path)
-{
-    g_autoptr(GFile) gfile = g_file_new_for_path(path.toStdString().c_str());
-    const bool exists = g_file_query_exists(gfile, nullptr);
-
-    return exists;
-}
-
-QString filePath(const QString &path)
+static QString filePath(const QString &path)
 {
     g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
 
-    g_autofree gchar *gpath = g_file_get_path(file);
+    g_autofree gchar *gpath = g_file_get_path(file);   // no blocking I/O
     QString retPath = QString::fromLocal8Bit(gpath);
 
     return retPath;
 }
 
-QString parentPath(const QString &path)
+static QString parentPath(const QString &path)
 {
     g_autoptr(GFile) file = g_file_new_for_path(path.toLocal8Bit().data());
-    g_autoptr(GFile) fileParent = g_file_get_parent(file);
+    g_autoptr(GFile) fileParent = g_file_get_parent(file);   // no blocking I/O
 
-    g_autofree gchar *gpath = g_file_get_path(fileParent);
-    QString retPath = QString::fromLocal8Bit(gpath);
-
-    return retPath;
+    g_autofree gchar *gpath = g_file_get_path(fileParent);   // no blocking I/O
+    return QString::fromLocal8Bit(gpath);
 }
-}
+}   // LocalFunc
 
 QSharedPointer<DFileInfo> DLocalHelper::createFileInfoByUri(const QUrl &uri, const char *attributes /*= "*"*/,
                                                             const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone*/)
@@ -279,21 +271,18 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     }
     // object
     case DFileInfo::AttributeID::kStandardIcon:
+    case DFileInfo::AttributeID::kPreviewIcon:
     case DFileInfo::AttributeID::kStandardSymbolicIcon: {
-        QList<QString> ret;
-
         GObject *icon = g_file_info_get_attribute_object(gfileinfo, key.c_str());
+        if (!icon)
+            return QVariant();
+
+        QList<QString> ret;
         auto names = g_themed_icon_get_names(G_THEMED_ICON(icon));
         for (int j = 0; names && names[j] != nullptr; ++j)
             ret.append(QString::fromLocal8Bit(names[j]));
 
         return QVariant(ret);
-    }
-    case DFileInfo::AttributeID::kPreviewIcon: {
-        GObject *ret = g_file_info_get_attribute_object(gfileinfo, key.c_str());
-        Q_UNUSED(ret);
-        // TODO(lanxs)
-        return QVariant();
     }
 
     default:
@@ -317,10 +306,10 @@ QVariant DLocalHelper::customAttributeFromPathAndInfo(const QString &path, GFile
         return LocalFunc::isRoot(path);
     }
     case DFileInfo::AttributeID::kStandardSuffix: {
-        return LocalFunc::suffix(path, fileInfo);
+        return LocalFunc::suffix(fileInfo);
     }
     case DFileInfo::AttributeID::kStandardCompleteSuffix: {
-        return LocalFunc::completeSuffix(path, fileInfo);
+        return LocalFunc::completeSuffix(fileInfo);
     }
     case DFileInfo::AttributeID::kStandardFilePath: {
         return LocalFunc::filePath(path);
@@ -329,13 +318,13 @@ QVariant DLocalHelper::customAttributeFromPathAndInfo(const QString &path, GFile
         return LocalFunc::parentPath(path);
     }
     case DFileInfo::AttributeID::kStandardBaseName: {
-        return LocalFunc::baseName(path, fileInfo);
+        return LocalFunc::baseName(fileInfo);
     }
     case DFileInfo::AttributeID::kStandardFileName: {
-        return LocalFunc::fileName(path);
+        return LocalFunc::fileName(fileInfo);
     }
     case DFileInfo::AttributeID::kStandardCompleteBaseName: {
-        return LocalFunc::completeBaseName(path, fileInfo);
+        return LocalFunc::completeBaseName(fileInfo);
     }
     default:
         return QVariant();
