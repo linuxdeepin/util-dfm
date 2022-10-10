@@ -874,12 +874,12 @@ void DLocalFile::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile:
     d->writeQAsync(byteArray, ioPriority, func, userData);
 }
 
-bool DLocalFile::seek(qint64 pos, DFile::SeekType type)
+bool DLocalFile::seek(qint64 pos, DFile::SeekType type) const
 {
     return d->seek(pos, type);
 }
 
-qint64 DLocalFile::pos()
+qint64 DLocalFile::pos() const
 {
     return d->pos();
 }
@@ -889,12 +889,12 @@ bool DLocalFile::flush()
     return d->flush();
 }
 
-qint64 DLocalFile::size()
+qint64 DLocalFile::size() const
 {
     return d->size();
 }
 
-bool DLocalFile::exists()
+bool DLocalFile::exists() const
 {
     return d->exists();
 }

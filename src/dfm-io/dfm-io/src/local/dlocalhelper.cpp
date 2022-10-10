@@ -651,7 +651,7 @@ QSet<QString> DLocalHelper::hideListFromUrl(const QUrl &url)
             return QSet<QString>::fromList(dataStr.split('\n', QString::SkipEmptyParts));
         }
     } else {
-        qWarning() << "load .hidden fail, code: " << error->code << " " << QString::fromLocal8Bit(error->message);
+        qWarning() << "load .hidden fail, url: " << url << " error: " << error->code << " " << QString::fromLocal8Bit(error->message);
     }
     return {};
 }

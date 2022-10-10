@@ -38,6 +38,8 @@ public:
     explicit DLocalEnumerator(const QUrl &uri, const QStringList &nameFilters = QStringList(), DirFilters filters = DirFilter::kNoFilter, IteratorFlags flags = IteratorFlag::kNoIteratorFlags);
     ~DLocalEnumerator();
 
+    bool init() DFM_OVERRIDE;
+    void initAsync(int ioPriority = 0, InitCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
     bool hasNext() const DFM_OVERRIDE;
     QUrl next() const DFM_OVERRIDE;
     QSharedPointer<DFileInfo> fileInfo() const DFM_OVERRIDE;

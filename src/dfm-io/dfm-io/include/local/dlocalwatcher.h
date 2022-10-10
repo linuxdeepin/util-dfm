@@ -42,9 +42,11 @@ public:
 
     void setWatchType(WatchType type) DFM_OVERRIDE;
     WatchType watchType() const DFM_OVERRIDE;
+
     bool running() const DFM_OVERRIDE;
     bool start(int timeRate = 200) DFM_OVERRIDE;
     bool stop() DFM_OVERRIDE;
+
     DFMIOError lastError() const DFM_OVERRIDE;
 
 private:

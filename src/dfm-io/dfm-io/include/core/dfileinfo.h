@@ -224,7 +224,6 @@ public:
     using LastErrorFunc = std::function<DFMIOError()>;
 
 public:
-    DFileInfo();
     explicit DFileInfo(const QUrl &uri, const char *attributes = "*", const FileQueryInfoFlags flag = FileQueryInfoFlags::kTypeNone);
     explicit DFileInfo(const DFileInfo &info);
     virtual ~DFileInfo();

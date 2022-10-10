@@ -157,11 +157,11 @@ public:
     DFM_VIRTUAL void writeAllAsync(const char *data, int ioPriority = 0, WriteAllCallbackFunc func = nullptr, void *userData = nullptr);
     DFM_VIRTUAL void writeQAsync(const QByteArray &byteArray, int ioPriority = 0, WriteQCallbackFunc func = nullptr, void *userData = nullptr);
 
-    DFM_VIRTUAL bool seek(qint64 pos, SeekType type = SeekType::kBegin);
-    DFM_VIRTUAL qint64 pos();
+    DFM_VIRTUAL bool seek(qint64 pos, SeekType type = SeekType::kBegin) const;
+    DFM_VIRTUAL qint64 pos() const;
     DFM_VIRTUAL bool flush();
-    DFM_VIRTUAL qint64 size();
-    DFM_VIRTUAL bool exists();
+    DFM_VIRTUAL qint64 size() const;
+    DFM_VIRTUAL bool exists() const;
 
     DFM_VIRTUAL Permissions permissions() const;
     DFM_VIRTUAL bool setPermissions(Permissions permission);

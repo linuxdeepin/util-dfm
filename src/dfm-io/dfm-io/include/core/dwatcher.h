@@ -62,10 +62,6 @@ public:
     void setTimeRate(int msec);
     int timeRate() const;
 
-    void setWatchAttributeIDList(const QList<DFileInfo::AttributeID> &ids);
-    void addWatchAttributeID(const DFileInfo::AttributeID &id);
-    QList<DFileInfo::AttributeID> watchAttributeIDList() const;
-
     DFM_VIRTUAL void setWatchType(WatchType type);
     DFM_VIRTUAL WatchType watchType() const;
 

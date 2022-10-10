@@ -61,8 +61,8 @@ public:
 public:
     DFileInfo *q = nullptr;
 
-    QUrl uri;
-    char *attributes;
+    QUrl uri = QUrl();
+    char *attributes = strdup("*");
     DFileInfo::FileQueryInfoFlags flag = DFileInfo::FileQueryInfoFlags::kTypeNone;
 
     QSharedPointer<DFMIO::DMediaInfo> mediaInfo = nullptr;

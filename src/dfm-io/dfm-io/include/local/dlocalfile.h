@@ -58,11 +58,11 @@ public:
     void writeAllAsync(const char *data, int ioPriority = 0, WriteAllCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
     void writeQAsync(const QByteArray &byteArray, int ioPriority = 0, WriteQCallbackFunc func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
 
-    bool seek(qint64 pos, DFile::SeekType type = SeekType::kBegin) DFM_OVERRIDE;
-    qint64 pos() DFM_OVERRIDE;
+    bool seek(qint64 pos, DFile::SeekType type = SeekType::kBegin) const DFM_OVERRIDE;
+    qint64 pos() const DFM_OVERRIDE;
     bool flush() DFM_OVERRIDE;
-    qint64 size() DFM_OVERRIDE;
-    bool exists() DFM_OVERRIDE;
+    qint64 size() const DFM_OVERRIDE;
+    bool exists() const DFM_OVERRIDE;
     Permissions permissions() const DFM_OVERRIDE;
     bool setPermissions(Permissions permission) DFM_OVERRIDE;
 

@@ -138,11 +138,6 @@ DFileInfo::AttributeInfoMap DFileInfo::attributeInfoMap = {
     { DFileInfo::AttributeID::kStandardCompleteBaseName, std::make_tuple<std::string, QVariant>("standard::complete-base-name", "") },
 };
 
-DFileInfo::DFileInfo()
-    : d(new DFileInfoPrivate(this))
-{
-}
-
 DFileInfo::DFileInfo(const QUrl &uri, const char *attributes, const FileQueryInfoFlags flag)
     : d(new DFileInfoPrivate(this))
 {

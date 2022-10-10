@@ -209,8 +209,10 @@ DWatcher::WatchType DLocalWatcherPrivate::transWatcherType(GFile *gfile, bool *o
 
 GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchType type)
 {
-    if (!gfile)
+    if (!gfile) {
+        error.setCode(DFMIOErrorCode(DFM_IO_ERROR_NOT_FOUND));
         return nullptr;
+    }
     if (type == DWatcher::WatchType::kAuto) {
         bool ok = false;
         type = transWatcherType(gfile, &ok);

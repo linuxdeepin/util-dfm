@@ -37,6 +37,7 @@
 #include <QSharedPointer>
 #include <QMutex>
 #include <QWaitCondition>
+#include <QPointer>
 
 BEGIN_IO_NAMESPACE
 
@@ -49,21 +50,35 @@ public:
     explicit DLocalEnumeratorPrivate(DLocalEnumerator *q);
     ~DLocalEnumeratorPrivate();
 
-    void init(const QUrl &url);
+    typedef struct
+    {
+        QPointer<DLocalEnumeratorPrivate> me;
+        DEnumerator::InitCallbackFunc callback;
+        gpointer userData;
+    } InitAsyncOp;
+
+    bool init(const QUrl &url);
+    bool init();
+    void initAsync(int ioPriority = 0, DEnumerator::InitCallbackFunc func = nullptr, void *userData = nullptr);
 
     QList<QSharedPointer<DFileInfo>> fileInfoList();
     bool hasNext();
     QUrl next() const;
     QSharedPointer<DFileInfo> fileInfo() const;
     quint64 fileCount();
-    bool checkFilter();
 
     DFMIOError lastError();
     void setErrorFromGError(GError *gerror);
-    void clean();
 
-    void createEnumeratorInThread(const QUrl &url);
-    void createEnumerator(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me);
+    bool createEnumerator(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me);
+    void createEnumneratorAsync(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me, int ioPriority, DEnumerator::InitCallbackFunc func, void *userData);
+
+    static void initAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void freeInitAsyncOp(InitAsyncOp *op);
+
+private:
+    bool checkFilter();
+    void clean();
 
 public:
     QList<QSharedPointer<DFileInfo>> list_;
@@ -73,6 +88,7 @@ public:
     QUrl nextUrl;
     bool enumSubDir = false;
     bool enumLinks = false;
+    bool inited = false;
 
     QStringList nameFilters;
     DEnumerator::DirFilters dirFilters = DEnumerator::DirFilter::kNoFilter;

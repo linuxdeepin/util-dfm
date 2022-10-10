@@ -199,7 +199,7 @@ void DFile::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile::Writ
     d->writeQFuncAsync(byteArray, ioPriority, func, userData);
 }
 
-bool DFile::seek(qint64 pos, SeekType type)
+bool DFile::seek(qint64 pos, SeekType type) const
 {
     if (!d->seekFunc)
         return -1;
@@ -207,7 +207,7 @@ bool DFile::seek(qint64 pos, SeekType type)
     return d->seekFunc(pos, type);
 }
 
-qint64 DFile::pos()
+qint64 DFile::pos() const
 {
     if (!d->posFunc)
         return -1;
@@ -223,7 +223,7 @@ bool DFile::flush()
     return d->flushFunc();
 }
 
-qint64 DFile::size()
+qint64 DFile::size() const
 {
     if (!d->sizeFunc)
         return -1;
@@ -231,7 +231,7 @@ qint64 DFile::size()
     return d->sizeFunc();
 }
 
-bool DFile::exists()
+bool DFile::exists() const
 {
     if (!d->existsFunc)
         return -1;

@@ -50,6 +50,19 @@ DEnumerator::~DEnumerator()
 {
 }
 
+bool DEnumerator::init()
+{
+    if (d->initFunc)
+        return d->initFunc();
+    return false;
+}
+
+void DEnumerator::initAsync(int ioPriority, DEnumerator::InitCallbackFunc func, void *userData)
+{
+    if (d->initAsyncFunc)
+        return d->initAsyncFunc(ioPriority, func, userData);
+}
+
 bool DEnumerator::hasNext() const
 {
     if (d->hasNextFunc)
@@ -108,7 +121,14 @@ quint64 DEnumerator::fileCount()
     return 0;
 }
 
-void DEnumerator::registerFileInfoList(const FileInfoListFunc &func)
+QList<QSharedPointer<DFileInfo>> DEnumerator::fileInfoList()
+{
+    if (d->fileInfoListFunc)
+        return d->fileInfoListFunc();
+    return {};
+}
+
+void DEnumerator::registerFileInfoList(const DEnumerator::FileInfoListFunc &func)
 {
     d->fileInfoListFunc = func;
 }
@@ -144,4 +164,14 @@ DFMIOError DEnumerator::lastError() const
         return DFMIOError();
 
     return d->lastErrorFunc();
+}
+
+void DEnumerator::registerInit(const DEnumerator::InitFunc &func)
+{
+    d->initFunc = func;
+}
+
+void DEnumerator::registerInitAsync(const DEnumerator::InitAsyncFunc &func)
+{
+    d->initAsyncFunc = func;
 }

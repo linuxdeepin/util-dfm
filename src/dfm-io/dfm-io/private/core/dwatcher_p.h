@@ -51,7 +51,6 @@ public:
     DWatcher::WatchTypeFunc watchTypeFunc = nullptr;
     DWatcher::LastErrorFunc lastErrorFunc = nullptr;
 
-    QList<DFileInfo::AttributeID> ids;
     int timeRate = 200;
 };
 

@@ -50,6 +50,8 @@ public:
     DEnumerator::FileCountFunc fileCountFunc = nullptr;
     DEnumerator::LastErrorFunc lastErrorFunc = nullptr;
     DEnumerator::FileInfoListFunc fileInfoListFunc = nullptr;
+    DEnumerator::InitFunc initFunc = nullptr;
+    DEnumerator::InitAsyncFunc initAsyncFunc = nullptr;
 
     QUrl uri;
     QStringList nameFilters;

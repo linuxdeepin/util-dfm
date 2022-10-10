@@ -60,21 +60,6 @@ int DWatcher::timeRate() const
     return d->timeRate;
 }
 
-void DWatcher::setWatchAttributeIDList(const QList<DFileInfo::AttributeID> &ids)
-{
-    d->ids = ids;
-}
-
-void DWatcher::addWatchAttributeID(const DFileInfo::AttributeID &id)
-{
-    d->ids.push_back(id);
-}
-
-QList<DFileInfo::AttributeID> DWatcher::watchAttributeIDList() const
-{
-    return d->ids;
-}
-
 void DWatcher::setWatchType(DWatcher::WatchType type)
 {
     if (!d->setWatchTypeFunc)

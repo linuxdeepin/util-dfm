@@ -97,6 +97,9 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 
 bool DLocalEnumeratorPrivate::hasNext()
 {
+    if (!inited)
+        init();
+
     if (stackEnumerator.isEmpty())
         return false;
 
@@ -144,9 +147,9 @@ bool DLocalEnumeratorPrivate::hasNext()
         return true;
     }
 
-    if (gerror) {
+    if (gerror)
         setErrorFromGError(gerror);
-    }
+
     return false;
 }
 
@@ -162,6 +165,9 @@ QSharedPointer<DFileInfo> DLocalEnumeratorPrivate::fileInfo() const
 
 quint64 DLocalEnumeratorPrivate::fileCount()
 {
+    if (!inited)
+        init();
+
     quint64 count = 0;
 
     while (hasNext()) {
@@ -277,22 +283,39 @@ DFMIOError DLocalEnumeratorPrivate::lastError()
     return error;
 }
 
-void DLocalEnumeratorPrivate::init(const QUrl &url)
+bool DLocalEnumeratorPrivate::init(const QUrl &url)
 {
     QPointer<DLocalEnumeratorPrivate> me = this;
     const bool needTimeOut = q->timeout() != 0;
     if (!needTimeOut) {
-        createEnumerator(url, me);
+        return createEnumerator(url, me);
     } else {
         mutex.lock();
-        QtConcurrent::run([this, me, url]() {
-            createEnumerator(url, me);
+        bool succ = false;
+        QtConcurrent::run([this, me, url, &succ]() {
+            succ = createEnumerator(url, me);
         });
-        bool succ = waitCondition.wait(&mutex, q->timeout());
+        bool wait = waitCondition.wait(&mutex, q->timeout());
         mutex.unlock();
-        if (!succ)
-            qWarning() << "createEnumeratorInThread failed, url: " << url;
+        if (!wait)
+            qWarning() << "createEnumeratorInThread failed, url: " << url << " error: " << error.errorMsg();
+        return succ && wait;
     }
+}
+
+bool DLocalEnumeratorPrivate::init()
+{
+    const QUrl &uri = q->uri();
+    bool ret = init(uri);
+    inited = true;
+    return ret;
+}
+
+void DLocalEnumeratorPrivate::initAsync(int ioPriority, DEnumerator::InitCallbackFunc func, void *userData)
+{
+    const QUrl &uri = q->uri();
+    QPointer<DLocalEnumeratorPrivate> me = this;
+    createEnumneratorAsync(uri, me, ioPriority, func, userData);
 }
 
 void DLocalEnumeratorPrivate::setErrorFromGError(GError *gerror)
@@ -312,14 +335,9 @@ void DLocalEnumeratorPrivate::clean()
     }
 }
 
-void DLocalEnumeratorPrivate::createEnumeratorInThread(const QUrl &url)
-{
-}
-
-void DLocalEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me)
+bool DLocalEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me)
 {
     const QString &uriPath = url.toString();
-
     g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
 
     g_autoptr(GError) gerror = nullptr;
@@ -328,21 +346,89 @@ void DLocalEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DLocalE
                                                              enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
                                                              nullptr,
                                                              &gerror);
-    if (!me)
-        return;
+    if (!me) {
+        error.setCode(DFMIOErrorCode(DFM_IO_ERROR_NOT_FOUND));
+        return false;
+    }
+    bool ret = true;
     if (!genumerator || gerror) {
         if (gerror) {
             setErrorFromGError(gerror);
         }
+        ret = false;
+        qWarning() << "create enumerator failed, url: " << uriPath << " error: " << error.errorMsg();
     } else {
         stackEnumerator.push_back(genumerator);
     }
     waitCondition.wakeAll();
+    return ret;
+}
+
+void DLocalEnumeratorPrivate::createEnumneratorAsync(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me, int ioPriority, DEnumerator::InitCallbackFunc func, void *userData)
+{
+    const QString &uriPath = url.toString();
+    g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+
+    InitAsyncOp *dataOp = g_new0(InitAsyncOp, 1);
+    dataOp->callback = func;
+    dataOp->userData = userData;
+    dataOp->me = me;
+
+    g_file_enumerate_children_async(gfile,
+                                    FILE_DEFAULT_ATTRIBUTES,
+                                    enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                                    ioPriority,
+                                    nullptr,
+                                    initAsyncCallback,
+                                    dataOp);
+}
+
+void DLocalEnumeratorPrivate::initAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
+{
+    InitAsyncOp *data = static_cast<InitAsyncOp *>(userData);
+    if (!data)
+        return;
+
+    if (!data->me) {
+        freeInitAsyncOp(data);
+        return;
+    }
+
+    data->me->inited = true;
+
+    GFile *gfile = (GFile *)(sourceObject);
+    if (!gfile) {
+        data->me->error.setCode(DFMIOErrorCode(DFM_IO_ERROR_NOT_FOUND));
+        freeInitAsyncOp(data);
+        return;
+    }
+
+    g_autoptr(GError) gerror = nullptr;
+    GFileEnumerator *genumerator = g_file_enumerate_children_finish(gfile, res, &gerror);
+    if (gerror)
+        data->me->setErrorFromGError(gerror);
+    if (data->callback)
+        data->callback(genumerator, data->userData);
+
+    if (genumerator)
+        data->me->stackEnumerator.push_back(genumerator);
+
+    freeInitAsyncOp(data);
+}
+
+void DLocalEnumeratorPrivate::freeInitAsyncOp(DLocalEnumeratorPrivate::InitAsyncOp *op)
+{
+    op->callback = nullptr;
+    op->userData = nullptr;
+    op->me = nullptr;
+    g_free(op);
 }
 
 DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilters, DirFilters filters, IteratorFlags flags)
     : DEnumerator(uri, nameFilters, filters, flags), d(new DLocalEnumeratorPrivate(this))
 {
+    registerInit(std::bind(&DLocalEnumerator::init, this));
+    registerInitAsync(bind_field(this, &DLocalEnumerator::initAsync));
     registerFileInfoList(std::bind(&DLocalEnumerator::fileInfoList, this));
     registerHasNext(std::bind(&DLocalEnumerator::hasNext, this));
     registerNext(std::bind(&DLocalEnumerator::next, this));
@@ -356,12 +442,20 @@ DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilte
 
     d->enumSubDir = d->iteratorFlags & DEnumerator::IteratorFlag::kSubdirectories;
     d->enumLinks = d->iteratorFlags & DEnumerator::IteratorFlag::kFollowSymlinks;
-
-    d->init(uri);
 }
 
 DLocalEnumerator::~DLocalEnumerator()
 {
+}
+
+bool DLocalEnumerator::init()
+{
+    return d->init();
+}
+
+void DLocalEnumerator::initAsync(int ioPriority, DEnumerator::InitCallbackFunc func, void *userData)
+{
+    d->initAsync(ioPriority, func, userData);
 }
 
 bool DLocalEnumerator::hasNext() const

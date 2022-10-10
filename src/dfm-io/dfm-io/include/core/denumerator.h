@@ -92,6 +92,11 @@ public:
     };
     Q_DECLARE_FLAGS(IteratorFlags, IteratorFlag)
 
+    // call back
+    using InitCallbackFunc = void (*)(bool, void *);
+
+    using InitFunc = std::function<bool()>;
+    using InitAsyncFunc = std::function<void(int, InitCallbackFunc, void *)>;
     using FileInfoListFunc = std::function<QList<QSharedPointer<DFileInfo>>()>;
     using HasNextFunc = std::function<bool()>;
     using NextFunc = std::function<QUrl()>;
@@ -102,8 +107,10 @@ public:
 
 public:
     DEnumerator(const QUrl &uri, const QStringList &nameFilters = QStringList(), DirFilters filters = DirFilter::kNoFilter, IteratorFlags flags = IteratorFlag::kNoIteratorFlags);
-
     virtual ~DEnumerator();
+
+    DFM_VIRTUAL bool init();
+    DFM_VIRTUAL void initAsync(int ioPriority = 0, InitCallbackFunc func = nullptr, void *userData = nullptr);
 
     QUrl uri() const;
     QStringList nameFilters() const;
@@ -116,10 +123,13 @@ public:
     DFM_VIRTUAL QUrl next() const;
     DFM_VIRTUAL QSharedPointer<DFileInfo> fileInfo() const;
     DFM_VIRTUAL quint64 fileCount();
+    DFM_VIRTUAL QList<QSharedPointer<DFileInfo>> fileInfoList();
 
     DFM_VIRTUAL DFMIOError lastError() const;
 
     // register
+    void registerInit(const InitFunc &func);
+    void registerInitAsync(const InitAsyncFunc &func);
     void registerFileInfoList(const FileInfoListFunc &func);
     void registerHasNext(const HasNextFunc &func);
     void registerNext(const NextFunc &func);
