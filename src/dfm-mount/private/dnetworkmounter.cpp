@@ -369,7 +369,7 @@ void DNetworkMounter::mountByGvfsAskPasswd(GMountOperation *self, gchar *message
             helper->err = DeviceError::kUserErrorNetworkAnonymousNotAllowed;
         else
             helper->err = DeviceError::kUserErrorNetworkWrongPasswd;
-        g_mount_operation_reply(self, G_MOUNT_OPERATION_UNHANDLED);
+        g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
         return;
     }
 
@@ -384,7 +384,7 @@ void DNetworkMounter::mountByGvfsAskPasswd(GMountOperation *self, gchar *message
         // the flags seem to always be 31(0b11111)
         if (!(flags & G_ASK_PASSWORD_ANONYMOUS_SUPPORTED)) {
             helper->err = DeviceError::kUserErrorNetworkAnonymousNotAllowed;
-            g_mount_operation_reply(self, G_MOUNT_OPERATION_UNHANDLED);
+            g_mount_operation_reply(self, G_MOUNT_OPERATION_ABORTED);
             return;
         }
         helper->anonymous = true;
