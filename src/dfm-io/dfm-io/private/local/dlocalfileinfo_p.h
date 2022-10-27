@@ -47,7 +47,7 @@ public:
 
     typedef struct
     {
-        DLocalFileInfo::QueryInfoAsyncCallback callback;
+        DFileInfo::InitQuerierAsyncCallback callback;
         gpointer userData;
         QPointer<DLocalFileInfoPrivate> me;
     } QueryInfoAsyncOp;
@@ -55,7 +55,7 @@ public:
     void initNormal();
 
     bool queryInfoSync();
-    void queryInfoAsync(int ioPriority = 0, DLocalFileInfo::QueryInfoAsyncCallback func = nullptr, void *userData = nullptr);
+    void queryInfoAsync(int ioPriority = 0, DFileInfo::InitQuerierAsyncCallback func = nullptr, void *userData = nullptr);
 
     QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr);
     void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, DFileInfo::AttributeAsyncCallback func = nullptr, void *userData = nullptr);

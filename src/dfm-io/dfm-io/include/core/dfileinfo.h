@@ -166,7 +166,7 @@ public:
 
         kTrashItemCount = 510,   // uint32
         kTrashDeletionDate = 511,   // string
-        kTrashOrigPath = 512,   // string
+        kTrashOrigPath = 512,   // byte string
 
         kRecentModified = 540,   // uint64
 
@@ -209,12 +209,15 @@ public:
     static AttributeInfoMap attributeInfoMap;
 
     // callback, use function pointer
+    using InitQuerierAsyncCallback = std::function<void(bool, void *)>;
     using AttributeAsyncCallback = std::function<void(bool, void *, QVariant)>;
     using AttributeExtendFuncCallback = std::function<void(bool, QMap<AttributeExtendID, QVariant>)>;
 
     // register function, use std::function
+    using InitQuerierFunc = std::function<bool()>;
+    using InitQuerierAsyncFunc = std::function<void(int, InitQuerierAsyncCallback, void *)>;
     using AttributeFunc = std::function<QVariant(DFileInfo::AttributeID, bool *)>;
-    using AttributeAsyncFunc = std::function<void(DFileInfo::AttributeID, bool *success, int ioPriority, AttributeAsyncCallback func, void *userData)>;
+    using AttributeAsyncFunc = std::function<void(DFileInfo::AttributeID, bool *, int, AttributeAsyncCallback, void *)>;
     using SetAttributeFunc = std::function<bool(DFileInfo::AttributeID, const QVariant &)>;
     using HasAttributeFunc = std::function<bool(DFileInfo::AttributeID)>;
     using ExistsFunc = std::function<bool()>;
@@ -228,6 +231,9 @@ public:
     explicit DFileInfo(const DFileInfo &info);
     virtual ~DFileInfo();
     DFileInfo &operator=(const DFileInfo &info);
+
+    DFM_VIRTUAL bool initQuerier();
+    DFM_VIRTUAL void initQuerierAsync(int ioPriority = 0, InitQuerierAsyncCallback func = nullptr, void *userData = nullptr);
 
     DFM_VIRTUAL QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) const;
     DFM_VIRTUAL void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, AttributeAsyncCallback func = nullptr, void *userData = nullptr) const;
@@ -250,6 +256,8 @@ public:
     DFM_VIRTUAL DFMIOError lastError() const;
 
     // register
+    void registerInitQuerier(const InitQuerierFunc &func);
+    void registerInitQuerierAsync(const InitQuerierAsyncFunc &func);
     void registerAttribute(const AttributeFunc &func);
     void registerAttributeAsync(const AttributeAsyncFunc &func);
     void registerSetAttribute(const SetAttributeFunc &func);

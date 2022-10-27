@@ -162,6 +162,20 @@ DFileInfo &DFileInfo::operator=(const DFileInfo &info)
     return *this;
 }
 
+bool DFileInfo::initQuerier()
+{
+    if (d->initQuerierFunc)
+        return d->initQuerierFunc();
+
+    return false;
+}
+
+void DFileInfo::initQuerierAsync(int ioPriority, DFileInfo::InitQuerierAsyncCallback func, void *userData)
+{
+    if (d->initQuerierAsyncFunc)
+        d->initQuerierAsyncFunc(ioPriority, func, userData);
+}
+
 QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
 {
     if (d->attributeFunc)
@@ -340,6 +354,16 @@ DFMIOError DFileInfo::lastError() const
         return DFMIOError();
 
     return d->lastErrorFunc();
+}
+
+void DFileInfo::registerInitQuerier(const DFileInfo::InitQuerierFunc &func)
+{
+    d->initQuerierFunc = func;
+}
+
+void DFileInfo::registerInitQuerierAsync(const DFileInfo::InitQuerierAsyncFunc &func)
+{
+    d->initQuerierAsyncFunc = func;
 }
 
 void DFileInfoPrivate::attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, DFileInfo::AttributeExtendFuncCallback callback)

@@ -241,6 +241,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     // byte string
     case DFileInfo::AttributeID::kStandardName:
     case DFileInfo::AttributeID::kStandardSymlinkTarget:
+    case DFileInfo::AttributeID::kTrashOrigPath:
     case DFileInfo::AttributeID::kThumbnailPath: {
         const char *ret = g_file_info_get_attribute_byte_string(gfileinfo, key.c_str());
         return QVariant(ret);
@@ -264,8 +265,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     case DFileInfo::AttributeID::kFileSystemType:
     case DFileInfo::AttributeID::kGvfsBackend:
     case DFileInfo::AttributeID::kSelinuxContext:
-    case DFileInfo::AttributeID::kTrashDeletionDate:
-    case DFileInfo::AttributeID::kTrashOrigPath: {
+    case DFileInfo::AttributeID::kTrashDeletionDate: {
         const char *ret = g_file_info_get_attribute_string(gfileinfo, key.c_str());
         return QVariant(ret);
     }

@@ -90,7 +90,7 @@ bool DLocalFileInfoPrivate::queryInfoSync()
     return true;
 }
 
-void DLocalFileInfoPrivate::queryInfoAsync(int ioPriority, DLocalFileInfo::QueryInfoAsyncCallback func, void *userData)
+void DLocalFileInfoPrivate::queryInfoAsync(int ioPriority, DFileInfo::InitQuerierAsyncCallback func, void *userData)
 {
     if (!infoReseted && this->gfileinfo) {
         initFinished = true;
@@ -386,6 +386,8 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri,
                                const DFMIO::DFileInfo::FileQueryInfoFlags flag /*= DFMIO::DFileInfo::FileQueryInfoFlags::TypeNone*/)
     : DFileInfo(uri, attributes, flag), d(new DLocalFileInfoPrivate(this))
 {
+    registerInitQuerier(std::bind(&DLocalFileInfo::initQuerier, this));
+    registerInitQuerierAsync(std::bind(&DLocalFileInfo::initQuerierAsync, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     registerAttribute(std::bind(&DLocalFileInfo::attribute, this, std::placeholders::_1, std::placeholders::_2));
     registerAttributeAsync(bind_field(this, &DLocalFileInfo::attributeAsync));
     registerSetAttribute(std::bind(&DLocalFileInfo::setAttribute, this, std::placeholders::_1, std::placeholders::_2));
@@ -408,6 +410,16 @@ DLocalFileInfo::DLocalFileInfo(const QUrl &uri, void *fileInfo, const char *attr
 
 DLocalFileInfo::~DLocalFileInfo()
 {
+}
+
+bool DLocalFileInfo::initQuerier()
+{
+    return d->queryInfoSync();
+}
+
+void DLocalFileInfo::initQuerierAsync(int ioPriority, DFileInfo::InitQuerierAsyncCallback func, void *userData)
+{
+    d->queryInfoAsync(ioPriority, func, userData);
 }
 
 QVariant DLocalFileInfo::attribute(DFileInfo::AttributeID id, bool *success /*= nullptr */) const

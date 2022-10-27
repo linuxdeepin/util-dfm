@@ -70,6 +70,8 @@ public:
     DFileInfo::MediaType mediaType = DFileInfo::MediaType::kGeneral;
     DFileInfo::AttributeExtendFuncCallback attributeExtendFuncCallback = nullptr;
 
+    DFileInfo::InitQuerierFunc initQuerierFunc = nullptr;
+    DFileInfo::InitQuerierAsyncFunc initQuerierAsyncFunc = nullptr;
     DFileInfo::AttributeFunc attributeFunc = nullptr;
     DFileInfo::AttributeAsyncFunc attributeAsyncFunc = nullptr;
     DFileInfo::SetAttributeFunc setAttributeFunc = nullptr;

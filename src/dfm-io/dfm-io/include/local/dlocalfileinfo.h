@@ -36,9 +36,6 @@ class DLocalFileInfoPrivate;
 class DLocalFileInfo : public DFileInfo
 {
 public:
-    // callback, use function pointer
-    using QueryInfoAsyncCallback = std::function<void(bool, void *)>;
-
     explicit DLocalFileInfo(const QUrl &uri, const char *attributes = "*",
                             const DFMIO::DFileInfo::FileQueryInfoFlags flag = DFMIO::DFileInfo::FileQueryInfoFlags::kTypeNone);
     explicit DLocalFileInfo(const QUrl &uri, void *fileInfo,
@@ -46,6 +43,8 @@ public:
 
     virtual ~DLocalFileInfo();
 
+    bool initQuerier() DFM_OVERRIDE;
+    void initQuerierAsync(int ioPriority = 0, InitQuerierAsyncCallback func = nullptr, void *userData = nullptr) DFM_OVERRIDE;
     QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) const DFM_OVERRIDE;
     void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, AttributeAsyncCallback func = nullptr, void *userData = nullptr) const DFM_OVERRIDE;
 
