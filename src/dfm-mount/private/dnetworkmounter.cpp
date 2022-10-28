@@ -229,7 +229,7 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
     };
 
     QString mpt;
-    QString addr(address.toLower());
+    QString addr(QUrl::fromPercentEncoding(address.toLower().toLocal8Bit()));
     if (isMounted(addr, mpt)) {
         if (mountResult)
             mountResult(false, DeviceError::kGIOErrorAlreadyMounted, mpt);
