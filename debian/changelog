@@ -1,3 +1,9 @@
+util-dfm (1.2.0) unstable; urgency=high
+
+  * update V6 6.0.4 baseline version
+
+ -- LanXuesong <lanxuesong@uniontech.com>  Tue, 01 Nov 2022 11:25:00 +0800
+
 util-dfm (1.1.2) unstable; urgency=high
 
   * update V6 6.0.4 baseline version  
