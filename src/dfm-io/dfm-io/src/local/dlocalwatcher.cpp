@@ -130,7 +130,7 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
         childUrl = QUrl::fromLocalFile(childStr);
     } else {
         g_autofree gchar *uri = g_file_get_uri(child);
-        childUrl = QUrl(QString::fromLocal8Bit(QByteArray::fromPercentEncoding(uri)));
+        childUrl = QUrl::fromUserInput(uri);
     }
 
     if (other) {
@@ -139,7 +139,7 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
             otherUrl = QUrl::fromLocalFile(otherStr);
         } else {
             g_autofree gchar *uri = g_file_get_uri(other);
-            otherUrl = QUrl(QString::fromLocal8Bit(QByteArray::fromPercentEncoding(uri)));
+            otherUrl = QUrl::fromUserInput(uri);
         }
     }
 

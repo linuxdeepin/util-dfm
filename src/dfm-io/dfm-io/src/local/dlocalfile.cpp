@@ -246,10 +246,9 @@ QByteArray DLocalFilePrivate::readAll()
         if (bytesRead == 0)
             break;
 
-        dataRet.append(data, size);
+        dataRet.append(data, bytesRead);
     }
 
-    dataRet.append('\0');
     return dataRet;
 }
 
@@ -440,7 +439,7 @@ qint64 DLocalFilePrivate::write(const char *data)
 
 qint64 DLocalFilePrivate::write(const QByteArray &data)
 {
-    return write(data.data());
+    return write(data.data(), data.length());
 }
 
 void DLocalFilePrivate::writeAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
@@ -487,7 +486,7 @@ void DLocalFilePrivate::writeAllAsync(const char *data, int ioPriority, DFile::W
 
 void DLocalFilePrivate::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile::WriteQCallbackFunc func, void *userData)
 {
-    writeAllAsync(byteArray.data(), ioPriority, func, userData);
+    writeAsync(byteArray.data(), byteArray.length(), ioPriority, func, userData);
 }
 
 bool DLocalFilePrivate::seek(qint64 pos, DFile::SeekType type)
