@@ -53,12 +53,12 @@ DFileInfo::AttributeInfoMap DFileInfo::attributeInfoMap = {
     { DFileInfo::AttributeID::kIdFile, std::make_tuple<std::string, QVariant>("id::file", "") },   // G_FILE_ATTRIBUTE_ID_FILE
     { DFileInfo::AttributeID::kIdFilesystem, std::make_tuple<std::string, QVariant>("id::filesystem", "") },   // G_FILE_ATTRIBUTE_ID_FILESYSTEM
 
-    { DFileInfo::AttributeID::kAccessCanRead, std::make_tuple<std::string, QVariant>("access::can-read", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_READ
-    { DFileInfo::AttributeID::kAccessCanWrite, std::make_tuple<std::string, QVariant>("access::can-write", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_WRITE
-    { DFileInfo::AttributeID::kAccessCanExecute, std::make_tuple<std::string, QVariant>("access::can-execute", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_EXECUTE
-    { DFileInfo::AttributeID::kAccessCanDelete, std::make_tuple<std::string, QVariant>("access::can-delete", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_DELETE
+    { DFileInfo::AttributeID::kAccessCanRead, std::make_tuple<std::string, QVariant>("access::can-read", true) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_READ
+    { DFileInfo::AttributeID::kAccessCanWrite, std::make_tuple<std::string, QVariant>("access::can-write", true) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_WRITE
+    { DFileInfo::AttributeID::kAccessCanExecute, std::make_tuple<std::string, QVariant>("access::can-execute", true) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_EXECUTE
+    { DFileInfo::AttributeID::kAccessCanDelete, std::make_tuple<std::string, QVariant>("access::can-delete", true) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_DELETE
     { DFileInfo::AttributeID::kAccessCanTrash, std::make_tuple<std::string, QVariant>("access::can-trash", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_TRASH
-    { DFileInfo::AttributeID::kAccessCanRename, std::make_tuple<std::string, QVariant>("access::can-rename", false) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_RENAME
+    { DFileInfo::AttributeID::kAccessCanRename, std::make_tuple<std::string, QVariant>("access::can-rename", true) },   // G_FILE_ATTRIBUTE_ACCESS_CAN_RENAME
 
     { DFileInfo::AttributeID::kMountableCanMount, std::make_tuple<std::string, QVariant>("mountable::can-mount", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_MOUNT
     { DFileInfo::AttributeID::kMountableCanUnmount, std::make_tuple<std::string, QVariant>("mountable::can-unmount", false) },   // G_FILE_ATTRIBUTE_MOUNTABLE_CAN_UNMOUNT
