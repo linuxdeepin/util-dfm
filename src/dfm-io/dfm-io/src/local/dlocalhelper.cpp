@@ -205,10 +205,13 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
     case DFileInfo::AttributeID::kUnixBlocks:
     case DFileInfo::AttributeID::kFileSystemSize:
     case DFileInfo::AttributeID::kFileSystemFree:
-    case DFileInfo::AttributeID::kFileSystemUsed:
-    case DFileInfo::AttributeID::kRecentModified: {
+    case DFileInfo::AttributeID::kFileSystemUsed: {
         uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
-        return QVariant(qulonglong(ret));
+        return qulonglong(ret);
+    }
+    case DFileInfo::AttributeID::kRecentModified: {
+        int64_t ret = g_file_info_get_attribute_int64(gfileinfo, key.c_str());
+        return qlonglong(ret);
     }
     // bool
     case DFileInfo::AttributeID::kStandardIsHidden:
@@ -398,15 +401,13 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::kUnixBlocks:
     case DFileInfo::AttributeID::kFileSystemSize:
     case DFileInfo::AttributeID::kFileSystemFree:
-    case DFileInfo::AttributeID::kFileSystemUsed:
+    case DFileInfo::AttributeID::kFileSystemUsed: {
+        bool succ = g_file_set_attribute_uint64(gfile, key.c_str(), value.toULongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+        return succ;
+    }
     case DFileInfo::AttributeID::kRecentModified: {
-        g_file_set_attribute_uint64(gfile, key.c_str(), value.toULongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
-        if (gerror) {
-            g_autofree gchar *url = g_file_get_uri(gfile);
-            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
-            return false;
-        }
-        return true;
+        bool succ = g_file_set_attribute_int64(gfile, key.c_str(), value.toLongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+        return succ;
     }
     // bool
     case DFileInfo::AttributeID::kStandardIsHidden:
@@ -547,9 +548,12 @@ bool DLocalHelper::setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::Attr
     case DFileInfo::AttributeID::kUnixBlocks:
     case DFileInfo::AttributeID::kFileSystemSize:
     case DFileInfo::AttributeID::kFileSystemFree:
-    case DFileInfo::AttributeID::kFileSystemUsed:
-    case DFileInfo::AttributeID::kRecentModified: {
+    case DFileInfo::AttributeID::kFileSystemUsed: {
         g_file_info_set_attribute_uint64(gfileinfo, key.c_str(), value.toULongLong());
+        return true;
+    }
+    case DFileInfo::AttributeID::kRecentModified: {
+        g_file_info_set_attribute_int64(gfileinfo, key.c_str(), value.toLongLong());
         return true;
     }
     // bool

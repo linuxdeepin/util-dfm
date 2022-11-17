@@ -168,7 +168,7 @@ public:
         kTrashDeletionDate = 511,   // string
         kTrashOrigPath = 512,   // byte string
 
-        kRecentModified = 540,   // uint64
+        kRecentModified = 540,   // int64
 
         kCustomStart = 600,
 

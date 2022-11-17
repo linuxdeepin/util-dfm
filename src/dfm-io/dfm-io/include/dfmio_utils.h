@@ -40,6 +40,11 @@ public:
     static QUrl directParentUrl(const QUrl &url, const bool localFirst = true);
     static bool fileIsRemovable(const QUrl &url);
     static QSet<QString> hideListFromUrl(const QUrl &url);
+    /*
+     * build file path, parameter should endwith "nullptr"
+     * e.g.: buildPath("/", "Desktop", "nullptr"), then return "/Desktop"
+     */
+    static QString buildFilePath(const QString &segment, ...);
 };
 
 END_IO_NAMESPACE
