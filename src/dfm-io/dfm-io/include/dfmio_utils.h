@@ -44,7 +44,7 @@ public:
      * build file path, parameter should endwith "nullptr"
      * e.g.: buildPath("/", "Desktop", "nullptr"), then return "/Desktop"
      */
-    static QString buildFilePath(const QString &segment, ...);
+    static QString buildFilePath(const char *segment, ...);
 };
 
 END_IO_NAMESPACE

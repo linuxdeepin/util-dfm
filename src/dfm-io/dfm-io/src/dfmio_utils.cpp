@@ -129,11 +129,11 @@ QSet<QString> DFMUtils::hideListFromUrl(const QUrl &url)
     return DLocalHelper::hideListFromUrl(url);
 }
 
-QString DFMUtils::buildFilePath(const QString &segment, ...)
+QString DFMUtils::buildFilePath(const char *segment, ...)
 {
     va_list args;
-    va_start(args, segment.toStdString().c_str());
-    gchar *str = g_build_filename_valist(segment.toStdString().c_str(), &args);
+    va_start(args, segment);
+    gchar *str = g_build_filename_valist(segment, &args);
     va_end(args);
 
     QString retValue = QString::fromStdString(str);
