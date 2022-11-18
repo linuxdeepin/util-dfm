@@ -378,9 +378,7 @@ void DFileInfoPrivate::attributeExtend(DFileInfo::MediaType type, QList<DFileInf
             extendIDs = ids;
             attributeExtendFuncCallback = callback;
 
-            if (!this->mediaInfo) {
-                this->mediaInfo.reset(new DMediaInfo(filePath));
-            }
+            this->mediaInfo.reset(new DMediaInfo(filePath));
             this->mediaInfo->startReadInfo(std::bind(&DFileInfoPrivate::attributeExtendCallback, this));
         } else {
             if (callback)

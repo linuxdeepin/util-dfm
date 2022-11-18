@@ -230,7 +230,9 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
     if (type == DWatcher::WatchType::kFile && DFMUtils::fileUnmountable(filePath))
         watchFlags = G_FILE_MONITOR_WATCH_HARD_LINKS;
 
-    gmonitor = g_file_monitor(gfile, watchFlags, nullptr, &gerror);
+    gmonitor = g_file_monitor(gfile,
+                              GFileMonitorFlags(G_FILE_MONITOR_WATCH_MOUNTS | G_FILE_MONITOR_WATCH_MOVES | G_FILE_MONITOR_WATCH_HARD_LINKS),
+                              nullptr, &gerror);
 
     if (!gmonitor) {
         setErrorFromGError(gerror);

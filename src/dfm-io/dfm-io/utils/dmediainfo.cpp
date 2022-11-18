@@ -26,6 +26,7 @@
 #include <QTimer>
 #include <QQueue>
 #include <QMutex>
+#include <QPointer>
 #include <QDebug>
 
 #include <thread>
@@ -35,16 +36,14 @@ const size_t MediaInfoStateFinished = 10000;   // read finished and no error
 Q_GLOBAL_STATIC(QQueue<QSharedPointer<MediaInfoLib::MediaInfo>>, queueDestoryMediaInfo)
 
 BEGIN_IO_NAMESPACE
-class DMediaInfoPrivate : public QSharedData
+class DMediaInfoPrivate : public QObject
 {
 public:
     DMediaInfoPrivate(DMediaInfo *qq, const QString &fileName)
         : q(qq)
     {
-        isWorking.store(false);
-        isStopState.store(false);
-
         this->fileName = fileName;
+        isStopState.store(false);
         mediaInfo.reset(new MediaInfoLib::MediaInfo());
     }
 
@@ -83,31 +82,29 @@ public:
     {
         if (isStopState.load())
             return;
-        if (isWorking.load())
-            return;
-        isWorking.store(true);
 
-        mediaInfo->Option(__T("Thread"), __T("1"));   // open file in thread
-        mediaInfo->Option(__T("Inform"), __T("Text"));
-        if (mediaInfo->Open(fileName.toStdWString()) == 0) {   // 可能耗时
-            std::thread thread([this]() {
-                while (1) {
-                    if (isStopState.load())
-                        break;
+        mediaInfo->Option(__T("Thread"));
+        mediaInfo->Option(__T("Width"), __T("Text"));
+        mediaInfo->Option(__T("Height"), __T("Text"));
+        mediaInfo->Option(__T("Duration"), __T("Text"));
+        mediaInfo->Open(fileName.toStdWString());
 
-                    if (mediaInfo) {
-                        if (mediaInfo->State_Get() == MediaInfoStateFinished) {
-                            callback();
-                            break;
-                        }
-                        std::chrono::milliseconds dura(200);
-                        std::this_thread::sleep_for(dura);
-                    }
+        QPointer<DMediaInfoPrivate> me = this;
+        std::thread thread([me]() {
+            while (1) {
+                if (!me)
+                    break;
+                if (me->isStopState.load())
+                    break;
+                if (me->mediaInfo->State_Get() == MediaInfoStateFinished) {
+                    me->callback();
+                    break;
                 }
-            });
-            thread.detach();
-        }
-        isWorking.store(false);
+                std::chrono::milliseconds dura(200);
+                std::this_thread::sleep_for(dura);
+            }
+        });
+        thread.detach();
     }
 
     QString value(const QString &key, MediaInfoLib::stream_t type)
@@ -117,12 +114,11 @@ public:
     }
 
 public:
-    std::atomic_bool isWorking;
-    std::atomic_bool isStopState;
     QString fileName;
     QSharedPointer<MediaInfoLib::MediaInfo> mediaInfo { nullptr };
     DMediaInfo *q { nullptr };
     DMediaInfo::FinishedCallback callback = nullptr;
+    std::atomic_bool isStopState;
 };
 END_IO_NAMESPACE
 
@@ -143,6 +139,7 @@ QString DMediaInfo::value(const QString &key, DFileInfo::MediaType meidiaType /*
 
 void DMediaInfo::startReadInfo(FinishedCallback callback)
 {
+    d->isStopState.store(false);
     d->callback = callback;
     d->start();
 }
