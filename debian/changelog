@@ -1,3 +1,9 @@
+util-dfm (1.2.1) unstable; urgency=high
+
+  * update V6 6.0.6 baseline version  
+
+ -- lvwujun <lvwujun@uniontech.com>  Thu, 24 Nov 2022 11:24:08 +0800
+
 util-dfm (1.2.0) unstable; urgency=high
 
   * update V6 6.0.4 baseline version
