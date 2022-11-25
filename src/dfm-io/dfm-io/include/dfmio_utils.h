@@ -26,10 +26,24 @@
 #include "dfmio_global.h"
 
 #include <QString>
+#include <QObject>
 
 class QUrl;
 
 BEGIN_IO_NAMESPACE
+
+enum class DGlibUserDirectory : quint8 {
+    kUserDirectoryDesktop,
+    kUserDirectoryDocuments,
+    kUserDirectoryDownload,
+    kUserDirectoryMusic,
+    kUserDirectoryPictures,
+    kUserDirectoryPublicShare,
+    kUserDirectoryTemplates,
+    kUserDirectoryVideos,
+    kUserNDirectories
+};
+Q_ENUMS(DGlibUserDirectory);
 
 class DFMUtils
 {
@@ -45,6 +59,8 @@ public:
      * e.g.: buildPath("/", "Desktop", "nullptr"), then return "/Desktop"
      */
     static QString buildFilePath(const char *segment, ...);
+    static QStringList systemDataDirs();
+    static QString userSpecialDir(DGlibUserDirectory userDirectory);
 };
 
 END_IO_NAMESPACE

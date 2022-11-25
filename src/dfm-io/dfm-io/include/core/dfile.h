@@ -34,8 +34,8 @@
 
 BEGIN_IO_NAMESPACE
 
+class DFileFuture;
 class DFilePrivate;
-
 class DFile
 {
 public:
@@ -134,6 +134,19 @@ public:
     using LastErrorFunc = std::function<DFMIOError()>;
     using SetErrorFunc = std::function<void(DFMIOError)>;
 
+    // future
+    using OpenAsyncFuncFuture = std::function<DFileFuture *(OpenFlags, int, QObject *)>;
+    using CloseAsyncFuncFuture = std::function<DFileFuture *(int, QObject *)>;
+    using ReadAsyncFuncFuture = std::function<DFileFuture *(qint64, int, QObject *)>;
+    using ReadAllAsyncFuncFuture = std::function<DFileFuture *(int, QObject *)>;
+    using WriteAsyncFuncFuture = std::function<DFileFuture *(const QByteArray &, qint64, int, QObject *)>;
+    using WriteAllAsyncFuncFuture = std::function<DFileFuture *(const QByteArray &, int, QObject *)>;
+    using FlushAsyncFuncFuture = std::function<DFileFuture *(int, QObject *)>;
+    using SizeAsyncFuncFuture = std::function<DFileFuture *(int, QObject *)>;
+    using ExistsAsyncFuncFuture = std::function<DFileFuture *(int, QObject *)>;
+    using PermissionsAsyncFuncFuture = std::function<DFileFuture *(int, QObject *)>;
+    using SetPermissionsAsyncFuncFuture = std::function<DFileFuture *(Permissions, int, QObject *)>;
+
 public:
     DFile(const QUrl &uri);
     virtual ~DFile();
@@ -168,6 +181,19 @@ public:
 
     DFM_VIRTUAL DFMIOError lastError() const;
 
+    // future
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *openAsync(OpenFlags mode, int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *closeAsync(int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *readAsync(qint64 maxSize, int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *readAllAsync(int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *writeAsync(const QByteArray &data, qint64 len, int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *writeAsync(const QByteArray &data, int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *flushAsync(int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *sizeAsync(int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *existsAsync(int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *permissionsAsync(int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *setPermissionsAsync(Permissions permission, int ioPriority, QObject *parent = nullptr);
+
     // register
     void registerOpen(const OpenFunc &func);
     void registerClose(const CloseFunc &func);
@@ -194,6 +220,19 @@ public:
     void registerSetPermissions(const SetPermissionFunc &func);
     void registerLastError(const LastErrorFunc &func);
     void registerSetError(const SetErrorFunc &func);
+
+    // future
+    void registerOpenAsyncFuture(const OpenAsyncFuncFuture &func);
+    void registerCloseAsyncFuture(const CloseAsyncFuncFuture &func);
+    void registerReadAsyncFuture(const ReadAsyncFuncFuture &func);
+    void registerReadAllAsyncFuture(const ReadAllAsyncFuncFuture &func);
+    void registerWriteAsyncFuture(const WriteAsyncFuncFuture &func);
+    void registerWriteAllAsyncFuture(const WriteAllAsyncFuncFuture &func);
+    void registerFlushAsyncFuture(const FlushAsyncFuncFuture &func);
+    void registerSizeAsyncFuture(const SizeAsyncFuncFuture &func);
+    void registerExistsAsyncFuture(const ExistsAsyncFuncFuture &func);
+    void registerPermissionsAsyncFuture(const PermissionsAsyncFuncFuture &func);
+    void registerSetPermissionsAsyncFuture(const SetPermissionsAsyncFuncFuture &func);
 
     QUrl uri() const;
     bool isOpen();

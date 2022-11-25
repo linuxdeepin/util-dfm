@@ -58,9 +58,11 @@ bool DLocalWatcherPrivate::start(int timeRate)
     stop();
 
     const QUrl &uri = q->uri();
-    const QString &url = uri.url();
+    QString url = uri.url();
+    if (uri.scheme() == "file" && uri.path() == "/")
+        url.append("/");
 
-    gfile = g_file_new_for_uri(url.toLocal8Bit().data());
+    gfile = g_file_new_for_uri(url.toStdString().c_str());
 
     gmonitor = createMonitor(gfile, type);
 
@@ -126,7 +128,7 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
     QUrl otherUrl;
 
     g_autofree gchar *childStr = g_file_get_path(child);
-    if (childStr != nullptr) {
+    if (childStr != nullptr && *childStr != '/') {
         childUrl = QUrl::fromLocalFile(childStr);
     } else {
         g_autofree gchar *uri = g_file_get_uri(child);
@@ -135,13 +137,18 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
 
     if (other) {
         g_autofree gchar *otherStr = g_file_get_path(other);
-        if (otherStr != nullptr) {
+        if (otherStr != nullptr && *otherStr != '/') {
             otherUrl = QUrl::fromLocalFile(otherStr);
         } else {
             g_autofree gchar *uri = g_file_get_uri(other);
             otherUrl = QUrl::fromUserInput(uri);
         }
     }
+
+    if(childUrl.path().startsWith("//"))
+        childUrl.setPath(childUrl.path().mid(1));
+    if(otherUrl.path().startsWith("//"))
+        otherUrl.setPath(otherUrl.path().mid(1));
 
     switch (eventType) {
     case G_FILE_MONITOR_EVENT_CHANGED:
@@ -221,14 +228,6 @@ GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchT
     }
 
     g_autoptr(GError) gerror = nullptr;
-
-    GFileMonitorFlags watchFlags = G_FILE_MONITOR_WATCH_MOVES;
-
-    // monitor file in movable device, can't received signal when umount, so need change flag to G_FILE_MONITOR_WATCH_HARD_LINKS
-    const QString &&filePath = QString::fromLocal8Bit(g_file_get_path(gfile));
-
-    if (type == DWatcher::WatchType::kFile && DFMUtils::fileUnmountable(filePath))
-        watchFlags = G_FILE_MONITOR_WATCH_HARD_LINKS;
 
     gmonitor = g_file_monitor(gfile,
                               GFileMonitorFlags(G_FILE_MONITOR_WATCH_MOUNTS | G_FILE_MONITOR_WATCH_MOVES | G_FILE_MONITOR_WATCH_HARD_LINKS),

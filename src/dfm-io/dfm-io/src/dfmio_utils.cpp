@@ -140,3 +140,32 @@ QString DFMUtils::buildFilePath(const char *segment, ...)
     g_free(str);
     return retValue;
 }
+
+QStringList DFMUtils::systemDataDirs()
+{
+    std::vector<std::string> dirs;
+    const char *const *cresult = g_get_system_data_dirs();
+    if (!cresult)
+        return {};
+
+    for (const gchar *const *iter = cresult; *iter != nullptr; ++iter) {
+        if (*iter)
+            dirs.emplace_back(std::string(*iter));
+    }
+
+    QStringList lst;
+
+    for (auto dir : dirs) {
+        lst.append(QString::fromStdString(dir));
+    }
+
+    return lst;
+}
+
+QString DFMUtils::userSpecialDir(DGlibUserDirectory userDirectory)
+{
+    const std::string &dir = g_get_user_special_dir(static_cast<GUserDirectory>(userDirectory));
+    if (dir.empty())
+        return QString();
+    return QString::fromStdString(dir);
+}

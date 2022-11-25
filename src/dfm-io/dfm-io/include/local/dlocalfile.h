@@ -66,6 +66,19 @@ public:
     Permissions permissions() const DFM_OVERRIDE;
     bool setPermissions(Permissions permission) DFM_OVERRIDE;
 
+    // future
+    [[nodiscard]] DFileFuture *openAsync(OpenFlags mode, int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *closeAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *readAsync(qint64 maxSize, int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *readAllAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *writeAsync(const QByteArray &data, qint64 len, int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *writeAsync(const QByteArray &data, int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *flushAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *sizeAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *existsAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *permissionsAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *setPermissionsAsync(Permissions permission, int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+
     void setError(DFMIOError error);
     DFMIOError lastError() const DFM_OVERRIDE;
 

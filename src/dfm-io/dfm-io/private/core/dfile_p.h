@@ -68,6 +68,19 @@ public:
     DFile::SetPermissionFunc setPermissionsFunc = nullptr;
     DFile::LastErrorFunc lastErrorFunc = nullptr;
     DFile::SetErrorFunc setErrorFunc = nullptr;
+
+    // future
+    DFile::OpenAsyncFuncFuture openAsyncFuncFuture = nullptr;
+    DFile::CloseAsyncFuncFuture closeAsyncFuncFuture = nullptr;
+    DFile::ReadAsyncFuncFuture readAsyncFuncFuture = nullptr;
+    DFile::ReadAllAsyncFuncFuture readAllAsyncFuncFuture = nullptr;
+    DFile::WriteAsyncFuncFuture writeAsyncFuncFuture = nullptr;
+    DFile::WriteAllAsyncFuncFuture writeAllAsyncFuncFuture = nullptr;
+    DFile::FlushAsyncFuncFuture flushAsyncFuncFuture = nullptr;
+    DFile::SizeAsyncFuncFuture sizeAsyncFuncFuture = nullptr;
+    DFile::ExistsAsyncFuncFuture existsAsyncFuncFuture = nullptr;
+    DFile::PermissionsAsyncFuncFuture permissionsAsyncFuncFuture = nullptr;
+    DFile::SetPermissionsAsyncFuncFuture setPermissionsAsyncFuncFuture = nullptr;
 };
 
 END_IO_NAMESPACE

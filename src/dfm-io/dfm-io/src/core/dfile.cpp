@@ -368,6 +368,61 @@ void DFile::registerSetError(const DFile::SetErrorFunc &func)
     d->setErrorFunc = func;
 }
 
+void DFile::registerOpenAsyncFuture(const DFile::OpenAsyncFuncFuture &func)
+{
+    d->openAsyncFuncFuture = func;
+}
+
+void DFile::registerCloseAsyncFuture(const DFile::CloseAsyncFuncFuture &func)
+{
+    d->closeAsyncFuncFuture = func;
+}
+
+void DFile::registerReadAsyncFuture(const DFile::ReadAsyncFuncFuture &func)
+{
+    d->readAsyncFuncFuture = func;
+}
+
+void DFile::registerReadAllAsyncFuture(const DFile::ReadAllAsyncFuncFuture &func)
+{
+    d->readAllAsyncFuncFuture = func;
+}
+
+void DFile::registerWriteAsyncFuture(const DFile::WriteAsyncFuncFuture &func)
+{
+    d->writeAsyncFuncFuture = func;
+}
+
+void DFile::registerWriteAllAsyncFuture(const DFile::WriteAllAsyncFuncFuture &func)
+{
+    d->writeAllAsyncFuncFuture = func;
+}
+
+void DFile::registerFlushAsyncFuture(const DFile::FlushAsyncFuncFuture &func)
+{
+    d->flushAsyncFuncFuture = func;
+}
+
+void DFile::registerSizeAsyncFuture(const DFile::SizeAsyncFuncFuture &func)
+{
+    d->sizeAsyncFuncFuture = func;
+}
+
+void DFile::registerExistsAsyncFuture(const DFile::ExistsAsyncFuncFuture &func)
+{
+    d->existsAsyncFuncFuture = func;
+}
+
+void DFile::registerPermissionsAsyncFuture(const DFile::PermissionsAsyncFuncFuture &func)
+{
+    d->permissionsAsyncFuncFuture = func;
+}
+
+void DFile::registerSetPermissionsAsyncFuture(const DFile::SetPermissionsAsyncFuncFuture &func)
+{
+    d->setPermissionsAsyncFuncFuture = func;
+}
+
 QUrl DFile::uri() const
 {
     return d->uri;
@@ -384,4 +439,81 @@ DFMIOError DFile::lastError() const
         return DFMIOError();
 
     return d->lastErrorFunc();
+}
+
+DFileFuture *DFile::openAsync(OpenFlags mode, int ioPriority, QObject *parent)
+{
+    if (d->openAsyncFuncFuture)
+        return d->openAsyncFuncFuture(mode, ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::closeAsync(int ioPriority, QObject *parent)
+{
+    if (d->closeAsyncFuncFuture)
+        return d->closeAsyncFuncFuture(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::readAsync(qint64 maxSize, int ioPriority, QObject *parent)
+{
+    if (d->readAsyncFuncFuture)
+        return d->readAsyncFuncFuture(maxSize, ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::readAllAsync(int ioPriority, QObject *parent)
+{
+    if (d->readAllAsyncFuncFuture)
+        return d->readAllAsyncFuncFuture(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::writeAsync(const QByteArray &data, qint64 len, int ioPriority, QObject *parent)
+{
+    if (d->writeAsyncFuncFuture)
+        return d->writeAsyncFuncFuture(data, len, ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::writeAsync(const QByteArray &data, int ioPriority, QObject *parent)
+{
+    if (d->writeAllAsyncFuncFuture)
+        return d->writeAllAsyncFuncFuture(data, ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::flushAsync(int ioPriority, QObject *parent)
+{
+    if (d->flushAsyncFuncFuture)
+        return d->flushAsyncFuncFuture(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::sizeAsync(int ioPriority, QObject *parent)
+{
+    if (d->sizeAsyncFuncFuture)
+        return d->sizeAsyncFuncFuture(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::existsAsync(int ioPriority, QObject *parent)
+{
+    if (d->existsAsyncFuncFuture)
+        return d->existsAsyncFuncFuture(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::permissionsAsync(int ioPriority, QObject *parent)
+{
+    if (d->permissionsAsyncFuncFuture)
+        return d->permissionsAsyncFuncFuture(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFile::setPermissionsAsync(Permissions permission, int ioPriority, QObject *parent)
+{
+    if (d->setPermissionsAsyncFuncFuture)
+        return d->setPermissionsAsyncFuncFuture(permission, ioPriority, parent);
+    return nullptr;
 }

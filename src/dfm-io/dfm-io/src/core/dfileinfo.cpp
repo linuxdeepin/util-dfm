@@ -198,6 +198,48 @@ void DFileInfo::attributeAsync(DFileInfo::AttributeID id, bool *success, int ioP
         func(success, userData, value);
 }
 
+DFileFuture *DFileInfo::initQuerierAsync(int ioPriority, QObject *parent)
+{
+    if (d->initQuerierAsyncFunc2)
+        return d->initQuerierAsyncFunc2(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFileInfo::attributeAsync(DFileInfo::AttributeID id, int ioPriority, QObject *parent) const
+{
+    if (d->attributeAsyncFunc2)
+        return d->attributeAsyncFunc2(id, ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFileInfo::attributeAsync(const QByteArray &key, const DFileInfo::DFileAttributeType type, int ioPriority, QObject *parent) const
+{
+    if (d->attributeAsyncFunc3)
+        return d->attributeAsyncFunc3(key, type, ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFileInfo::existsAsync(int ioPriority, QObject *parent) const
+{
+    if (d->existsAsyncFunc)
+        return d->existsAsyncFunc(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFileInfo::refreshAsync(int ioPriority, QObject *parent)
+{
+    if (d->refreshAsyncFunc)
+        return d->refreshAsyncFunc(ioPriority, parent);
+    return nullptr;
+}
+
+DFileFuture *DFileInfo::permissionsAsync(int ioPriority, QObject *parent)
+{
+    if (d->permissionsAsyncFunc)
+        return d->permissionsAsyncFunc(ioPriority, parent);
+    return nullptr;
+}
+
 bool DFileInfo::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 {
     if (!d->setAttributeFunc)
@@ -316,6 +358,36 @@ void DFileInfo::registerCustomAttribute(const DFileInfo::CustomAttributeFunc &fu
 void DFileInfo::registerLastError(const DFileInfo::LastErrorFunc &func)
 {
     d->lastErrorFunc = func;
+}
+
+void DFileInfo::registerInitQuerierAsync2(const DFileInfo::InitQuerierAsyncFunc2 &func)
+{
+    d->initQuerierAsyncFunc2 = func;
+}
+
+void DFileInfo::registerAttributeAsync2(const DFileInfo::AttributeAsyncFunc2 &func)
+{
+    d->attributeAsyncFunc2 = func;
+}
+
+void DFileInfo::registerAttributeAsync3(const DFileInfo::AttributeAsyncFunc3 &func)
+{
+    d->attributeAsyncFunc3 = func;
+}
+
+void DFileInfo::registerExistsAsync(const DFileInfo::ExistsAsyncFunc &func)
+{
+    d->existsAsyncFunc = func;
+}
+
+void DFileInfo::registerRefreshAsync(const DFileInfo::RefreshAsyncFunc &func)
+{
+    d->refreshAsyncFunc = func;
+}
+
+void DFileInfo::registerPermissionsAsync(const DFileInfo::PermissionsAsyncFunc &func)
+{
+    d->permissionsAsyncFunc = func;
 }
 
 QUrl DFileInfo::uri() const

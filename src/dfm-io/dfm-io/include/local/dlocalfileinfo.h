@@ -48,6 +48,13 @@ public:
     QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) const DFM_OVERRIDE;
     void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, AttributeAsyncCallback func = nullptr, void *userData = nullptr) const DFM_OVERRIDE;
 
+    [[nodiscard]] DFileFuture *initQuerierAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *attributeAsync(AttributeID id, int ioPriority, QObject *parent = nullptr) const DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *attributeAsync(const QByteArray &key, const DFileAttributeType type, int ioPriority, QObject *parent = nullptr) const DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *existsAsync(int ioPriority, QObject *parent = nullptr) const DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *refreshAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+    [[nodiscard]] DFileFuture *permissionsAsync(int ioPriority, QObject *parent = nullptr) DFM_OVERRIDE;
+
     bool setAttribute(DFileInfo::AttributeID id, const QVariant &value) DFM_OVERRIDE;
     bool hasAttribute(DFileInfo::AttributeID id) const DFM_OVERRIDE;
     bool exists() const DFM_OVERRIDE;

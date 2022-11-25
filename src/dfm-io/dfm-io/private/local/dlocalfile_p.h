@@ -71,6 +71,19 @@ public:
         gpointer userData;
     } WriteAsyncOp;
 
+    typedef struct
+    {
+        DFileFuture *future = nullptr;
+        QPointer<DLocalFilePrivate> me;
+    } NormalFutureAsyncOp;
+
+    typedef struct
+    {
+        QByteArray data;
+        DFileFuture *future = nullptr;
+        QPointer<DLocalFilePrivate> me;
+    } ReadAllAsyncFutureOp;
+
     bool open(DFile::OpenFlags mode);
     bool close();
     qint64 read(char *data, qint64 maxSize);
@@ -96,6 +109,21 @@ public:
     bool exists();
     DFile::Permissions permissions();
     bool setPermissions(DFile::Permissions permission);
+    quint32 buildPermissions(DFile::Permissions permission);
+    DFile::Permissions permissionsFromGFileInfo(GFileInfo *gfileinfo);
+
+    // future
+    [[nodiscard]] DFileFuture *openAsync(DFile::OpenFlags mode, int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *closeAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *readAsync(qint64 maxSize, int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *readAllAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *writeAsync(const QByteArray &data, qint64 len, int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *writeAsync(const QByteArray &data, int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *flushAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *sizeAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *existsAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *permissionsAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *setPermissionsAsync(DFile::Permissions permission, int ioPriority, QObject *parent = nullptr);
 
     GInputStream *inputStream();
     GOutputStream *outputStream();
@@ -110,6 +138,12 @@ public:
     static void readQAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
     static void readAllAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
     static void writeAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void permissionsAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void existsAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void sizeAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void flushAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void writeAsyncFutureCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void readAsyncFutureCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
 
 public:
     GIOStream *ioStream = nullptr;

@@ -82,6 +82,14 @@ public:
     DFileInfo::CustomAttributeFunc customAttributeFunc = nullptr;
     DFile::PermissionFunc permissionFunc = nullptr;
     DFileInfo::LastErrorFunc lastErrorFunc = nullptr;
+
+    // future
+    DFileInfo::InitQuerierAsyncFunc2 initQuerierAsyncFunc2 = nullptr;
+    DFileInfo::AttributeAsyncFunc2 attributeAsyncFunc2 = nullptr;
+    DFileInfo::AttributeAsyncFunc3 attributeAsyncFunc3 = nullptr;
+    DFileInfo::ExistsAsyncFunc existsAsyncFunc = nullptr;
+    DFileInfo::RefreshAsyncFunc refreshAsyncFunc = nullptr;
+    DFileInfo::PermissionsAsyncFunc permissionsAsyncFunc = nullptr;
 };
 
 END_IO_NAMESPACE

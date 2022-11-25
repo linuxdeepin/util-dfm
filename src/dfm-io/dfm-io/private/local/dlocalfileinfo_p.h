@@ -37,8 +37,8 @@
 
 BEGIN_IO_NAMESPACE
 
+class DFileFuture;
 class DLocalFileInfo;
-
 class DLocalFileInfoPrivate : public QObject
 {
 public:
@@ -51,6 +51,11 @@ public:
         gpointer userData;
         QPointer<DLocalFileInfoPrivate> me;
     } QueryInfoAsyncOp;
+    typedef struct
+    {
+        QPointer<DLocalFileInfoPrivate> me;
+        DFileFuture *future = nullptr;
+    } QueryInfoAsyncOp2;
 
     void initNormal();
 
@@ -59,6 +64,13 @@ public:
 
     QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr);
     void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, DFileInfo::AttributeAsyncCallback func = nullptr, void *userData = nullptr);
+
+    [[nodiscard]] DFileFuture *initQuerierAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *attributeAsync(DFileInfo::AttributeID id, int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *attributeAsync(const QByteArray &key, const DFileInfo::DFileAttributeType type, int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *existsAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *refreshAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] DFileFuture *permissionsAsync(int ioPriority, QObject *parent = nullptr);
 
     bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
     bool hasAttribute(DFileInfo::AttributeID id);
@@ -73,7 +85,9 @@ public:
     void setErrorFromGError(GError *gerror);
 
     static void queryInfoAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
+    static void queryInfoAsyncCallback2(GObject *sourceObject, GAsyncResult *res, gpointer userData);
     static void freeQueryInfoAsyncOp(QueryInfoAsyncOp *op);
+    static void freeQueryInfoAsyncOp2(QueryInfoAsyncOp2 *op);
 
     QVariant attributesBySelf(DFileInfo::AttributeID id);
 

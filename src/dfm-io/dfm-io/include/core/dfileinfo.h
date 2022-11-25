@@ -36,8 +36,8 @@
 
 BEGIN_IO_NAMESPACE
 
+class DFileFuture;
 class DFileInfoPrivate;
-
 class DFileInfo : public QEnableSharedFromThis<DFileInfo>
 {
 public:
@@ -225,6 +225,13 @@ public:
     using SetCustomAttributeFunc = std::function<bool(const char *, const DFileAttributeType, const void *, const FileQueryInfoFlags)>;
     using CustomAttributeFunc = std::function<QVariant(const char *, const DFileAttributeType)>;
     using LastErrorFunc = std::function<DFMIOError()>;
+    // feture
+    using InitQuerierAsyncFunc2 = std::function<DFileFuture *(int, QObject *)>;
+    using AttributeAsyncFunc2 = std::function<DFileFuture *(AttributeID, int, QObject *)>;
+    using AttributeAsyncFunc3 = std::function<DFileFuture *(const QByteArray &, const DFileAttributeType, int, QObject *)>;
+    using ExistsAsyncFunc = std::function<DFileFuture *(int, QObject *)>;
+    using RefreshAsyncFunc = std::function<DFileFuture *(int, QObject *)>;
+    using PermissionsAsyncFunc = std::function<DFileFuture *(int, QObject *)>;
 
 public:
     explicit DFileInfo(const QUrl &uri, const char *attributes = "*", const FileQueryInfoFlags flag = FileQueryInfoFlags::kTypeNone);
@@ -233,10 +240,17 @@ public:
     DFileInfo &operator=(const DFileInfo &info);
 
     DFM_VIRTUAL bool initQuerier();
-    DFM_VIRTUAL void initQuerierAsync(int ioPriority = 0, InitQuerierAsyncCallback func = nullptr, void *userData = nullptr);
-
     DFM_VIRTUAL QVariant attribute(DFileInfo::AttributeID id, bool *success = nullptr) const;
+
+    DFM_VIRTUAL void initQuerierAsync(int ioPriority = 0, InitQuerierAsyncCallback func = nullptr, void *userData = nullptr);
     DFM_VIRTUAL void attributeAsync(DFileInfo::AttributeID id, bool *success = nullptr, int ioPriority = 0, AttributeAsyncCallback func = nullptr, void *userData = nullptr) const;
+
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *initQuerierAsync(int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *attributeAsync(AttributeID id, int ioPriority, QObject *parent = nullptr) const;
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *attributeAsync(const QByteArray &key, const DFileAttributeType type, int ioPriority, QObject *parent = nullptr) const;
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *existsAsync(int ioPriority, QObject *parent = nullptr) const;
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *refreshAsync(int ioPriority, QObject *parent = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *permissionsAsync(int ioPriority, QObject *parent = nullptr);
 
     DFM_VIRTUAL bool setAttribute(DFileInfo::AttributeID id, const QVariant &value);
     DFM_VIRTUAL bool hasAttribute(DFileInfo::AttributeID id) const;
@@ -268,6 +282,14 @@ public:
     void registerSetCustomAttribute(const SetCustomAttributeFunc &func);
     void registerCustomAttribute(const CustomAttributeFunc &func);
     void registerLastError(const LastErrorFunc &func);
+
+    // future
+    void registerInitQuerierAsync2(const InitQuerierAsyncFunc2 &func);
+    void registerAttributeAsync2(const AttributeAsyncFunc2 &func);
+    void registerAttributeAsync3(const AttributeAsyncFunc3 &func);
+    void registerExistsAsync(const ExistsAsyncFunc &func);
+    void registerRefreshAsync(const RefreshAsyncFunc &func);
+    void registerPermissionsAsync(const PermissionsAsyncFunc &func);
 
     QUrl uri() const;
     char *queryAttributes() const;
