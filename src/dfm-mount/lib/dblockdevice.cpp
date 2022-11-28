@@ -19,7 +19,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #include "base/dmount_global.h"
 #include "base/dmountutils.h"
@@ -65,7 +65,7 @@ void DBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult *r
     g_autofree char *mountPoint = nullptr;
     bool result = udisks_filesystem_call_mount_finish(fs, &mountPoint, res, &err);
     handleErrorAndRelease(proxy, result, err, mountPoint);   // ignore mount point, which will be notified by onPropertyChanged
-};
+}
 
 void DBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
@@ -76,7 +76,7 @@ void DBlockDevicePrivate::unmountAsyncCallback(GObject *sourceObj, GAsyncResult 
     GError *err = nullptr;
     bool result = udisks_filesystem_call_unmount_finish(fs, res, &err);
     handleErrorAndRelease(proxy, result, err);
-};
+}
 
 void DBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
@@ -87,7 +87,7 @@ void DBlockDevicePrivate::renameAsyncCallback(GObject *sourceObj, GAsyncResult *
     GError *err = nullptr;
     bool result = udisks_filesystem_call_set_label_finish(fs, res, &err);
     handleErrorAndRelease(proxy, result, err);
-};
+}
 
 void DBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
@@ -98,7 +98,7 @@ void DBlockDevicePrivate::ejectAsyncCallback(GObject *sourceObj, GAsyncResult *r
     GError *err = nullptr;
     bool result = udisks_drive_call_eject_finish(drive, res, &err);
     handleErrorAndRelease(proxy, result, err);
-};
+}
 
 void DBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
@@ -109,7 +109,7 @@ void DBlockDevicePrivate::powerOffAsyncCallback(GObject *sourceObj, GAsyncResult
     GError *err = nullptr;
     bool result = udisks_drive_call_power_off_finish(drive, res, &err);
     handleErrorAndRelease(proxy, result, err);
-};
+}
 
 void DBlockDevicePrivate::lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData)
 {
@@ -265,17 +265,18 @@ bool DBlockDevicePrivate::findJob(JobType type)
 
     UserData data { this, blkObjPath, false };
     GList_autoptr jobs = udisks_client_get_jobs_for_object(client, obj);
-    g_list_foreach(jobs, [](void *item, void *that) {
-        UDisksJob *job = static_cast<UDisksJob *>(item);
-        UserData *d = static_cast<UserData *>(that);
-        if (!job || !d)
-            return;
-        QString op(udisks_job_get_operation(job));
-        qInfo() << "Working now..." << d->objPath << op;
-        d->hasJob = true;
-        d->d->lastError = Utils::castFromJobOperation(op);
-    },
-                   &data);
+    g_list_foreach(
+            jobs, [](void *item, void *that) {
+                UDisksJob *job = static_cast<UDisksJob *>(item);
+                UserData *d = static_cast<UserData *>(that);
+                if (!job || !d)
+                    return;
+                QString op(udisks_job_get_operation(job));
+                qInfo() << "Working now..." << d->objPath << op;
+                d->hasJob = true;
+                d->d->lastError = Utils::castFromJobOperation(op);
+            },
+            &data);
 
     return data.hasJob;
 }
@@ -1074,7 +1075,7 @@ QVariant DBlockDevicePrivate::getBlockProperty(Property name) const
 {
     UDisksBlock_autoptr blk = getBlockHandler();
     if (!blk) {
-        qWarning() << __FUNCTION__ << "NO BLOCK: " << blkObjPath;
+        qDebug() << __FUNCTION__ << "NO BLOCK: " << blkObjPath;
         lastError = DeviceError::kUserErrorNoBlock;
         return QVariant();
     }
@@ -1178,7 +1179,7 @@ QVariant DBlockDevicePrivate::getDriveProperty(Property name) const
 {
     UDisksDrive_autoptr drv = getDriveHandler();
     if (!drv) {
-        qInfo() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
+        qDebug() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
         lastError = DeviceError::kUserErrorNoDriver;
         return "";
     }
@@ -1277,6 +1278,7 @@ QVariant DBlockDevicePrivate::getFileSystemProperty(Property name) const
 {
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
     if (!fs) {
+        qDebug() << __FUNCTION__ << "NO FILESYSTEM: " << blkObjPath;
         lastError = DeviceError::kUserErrorNotMountable;
         return QVariant();
     }
@@ -1297,7 +1299,7 @@ QVariant DBlockDevicePrivate::getPartitionProperty(Property name) const
     UDisksPartition_autoptr partition = getPartitionHandler();
 
     if (!partition) {
-        qInfo() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
+        qDebug() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
         lastError = DeviceError::kUserErrorNoPartition;
         return QVariant();
     }
@@ -1342,7 +1344,7 @@ QVariant DBlockDevicePrivate::getEncryptedProperty(Property name) const
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
-        qInfo() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
+        qDebug() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
         lastError = DeviceError::kUserErrorNotEncryptable;
         return QVariant();
     }
