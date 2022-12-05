@@ -40,6 +40,7 @@ Q_SIGNALS:
     void infoSize(const quint64 &size);
     void writeAsyncSize(const qint64 &size);
     void readData(const QByteArray &data);
+    void infoMedia(const QUrl &url, const QMap<DFileInfo::AttributeExtendID, QVariant> &map);
 
 private:
     QScopedPointer<DFuturePrivate> d;

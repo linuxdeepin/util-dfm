@@ -265,6 +265,8 @@ public:
 
     // extend attribute
     void attributeExtend(MediaType type, QList<AttributeExtendID> ids, AttributeExtendFuncCallback callback = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *attributeExtend(MediaType type, QList<AttributeExtendID> ids, int ioPriority, QObject *parent = nullptr);
+
     bool cancelAttributeExtend();
 
     DFM_VIRTUAL DFMIOError lastError() const;

@@ -55,6 +55,7 @@ public:
     }
 
     void attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, DFileInfo::AttributeExtendFuncCallback callback = nullptr);
+    DFM_VIRTUAL [[nodiscard]] DFileFuture *attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, int ioPriority, QObject *parent = nullptr);
     bool cancelAttributeExtend();
     void attributeExtendCallback();
 
@@ -67,6 +68,7 @@ public:
 
     QSharedPointer<DFMIO::DMediaInfo> mediaInfo = nullptr;
     QList<DFileInfo::AttributeExtendID> extendIDs;
+    DFileFuture *future = nullptr;
     DFileInfo::MediaType mediaType = DFileInfo::MediaType::kGeneral;
     DFileInfo::AttributeExtendFuncCallback attributeExtendFuncCallback = nullptr;
 

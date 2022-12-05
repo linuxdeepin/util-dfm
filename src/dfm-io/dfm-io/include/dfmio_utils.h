@@ -61,6 +61,7 @@ public:
     static QString buildFilePath(const char *segment, ...);
     static QStringList systemDataDirs();
     static QString userSpecialDir(DGlibUserDirectory userDirectory);
+    static QString userDataDir();
 };
 
 END_IO_NAMESPACE

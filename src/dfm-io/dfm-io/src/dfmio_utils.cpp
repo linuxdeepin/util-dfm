@@ -169,3 +169,11 @@ QString DFMUtils::userSpecialDir(DGlibUserDirectory userDirectory)
         return QString();
     return QString::fromStdString(dir);
 }
+
+QString DFMUtils::userDataDir()
+{
+    const std::string &dir = g_get_user_data_dir();
+    if (dir.empty())
+        return QString();
+    return QString::fromStdString(dir);
+}

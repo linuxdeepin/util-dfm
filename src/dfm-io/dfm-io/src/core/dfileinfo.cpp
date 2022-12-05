@@ -23,6 +23,7 @@
 
 #include "core/dfileinfo_p.h"
 #include "utils/dmediainfo.h"
+#include "core/dfilefuture.h"
 
 USING_IO_NAMESPACE
 
@@ -305,6 +306,11 @@ void DFileInfo::attributeExtend(DFileInfo::MediaType type, QList<AttributeExtend
     d->attributeExtend(type, ids, callback);
 }
 
+DFileFuture *DFileInfo::attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, int ioPriority, QObject *parent)
+{
+    return d->attributeExtend(type, ids, ioPriority, parent);
+}
+
 bool DFileInfo::cancelAttributeExtend()
 {
     return d->cancelAttributeExtend();
@@ -459,6 +465,34 @@ void DFileInfoPrivate::attributeExtend(DFileInfo::MediaType type, QList<DFileInf
     }
 }
 
+DFileFuture *DFileInfoPrivate::attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, int ioPriority, QObject *parent)
+{
+    Q_UNUSED(ioPriority);
+
+    if (ids.contains(DFileInfo::AttributeExtendID::kExtendMediaDuration)
+        || ids.contains(DFileInfo::AttributeExtendID::kExtendMediaWidth)
+        || ids.contains(DFileInfo::AttributeExtendID::kExtendMediaHeight)) {
+
+        DFileFuture *future = new DFileFuture(parent);
+
+        const QString &filePath = attributeFunc ? attributeFunc(DFileInfo::AttributeID::kStandardFilePath, nullptr).toString() : QString();
+        if (!filePath.isEmpty()) {
+            mediaType = type;
+            extendIDs = ids;
+            this->future = future;
+
+            this->mediaInfo.reset(new DMediaInfo(filePath));
+            this->mediaInfo->startReadInfo(std::bind(&DFileInfoPrivate::attributeExtendCallback, this));
+
+            return future;
+        } else {
+            return nullptr;
+        }
+    } else {
+        return nullptr;
+    }
+}
+
 bool DFileInfoPrivate::cancelAttributeExtend()
 {
     if (this->mediaInfo)
@@ -489,5 +523,8 @@ void DFileInfoPrivate::attributeExtendCallback()
 
         if (attributeExtendFuncCallback)
             attributeExtendFuncCallback(true, map);
+
+        if (this->future)
+            this->future->infoMedia(uri, map);
     }
 }
