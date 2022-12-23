@@ -136,6 +136,9 @@ QString DFMUtils::buildFilePath(const char *segment, ...)
     gchar *str = g_build_filename_valist(segment, &args);
     va_end(args);
 
+    if (!str)
+        return {};
+
     QString retValue = QString::fromStdString(str);
     g_free(str);
     return retValue;
@@ -164,9 +167,14 @@ QStringList DFMUtils::systemDataDirs()
 
 QString DFMUtils::userSpecialDir(DGlibUserDirectory userDirectory)
 {
-    const std::string &dir = g_get_user_special_dir(static_cast<GUserDirectory>(userDirectory));
+    auto str { g_get_user_special_dir(static_cast<GUserDirectory>(userDirectory)) };
+    if (!str)
+        return {};
+
+    const std::string dir { str };
     if (dir.empty())
-        return QString();
+        return {};
+
     return QString::fromStdString(dir);
 }
 
