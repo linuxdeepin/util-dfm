@@ -53,7 +53,6 @@ public:
     static void watchCallback(GFileMonitor *gmonitor, GFile *child, GFile *other, GFileMonitorEvent event_type, gpointer user_data);
 
 private:
-    DWatcher::WatchType transWatcherType(GFile *gfile, bool *ok = nullptr);
     GFileMonitor *createMonitor(GFile *gfile, DWatcher::WatchType type);
 
 public:

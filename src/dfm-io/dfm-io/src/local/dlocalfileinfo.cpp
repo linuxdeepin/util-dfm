@@ -29,12 +29,14 @@
 #include "core/dfilefuture.h"
 #include "dfmio_register.h"
 
-#include <sys/stat.h>
-
 #include <QVariant>
 #include <QPointer>
 #include <QTimer>
 #include <QDebug>
+
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 USING_IO_NAMESPACE
 
@@ -42,6 +44,8 @@ DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
     : q(q)
 {
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kStandardIsHidden);
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeCreated);
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeCreatedUsec);
 }
 
 DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
@@ -296,7 +300,8 @@ DFileFuture *DLocalFileInfoPrivate::permissionsAsync(int ioPriority, QObject *pa
 
 bool DLocalFileInfoPrivate::setAttribute(DFileInfo::AttributeID id, const QVariant &value)
 {
-    return DLocalHelper::setAttributeByGFileInfo(gfileinfo, id, value);
+    // discard
+    return false;
 }
 
 bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
@@ -322,6 +327,34 @@ QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
     case DFileInfo::AttributeID::kStandardIsHidden: {
         retValue = DLocalHelper::fileIsHidden(q->sharedFromThis(), {});
         break;
+    }
+    case DFileInfo::AttributeID::kTimeCreated: {
+        const std::string &key = DLocalHelper::attributeStringById(id);
+        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        if (ret == 0) {
+            struct statx statxBuffer;
+            unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
+            const QUrl &url = q->uri();
+            int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
+            if (ret == 0) {
+                return quint64(statxBuffer.stx_btime.tv_sec);
+            }
+        }
+        return qulonglong(ret);
+    }
+    case DFileInfo::AttributeID::kTimeCreatedUsec: {
+        const std::string &key = DLocalHelper::attributeStringById(id);
+        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        if (ret == 0) {
+            struct statx statxBuffer;
+            unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
+            const QUrl &url = q->uri();
+            int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
+            if (ret == 0) {
+                return statxBuffer.stx_btime.tv_nsec / 1000000;
+            }
+        }
+        return QVariant(ret);
     }
     default:
         return retValue;

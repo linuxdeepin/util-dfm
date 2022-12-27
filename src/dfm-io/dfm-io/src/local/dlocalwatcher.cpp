@@ -145,9 +145,9 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
         }
     }
 
-    if(childUrl.path().startsWith("//"))
+    if (childUrl.path().startsWith("//"))
         childUrl.setPath(childUrl.path().mid(1));
-    if(otherUrl.path().startsWith("//"))
+    if (otherUrl.path().startsWith("//"))
         otherUrl.setPath(otherUrl.path().mid(1));
 
     switch (eventType) {
@@ -187,51 +187,24 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
     }
 }
 
-DWatcher::WatchType DLocalWatcherPrivate::transWatcherType(GFile *gfile, bool *ok)
-{
-    DWatcher::WatchType retType = DWatcher::WatchType::kAuto;
-
-    if (!gfile)
-        return retType;
-
-    g_autoptr(GFileInfo) gfileinfo = nullptr;
-    guint32 fileType;
-    g_autoptr(GError) gerror = nullptr;
-
-    gfileinfo = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
-    if (!gfileinfo) {
-        setErrorFromGError(gerror);
-
-        return retType;
-    }
-
-    fileType = g_file_info_get_attribute_uint32(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_TYPE);
-
-    retType = (fileType == G_FILE_TYPE_DIRECTORY) ? DWatcher::WatchType::kDir : DWatcher::WatchType::kFile;
-
-    if (ok)
-        *ok = true;
-    return retType;
-}
-
 GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchType type)
 {
     if (!gfile) {
         error.setCode(DFMIOErrorCode(DFM_IO_ERROR_NOT_FOUND));
         return nullptr;
     }
-    if (type == DWatcher::WatchType::kAuto) {
-        bool ok = false;
-        type = transWatcherType(gfile, &ok);
-        if (!ok)
-            type = DWatcher::WatchType::kFile;
-    }
+
+    GFileMonitorFlags flags = GFileMonitorFlags(G_FILE_MONITOR_WATCH_MOUNTS | G_FILE_MONITOR_WATCH_MOVES | G_FILE_MONITOR_WATCH_HARD_LINKS);
 
     g_autoptr(GError) gerror = nullptr;
+    g_autoptr(GCancellable) cancel = g_cancellable_new();
 
-    gmonitor = g_file_monitor(gfile,
-                              GFileMonitorFlags(G_FILE_MONITOR_WATCH_MOUNTS | G_FILE_MONITOR_WATCH_MOVES | G_FILE_MONITOR_WATCH_HARD_LINKS),
-                              nullptr, &gerror);
+    if (type == DWatcher::WatchType::kFile)
+        gmonitor = g_file_monitor_file(gfile, flags, cancel, &gerror);
+    else if (type == DWatcher::WatchType::kDir)
+        gmonitor = g_file_monitor_directory(gfile, flags, cancel, &gerror);
+    else
+        gmonitor = g_file_monitor(gfile, flags, cancel, &gerror);
 
     if (!gmonitor) {
         setErrorFromGError(gerror);
