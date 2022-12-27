@@ -36,7 +36,6 @@
 
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/stat.h>
 
 USING_IO_NAMESPACE
 
@@ -46,6 +45,18 @@ DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kStandardIsHidden);
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeCreated);
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeCreatedUsec);
+
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardName);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardDisplayName);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardEditName);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardCopyName);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardSuffix);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardCompleteSuffix);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardFilePath);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardParentPath);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardBaseName);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardFileName);
+    attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardCompleteBaseName);
 }
 
 DLocalFileInfoPrivate::~DLocalFileInfoPrivate()
@@ -123,8 +134,12 @@ QVariant DLocalFileInfoPrivate::attribute(DFileInfo::AttributeID id, bool *succe
 {
     if (!initFinished) {
         bool succ = queryInfoSync();
-        if (!succ)
-            return QVariant();
+        if (!succ) {
+            if (!attributesNoBlockIO.contains(id))
+                return QVariant();
+            else
+                return attributesFromUrl(id);
+        }
     }
 
     QVariant retValue;
@@ -314,6 +329,8 @@ bool DLocalFileInfoPrivate::hasAttribute(DFileInfo::AttributeID id)
 
     if (gfileinfo) {
         const std::string &key = DLocalHelper::attributeStringById(id);
+        if (key.empty())
+            return false;
         return g_file_info_has_attribute(gfileinfo, key.c_str());
     }
 
@@ -330,6 +347,8 @@ QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
     }
     case DFileInfo::AttributeID::kTimeCreated: {
         const std::string &key = DLocalHelper::attributeStringById(id);
+        if (key.empty())
+            return QVariant();
         uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
         if (ret == 0) {
             struct statx statxBuffer;
@@ -344,6 +363,8 @@ QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
     }
     case DFileInfo::AttributeID::kTimeCreatedUsec: {
         const std::string &key = DLocalHelper::attributeStringById(id);
+        if (key.empty())
+            return QVariant();
         uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
         if (ret == 0) {
             struct statx statxBuffer;
@@ -359,6 +380,76 @@ QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
     default:
         return retValue;
     }
+    return retValue;
+}
+
+QVariant DLocalFileInfoPrivate::attributesFromUrl(DFileInfo::AttributeID id)
+{
+    if (!attributesNoBlockIO.contains(id))
+        return QVariant();
+
+    QVariant retValue;
+    switch (id) {
+    case DFileInfo::AttributeID::kStandardName:
+    case DFileInfo::AttributeID::kStandardDisplayName:
+    case DFileInfo::AttributeID::kStandardEditName:
+    case DFileInfo::AttributeID::kStandardCopyName:
+    case DFileInfo::AttributeID::kStandardFileName: {
+        g_autofree gchar *name = g_path_get_basename(q->uri().toString().toStdString().c_str());
+        return QString::fromStdString(name);
+    }
+    case DFileInfo::AttributeID::kStandardSuffix: {
+        // path
+        const QString &fullName = attributesFromUrl(DFileInfo::AttributeID::kStandardName).toString();
+
+        int pos2 = fullName.lastIndexOf(".");
+        if (pos2 == -1)
+            return "";
+        else
+            return fullName.mid(pos2 + 1);
+    }
+    case DFileInfo::AttributeID::kStandardCompleteSuffix: {
+        const QString &fullName = attributesFromUrl(DFileInfo::AttributeID::kStandardName).toString();
+
+        int pos2 = fullName.indexOf(".");
+        if (pos2 == -1)
+            return "";
+        else
+            return fullName.mid(pos2 + 1);
+    }
+    case DFileInfo::AttributeID::kStandardFilePath: {
+        g_autofree gchar *name = g_path_get_dirname(q->uri().toString().toStdString().c_str());
+        return QString::fromStdString(name);
+    }
+    case DFileInfo::AttributeID::kStandardParentPath: {
+        g_autoptr(GFile) file = g_file_new_for_path(q->uri().path().toStdString().c_str());
+        g_autoptr(GFile) fileParent = g_file_get_parent(file);   // no blocking I/O
+
+        g_autofree gchar *gpath = g_file_get_path(fileParent);   // no blocking I/O
+        return QString::fromStdString(gpath);
+    }
+    case DFileInfo::AttributeID::kStandardBaseName: {
+        const QString &fullName = attributesFromUrl(DFileInfo::AttributeID::kStandardName).toString();
+
+        int pos2 = fullName.indexOf(".");
+        if (pos2 == -1)
+            return fullName;
+        else
+            return fullName.left(pos2);
+    }
+    case DFileInfo::AttributeID::kStandardCompleteBaseName: {
+        const QString &fullName = attributesFromUrl(DFileInfo::AttributeID::kStandardName).toString();
+
+        int pos2 = fullName.lastIndexOf(".");
+        if (pos2 == -1)
+            return fullName;
+        else
+            return fullName.left(pos2);
+    }
+    default:
+        break;
+    }
+
     return retValue;
 }
 

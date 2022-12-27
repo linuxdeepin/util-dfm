@@ -775,6 +775,8 @@ DFile::Permissions DLocalFilePrivate::permissions()
     g_autoptr(GCancellable) cancellable = g_cancellable_new();
     g_autoptr(GError) gerror = nullptr;
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kUnixMode);
+    if (attributeKey.empty())
+        return retValue;
     g_autoptr(GFileInfo) fileInfo = g_file_query_info(gfile, attributeKey.c_str(), G_FILE_QUERY_INFO_NONE, cancellable, &gerror);
 
     if (gerror)

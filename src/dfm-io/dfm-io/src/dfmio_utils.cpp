@@ -34,8 +34,10 @@ USING_IO_NAMESPACE
 
 bool DFMUtils::fileUnmountable(const QString &path)
 {
-    g_autoptr(GFile) gfile = g_file_new_for_path(path.toLocal8Bit().data());
+    if (path.isEmpty())
+        return false;
 
+    g_autoptr(GFile) gfile = g_file_new_for_path(path.toStdString().c_str());
     g_autoptr(GMount) gmount = g_file_find_enclosing_mount(gfile, nullptr, nullptr);
     if (gmount) {
         return g_mount_can_unmount(gmount);
@@ -49,7 +51,7 @@ QString DFMUtils::devicePathFromUrl(const QUrl &url)
     if (!url.isValid())
         return QString();
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toStdString().c_str());
     g_autoptr(GError) gerror = nullptr;
     g_autoptr(GMount) gmount = g_file_find_enclosing_mount(gfile, nullptr, &gerror);
     if (gmount) {

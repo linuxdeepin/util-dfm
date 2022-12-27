@@ -81,11 +81,16 @@ bool DLocalOperatorPrivate::renameFile(const QUrl &toUrl)
     const std::string &fromStr = fromUrl.toLocalFile().toStdString();
     const std::string &toStr = toUrl.toLocalFile().toStdString();
 
+    if (fromStr.empty() || toStr.empty()) {
+        error.setCode(DFM_IO_ERROR_INVALID_FILENAME);
+        return false;
+    }
+
     const bool ret = g_rename(fromStr.c_str(), toStr.c_str()) == 0;
 
     // set error info
     if (!ret)
-        error.setCode(DFMIOErrorCode(DFM_IO_ERROR_PERMISSION_DENIED));
+        error.setCode(DFM_IO_ERROR_PERMISSION_DENIED);
 
     return ret;
 }
@@ -269,15 +274,15 @@ bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackFunc func, vo
         return false;
     }
 
-    const std::string &src_path = g_file_info_get_attribute_byte_string(gfileinfo, G_FILE_ATTRIBUTE_TRASH_ORIG_PATH);
+    const std::string &srcPath = g_file_info_get_attribute_byte_string(gfileinfo, G_FILE_ATTRIBUTE_TRASH_ORIG_PATH);
 
-    if (src_path.empty()) {
+    if (srcPath.empty()) {
         g_object_unref(gfileinfo);
         return false;
     }
 
     QUrl url_dest;
-    url_dest.setPath(QString::fromStdString(src_path.c_str()));
+    url_dest.setPath(QString::fromStdString(srcPath.c_str()));
     url_dest.setScheme(QString("file"));
 
     bool ret = moveFile(url_dest, DFile::CopyFlag::kNone, func, progressCallbackData);

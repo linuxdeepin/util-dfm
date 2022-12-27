@@ -90,9 +90,11 @@ public:
     static void freeQueryInfoAsyncOp2(QueryInfoAsyncOp2 *op);
 
     QVariant attributesBySelf(DFileInfo::AttributeID id);
+    QVariant attributesFromUrl(DFileInfo::AttributeID id);
 
 public:
     QList<DFileInfo::AttributeID> attributesRealizationSelf;
+    QList<DFileInfo::AttributeID> attributesNoBlockIO;
     GFile *gfile = nullptr;
     GFileInfo *gfileinfo = nullptr;
     bool initFinished = false;
