@@ -163,9 +163,14 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
         return QVariant();
     }
 
+    // check has attribute
     const std::string &key = DLocalHelper::attributeStringById(id);
-    if (key.empty())
+    bool hasAttr = g_file_info_has_attribute(gfileinfo, key.c_str());
+    if (!hasAttr) {
+        // if has not attribute, return QVariant(), and caller use default value
+        errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
         return QVariant();
+    }
 
     switch (id) {
     // uint32_t
