@@ -274,15 +274,15 @@ bool DLocalOperatorPrivate::restoreFile(DOperator::ProgressCallbackFunc func, vo
         return false;
     }
 
-    const std::string &srcPath = g_file_info_get_attribute_byte_string(gfileinfo, G_FILE_ATTRIBUTE_TRASH_ORIG_PATH);
+    const char *srcPath = g_file_info_get_attribute_byte_string(gfileinfo, G_FILE_ATTRIBUTE_TRASH_ORIG_PATH);
 
-    if (srcPath.empty()) {
+    if (srcPath == nullptr) {
         g_object_unref(gfileinfo);
         return false;
     }
 
     QUrl url_dest;
-    url_dest.setPath(QString::fromStdString(srcPath.c_str()));
+    url_dest.setPath(QString::fromLocal8Bit(srcPath));
     url_dest.setScheme(QString("file"));
 
     bool ret = moveFile(url_dest, DFile::CopyFlag::kNone, func, progressCallbackData);

@@ -396,7 +396,9 @@ QVariant DLocalFileInfoPrivate::attributesFromUrl(DFileInfo::AttributeID id)
     case DFileInfo::AttributeID::kStandardCopyName:
     case DFileInfo::AttributeID::kStandardFileName: {
         g_autofree gchar *name = g_path_get_basename(q->uri().toString().toStdString().c_str());
-        return QString::fromStdString(name);
+        if (name != nullptr)
+            return QString::fromLocal8Bit(name);
+        return "";
     }
     case DFileInfo::AttributeID::kStandardSuffix: {
         // path
@@ -419,14 +421,18 @@ QVariant DLocalFileInfoPrivate::attributesFromUrl(DFileInfo::AttributeID id)
     }
     case DFileInfo::AttributeID::kStandardFilePath: {
         g_autofree gchar *name = g_path_get_dirname(q->uri().toString().toStdString().c_str());
-        return QString::fromStdString(name);
+        if (name != nullptr)
+            return QString::fromLocal8Bit(name);
+        return "";
     }
     case DFileInfo::AttributeID::kStandardParentPath: {
         g_autoptr(GFile) file = g_file_new_for_path(q->uri().path().toStdString().c_str());
         g_autoptr(GFile) fileParent = g_file_get_parent(file);   // no blocking I/O
 
         g_autofree gchar *gpath = g_file_get_path(fileParent);   // no blocking I/O
-        return QString::fromStdString(gpath);
+        if (gpath != nullptr)
+            return QString::fromLocal8Bit(gpath);
+        return "";
     }
     case DFileInfo::AttributeID::kStandardBaseName: {
         const QString &fullName = attributesFromUrl(DFileInfo::AttributeID::kStandardName).toString();

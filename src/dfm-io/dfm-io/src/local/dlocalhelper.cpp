@@ -124,9 +124,10 @@ static QString filePath(const QString &path)
     g_autoptr(GFile) file = g_file_new_for_path(path.toStdString().c_str());
 
     g_autofree gchar *gpath = g_file_get_path(file);   // no blocking I/O
-    QString retPath = QString::fromStdString(gpath);
+    if (gpath != nullptr)
+        return QString::fromLocal8Bit(gpath);
 
-    return retPath;
+    return "";
 }
 
 static QString parentPath(const QString &path)
@@ -135,7 +136,9 @@ static QString parentPath(const QString &path)
     g_autoptr(GFile) fileParent = g_file_get_parent(file);   // no blocking I/O
 
     g_autofree gchar *gpath = g_file_get_path(fileParent);   // no blocking I/O
-    return QString::fromStdString(gpath);
+    if (gpath != nullptr)
+        return QString::fromLocal8Bit(gpath);
+    return "";
 }
 }   // LocalFunc
 
@@ -277,7 +280,7 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
         QList<QString> ret;
         auto names = g_themed_icon_get_names(G_THEMED_ICON(icon));
         for (int j = 0; names && names[j] != nullptr; ++j)
-            ret.append(QString::fromStdString(names[j]));
+            ret.append(QString::fromLocal8Bit(names[j]));
 
         return QVariant(ret);
     }
