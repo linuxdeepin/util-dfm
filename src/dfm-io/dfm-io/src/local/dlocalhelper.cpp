@@ -525,9 +525,6 @@ QSet<QString> DLocalHelper::hideListFromUrl(const QUrl &url)
     g_autoptr(GError) error = nullptr;
     gsize len = 0;
     g_autoptr(GFile) hiddenFile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
-    const bool exists = g_file_query_exists(hiddenFile, nullptr);
-    if (!exists)
-        return {};
 
     const bool succ = g_file_load_contents(hiddenFile, nullptr, &contents, &len, nullptr, &error);
     if (succ) {
@@ -535,8 +532,6 @@ QSet<QString> DLocalHelper::hideListFromUrl(const QUrl &url)
             QString dataStr(contents);
             return QSet<QString>::fromList(dataStr.split('\n', QString::SkipEmptyParts));
         }
-    } else {
-        qWarning() << "load .hidden fail, url: " << url << " error: " << error->code << " " << QString::fromLocal8Bit(error->message);
     }
     return {};
 }
