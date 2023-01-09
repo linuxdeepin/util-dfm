@@ -178,6 +178,14 @@ qint64 DFile::write(const QByteArray &byteArray)
     return d->writeQFunc(byteArray);
 }
 
+bool DFile::cancel()
+{
+    if (!d->cancelFunc)
+        return false;
+
+    return d->cancelFunc();
+}
+
 void DFile::writeAsync(const char *data, qint64 len, int ioPriority, DFile::WriteCallbackFunc func, void *userData)
 {
     if (!d->writeFuncAsync)
@@ -321,6 +329,11 @@ void DFile::registerWriteAllAsync(const DFile::WriteAllFuncAsync &func)
 void DFile::registerWriteQAsync(const DFile::WriteQFuncAsync &func)
 {
     d->writeQFuncAsync = func;
+}
+
+void DFile::registerCancel(const DFile::CancelFunc &func)
+{
+    d->cancelFunc = func;
 }
 
 void DFile::registerSeek(const SeekFunc &func)

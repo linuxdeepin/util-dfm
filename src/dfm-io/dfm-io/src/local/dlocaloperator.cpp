@@ -502,8 +502,6 @@ GFile *DLocalOperatorPrivate::makeGFile(const QUrl &url)
 void DLocalOperatorPrivate::setErrorFromGError(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
-
-    //qWarning() << QString::fromLocal8Bit(gerror->message);
 }
 
 DLocalOperator::DLocalOperator(const QUrl &uri)

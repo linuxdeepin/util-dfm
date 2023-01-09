@@ -123,6 +123,7 @@ public:
     using WriteAllFuncAsync = std::function<void(const char *, int, WriteAllCallbackFunc, void *)>;
     using WriteQFuncAsync = std::function<void(const QByteArray &, int, WriteQCallbackFunc, void *)>;
 
+    using CancelFunc = std::function<bool()>;
     using SeekFunc = std::function<bool(qint64, SeekType)>;
     using PosFunc = std::function<qint64()>;
     using FlushFunc = std::function<bool()>;
@@ -154,18 +155,18 @@ public:
     DFM_VIRTUAL bool open(OpenFlags mode);
     DFM_VIRTUAL bool close();
 
+    // read and write
     DFM_VIRTUAL qint64 read(char *data, qint64 maxSize);
     DFM_VIRTUAL QByteArray read(qint64 maxSize);
     DFM_VIRTUAL QByteArray readAll();
+    DFM_VIRTUAL qint64 write(const char *data, qint64 len);
+    DFM_VIRTUAL qint64 write(const char *data);
+    DFM_VIRTUAL qint64 write(const QByteArray &byteArray);
+    DFM_VIRTUAL bool cancel();
     // async
     DFM_VIRTUAL void readAsync(char *data, qint64 maxSize, int ioPriority = 0, ReadCallbackFunc func = nullptr, void *userData = nullptr);
     DFM_VIRTUAL void readQAsync(qint64 maxSize, int ioPriority = 0, ReadQCallbackFunc func = nullptr, void *userData = nullptr);
     DFM_VIRTUAL void readAllAsync(int ioPriority = 0, ReadAllCallbackFunc func = nullptr, void *userData = nullptr);
-
-    DFM_VIRTUAL qint64 write(const char *data, qint64 len);
-    DFM_VIRTUAL qint64 write(const char *data);
-    DFM_VIRTUAL qint64 write(const QByteArray &byteArray);
-    // async
     DFM_VIRTUAL void writeAsync(const char *data, qint64 len, int ioPriority = 0, WriteCallbackFunc func = nullptr, void *userData = nullptr);
     DFM_VIRTUAL void writeAllAsync(const char *data, int ioPriority = 0, WriteAllCallbackFunc func = nullptr, void *userData = nullptr);
     DFM_VIRTUAL void writeQAsync(const QByteArray &byteArray, int ioPriority = 0, WriteQCallbackFunc func = nullptr, void *userData = nullptr);
@@ -211,6 +212,7 @@ public:
     void registerWriteAllAsync(const WriteAllFuncAsync &func);
     void registerWriteQAsync(const WriteQFuncAsync &func);
 
+    void registerCancel(const CancelFunc &func);
     void registerSeek(const SeekFunc &func);
     void registerPos(const PosFunc &func);
     void registerFlush(const FlushFunc &func);

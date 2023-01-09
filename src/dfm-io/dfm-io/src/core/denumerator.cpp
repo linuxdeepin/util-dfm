@@ -63,6 +63,13 @@ void DEnumerator::initAsync(int ioPriority, DEnumerator::InitCallbackFunc func, 
         return d->initAsyncFunc(ioPriority, func, userData);
 }
 
+bool DEnumerator::cancel()
+{
+    if (!d->cancelFunc)
+        return false;
+    return d->cancelFunc();
+}
+
 bool DEnumerator::hasNext() const
 {
     if (d->hasNextFunc)
@@ -174,4 +181,9 @@ void DEnumerator::registerInit(const DEnumerator::InitFunc &func)
 void DEnumerator::registerInitAsync(const DEnumerator::InitAsyncFunc &func)
 {
     d->initAsyncFunc = func;
+}
+
+void DEnumerator::registerCancel(const DEnumerator::CancelFunc &func)
+{
+    d->cancelFunc = func;
 }

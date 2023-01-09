@@ -60,6 +60,7 @@ public:
     bool init(const QUrl &url);
     bool init();
     void initAsync(int ioPriority = 0, DEnumerator::InitCallbackFunc func = nullptr, void *userData = nullptr);
+    bool cancel();
 
     QList<QSharedPointer<DFileInfo>> fileInfoList();
     bool hasNext();
@@ -79,10 +80,12 @@ public:
 private:
     bool checkFilter();
     void clean();
+    void checkAndResetCancel();
 
 public:
     QList<QSharedPointer<DFileInfo>> list_;
     DLocalEnumerator *q = nullptr;
+    GCancellable *cancellable = nullptr;
     QStack<GFileEnumerator *> stackEnumerator;
     QSharedPointer<DFileInfo> dfileInfoNext = nullptr;
     QUrl nextUrl;

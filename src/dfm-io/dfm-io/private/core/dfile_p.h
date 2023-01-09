@@ -59,6 +59,7 @@ public:
     DFile::WriteAllFuncAsync writeAllFuncAsync = nullptr;
     DFile::WriteQFuncAsync writeQFuncAsync = nullptr;
 
+    DFile::CancelFunc cancelFunc = nullptr;
     DFile::SeekFunc seekFunc = nullptr;
     DFile::PosFunc posFunc = nullptr;
     DFile::FlushFunc flushFunc = nullptr;

@@ -102,6 +102,7 @@ public:
     using NextFunc = std::function<QUrl()>;
     using FileInfoFunc = std::function<QSharedPointer<DFileInfo>()>;
     using FileCountFunc = std::function<quint64()>;
+    using CancelFunc = std::function<bool()>;
 
     using LastErrorFunc = std::function<DFMIOError()>;
 
@@ -111,6 +112,7 @@ public:
 
     DFM_VIRTUAL bool init();
     DFM_VIRTUAL void initAsync(int ioPriority = 0, InitCallbackFunc func = nullptr, void *userData = nullptr);
+    DFM_VIRTUAL bool cancel();
 
     QUrl uri() const;
     QStringList nameFilters() const;
@@ -130,6 +132,7 @@ public:
     // register
     void registerInit(const InitFunc &func);
     void registerInitAsync(const InitAsyncFunc &func);
+    void registerCancel(const CancelFunc &func);
     void registerFileInfoList(const FileInfoListFunc &func);
     void registerHasNext(const HasNextFunc &func);
     void registerNext(const NextFunc &func);

@@ -62,12 +62,13 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
     const QUrl &&uri = q->uri();
     g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
     g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
 
     if (mode & DFile::OpenFlag::kReadOnly && !(mode & DFile::OpenFlag::kWriteOnly)) {
         if (!exists()) {
             return false;
         }
-        iStream = (GInputStream *)g_file_read(gfile, nullptr, &gerror);
+        iStream = (GInputStream *)g_file_read(gfile, cancellable, &gerror);
         if (gerror)
             setErrorFromGError(gerror);
 
@@ -77,7 +78,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
         return true;
     } else if (mode & DFile::OpenFlag::kWriteOnly && !(mode & DFile::OpenFlag::kReadOnly)) {
         if (mode & DFile::OpenFlag::kNewOnly) {
-            oStream = (GOutputStream *)g_file_create(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
+            oStream = (GOutputStream *)g_file_create(gfile, G_FILE_CREATE_NONE, cancellable, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
 
@@ -85,7 +86,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
                 return false;
             }
         } else if (mode & DFile::OpenFlag::kAppend) {
-            oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
+            oStream = (GOutputStream *)g_file_append_to(gfile, G_FILE_CREATE_NONE, cancellable, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
 
@@ -93,7 +94,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
                 return false;
             }
         } else {
-            oStream = (GOutputStream *)g_file_replace(gfile, nullptr, false, G_FILE_CREATE_NONE, nullptr, &gerror);
+            oStream = (GOutputStream *)g_file_replace(gfile, nullptr, false, G_FILE_CREATE_NONE, cancellable, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
 
@@ -105,7 +106,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
         return true;
     } else if (mode & DFile::OpenFlag::kReadOnly && mode & DFile::OpenFlag::kWriteOnly) {
         if (mode & DFile::OpenFlag::kNewOnly) {
-            ioStream = (GIOStream *)g_file_create_readwrite(gfile, G_FILE_CREATE_NONE, nullptr, &gerror);
+            ioStream = (GIOStream *)g_file_create_readwrite(gfile, G_FILE_CREATE_NONE, cancellable, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
 
@@ -113,7 +114,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
                 return false;
             }
         } else if (mode & DFile::OpenFlag::kExistingOnly) {
-            ioStream = (GIOStream *)g_file_open_readwrite(gfile, nullptr, &gerror);
+            ioStream = (GIOStream *)g_file_open_readwrite(gfile, cancellable, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
 
@@ -121,7 +122,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
                 return false;
             }
         } else {
-            ioStream = (GIOStream *)g_file_replace_readwrite(gfile, nullptr, false, G_FILE_CREATE_NONE, nullptr, &gerror);
+            ioStream = (GIOStream *)g_file_replace_readwrite(gfile, nullptr, false, G_FILE_CREATE_NONE, cancellable, &gerror);
             if (gerror)
                 setErrorFromGError(gerror);
 
@@ -131,7 +132,7 @@ bool DLocalFilePrivate::open(DFile::OpenFlags mode)
         }
         return true;
     } else {
-        ioStream = (GIOStream *)g_file_replace_readwrite(gfile, nullptr, false, G_FILE_CREATE_NONE, nullptr, &gerror);
+        ioStream = (GIOStream *)g_file_replace_readwrite(gfile, nullptr, false, G_FILE_CREATE_NONE, cancellable, &gerror);
         if (gerror)
             setErrorFromGError(gerror);
 
@@ -162,6 +163,11 @@ bool DLocalFilePrivate::close()
         g_object_unref(ioStream);
         ioStream = nullptr;
     }
+    if (cancellable) {
+        g_object_unref(cancellable);
+        cancellable = nullptr;
+    }
+
     return true;
 }
 
@@ -174,10 +180,11 @@ qint64 DLocalFilePrivate::read(char *data, qint64 maxSize)
     }
 
     g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
     gssize read = g_input_stream_read(inputStream,
                                       data,
                                       static_cast<gsize>(maxSize),
-                                      nullptr,
+                                      cancellable,
                                       &gerror);
 
     if (gerror) {
@@ -200,10 +207,11 @@ QByteArray DLocalFilePrivate::read(qint64 maxSize)
     memset(&data, 0, maxSize + 1);
 
     g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
     g_input_stream_read(inputStream,
                         data,
                         static_cast<gsize>(maxSize),
-                        nullptr,
+                        cancellable,
                         &gerror);
     if (gerror) {
         setErrorFromGError(gerror);
@@ -232,11 +240,12 @@ QByteArray DLocalFilePrivate::readAll()
         char data[size + 1];
         memset(data, 0, size + 1);
 
+        checkAndResetCancel();
         gboolean read = g_input_stream_read_all(inputStream,
                                                 data,
                                                 size,
                                                 &bytesRead,
-                                                nullptr,
+                                                cancellable,
                                                 &gerror);
         if (!read || gerror) {
             if (gerror) {
@@ -282,11 +291,12 @@ void DLocalFilePrivate::readAsync(char *data, qint64 maxSize, int ioPriority, DF
     dataOp->callback = func;
     dataOp->userData = userData;
 
+    checkAndResetCancel();
     g_input_stream_read_async(inputStream,
                               data,
                               static_cast<gsize>(maxSize),
                               ioPriority,
-                              nullptr,
+                              cancellable,
                               readAsyncCallback,
                               dataOp);
 }
@@ -325,11 +335,12 @@ void DLocalFilePrivate::readQAsync(qint64 maxSize, int ioPriority, DFile::ReadQC
     dataOp->userData = userData;
     dataOp->data = data;
 
+    checkAndResetCancel();
     g_input_stream_read_async(inputStream,
                               data,
                               static_cast<gsize>(maxSize),
                               ioPriority,
-                              nullptr,
+                              cancellable,
                               readQAsyncCallback,
                               dataOp);
 }
@@ -387,11 +398,12 @@ void DLocalFilePrivate::readAllAsync(int ioPriority, DFile::ReadAllCallbackFunc 
     dataOp->ioPriority = ioPriority;
     dataOp->me = this;
 
+    checkAndResetCancel();
     g_input_stream_read_all_async(inputStream,
                                   data,
                                   size,
                                   ioPriority,
-                                  nullptr,
+                                  cancellable,
                                   readAllAsyncCallback,
                                   dataOp);
 }
@@ -404,16 +416,16 @@ qint64 DLocalFilePrivate::write(const char *data, qint64 maxSize)
         return -1;
     }
 
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
     gssize write = g_output_stream_write(outputStream,
                                          data,
                                          static_cast<gsize>(maxSize),
-                                         nullptr,
+                                         cancellable,
                                          &gerror);
-    if (gerror) {
+    if (gerror)
         setErrorFromGError(gerror);
-        g_error_free(gerror);
-    }
+
     return write;
 }
 
@@ -425,17 +437,17 @@ qint64 DLocalFilePrivate::write(const char *data)
     }
 
     gsize bytes_write;
-    GError *gerror = nullptr;
+    g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
     gssize write = g_output_stream_write_all(outputStream,
                                              data,
                                              strlen(data),
                                              &bytes_write,
-                                             nullptr,
+                                             cancellable,
                                              &gerror);
-    if (gerror) {
+    if (gerror)
         setErrorFromGError(gerror);
-        g_error_free(gerror);
-    }
+
     return write;
 }
 
@@ -619,6 +631,15 @@ void DLocalFilePrivate::readAsyncFutureCallback(GObject *sourceObject, GAsyncRes
     g_free(data);
 }
 
+void DLocalFilePrivate::checkAndResetCancel()
+{
+    if (cancellable) {
+        g_object_unref(cancellable);
+        cancellable = nullptr;
+    }
+    cancellable = g_cancellable_new();
+}
+
 void DLocalFilePrivate::writeAsync(const char *data, qint64 maxSize, int ioPriority, DFile::WriteCallbackFunc func, void *userData)
 {
     GOutputStream *outputStream = this->outputStream();
@@ -633,11 +654,12 @@ void DLocalFilePrivate::writeAsync(const char *data, qint64 maxSize, int ioPrior
     dataOp->callback = func;
     dataOp->userData = userData;
 
+    checkAndResetCancel();
     g_output_stream_write_async(outputStream,
                                 data,
                                 static_cast<gsize>(maxSize),
                                 ioPriority,
-                                nullptr,
+                                cancellable,
                                 writeAsyncCallback,
                                 dataOp);
 }
@@ -650,6 +672,13 @@ void DLocalFilePrivate::writeAllAsync(const char *data, int ioPriority, DFile::W
 void DLocalFilePrivate::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile::WriteQCallbackFunc func, void *userData)
 {
     writeAsync(byteArray.data(), byteArray.length(), ioPriority, func, userData);
+}
+
+bool DLocalFilePrivate::cancel()
+{
+    if (cancellable && !g_cancellable_is_cancelled(cancellable))
+        g_cancellable_cancel(cancellable);
+    return true;
 }
 
 bool DLocalFilePrivate::seek(qint64 pos, DFile::SeekType type)
@@ -686,7 +715,8 @@ bool DLocalFilePrivate::seek(qint64 pos, DFile::SeekType type)
         break;
     }
 
-    ret = g_seekable_seek(seekable, pos, gtype, nullptr, &gerror);
+    checkAndResetCancel();
+    ret = g_seekable_seek(seekable, pos, gtype, cancellable, &gerror);
     if (gerror) {
         setErrorFromGError(gerror);
         g_error_free(gerror);
@@ -727,32 +757,30 @@ bool DLocalFilePrivate::flush()
         return false;
     }
 
-    GError *gerror = nullptr;
-    gboolean ret = g_output_stream_flush(outputStream, nullptr, &gerror);
+    g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
+    gboolean ret = g_output_stream_flush(outputStream, cancellable, &gerror);
 
-    if (gerror) {
+    if (gerror)
         setErrorFromGError(gerror);
-        g_error_free(gerror);
-    }
+
     return ret;
 }
 
 qint64 DLocalFilePrivate::size()
 {
     const QUrl &uri = q->uri();
-    GFile *gfile = g_file_new_for_uri(uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toStdString().c_str());
 
-    GError *gerror = nullptr;
-    GFileInfo *fileInfo = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, nullptr, &gerror);
+    g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
+    g_autoptr(GFileInfo) fileInfo = g_file_query_info(gfile, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, cancellable, &gerror);
 
-    if (gerror) {
+    if (gerror)
         setErrorFromGError(gerror);
-        g_error_free(gerror);
-    }
 
     if (fileInfo) {
         goffset size = g_file_info_get_size(fileInfo);
-        g_object_unref(fileInfo);
         return qint64(size);
     }
 
@@ -763,7 +791,8 @@ bool DLocalFilePrivate::exists()
 {
     const QUrl &&uri = q->uri();
     g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
-    return g_file_query_file_type(gfile, G_FILE_QUERY_INFO_NONE, nullptr) != G_FILE_TYPE_UNKNOWN;
+    checkAndResetCancel();
+    return g_file_query_file_type(gfile, G_FILE_QUERY_INFO_NONE, cancellable) != G_FILE_TYPE_UNKNOWN;
 }
 
 DFile::Permissions DLocalFilePrivate::permissions()
@@ -772,8 +801,8 @@ DFile::Permissions DLocalFilePrivate::permissions()
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
 
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
     g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kUnixMode);
     if (attributeKey.empty())
         return retValue;
@@ -793,8 +822,8 @@ bool DLocalFilePrivate::setPermissions(DFile::Permissions permission)
     quint32 stMode = buildPermissions(permission);
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
     g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kUnixMode);
     bool succ = g_file_set_attribute_uint32(gfile, attributeKey.c_str(), stMode, G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS, cancellable, &gerror);
     if (gerror)
@@ -917,7 +946,7 @@ DFileFuture *DLocalFilePrivate::readAsync(qint64 maxSize, int ioPriority, QObjec
     dataOp->future = future;
     dataOp->data = data;
 
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
+    checkAndResetCancel();
     g_input_stream_read_all_async(inputStream,
                                   &data,
                                   maxSize,
@@ -947,7 +976,7 @@ DFileFuture *DLocalFilePrivate::writeAsync(const QByteArray &data, qint64 len, i
     dataOp->me = this;
     dataOp->future = future;
 
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
+    checkAndResetCancel();
     g_output_stream_write_async(outputStream,
                                 data,
                                 static_cast<gsize>(len),
@@ -978,7 +1007,7 @@ DFileFuture *DLocalFilePrivate::flushAsync(int ioPriority, QObject *parent)
     data->me = this;
     data->future = future;
 
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
+    checkAndResetCancel();
     g_output_stream_flush_async(outputStream, ioPriority, cancellable, flushAsyncCallback, data);
 
     return future;
@@ -993,7 +1022,7 @@ DFileFuture *DLocalFilePrivate::sizeAsync(int ioPriority, QObject *parent)
     data->future = future;
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
+    checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kStandardSize);
     g_file_query_info_async(gfile, attributeKey.c_str(), G_FILE_QUERY_INFO_NONE, ioPriority, cancellable, sizeAsyncCallback, data);
 
@@ -1009,7 +1038,7 @@ DFileFuture *DLocalFilePrivate::existsAsync(int ioPriority, QObject *parent)
     data->future = future;
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
+    checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kStandardType);
     g_file_query_info_async(gfile, attributeKey.c_str(), G_FILE_QUERY_INFO_NONE, ioPriority, cancellable, existsAsyncCallback, data);
 
@@ -1025,7 +1054,7 @@ DFileFuture *DLocalFilePrivate::permissionsAsync(int ioPriority, QObject *parent
     data->future = future;
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
+    checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kUnixMode);
     g_file_query_info_async(gfile, attributeKey.c_str(), G_FILE_QUERY_INFO_NONE, ioPriority, cancellable, permissionsAsyncCallback, data);
 
@@ -1040,7 +1069,7 @@ DFileFuture *DLocalFilePrivate::setPermissionsAsync(DFile::Permissions permissio
 
     quint32 stMode = buildPermissions(permission);
     g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
+    checkAndResetCancel();
     g_autoptr(GError) gerror = nullptr;
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kUnixMode);
 
@@ -1173,6 +1202,7 @@ DLocalFile::DLocalFile(const QUrl &uri)
     registerWriteAllAsync(bind_field(this, &DLocalFile::writeAllAsync));
     registerWriteQAsync(bind_field(this, &DLocalFile::writeQAsync));
 
+    registerCancel(std::bind(&DLocalFile::cancel, this));
     registerSeek(std::bind(&DLocalFile::seek, this, std::placeholders::_1, std::placeholders::_2));
     registerPos(std::bind(&DLocalFile::pos, this));
     registerFlush(std::bind(&DLocalFile::flush, this));
@@ -1275,6 +1305,11 @@ void DLocalFile::writeAllAsync(const char *data, int ioPriority, DFile::WriteAll
 void DLocalFile::writeQAsync(const QByteArray &byteArray, int ioPriority, DFile::WriteQCallbackFunc func, void *userData)
 {
     d->writeQAsync(byteArray, ioPriority, func, userData);
+}
+
+bool DLocalFile::cancel() const
+{
+    return d->cancel();
 }
 
 bool DLocalFile::seek(qint64 pos, DFile::SeekType type) const

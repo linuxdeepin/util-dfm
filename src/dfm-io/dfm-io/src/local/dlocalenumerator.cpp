@@ -47,6 +47,10 @@ DLocalEnumeratorPrivate::DLocalEnumeratorPrivate(DLocalEnumerator *q)
 DLocalEnumeratorPrivate::~DLocalEnumeratorPrivate()
 {
     clean();
+    if (cancellable) {
+        g_object_unref(cancellable);
+        cancellable = nullptr;
+    }
 }
 
 QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
@@ -56,10 +60,11 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
 
     g_autoptr(GFile) gfile = g_file_new_for_uri(q->uri().toString().toStdString().c_str());
 
+    checkAndResetCancel();
     enumerator = g_file_enumerate_children(gfile,
                                            FILE_DEFAULT_ATTRIBUTES,
                                            enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-                                           nullptr,
+                                           cancellable,
                                            &gerror);
 
     if (nullptr == enumerator) {
@@ -72,7 +77,8 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumeratorPrivate::fileInfoList()
     GFile *gfileIn = nullptr;
     GFileInfo *gfileInfoIn = nullptr;
 
-    while (g_file_enumerator_iterate(enumerator, &gfileInfoIn, &gfileIn, nullptr, &gerror)) {
+    checkAndResetCancel();
+    while (g_file_enumerator_iterate(enumerator, &gfileInfoIn, &gfileIn, cancellable, &gerror)) {
         if (!gfileInfoIn)
             break;
 
@@ -123,7 +129,8 @@ bool DLocalEnumeratorPrivate::hasNext()
     GFile *gfile = nullptr;
 
     g_autoptr(GError) gerror = nullptr;
-    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfile, nullptr, &gerror);
+    checkAndResetCancel();
+    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfile, cancellable, &gerror);
     if (hasNext) {
         if (!gfileInfo || !gfile) {
             GFileEnumerator *enumeratorPop = stackEnumerator.pop();
@@ -318,6 +325,13 @@ void DLocalEnumeratorPrivate::initAsync(int ioPriority, DEnumerator::InitCallbac
     createEnumneratorAsync(uri, me, ioPriority, func, userData);
 }
 
+bool DLocalEnumeratorPrivate::cancel()
+{
+    if (cancellable && !g_cancellable_is_cancelled(cancellable))
+        g_cancellable_cancel(cancellable);
+    return true;
+}
+
 void DLocalEnumeratorPrivate::setErrorFromGError(GError *gerror)
 {
     error.setCode(DFMIOErrorCode(gerror->code));
@@ -335,16 +349,26 @@ void DLocalEnumeratorPrivate::clean()
     }
 }
 
+void DLocalEnumeratorPrivate::checkAndResetCancel()
+{
+    if (cancellable) {
+        g_object_unref(cancellable);
+        cancellable = nullptr;
+    }
+    cancellable = g_cancellable_new();
+}
+
 bool DLocalEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me)
 {
     const QString &uriPath = url.toString();
     g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
 
     g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
     GFileEnumerator *genumerator = g_file_enumerate_children(gfile,
                                                              FILE_DEFAULT_ATTRIBUTES,
                                                              enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-                                                             nullptr,
+                                                             cancellable,
                                                              &gerror);
     if (!me) {
         error.setCode(DFMIOErrorCode(DFM_IO_ERROR_NOT_FOUND));
@@ -374,11 +398,12 @@ void DLocalEnumeratorPrivate::createEnumneratorAsync(const QUrl &url, QPointer<D
     dataOp->userData = userData;
     dataOp->me = me;
 
+    checkAndResetCancel();
     g_file_enumerate_children_async(gfile,
                                     FILE_DEFAULT_ATTRIBUTES,
                                     enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
                                     ioPriority,
-                                    nullptr,
+                                    cancellable,
                                     initAsyncCallback,
                                     dataOp);
 }
@@ -429,6 +454,7 @@ DLocalEnumerator::DLocalEnumerator(const QUrl &uri, const QStringList &nameFilte
 {
     registerInit(std::bind(&DLocalEnumerator::init, this));
     registerInitAsync(bind_field(this, &DLocalEnumerator::initAsync));
+    registerCancel(std::bind(&DLocalEnumerator::cancel, this));
     registerFileInfoList(std::bind(&DLocalEnumerator::fileInfoList, this));
     registerHasNext(std::bind(&DLocalEnumerator::hasNext, this));
     registerNext(std::bind(&DLocalEnumerator::next, this));
@@ -456,6 +482,11 @@ bool DLocalEnumerator::init()
 void DLocalEnumerator::initAsync(int ioPriority, DEnumerator::InitCallbackFunc func, void *userData)
 {
     d->initAsync(ioPriority, func, userData);
+}
+
+bool DLocalEnumerator::cancel()
+{
+    return d->cancel();
 }
 
 bool DLocalEnumerator::hasNext() const
