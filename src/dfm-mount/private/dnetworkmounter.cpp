@@ -54,6 +54,10 @@ static constexpr char kLoginDomain[] { "domain" };
 static constexpr char kLoginPasswd[] { "passwd" };
 static constexpr char kLoginTimeout[] { "timeout" };
 
+static constexpr char kDaemonMountRetKeyMpt[] { "mountPoint" };
+static constexpr char kDaemonMountRetKeyErrno[] { "errno" };
+static constexpr char kDaemonMountRetKeyErrMsg[] { "errMsg" };
+
 struct AskPasswdHelper
 {
     GetMountPassInfo callback { nullptr };
@@ -433,11 +437,15 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
 
     QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace,
                            QDBusConnection::systemBus());
-    QDBusReply<QString> ret = mntCtrl.call(kMountControlMount, address, param);
-    QString mpt = ret.value();
+
+    QDBusReply<QVariantMap> ret = mntCtrl.call(kMountControlMount, address, param);
+    auto mntRet = ret.value();
+    QString mpt = mntRet.value(kDaemonMountRetKeyMpt).toString();
+    int errNum = mntRet.value(kDaemonMountRetKeyErrno).toInt();
+
     bool ok = !mpt.isEmpty();
     DeviceError err = info.anonymous ? DeviceError::kUserErrorNetworkAnonymousNotAllowed
-                                     : DeviceError::kUserErrorNetworkWrongPasswd;
+                                     : static_cast<DeviceError>(errNum);
     if (ok) {
         err = DeviceError::kNoError;
 
@@ -454,17 +462,21 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &ad
 {
     QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace,
                            QDBusConnection::systemBus());
+
     for (const auto &login : infos) {
         QVariantMap param { { kLoginUser, login.value(kSchemaUser) },
                             { kLoginDomain, login.value(kSchemaDomain) },
                             { kLoginPasswd, login.value(kLoginPasswd) },
                             { kLoginTimeout, secs } };
 
-        QDBusReply<QString> ret = mntCtrl.call(kMountControlMount, address, param);
-        QString mpt = ret.value();
+        QDBusReply<QVariantMap> ret = mntCtrl.call(kMountControlMount, address, param);
+        auto mntRet = ret.value();
+        QString mpt = mntRet.value(kDaemonMountRetKeyMpt).toString();
+
         if (!mpt.isEmpty())
             return { true, DeviceError::kNoError, mpt };
     }
+
     // when all saved login data is tried, get info from user
     MountRet ret { .requestLoginInfo = true };
     return ret;

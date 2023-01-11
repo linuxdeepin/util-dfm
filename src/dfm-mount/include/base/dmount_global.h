@@ -19,7 +19,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 #ifndef DMOUNT_GLOBAL_H
 #define DMOUNT_GLOBAL_H
 
@@ -166,14 +166,22 @@ enum class Property : uint16_t {
 Q_ENUM_NS(Property);
 
 #define UDISKS_ERR_DOMAIN "udisks-error-quark"
-#define UDISKS_ERR_START 0
+#define UDISKS_ERR_START 400
 #define GIO_ERR_DOMAIN "g-io-error-quark"
-#define GIO_ERR_START 200
+#define GIO_ERR_START 800
 #define GDBUS_ERR_DOMAIN "g-dbus-error-quark"
-#define GDBUS_ERR_START 400
-#define USER_ERR_START 800
-enum class DeviceError : uint16_t {
-    kNoError = 10000,
+#define GDBUS_ERR_START 1200
+#define USER_ERR_START 1600
+enum class DeviceError : int16_t {
+    kNoError = 0,
+    kUnhandledError = 10001,
+
+    // < 0, daemon mount error
+    kDaemonErrorNotSupportedScheme = -1,
+    kDaemonErrorCannotGenerateMountPath = -2,
+    kDaemonErrorCannotMkdirMountPoint = -3,
+
+    // 0~400, system errno
 
     // ￬ these errors are transfered from udisks
     kUDisksErrorFailed = UDISKS_ERR_START,
@@ -347,7 +355,6 @@ enum class DeviceError : uint16_t {
     kUserErrorNotPoweroffable,
     kUserErrorFailed,
 
-    kUnhandledError = 1000,
 };
 Q_ENUM_NS(DeviceError)
 
