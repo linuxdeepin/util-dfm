@@ -53,6 +53,7 @@ static constexpr char kLoginUser[] { "user" };
 static constexpr char kLoginDomain[] { "domain" };
 static constexpr char kLoginPasswd[] { "passwd" };
 static constexpr char kLoginTimeout[] { "timeout" };
+static constexpr char kMountFsType[] { "fsType" };
 
 static constexpr char kDaemonMountRetKeyMpt[] { "mountPoint" };
 static constexpr char kDaemonMountRetKeyErrno[] { "errno" };
@@ -198,8 +199,10 @@ bool DNetworkMounter::unmountNetworkDev(const QString &mpt)
 {
     QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace,
                            QDBusConnection::systemBus());
-    QDBusReply<bool> ret = mntCtrl.call(kMountControlUnmount, mpt);
-    return ret.value();
+    QVariantMap opts { { kMountFsType, "cifs" } };
+    QDBusReply<QVariantMap> ret = mntCtrl.call(kMountControlUnmount, mpt, opts);
+    auto result = ret.value();
+    return result.value("result", false).toBool();
 }
 
 void DNetworkMounter::unmountNetworkDevAsync(const QString &mpt, DeviceOperateCallback cb)
@@ -433,7 +436,8 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
     QVariantMap param { { kLoginUser, info.userName },
                         { kLoginDomain, info.domain },
                         { kLoginPasswd, info.passwd },
-                        { kLoginTimeout, info.timeout } };
+                        { kLoginTimeout, info.timeout },
+                        { kMountFsType, "cifs" } };
 
     QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace,
                            QDBusConnection::systemBus());
@@ -467,7 +471,8 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &ad
         QVariantMap param { { kLoginUser, login.value(kSchemaUser) },
                             { kLoginDomain, login.value(kSchemaDomain) },
                             { kLoginPasswd, login.value(kLoginPasswd) },
-                            { kLoginTimeout, secs } };
+                            { kLoginTimeout, secs },
+                            { kMountFsType, "cifs" } };
 
         QDBusReply<QVariantMap> ret = mntCtrl.call(kMountControlMount, address, param);
         auto mntRet = ret.value();
