@@ -56,8 +56,8 @@ static bool trash_file(const QUrl &url)
         return false;
     }
 
-    bool success = op->trashFile();
-    if (!success) {
+    QString targetTrash = op->trashFile();
+    if (targetTrash.isEmpty()) {
         err_msg("trash file failed.");
         return false;
     }

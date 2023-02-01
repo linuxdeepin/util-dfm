@@ -53,7 +53,7 @@ public:
     using MoveFileFunc = std::function<bool(const QUrl &, DFile::CopyFlag, ProgressCallbackFunc, void *)>;
     using MoveFileFuncAsync = std::function<void(const QUrl &, DFile::CopyFlag, ProgressCallbackFunc, void *, int, FileOperateCallbackFunc, void *)>;
 
-    using TrashFileFunc = std::function<bool()>;
+    using TrashFileFunc = std::function<QString()>;
     using TrashFileFuncAsync = std::function<void(int, FileOperateCallbackFunc, void *)>;
     using DeleteFileFunc = std::function<bool()>;
     using DeleteFileFuncAsync = std::function<void(int, FileOperateCallbackFunc, void *)>;
@@ -89,7 +89,7 @@ public:
     DFM_VIRTUAL void moveFileAsync(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
                                    int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
 
-    DFM_VIRTUAL bool trashFile();
+    DFM_VIRTUAL QString trashFile();
     DFM_VIRTUAL bool deleteFile();
     DFM_VIRTUAL bool restoreFile(ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     // async

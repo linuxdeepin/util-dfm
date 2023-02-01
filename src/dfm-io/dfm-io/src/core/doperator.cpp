@@ -105,10 +105,10 @@ void DOperator::moveFileAsync(const QUrl &destUri, DFile::CopyFlag flag, DOperat
     d->moveFileFuncAsync(destUri, flag, func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
-bool DOperator::trashFile()
+QString DOperator::trashFile()
 {
     if (!d->trashFileFunc)
-        return false;
+        return QString();
 
     return d->trashFileFunc();
 }

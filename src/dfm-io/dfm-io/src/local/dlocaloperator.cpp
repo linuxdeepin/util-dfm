@@ -26,13 +26,15 @@
 #include "local/dlocaloperator.h"
 #include "local/dlocaloperator_p.h"
 #include "local/dlocalhelper.h"
+#include "utils/trashfilehelper.h"
 
 #include "core/doperator_p.h"
 
+#include <QFile>
+#include <QTextStream>
+
 #include <gio/gio.h>
 #include <glib/gstdio.h>
-
-#include <QDebug>
 
 USING_IO_NAMESPACE
 
@@ -226,7 +228,7 @@ void DLocalOperatorPrivate::moveFileAsync(const QUrl &to, DFile::CopyFlag flag, 
         operatefunc(ret, userData);
 }
 
-bool DLocalOperatorPrivate::trashFile()
+QString DLocalOperatorPrivate::trashFile()
 {
     g_autoptr(GError) gerror = nullptr;
 
@@ -234,11 +236,18 @@ bool DLocalOperatorPrivate::trashFile()
     g_autoptr(GFile) gfile = makeGFile(uri);
 
     bool ret = g_file_trash(gfile, nullptr, &gerror);
+    QString targetTrashPath;
+    if (ret) {
+        auto targetTrashPath = TrashFileHelper::trashTargetPath(uri.path(), gfile);
+        if (targetTrashPath.isEmpty())
+            error.setCode(DFMIOErrorCode::DFM_IO_ERROR_NONE_TARGET_TRASH);
+        return targetTrashPath;
+    }
 
     if (gerror)
         setErrorFromGError(gerror);
 
-    return ret;
+    return targetTrashPath;
 }
 
 bool DLocalOperatorPrivate::deleteFile()
@@ -501,6 +510,8 @@ GFile *DLocalOperatorPrivate::makeGFile(const QUrl &url)
 
 void DLocalOperatorPrivate::setErrorFromGError(GError *gerror)
 {
+    if (!gerror)
+        return;
     error.setCode(DFMIOErrorCode(gerror->code));
 }
 
@@ -577,7 +588,7 @@ void DLocalOperator::moveFileAsync(const QUrl &destUri, DFile::CopyFlag flag, DO
     d->moveFileAsync(destUri, flag, func, progressCallbackData, ioPriority, operatefunc, userData);
 }
 
-bool DLocalOperator::trashFile()
+QString DLocalOperator::trashFile()
 {
     return d->trashFile();
 }

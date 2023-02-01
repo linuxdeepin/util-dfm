@@ -56,7 +56,7 @@ public:
     void moveFileAsync(const QUrl &dstUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr,
                        int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
 
-    bool trashFile();
+    QString trashFile();
     bool deleteFile();
     bool restoreFile(DOperator::ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     void trashFileAsync(int ioPriority = 0, DOperator::FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
