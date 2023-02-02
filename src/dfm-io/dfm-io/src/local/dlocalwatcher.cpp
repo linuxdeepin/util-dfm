@@ -108,7 +108,10 @@ DFMIOError DLocalWatcherPrivate::lastError()
 
 void DLocalWatcherPrivate::setErrorFromGError(GError *gerror)
 {
-    error.setCode(DFMIOErrorCode(gerror->code));
+    if (gerror)
+        error.setCode(DFMIOErrorCode(gerror->code));
+    else
+        error.setCode(DFMIOErrorCode(DFM_IO_ERROR_FAILED));
 }
 
 void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
@@ -189,22 +192,18 @@ void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
 
 GFileMonitor *DLocalWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchType type)
 {
+    Q_UNUSED(type)
+
     if (!gfile) {
         error.setCode(DFMIOErrorCode(DFM_IO_ERROR_NOT_FOUND));
         return nullptr;
     }
 
-    GFileMonitorFlags flags = GFileMonitorFlags(G_FILE_MONITOR_WATCH_MOUNTS | G_FILE_MONITOR_WATCH_MOVES | G_FILE_MONITOR_WATCH_HARD_LINKS);
-
     g_autoptr(GError) gerror = nullptr;
     g_autoptr(GCancellable) cancel = g_cancellable_new();
 
-    if (type == DWatcher::WatchType::kFile)
-        gmonitor = g_file_monitor_file(gfile, flags, cancel, &gerror);
-    else if (type == DWatcher::WatchType::kDir)
-        gmonitor = g_file_monitor_directory(gfile, flags, cancel, &gerror);
-    else
-        gmonitor = g_file_monitor(gfile, flags, cancel, &gerror);
+    GFileMonitorFlags flags = GFileMonitorFlags(G_FILE_MONITOR_WATCH_MOUNTS | G_FILE_MONITOR_WATCH_MOVES);
+    gmonitor = g_file_monitor(gfile, flags, cancel, &gerror);
 
     if (!gmonitor) {
         setErrorFromGError(gerror);
