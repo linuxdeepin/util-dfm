@@ -45,6 +45,10 @@ DLocalFileInfoPrivate::DLocalFileInfoPrivate(DLocalFileInfo *q)
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kStandardIsHidden);
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeCreated);
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeCreatedUsec);
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeModified);
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeModifiedUsec);
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeAccess);
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeAccessUsec);
 
     attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardName);
     attributesNoBlockIO.push_back(DFileInfo::AttributeID::kStandardDisplayName);
@@ -356,7 +360,9 @@ QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             const QUrl &url = q->uri();
             int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
             if (ret == 0) {
-                return quint64(statxBuffer.stx_btime.tv_sec);
+                return statxBuffer.stx_btime.tv_sec > 0
+                        ? quint64(statxBuffer.stx_btime.tv_sec)
+                        : quint64(statxBuffer.stx_ctime.tv_sec);
             }
         }
         return qulonglong(ret);
@@ -372,7 +378,81 @@ QVariant DLocalFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             const QUrl &url = q->uri();
             int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
             if (ret == 0) {
-                return statxBuffer.stx_btime.tv_nsec / 1000000;
+                return statxBuffer.stx_btime.tv_nsec > 0
+                        ? statxBuffer.stx_btime.tv_nsec / 1000000
+                        : statxBuffer.stx_ctime.tv_nsec / 1000000;
+            }
+        }
+        return QVariant(ret);
+    }
+    case DFileInfo::AttributeID::kTimeModified: {
+        const std::string &key = DLocalHelper::attributeStringById(id);
+        if (key.empty())
+            return QVariant();
+        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        if (ret == 0) {
+            struct statx statxBuffer;
+            unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
+            const QUrl &url = q->uri();
+            int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
+            if (ret == 0) {
+                return statxBuffer.stx_mtime.tv_sec > 0
+                        ? quint64(statxBuffer.stx_mtime.tv_sec)
+                        : quint64(statxBuffer.stx_ctime.tv_sec);
+            }
+        }
+        return qulonglong(ret);
+    }
+    case DFileInfo::AttributeID::kTimeModifiedUsec: {
+        const std::string &key = DLocalHelper::attributeStringById(id);
+        if (key.empty())
+            return QVariant();
+        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        if (ret == 0) {
+            struct statx statxBuffer;
+            unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
+            const QUrl &url = q->uri();
+            int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
+            if (ret == 0) {
+                return statxBuffer.stx_mtime.tv_nsec > 0
+                        ? statxBuffer.stx_mtime.tv_nsec / 1000000
+                        : statxBuffer.stx_ctime.tv_nsec / 1000000;
+            }
+        }
+        return QVariant(ret);
+    }
+    case DFileInfo::AttributeID::kTimeAccess: {
+        const std::string &key = DLocalHelper::attributeStringById(id);
+        if (key.empty())
+            return QVariant();
+        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        if (ret == 0) {
+            struct statx statxBuffer;
+            unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
+            const QUrl &url = q->uri();
+            int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
+            if (ret == 0) {
+                return statxBuffer.stx_atime.tv_sec > 0
+                        ? quint64(statxBuffer.stx_atime.tv_sec)
+                        : quint64(statxBuffer.stx_ctime.tv_sec);
+            }
+        }
+        return qulonglong(ret);
+    }
+    case DFileInfo::AttributeID::kTimeAccessUsec: {
+        const std::string &key = DLocalHelper::attributeStringById(id);
+        if (key.empty())
+            return QVariant();
+        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        if (ret == 0) {
+            struct statx statxBuffer;
+            unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
+            const QUrl &url = q->uri();
+            int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
+            if (ret == 0) {
+                return statxBuffer.stx_atime.tv_nsec > 0
+                        ? statxBuffer.stx_atime.tv_nsec / 1000000
+                        : statxBuffer.stx_ctime.tv_nsec / 1000000;
             }
         }
         return QVariant(ret);
