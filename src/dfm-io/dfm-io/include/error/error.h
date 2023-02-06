@@ -15,7 +15,11 @@ public:
 
     //! Get the error code.
     DFMIOErrorCode code() const { return errorCode; }
-    QString errorMsg() const { return GetError_En(errorCode); }
+    QString errorMsg() const {
+        if (errorCode == DFMIOErrorCode::DFM_ERROR_OTHER_DOMAIN)
+            return errMsg;
+        return GetError_En(errorCode);
+    }
 
     //! Conversion to \c bool, returns \c true, iff !\ref IsError().
     operator bool() const
@@ -25,17 +29,19 @@ public:
     //! Whether the result is an error.
     bool isError() const { return errorCode != DFM_IO_ERROR_NONE; }
 
-    bool operator==(const DFMIOError &that) const { return errorCode == that.errorCode; }
-    bool operator==(DFMIOErrorCode code) const { return errorCode == code; }
-    friend bool operator==(DFMIOErrorCode code, const DFMIOError &err) { return code == err.errorCode; }
+    bool operator==(const DFMIOError &that) const {
+        return errorCode == that.errorCode && errMsg == that.errMsg; }
 
     //! Reset error code.
     void clear() { setCode(DFM_IO_ERROR_NONE); }
     //! Update error code and offset.
     void setCode(DFMIOErrorCode code) { errorCode = code; }
+    //! Update error message.
+    void setMessage(const QString &msg) { errMsg = msg; }
 
 private:
     DFMIOErrorCode errorCode;
+    QString errMsg;
 };
 
 #endif   // DFM_IO_ERROR_ERROR_H_

@@ -687,7 +687,13 @@ DFMIOError DLocalFileInfoPrivate::lastError()
 
 void DLocalFileInfoPrivate::setErrorFromGError(GError *gerror)
 {
+    if (!gerror)
+        return;
     error.setCode(DFMIOErrorCode(gerror->code));
+    if (gerror->domain != G_IO_ERROR) {
+        error.setCode(DFMIOErrorCode::DFM_ERROR_OTHER_DOMAIN);
+        error.setMessage(gerror->message);
+    }
 }
 
 void DLocalFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)

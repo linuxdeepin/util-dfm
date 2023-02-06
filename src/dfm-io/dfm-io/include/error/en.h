@@ -84,6 +84,7 @@ enum DFMIOErrorCode {
     DFM_IO_ERROR_OPEN_FLAG_ERROR,   // File open flag is error
     DFM_IO_ERROR_INFO_NO_ATTRIBUTE,   // File info has no attribute
     DFM_IO_ERROR_NONE_TARGET_TRASH,   // Target Trash File Not exist
+    DFM_ERROR_OTHER_DOMAIN,   // other domian error
 };
 
 inline const QString GetError_En(DFMIOErrorCode errorCode)
@@ -108,7 +109,7 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
     case DFM_IO_ERROR_NOT_MOUNTABLE_FILE:
         return QObject::tr("File cannot be mounted");
     case DFM_IO_ERROR_FILENAME_TOO_LONG:
-        return QObject::tr("Filename is too many characters");
+        return QObject::tr("Filename has too many characters");
     case DFM_IO_ERROR_INVALID_FILENAME:
         return QObject::tr("Filename is invalid or contains invalid characters");
     case DFM_IO_ERROR_TOO_MANY_LINKS:
@@ -132,7 +133,7 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
     case DFM_IO_ERROR_PENDING:
         return QObject::tr("Operations are still pending");
     case DFM_IO_ERROR_READ_ONLY:
-        return QObject::tr("File is read only");
+        return QObject::tr("File is read-only");
     case DFM_IO_ERROR_CANT_CREATE_BACKUP:
         return QObject::tr("Backup couldn't be created");
     case DFM_IO_ERROR_WRONG_ETAG:
@@ -188,13 +189,15 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
     case DFM_IO_ERROR_FAILED:
         return QObject::tr("Generic error condition for when an operation fails and no more specific DFMIOErrorEnum value is defined");
     case DFM_IO_ERROR_OPEN_FAILED:
-        return QObject::tr("File open failed");
+        return QObject::tr("Failed to open the file");
     case DFM_IO_ERROR_OPEN_FLAG_ERROR:
         return QObject::tr("File open flag error");
     case DFM_IO_ERROR_INFO_NO_ATTRIBUTE:
         return QObject::tr("File info has no attribute");
     case DFM_IO_ERROR_NONE_TARGET_TRASH:
         return QObject::tr("Target Trash File Not exist");
+    case DFM_ERROR_OTHER_DOMAIN:
+        return QString();
     }
 
     return QString("Unknown error");

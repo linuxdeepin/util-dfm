@@ -108,10 +108,13 @@ DFMIOError DLocalWatcherPrivate::lastError()
 
 void DLocalWatcherPrivate::setErrorFromGError(GError *gerror)
 {
-    if (gerror)
-        error.setCode(DFMIOErrorCode(gerror->code));
-    else
-        error.setCode(DFMIOErrorCode(DFM_IO_ERROR_FAILED));
+    if (!gerror)
+        return error.setCode(DFMIOErrorCode(DFM_IO_ERROR_FAILED));
+    error.setCode(DFMIOErrorCode(gerror->code));
+    if (gerror->domain != G_IO_ERROR) {
+        error.setCode(DFMIOErrorCode::DFM_ERROR_OTHER_DOMAIN);
+        error.setMessage(gerror->message);
+    }
 }
 
 void DLocalWatcherPrivate::watchCallback(GFileMonitor *monitor,
