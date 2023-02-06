@@ -114,13 +114,17 @@ QString TrashFileHelper::trashTargetPath(const QString &path, GFile *file)
     if (trashDirStr.isEmpty())
         return trashDirStr;
     gchar *temp = g_file_get_basename(file);
+    char *originalNameEscaped = g_uri_escape_string (path.toStdString().c_str(), "/", FALSE);
     QString baseName(temp);
     g_free(temp);
+    QString originalName(originalNameEscaped);
+    g_free(originalNameEscaped);
     QString buildBaseName = baseName;
 
     auto trashFileInfo = trashDirStr + "/info/" + baseName + ".trashinfo";
     auto tmpPath = path;
     auto targetBase = topDir.isEmpty() ? path : tmpPath.replace(topDir + "/", "");
+    originalName = topDir.isEmpty() ? originalName : originalName.replace(topDir + "/", "");
     int i = 1;
     QStringList baseNameList;
     while (true) {
@@ -140,7 +144,7 @@ QString TrashFileHelper::trashTargetPath(const QString &path, GFile *file)
         if (!stream.atEnd())
             path = stream.readLine();
 
-        if (path.startsWith("Path=") && path.replace("Path=", "") == targetBase) {
+        if (path.startsWith("Path=") && path.replace("Path=", "") == originalName) {
             baseNameList.append(baseName);
         }
         ++i;
