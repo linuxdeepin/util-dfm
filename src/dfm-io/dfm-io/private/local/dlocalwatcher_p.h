@@ -11,9 +11,12 @@
 
 #include "gio/gio.h"
 
+#include <QSocketNotifier>
+
 BEGIN_IO_NAMESPACE
 
 class DLocalWatcher;
+class DLocalWatcherProxy;
 
 class DLocalWatcherPrivate
 {
@@ -27,6 +30,7 @@ public:
     bool stop();
     bool running() const;
 
+    bool startProxy();
     DFMIOError lastError();
     void setErrorFromGError(GError *gerror);
 
@@ -43,6 +47,32 @@ public:
     DFMIOError error;
 
     DLocalWatcher *q = nullptr;
+    DLocalWatcherProxy *proxy = nullptr;
+};
+
+class DLocalWatcherProxy : public QObject
+{
+    Q_OBJECT
+public:
+    explicit DLocalWatcherProxy(DLocalWatcher *qq);
+    virtual ~DLocalWatcherProxy();
+
+    bool start();
+    bool stop();
+    bool running();
+
+private Q_SLOTS:
+    void onNotifierActived();
+
+private:
+    DLocalWatcher *q = nullptr;
+
+    QString monitorFile;
+    DWatcher::WatchType type = DWatcher::WatchType::kAuto;
+    int watchId = -1;
+    bool inited = false;
+    int inotifyFd = -1;
+    QSocketNotifier *notifier = nullptr;
 };
 
 END_IO_NAMESPACE
