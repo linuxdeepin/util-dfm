@@ -91,7 +91,7 @@ void DLocalWatcherPrivate::setErrorFromGError(GError *gerror)
     if (!gerror)
         return error.setCode(DFMIOErrorCode(DFM_IO_ERROR_FAILED));
     error.setCode(DFMIOErrorCode(gerror->code));
-    if (gerror->domain != G_IO_ERROR) {
+    if (gerror->domain != G_IO_ERROR || gerror->message) {
         error.setCode(DFMIOErrorCode::DFM_ERROR_OTHER_DOMAIN);
         error.setMessage(gerror->message);
     }
