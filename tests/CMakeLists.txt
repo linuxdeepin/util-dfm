@@ -5,7 +5,7 @@ project(util-dfm-tests)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DQT_DEBUG")
 
 set(PROJECT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/../src")
-set(TEST_UTILS_PATH "${CMAKE_SOURCE_DIR}/utils")
+set(TEST_UTILS_PATH "${CMAKE_SOURCE_DIR}/tests/3rdparty/utils")
 
 # 用于测试覆盖率的编译条件
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-inline -fno-access-control -O0 -fprofile-arcs -ftest-coverage -lgcov")

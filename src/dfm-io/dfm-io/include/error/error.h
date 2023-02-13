@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef DFM_IO_ERROR_ERROR_H_
 #define DFM_IO_ERROR_ERROR_H_
 

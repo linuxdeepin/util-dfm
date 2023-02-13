@@ -1,13 +1,27 @@
 # util-dfm
 
-
+A Toolkits of libdfm-io 、libdfm-mount and libdfm-burn，developed by UnionTech Software Technology Co., Ltd
 
 ### Dependencies
 
+
 ### Build dependencies
 
+ debhelper (>=9),
+ cmake,
+ pkg-config,
+ qtbase5-dev,
+ qtbase5-private-dev,
+ qt5-qmake,
+ libglibmm-2.4-dev,
+ qttools5-dev-tools,
+ libglib2.0-dev,
+ libudisks2-dev,
+ libisoburn-dev,
+ libmediainfo-dev,
+ libsecret-1-dev
+ 
 ## Installation
-
 ### Build from source code
 
 1. Build:
@@ -25,8 +39,6 @@ $ make
 ```bash
 $ sudo make install
 ```
-
-## Usage
 
 
 
@@ -52,4 +64,4 @@ We encourage you to report issues and contribute changes
 
 ## License
 
-dde-file-manager is licensed under [GPLv3](LICENSE)
+util-dfm is licensed under [GPL-3.0-or-later](LICENSE.txt)

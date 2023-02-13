@@ -1,4 +1,3 @@
-
 /*** Start of inlined file: elfio_dump.hpp ***/
 #ifndef ELFIO_DUMP_HPP
 #define ELFIO_DUMP_HPP
