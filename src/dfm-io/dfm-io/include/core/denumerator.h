@@ -73,6 +73,30 @@ public:
         kSubdirectories = 0x02,   // List entries inside all subdirectories as well.
     };
     Q_DECLARE_FLAGS(IteratorFlags, IteratorFlag)
+    enum class SortRoleCompareFlag : uint8_t {
+        kSortRoleCompareDefault = 0,    // The default value
+        kSortRoleCompareFileName = 1,   // compare by file path
+        kSortRoleCompareFileSize = 2,   // compare by file size
+        kSortRoleCompareFileLastModified = 3,   // compare by last modified time
+        kSortRoleCompareFileLastRead = 4,   // compare by last read time
+    };
+
+    enum class ArgumentKey : uint8_t {
+        kArgumentSortRole = 0,    // key of sort role
+        kArgumentSortOrder = 1,   // key of sort order
+        kArgumentMixDirAndFile = 2,   // key of mix dir and file
+    };
+
+    struct SortFileInfo {
+        QUrl url;
+        bool isFile { false };
+        bool isDir { false };
+        bool isSymLink { false };
+        bool isHide {false };
+        bool isReadable {false };
+        bool isWriteable {false };
+        bool isExecutable {false };
+    };
 
     // call back
     using InitCallbackFunc = void (*)(bool, void *);
@@ -80,6 +104,8 @@ public:
     using InitFunc = std::function<bool()>;
     using InitAsyncFunc = std::function<void(int, InitCallbackFunc, void *)>;
     using FileInfoListFunc = std::function<QList<QSharedPointer<DFileInfo>>()>;
+    using SetArgumentsFunc = std::function<void(const QMap<DEnumerator::ArgumentKey, QVariant> &)>;
+    using SortFileInfoListFunc = std::function<QList<QSharedPointer<DEnumerator::SortFileInfo>>()>;
     using HasNextFunc = std::function<bool()>;
     using NextFunc = std::function<QUrl()>;
     using FileInfoFunc = std::function<QSharedPointer<DFileInfo>()>;
@@ -108,6 +134,8 @@ public:
     DFM_VIRTUAL QSharedPointer<DFileInfo> fileInfo() const;
     DFM_VIRTUAL quint64 fileCount();
     DFM_VIRTUAL QList<QSharedPointer<DFileInfo>> fileInfoList();
+    DFM_VIRTUAL void setArguments(const QMap<DEnumerator::ArgumentKey, QVariant> &argus);
+    DFM_VIRTUAL QList<QSharedPointer<DEnumerator::SortFileInfo>> sortFileInfoList();
 
     DFM_VIRTUAL DFMIOError lastError() const;
 
@@ -116,6 +144,8 @@ public:
     void registerInitAsync(const InitAsyncFunc &func);
     void registerCancel(const CancelFunc &func);
     void registerFileInfoList(const FileInfoListFunc &func);
+    void registerSetArguments(const SetArgumentsFunc &func);
+    void registerSortFileInfoList(const SortFileInfoListFunc &func);
     void registerHasNext(const HasNextFunc &func);
     void registerNext(const NextFunc &func);
     void registerFileInfo(const FileInfoFunc &func);
@@ -130,5 +160,8 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(DEnumerator::DirFilters);
 Q_DECLARE_OPERATORS_FOR_FLAGS(DEnumerator::IteratorFlags);
 
 END_IO_NAMESPACE
+
+Q_DECLARE_METATYPE(DFMIO::DEnumerator::SortRoleCompareFlag)
+Q_DECLARE_METATYPE(QList<QSharedPointer<DFMIO::DEnumerator::SortFileInfo>>)
 
 #endif   // DENUMERATOR_H

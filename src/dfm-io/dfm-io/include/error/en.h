@@ -67,6 +67,7 @@ enum DFMIOErrorCode {
     DFM_IO_ERROR_INFO_NO_ATTRIBUTE,   // File info has no attribute
     DFM_IO_ERROR_NONE_TARGET_TRASH,   // Target Trash File Not exist
     DFM_ERROR_OTHER_DOMAIN,   // other domian error
+    DFM_IO_ERROR_FTS_OPEN,   // open file by fts failed
 };
 
 inline const QString GetError_En(DFMIOErrorCode errorCode)
@@ -180,6 +181,8 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
         return QObject::tr("Target Trash File Not exist");
     case DFM_ERROR_OTHER_DOMAIN:
         return QString();
+    case DFM_IO_ERROR_FTS_OPEN:
+        return QObject::tr("open file by fts failed");
     }
 
     return QString("Unknown error");

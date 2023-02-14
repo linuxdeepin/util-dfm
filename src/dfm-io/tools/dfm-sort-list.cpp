@@ -8,9 +8,10 @@
 #include "core/diofactory.h"
 #include "core/diofactory_p.h"
 
-#include <stdio.h>
-
+#include <QVariant>
 #include <QDebug>
+
+#include <stdio.h>
 
 USING_IO_NAMESPACE
 
@@ -36,9 +37,15 @@ static void enum_uri(const QUrl &url)
         return;
     }
 
-    while (enumerator->hasNext()) {
-        const QUrl &url = enumerator->next();
-        qInfo() << url;
+    QMap<DEnumerator::ArgumentKey, QVariant> argus;
+    argus.insert(DEnumerator::ArgumentKey::kArgumentSortRole,
+                 QVariant::fromValue(DFMIO::DEnumerator::SortRoleCompareFlag::kSortRoleCompareFileLastModified));
+    argus.insert(DEnumerator::ArgumentKey::kArgumentMixDirAndFile, true);
+    argus.insert(DEnumerator::ArgumentKey::kArgumentSortOrder, Qt::DescendingOrder);
+    enumerator->setArguments(argus);
+    auto list = enumerator->sortFileInfoList();
+    for (auto sortInfo : list) {
+        qInfo() << sortInfo->url;
     }
 }
 

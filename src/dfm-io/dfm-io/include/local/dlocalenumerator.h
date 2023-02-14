@@ -29,6 +29,8 @@ public:
     DFMIOError lastError() const DFM_OVERRIDE;
 
     QList<QSharedPointer<DFileInfo>> fileInfoList();
+    QList<QSharedPointer<DEnumerator::SortFileInfo> > sortFileInfoList();
+    void setArguments(const QMap<DEnumerator::ArgumentKey, QVariant> &argus) DFM_OVERRIDE;
 
 private:
     QSharedPointer<DLocalEnumeratorPrivate> d = nullptr;

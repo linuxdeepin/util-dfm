@@ -13,6 +13,9 @@ include_directories(
 add_executable(dfm-list dfm-list.cpp)
 target_link_libraries(dfm-list dfm-io)
 
+add_executable(dfm-sort-list dfm-sort-list.cpp)
+target_link_libraries(dfm-sort-list dfm-io)
+
 add_executable(dfm-info dfm-info.cpp)
 target_link_libraries(dfm-info dfm-io)
 

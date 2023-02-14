@@ -7,10 +7,13 @@
 
 #include "dfmio_global.h"
 #include "core/dfileinfo.h"
+#include "core/denumerator.h"
 
 #include <gio/gio.h>
 
 #include <QSharedPointer>
+
+#include <fts.h>
 
 BEGIN_IO_NAMESPACE
 
@@ -47,10 +50,15 @@ public:
     static bool setAttributeByGFileInfo(GFileInfo *gfileinfo, DFileInfo::AttributeID id, const QVariant &value);
     static std::string attributeStringById(DFileInfo::AttributeID id);
     static QSet<QString> hideListFromUrl(const QUrl &url);
-    static bool fileIsHidden(const QSharedPointer<DFileInfo> &dfileinfo, const QSet<QString> &hideList);
+    static bool fileIsHidden(const QSharedPointer<DFileInfo> &dfileinfo, const QSet<QString> &hideList, const bool needRead = true);
 
     // tools
     static bool checkGFileType(GFile *file, GFileType type);
+    static int compareByName(const FTSENT **left, const FTSENT **right);
+    static int compareBySize(const FTSENT **left, const FTSENT **right);
+    static int compareByLastModifed(const FTSENT **left, const FTSENT **right);
+    static int compareByLastRead(const FTSENT **left, const FTSENT **right);
+    static QSharedPointer<DEnumerator::SortFileInfo> createSortFileInfo(const FTSENT *ent, const QSet<QString> hidList);
 };
 
 END_IO_NAMESPACE

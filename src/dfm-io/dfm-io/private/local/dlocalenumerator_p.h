@@ -20,6 +20,8 @@
 #include <QWaitCondition>
 #include <QPointer>
 
+#include <fts.h>
+
 BEGIN_IO_NAMESPACE
 
 class DLocalEnumerator;
@@ -54,6 +56,8 @@ public:
 
     bool createEnumerator(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me);
     void createEnumneratorAsync(const QUrl &url, QPointer<DLocalEnumeratorPrivate> me, int ioPriority, DEnumerator::InitCallbackFunc func, void *userData);
+    void setArguments(const QMap<DEnumerator::ArgumentKey, QVariant> &argus);
+    QList<QSharedPointer<DEnumerator::SortFileInfo>> sortFileInfoList();
 
     static void initAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
     static void freeInitAsyncOp(InitAsyncOp *op);
@@ -62,6 +66,7 @@ private:
     bool checkFilter();
     void clean();
     void checkAndResetCancel();
+    FTS *openDirByfts();
 
 public:
     QList<QSharedPointer<DFileInfo>> list_;
@@ -73,10 +78,14 @@ public:
     bool enumSubDir = false;
     bool enumLinks = false;
     bool inited = false;
+    bool isMixDirAndFile = false;
+    std::atomic_bool ftsCanceled = false;
+    Qt::SortOrder sortOrder = Qt::AscendingOrder;
 
     QStringList nameFilters;
     DEnumerator::DirFilters dirFilters = DEnumerator::DirFilter::kNoFilter;
     DEnumerator::IteratorFlags iteratorFlags = DEnumerator::IteratorFlag::kNoIteratorFlags;
+    DEnumerator::SortRoleCompareFlag flag = DEnumerator::SortRoleCompareFlag::kSortRoleCompareDefault;
 
     QMap<QUrl, QSet<QString>> hideListMap;
 

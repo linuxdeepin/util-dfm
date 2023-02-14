@@ -26,6 +26,7 @@ DEnumerator::DEnumerator(const QUrl &uri, const QStringList &nameFilters, DEnume
     d->nameFilters = nameFilters;
     d->dirFilters = filters;
     d->iteratorFlags = flags;
+
 }
 
 DEnumerator::~DEnumerator()
@@ -117,9 +118,32 @@ QList<QSharedPointer<DFileInfo>> DEnumerator::fileInfoList()
     return {};
 }
 
+void DEnumerator::setArguments(const QMap<ArgumentKey, QVariant> &argus)
+{
+    if (d->setArgumentsFunc)
+        return d->setArgumentsFunc(argus);
+}
+
+QList<QSharedPointer<DEnumerator::SortFileInfo> > DEnumerator::sortFileInfoList()
+{
+    if (d->sortFileInfoListFunc)
+        return d->sortFileInfoListFunc();
+    return {};
+}
+
 void DEnumerator::registerFileInfoList(const DEnumerator::FileInfoListFunc &func)
 {
     d->fileInfoListFunc = func;
+}
+
+void DEnumerator::registerSetArguments(const DEnumerator::SetArgumentsFunc &func)
+{
+    d->setArgumentsFunc = func;
+}
+
+void DEnumerator::registerSortFileInfoList(const DEnumerator::SortFileInfoListFunc &func)
+{
+    d->sortFileInfoListFunc = func;
 }
 
 void DEnumerator::registerHasNext(const DEnumerator::HasNextFunc &func)

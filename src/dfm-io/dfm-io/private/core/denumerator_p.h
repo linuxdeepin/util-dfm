@@ -32,6 +32,8 @@ public:
     DEnumerator::FileCountFunc fileCountFunc = nullptr;
     DEnumerator::LastErrorFunc lastErrorFunc = nullptr;
     DEnumerator::FileInfoListFunc fileInfoListFunc = nullptr;
+    DEnumerator::SetArgumentsFunc setArgumentsFunc = nullptr;
+    DEnumerator::SortFileInfoListFunc sortFileInfoListFunc = nullptr;
     DEnumerator::InitFunc initFunc = nullptr;
     DEnumerator::InitAsyncFunc initAsyncFunc = nullptr;
     DEnumerator::CancelFunc cancelFunc = nullptr;
