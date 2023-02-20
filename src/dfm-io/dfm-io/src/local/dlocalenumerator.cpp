@@ -461,8 +461,7 @@ QList<QSharedPointer<DEnumerator::SortFileInfo> > DLocalEnumeratorPrivate::sortF
             continue;
 
         QSet<QString> hideList;
-        const QString &parentPath = QString(ent->fts_parent->fts_path);
-        const QUrl &urlHidden = QUrl::fromLocalFile(parentPath + "/.hidden");
+        const QUrl &urlHidden = QUrl::fromLocalFile(QString(ent->fts_path).replace(ent->fts_name, "") + ".hidden");
         if (hideListMap.count(urlHidden) > 0) {
             hideList = hideListMap.value(urlHidden);
         } else {

@@ -162,6 +162,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(DEnumerator::IteratorFlags);
 END_IO_NAMESPACE
 
 Q_DECLARE_METATYPE(DFMIO::DEnumerator::SortRoleCompareFlag)
+Q_DECLARE_METATYPE(QSharedPointer<DFMIO::DEnumerator::SortFileInfo>)
 Q_DECLARE_METATYPE(QList<QSharedPointer<DFMIO::DEnumerator::SortFileInfo>>)
 
 #endif   // DENUMERATOR_H
