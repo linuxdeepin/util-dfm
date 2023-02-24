@@ -10,6 +10,7 @@
 
 #include <QVariant>
 #include <QDebug>
+#include <QTime>
 
 #include <stdio.h>
 
@@ -39,7 +40,7 @@ static void enum_uri(const QUrl &url)
 
     QMap<DEnumerator::ArgumentKey, QVariant> argus;
     argus.insert(DEnumerator::ArgumentKey::kArgumentSortRole,
-                 QVariant::fromValue(DFMIO::DEnumerator::SortRoleCompareFlag::kSortRoleCompareFileLastModified));
+                 QVariant::fromValue(DFMIO::DEnumerator::SortRoleCompareFlag::kSortRoleCompareFileLastRead));
     argus.insert(DEnumerator::ArgumentKey::kArgumentMixDirAndFile, true);
     argus.insert(DEnumerator::ArgumentKey::kArgumentSortOrder, Qt::DescendingOrder);
     enumerator->setArguments(argus);

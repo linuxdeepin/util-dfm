@@ -346,6 +346,35 @@ void DLocalEnumeratorPrivate::checkAndResetCancel()
     cancellable = g_cancellable_new();
 }
 
+void DLocalEnumeratorPrivate::insertSortFileInfoList(QList<QSharedPointer<DEnumerator::SortFileInfo> > &fileList
+                                                     , QList<QSharedPointer<DEnumerator::SortFileInfo> > &dirList
+                                                     , FTSENT *ent, FTS *fts, const QSet<QString> &hideList)
+{
+    QSharedPointer<DFileInfo> info(nullptr);
+    bool isDir = S_ISDIR(ent->fts_statp->st_mode);
+    if (S_ISLNK(ent->fts_statp->st_mode)) {
+        const QUrl &url = QUrl::fromLocalFile(ent->fts_path);
+        info = DLocalHelper::createFileInfoByUri(url);
+        isDir = info->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool();
+    }
+
+    if (isDir)
+        fts_set(fts, ent, FTS_SKIP);
+
+    if (isDir && !isMixDirAndFile) {
+        if (sortOrder == Qt::DescendingOrder)
+            dirList.push_front(DLocalHelper::createSortFileInfo(ent, info, hideList));
+        else
+            dirList.push_back(DLocalHelper::createSortFileInfo(ent, info, hideList));
+        return;
+    }
+
+    if (sortOrder == Qt::DescendingOrder)
+        fileList.push_front(DLocalHelper::createSortFileInfo(ent, info, hideList));
+    else
+        fileList.push_back(DLocalHelper::createSortFileInfo(ent, info, hideList));
+}
+
 FTS *DLocalEnumeratorPrivate::openDirByfts()
 {
     FTS *fts{ nullptr };
@@ -446,6 +475,9 @@ QList<QSharedPointer<DEnumerator::SortFileInfo> > DLocalEnumeratorPrivate::sortF
 
     QList<QSharedPointer<DEnumerator::SortFileInfo>> listFile;
     QList<QSharedPointer<DEnumerator::SortFileInfo>> listDir;
+    QSet<QString> hideList;
+    const QUrl &urlHidden = QUrl::fromLocalFile(q->uri().path() + "/.hidden");
+    hideList = DLocalHelper::hideListFromUrl(urlHidden);
     while (1) {
         FTSENT *ent = fts_read(fts);
         if (ent == nullptr) {
@@ -460,31 +492,7 @@ QList<QSharedPointer<DEnumerator::SortFileInfo> > DLocalEnumeratorPrivate::sortF
         if (QString(ent->fts_path) == q->uri().path() || flag == FTS_DP)
             continue;
 
-        QSet<QString> hideList;
-        const QUrl &urlHidden = QUrl::fromLocalFile(QString(ent->fts_path).replace(ent->fts_name, "") + ".hidden");
-        if (hideListMap.count(urlHidden) > 0) {
-            hideList = hideListMap.value(urlHidden);
-        } else {
-            hideList = DLocalHelper::hideListFromUrl(urlHidden);
-            hideListMap.insert(urlHidden, hideList);
-        }
-
-        if (flag == FTS_DNR || flag == FTS_DC || flag == FTS_D) {
-            if (!enumSubDir)
-                fts_set(fts, ent, FTS_SKIP);
-            if (!isMixDirAndFile) {
-                if (sortOrder == Qt::DescendingOrder)
-                    listDir.push_front(DLocalHelper::createSortFileInfo(ent, hideList));
-                else
-                    listDir.push_back(DLocalHelper::createSortFileInfo(ent, hideList));
-                continue;
-            }
-        }
-        if (sortOrder == Qt::DescendingOrder)
-            listFile.push_front(DLocalHelper::createSortFileInfo(ent, hideList));
-        else
-            listFile.push_back(DLocalHelper::createSortFileInfo(ent, hideList));
-
+        insertSortFileInfoList(listFile, listDir, ent, fts, hideList);
     }
 
     fts_close(fts);

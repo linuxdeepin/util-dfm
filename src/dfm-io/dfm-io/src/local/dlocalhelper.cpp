@@ -555,93 +555,193 @@ bool DLocalHelper::checkGFileType(GFile *file, GFileType type)
 
     return g_file_info_get_file_type(gfileinfo) == type;
 }
+//fix 多线程排序时，该处的全局变量在compareByString函数中可能导致软件崩溃
+//QCollator sortCollator;
+class DCollator : public QCollator
+{
+public:
+    DCollator() : QCollator()
+    {
+        setNumericMode(true);
+        setCaseSensitivity(Qt::CaseInsensitive);
+    }
+};
+
+bool DLocalHelper::isNumOrChar(const QChar ch)
+{
+    return (ch >= 48 && ch <= 57) || (ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122);
+}
+
+bool DLocalHelper::isNumber(const QChar ch)
+{
+    return (ch >= 48 && ch <= 57);
+}
+
+bool DLocalHelper::isSymbol(const QChar ch)
+{
+    return ch.script() != QChar::Script_Han && !isNumOrChar(ch);
+}
+
+QString DLocalHelper::numberStr(const QString &str, int pos)
+{
+    QString tmp;
+    auto total = str.length();
+
+    while (pos > 0 && isNumber(str.at(pos))) {
+        pos--;
+    }
+
+    if (pos > 0)
+        pos++;
+
+    while (pos < total && isNumber(str.at(pos))) {
+        tmp += str.at(pos);
+        pos++;
+    }
+
+    return tmp;
+}
+
+// The first is smaller than the second and returns true
+bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2) {
+    thread_local static DCollator sortCollator;
+    QString suf1 = str1.right(str1.length() - str1.lastIndexOf(".") - 1);
+    QString suf2 = str2.right(str2.length() - str2.lastIndexOf(".") - 1);
+    QString name1 = str1.left(str1.lastIndexOf("."));
+    QString name2 = str2.left(str2.lastIndexOf("."));
+    int length1 = name1.length();
+    int length2 = name2.length();
+    auto total = length1 > length2 ? length2 : length1;
+
+    bool preIsNum = false;
+    bool isSybol1 = false, isSybol2 = false, isHanzi1 = false,
+            isHanzi2 = false, isNumb1 = false, isNumb2 = false;
+
+    for (int i = 0; i < total; ++i) {
+        // 判断相等和大小写相等，跳过
+        if (str1.at(i) == str2.at(i) || str1.at(i).toLower() == str2.at(i).toLower()) {
+            preIsNum = isNumber(str1.at(i));
+            continue;
+        }
+        // 判断特殊字符就排到最后
+        isSybol1 = isSymbol(str1.at(i));
+        isSybol2 = isSymbol(str2.at(i));
+        if (isSybol1 ^ isSybol2)
+            return !isSybol1;
+
+        if (isSybol1)
+            return str1.at(i) < str2.at(i);
+
+        // 判断汉字
+        isHanzi1 = str1.at(i).script() == QChar::Script_Han;
+        isHanzi2 = str2.at(i).script() == QChar::Script_Han;
+        if (isHanzi2 ^ isHanzi1)
+            return !isHanzi1;
+
+        if (isHanzi1)
+            return  sortCollator.compare(str1.at(i), str2.at(i)) < 0;
+
+        // 判断数字或者字符
+        isNumb1 = isNumber(str1.at(i));
+        isNumb2 = isNumber(str2.at(i));
+        if (!isNumb1 && !isNumb2) {
+            return str1.at(i).toLower() < str2.at(i).toLower();
+        } else if(preIsNum || (isNumb1 && isNumb2)) {
+            // 取后面几位的数字作比较后面的数字,先比较位数
+            // 位数大的大
+            auto str1n = numberStr(str1, i).toUInt();
+            auto str2n = numberStr(str2, i).toUInt();
+            if (str1n == str2n)
+                return str1.at(i) < str2.at(i);
+            return str1n < str2n;
+        }
+
+        return isNumb1;
+    }
+
+    if (length1 == length2) {
+        if (suf1.isEmpty() ^ suf2.isEmpty())
+            return suf1.isEmpty();
+
+        if (suf2.startsWith(suf1) ^ suf1.startsWith(suf2))
+            return suf2.startsWith(suf1);
+
+        return suf1 < suf2;
+    }
+
+    return length1 < length2;
+}
+
+bool DLocalHelper::compareByString(const QString &str1, const QString &str2)
+{
+    // 处理文件名称为  新建文件a 新建文件夹 排序错误的问题
+    //  按名称排序
+    //  1、按名称排序规则为：数字→字母→汉字→其它；
+    //  2、其中数字由小到大排列，字母由a～z、 A~Z排列（例如：a A b B），汉字:按拼音首字母由a～z排列；
+    //  3、如果首字母相同看第二位字母，以此类推；
+    //  4、其他：特殊字符和乱码排在后面；
+    return compareByStringEx(str1, str2);
+}
 
 int DLocalHelper::compareByName(const FTSENT **left, const FTSENT **right)
 {
     QString str1 = QString((*left)->fts_name), str2 = QString((*right)->fts_name);
-
-    class StrCollator : public QCollator
-    {
-    public:
-        explicit StrCollator(const QLocale &locale = QLocale())
-            : QCollator(locale)
-        {
-            setNumericMode(true);
-            setCaseSensitivity(Qt::CaseInsensitive);
-        }
-    };
-
-    thread_local static StrCollator sortCollator;
-    auto startWithSymbol = [](const QString &text) -> bool {
-        if (text.isEmpty())
-            return false;
-
-        // Matches strings beginning with letters, numbers, and Chinese
-        static const QRegExp regExp("^[a-zA-Z0-9\u4e00-\u9fa5].*$");
-        return !regExp.exactMatch(text);
-    };
-
-    auto startWithHanzi = [](const QString &text) -> bool {
-        if (text.isEmpty())
-            return 1;
-
-        return text.at(0).script() == QChar::Script_Han;
-    };
-
-    // Other symbols need to be ranked last, and judgment needs to be made before Chinese
-    if (startWithSymbol(str1)) {
-        if (!startWithSymbol(str2))
-            return 1;
-    } else if (startWithSymbol(str2))
-        return 0;
-
-    if (startWithHanzi(str1)) {
-        if (!startWithHanzi(str2)) {
-            return 1;
-        }
-    } else if (startWithHanzi(str2)) {
-        return 0;
-    }
-
-    return ((1) ^ (sortCollator.compare(str1, str2) < 0)) == 0x01;
+    auto tt = compareByString(str1, str2);
+    return tt ? -1 : 1;
 }
 
 int DLocalHelper::compareBySize(const FTSENT **left, const FTSENT **right)
 {
-    bool isLeftDir = S_ISDIR((*left)->fts_statp->st_mode);
-    bool isRightDir = S_ISDIR((*right)->fts_statp->st_mode);
-    if (isLeftDir && isRightDir) {
+    if ((*left)->fts_statp->st_size == (*right)->fts_statp->st_size)
         return compareByName(left, right);
-    } else if (isLeftDir) {
-        return 1;
-    } else if (isRightDir) {
-        return 0;
-    }
-
     return (*left)->fts_statp->st_size > (*right)->fts_statp->st_size;
 }
 
 int DLocalHelper::compareByLastModifed(const FTSENT **left, const FTSENT **right)
 {
-    if ((*left)->fts_statp->st_mtim.tv_sec == (*right)->fts_statp->st_mtim.tv_sec)
+    if ((*left)->fts_statp->st_mtim.tv_sec == (*right)->fts_statp->st_mtim.tv_sec) {
+        if ((*left)->fts_statp->st_mtim.tv_nsec > (*right)->fts_statp->st_mtim.tv_nsec)
+            return compareByName(left, right);
         return (*left)->fts_statp->st_mtim.tv_nsec > (*right)->fts_statp->st_mtim.tv_nsec;
+    }
     return (*left)->fts_statp->st_mtim.tv_sec > (*right)->fts_statp->st_mtim.tv_sec;
 }
 
 int DLocalHelper::compareByLastRead(const FTSENT **left, const FTSENT **right)
 {
-    if ((*left)->fts_statp->st_atim.tv_sec == (*right)->fts_statp->st_atim.tv_sec)
+    if ((*left)->fts_statp->st_atim.tv_sec == (*right)->fts_statp->st_atim.tv_sec){
+        if ((*left)->fts_statp->st_atim.tv_nsec > (*right)->fts_statp->st_atim.tv_nsec)
+            return compareByName(left, right);
         return (*left)->fts_statp->st_atim.tv_nsec > (*right)->fts_statp->st_atim.tv_nsec;
+    }
     return (*left)->fts_statp->st_atim.tv_sec > (*right)->fts_statp->st_atim.tv_sec;
 }
 
-QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const FTSENT *ent, const QSet<QString> hidList)
+QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const FTSENT *ent, const QSharedPointer<DFileInfo> &info,
+                                                                           const QSet<QString> hidList)
 {
     auto sortPointer = QSharedPointer<DEnumerator::SortFileInfo>(new DEnumerator::SortFileInfo);
+    auto name = QString(ent->fts_name);
+    auto path = QString(ent->fts_path);
+    if (info) {
+        sortPointer->isDir = info->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool();
+        sortPointer->isFile = !sortPointer->isDir;
+        sortPointer->isSymLink = info->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool();
+        auto fileName = info->attribute(DFileInfo::AttributeID::kStandardFileName).toString();
+        sortPointer->isHide = name.startsWith(".")
+                ? true
+                : hidList.contains(name);
+        sortPointer->isReadable = info->attribute(DFileInfo::AttributeID::kAccessCanRead).toBool();
+        sortPointer->isWriteable = info->attribute(DFileInfo::AttributeID::kAccessCanWrite).toBool();
+        sortPointer->isExecutable = info->attribute(DFileInfo::AttributeID::kAccessCanExecute).toBool();
+        sortPointer->url = QUrl::fromLocalFile(path);
+        return sortPointer;
+    }
+
     sortPointer->isDir = S_ISDIR(ent->fts_statp->st_mode);
     sortPointer->isFile = !sortPointer->isDir;
     sortPointer->isSymLink = S_ISLNK(ent->fts_statp->st_mode);
-    sortPointer->isHide = QString(ent->fts_name).startsWith(".") ? true : hidList.contains(QString(ent->fts_name));
+    sortPointer->isHide = name.startsWith(".") ? true : hidList.contains(name);
     sortPointer->isReadable = ent->fts_statp->st_mode & S_IREAD;
     sortPointer->isWriteable = ent->fts_statp->st_mode & S_IWRITE;
     sortPointer->isExecutable = ent->fts_statp->st_mode & S_IEXEC;

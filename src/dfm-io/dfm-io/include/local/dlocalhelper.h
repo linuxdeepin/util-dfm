@@ -54,11 +54,19 @@ public:
 
     // tools
     static bool checkGFileType(GFile *file, GFileType type);
+    static bool isNumOrChar(const QChar ch);
+    static bool isNumber(const QChar ch);
+    static bool isSymbol(const QChar ch);
+    static bool compareByStringEx(const QString &str1, const QString &str2);
+    static QString numberStr(const QString &str, int pos);
+    static bool compareByString(const QString &str1, const QString &str2);
     static int compareByName(const FTSENT **left, const FTSENT **right);
     static int compareBySize(const FTSENT **left, const FTSENT **right);
     static int compareByLastModifed(const FTSENT **left, const FTSENT **right);
     static int compareByLastRead(const FTSENT **left, const FTSENT **right);
-    static QSharedPointer<DEnumerator::SortFileInfo> createSortFileInfo(const FTSENT *ent, const QSet<QString> hidList);
+    static QSharedPointer<DEnumerator::SortFileInfo> createSortFileInfo(const FTSENT *ent,
+                                                                        const QSharedPointer<DFileInfo> &info,
+                                                                        const QSet<QString> hidList);
 };
 
 END_IO_NAMESPACE

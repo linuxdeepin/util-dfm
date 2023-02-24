@@ -66,6 +66,10 @@ private:
     bool checkFilter();
     void clean();
     void checkAndResetCancel();
+    void insertSortFileInfoList(QList<QSharedPointer<DEnumerator::SortFileInfo>> &fileList,
+                                QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirList,
+                                FTSENT *ent,
+                                FTS *fts, const QSet<QString> &hideList);
     FTS *openDirByfts();
 
 public:
