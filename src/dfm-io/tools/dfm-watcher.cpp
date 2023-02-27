@@ -2,11 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
+#include <dfm-io/dwatcher.h>
 
 #include <QObject>
 #include <QDebug>
@@ -28,13 +24,7 @@ static void usage()
 
 static bool watcher_dir(const QUrl &url, QSharedPointer<DWatcher> &watcher)
 {
-    QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
-    if (!factory) {
-        err_msg("create factory failed.");
-        return false;
-    }
-
-    watcher = factory->createWatcher();
+    watcher.reset(new DWatcher(url));
     if (!watcher) {
         err_msg("watcher create failed.");
         return false;
@@ -75,13 +65,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // do this first.
-    dfmio_init();
-
     QCoreApplication app(argc, argv);
 
     const char *uri = argv[1];
-    QUrl url(QString::fromLocal8Bit(uri));
+    QUrl url(QUrl::fromLocalFile(QString::fromLocal8Bit(uri)));
     if (!url.isValid())
         return 1;
 

@@ -2,11 +2,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
+#include <dfm-io/dfmio_global.h>
+#include <dfm-io/dfileinfo.h>
 
 #include <stdio.h>
 
@@ -19,13 +16,7 @@ static void err_msg(const char *msg)
 
 static void display(const QUrl &url)
 {
-    QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
-    if (!factory) {
-        err_msg("create factory failed.");
-        return;
-    }
-
-    QSharedPointer<DFileInfo> info = factory->createFileInfo();
+    QSharedPointer<DFileInfo> info { new DFileInfo(url) };
 
     if (!info) {
         err_msg("create file info failed.");
@@ -49,12 +40,10 @@ int main(int argc, char *argv[])
     }
 
     const char *uri = argv[1];
-    QUrl url(QString::fromLocal8Bit(uri));
+    QUrl url(QUrl::fromLocalFile(QString::fromLocal8Bit(uri)));
 
     if (!url.isValid())
         return 1;
-
-    dfmio_init();
 
     display(url);
 

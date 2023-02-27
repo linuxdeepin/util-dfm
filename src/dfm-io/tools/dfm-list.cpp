@@ -2,15 +2,13 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
+#include <dfm-io/dfmio_global.h>
+#include <dfm-io/denumerator.h>
 
 #include <stdio.h>
 
 #include <QDebug>
+#include <QUrl>
 
 USING_IO_NAMESPACE
 
@@ -24,22 +22,19 @@ static void err_msg(const char *msg)
 
 static void enum_uri(const QUrl &url)
 {
-    QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
-    if (!factory) {
-        err_msg("create factory failed.");
-        return;
-    }
-
-    QSharedPointer<DEnumerator> enumerator = factory->createEnumerator();
+    QSharedPointer<DEnumerator> enumerator { new DEnumerator(url) };
     if (!enumerator) {
         err_msg("create enumerator failed.");
         return;
     }
 
+    int count { 0 };
     while (enumerator->hasNext()) {
         const QUrl &url = enumerator->next();
         qInfo() << url;
+        ++count;
     }
+    qInfo() << "count: " << count;
 }
 
 void usage()
@@ -72,12 +67,10 @@ int main(int argc, char *argv[])
         uri = argv[1];
     }
 
-    QUrl url(QString::fromLocal8Bit(uri));
+    QUrl url(QUrl::fromLocalFile(QString::fromLocal8Bit(uri)));
 
     if (!url.isValid())
         return 1;
-
-    dfmio_init();
 
     enum_uri(url);
 

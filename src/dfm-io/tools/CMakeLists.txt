@@ -1,13 +1,21 @@
-project(tools)
-
 add_definitions(-DQT_NO_KEYWORDS)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -fsanitize=address")
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set (CMAKE_VERBOSE_MAKEFILE ON)
+    message("debug type open sanitize check")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+    set(CMAKE_L_FLAGS "${CMAKE_L_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+
+    #set(CMAKE_CXX_FLAGS "-fsanitize=thread")
+
+endif()
+
 # include
 include_directories(
     ${PROJECT_SOURCE_DIR}/../dfm-io/inlcude
-    ${PROJECT_SOURCE_DIR}/../dfm-io/private
 )
 
 add_executable(dfm-list dfm-list.cpp)
@@ -25,8 +33,8 @@ target_link_libraries(dfm-copy dfm-io)
 add_executable(dfm-copy-gio dfm-copy-gio.cpp)
 target_link_libraries(dfm-copy-gio dfm-io)
 
-#add_executable(dfm-copy3 dfm-copy3.cpp)
-#target_link_libraries(dfm-copy3 dfm-io)
+add_executable(dfm-copy3 dfm-copy3.cpp)
+target_link_libraries(dfm-copy3 dfm-io)
 
 add_executable(dfm-copy-system dfm-copy-system.cpp)
 target_link_libraries(dfm-copy-system dfm-io)
@@ -64,42 +72,3 @@ target_link_libraries(dfm-link dfm-io)
 add_executable(dfm-watcher dfm-watcher.cpp)
 target_link_libraries(dfm-watcher dfm-io)
 
-#install (
-#    FILES
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-list
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-info
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-copy
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-cat
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-save
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-rename
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-move
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-trash
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-delete
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-restore
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-touch
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-mkdir
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-link
-#        ${CMAKE_CURRENT_BINARY_DIR}/dfm-watcher
-#    DESTINATION /usr/bin/
-#    PERMISSIONS WORLD_EXECUTE
-#)
-
-install (
-    TARGETS
-        dfm-list
-        dfm-info
-        dfm-copy
-        dfm-cat
-        dfm-save
-        dfm-rename
-        dfm-move
-        dfm-trash
-        dfm-delete
-        dfm-restore
-        dfm-touch
-        dfm-mkdir
-        dfm-link
-        dfm-watcher
-    DESTINATION /usr/bin/
-    PERMISSIONS WORLD_EXECUTE
-)

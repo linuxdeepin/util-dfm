@@ -2,13 +2,10 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
+#include "../dfm-io/utils/dlocalhelper.h"   // for test
 
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
-#include "core/dfile.h"
-#include "local/dlocalhelper.h"
+#include <dfm-io/dfmio_global.h>
+#include <dfm-io/dfile.h>
 
 #include <gio/gio.h>
 
@@ -32,7 +29,7 @@ static void copy(const QString &sourcePath, const QString &destPath)
 
     GFile *gfileTarget = nullptr;
     if (DLocalHelper::checkGFileType(gfileDest, G_FILE_TYPE_DIRECTORY)) {
-        char *basename = g_file_get_basename (gfileSource);
+        char *basename = g_file_get_basename(gfileSource);
         gfileTarget = g_file_get_child(gfileDest, basename);
         g_free(basename);
     } else {

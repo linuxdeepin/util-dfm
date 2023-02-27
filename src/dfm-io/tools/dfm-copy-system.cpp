@@ -2,13 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
-#include "core/dfile.h"
-
 #include <gio/gio.h>
 
 #include <QElapsedTimer>
@@ -18,8 +11,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-
-USING_IO_NAMESPACE
 
 qint64 readData(int m_fileFd, char *data, qint64 maxlen)
 {
@@ -68,8 +59,6 @@ int main(int argc, char *argv[])
 
     const char *uri_src = argv[1];
     const char *uri_dst = argv[2];
-
-    dfmio_init();
 
     QElapsedTimer timer;
     timer.start();

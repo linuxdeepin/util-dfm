@@ -2,12 +2,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/dfile.h"
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
+#include <dfm-io/dfmio_global.h>
+#include <dfm-io/dfile.h>
 
 #include <gio/gio.h>
 
@@ -25,14 +21,9 @@ static void err_msg(const char *msg)
     fprintf(stderr, "dfm-cat: %s\n", msg);
 }
 
-static QSharedPointer<DFile> make_stream(QSharedPointer<DIOFactory> factory, DFile::OpenFlag flag)
+static QSharedPointer<DFile> make_stream(const QUrl &url, DFile::OpenFlag flag)
 {
-    if (!factory) {
-        err_msg("create factory failed.");
-        return nullptr;
-    }
-
-    auto file = factory->createFile();
+    QSharedPointer<DFile> file { new DFile(url) };
     if (!file) {
         err_msg("get device file failed.");
         return nullptr;
@@ -47,14 +38,7 @@ static QSharedPointer<DFile> make_stream(QSharedPointer<DIOFactory> factory, DFi
 #define BLOCK (4 * 4096)
 static void cat(const QUrl &url)
 {
-    auto factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
-
-    if (!factory) {
-        err_msg("bad factory.");
-        return;
-    }
-
-    QSharedPointer<DFile> stream = make_stream(factory, DFile::OpenFlag::kReadOnly);
+    QSharedPointer<DFile> stream = make_stream(url, DFile::OpenFlag::kReadOnly);
     if (!stream) {
         err_msg("make stream failed.");
         return;
@@ -84,13 +68,10 @@ int main(int argc, char *argv[])
     }
 
     const char *uri = argv[1];
-    QUrl url(QString::fromLocal8Bit(uri));
+    QUrl url(QUrl::fromLocalFile(QString::fromLocal8Bit(uri)));
 
     if (!url.isValid())
         return 1;
-
-    dfmio_init();
-    //REGISTER_FACTORY1(DLocalIOFactory, url.scheme(), QUrl);
 
     cat(url);
 

@@ -5,8 +5,8 @@
 #ifndef DMEDIAINFO_H
 #define DMEDIAINFO_H
 
-#include "dfmio_global.h"
-#include "core/dfileinfo.h"
+#include <dfm-io/dfmio_global.h>
+#include <dfm-io/dfileinfo.h>
 
 #include <QObject>
 #include <QString>

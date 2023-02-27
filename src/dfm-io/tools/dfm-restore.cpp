@@ -2,11 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
+#include <dfm-io/doperator.h>
 
 #include <stdio.h>
 
@@ -24,13 +20,7 @@ static void usage()
 
 static void restore(const QUrl &url)
 {
-    QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
-    if (!factory) {
-        err_msg("create factory failed.");
-        return;
-    }
-
-    QSharedPointer<DOperator> op = factory->createOperator();
+    QSharedPointer<DOperator> op { new DOperator(url) };
     if (!op) {
         err_msg("operator create failed.");
         return;
@@ -50,11 +40,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // do this first.
-    dfmio_init();
-
     const char *uri = argv[1];
-    QUrl url(QString::fromLocal8Bit(uri));
+    QUrl url(QUrl::fromLocalFile(QString::fromLocal8Bit(uri)));
 
     restore(url);
 

@@ -2,13 +2,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
-#include "core/dfile.h"
-#include "local/dlocalfile.h"
+#include <dfm-io/dfmio_global.h>
+#include <dfm-io/dfile.h>
 
 #include <QElapsedTimer>
 #include <QDebug>
@@ -22,14 +17,9 @@ static void err_msg(const char *msg)
     fprintf(stderr, "dfm-copy: %s\n", msg);
 }
 
-static QSharedPointer<DFile> make_stream(QSharedPointer<DIOFactory> factory, DFile::OpenFlag flag)
+static QSharedPointer<DFile> make_stream(const QUrl &url, DFile::OpenFlag flag)
 {
-    if (!factory) {
-        err_msg("create factory failed.");
-        return nullptr;
-    }
-
-    auto file = factory->createFile();
+    QSharedPointer<DFile> file { new DFile(url) };
     if (!file) {
         err_msg("get device file failed.");
         return nullptr;
@@ -47,11 +37,8 @@ static void copy(const QUrl &url_src, const QUrl &url_dst)
     char buff[block];
     int read = 0;
 
-    QSharedPointer<DFMIO::DIOFactory> factory_src = produceQSharedIOFactory(url_src.scheme(), static_cast<QUrl>(url_src));
-    QSharedPointer<DFMIO::DIOFactory> factory_dst = produceQSharedIOFactory(url_dst.scheme(), static_cast<QUrl>(url_dst));
-
-    QSharedPointer<DFile> stream_src = make_stream(factory_src, DFile::OpenFlag::kReadOnly);
-    QSharedPointer<DFile> stream_dst = make_stream(factory_dst, DFile::OpenFlag::kWriteOnly);
+    QSharedPointer<DFile> stream_src = make_stream(url_src, DFile::OpenFlag::kReadOnly);
+    QSharedPointer<DFile> stream_dst = make_stream(url_dst, DFile::OpenFlag::kWriteOnly);
 
     if (!stream_src || !stream_dst) {
         return;
@@ -80,13 +67,11 @@ int main(int argc, char *argv[])
     const char *uri_src = argv[1];
     const char *uri_dst = argv[2];
 
-    QUrl url_src(QString::fromLocal8Bit(uri_src));
-    QUrl url_dst(QString::fromLocal8Bit(uri_dst));
+    QUrl url_src(QUrl::fromLocalFile(QString::fromLocal8Bit(uri_src)));
+    QUrl url_dst(QUrl::fromLocalFile(QString::fromLocal8Bit(uri_dst)));
 
     if (!url_src.isValid() || !url_dst.isValid())
         return 1;
-
-    dfmio_init();
 
     QElapsedTimer timer;
     timer.start();

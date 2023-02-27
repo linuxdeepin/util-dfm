@@ -14,7 +14,7 @@
 
 #include <thread>
 
-const size_t MediaInfoStateFinished = 10000;   // read finished and no error
+static constexpr size_t kMediaInfoStateFinished { 10000 };   // read finished and no error
 
 Q_GLOBAL_STATIC(QQueue<QSharedPointer<MediaInfoLib::MediaInfo>>, queueDestoryMediaInfo)
 
@@ -79,7 +79,7 @@ public:
                     break;
                 if (me->isStopState.load())
                     break;
-                if (me->mediaInfo->State_Get() == MediaInfoStateFinished) {
+                if (me->mediaInfo->State_Get() == kMediaInfoStateFinished) {
                     me->callback();
                     break;
                 }

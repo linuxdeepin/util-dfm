@@ -2,11 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
+#include <dfm-io/doperator.h>
 
 #include <stdio.h>
 
@@ -24,13 +20,7 @@ static void usage()
 
 static bool link_file(const QUrl &url, const QUrl &urlto)
 {
-    QSharedPointer<DIOFactory> factory = produceQSharedIOFactory(url.scheme(), static_cast<QUrl>(url));
-    if (!factory) {
-        err_msg("create factory failed.");
-        return false;
-    }
-
-    QSharedPointer<DOperator> op = factory->createOperator();
+    QSharedPointer<DOperator> op { new DOperator(url) };
     if (!op) {
         err_msg("operator create failed.");
         return false;
@@ -56,13 +46,11 @@ int main(int argc, char *argv[])
     const char *uri = argv[1];
     const char *urito = argv[2];
 
-    QUrl urlSource(QString::fromLocal8Bit(uri));
-    QUrl urlTarget(QString::fromLocal8Bit(urito));
+    QUrl urlSource(QUrl::fromLocalFile(QString::fromLocal8Bit(uri)));
+    QUrl urlTarget(QUrl::fromLocalFile(QString::fromLocal8Bit(urito)));
 
     if (!urlSource.isValid())
         return -1;
-
-    dfmio_init();
 
     if (!link_file(urlSource, urlTarget)) {
         return 1;

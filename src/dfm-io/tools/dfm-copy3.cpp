@@ -1,14 +1,10 @@
 // SPDX-FileCopyrightText: 2020 - 2023 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "../dfm-io/utils/dlocalhelper.h"   // for test
 
-#include "dfmio_global.h"
-#include "dfmio_register.h"
-
-#include "core/diofactory.h"
-#include "core/diofactory_p.h"
-#include "core/dfile.h"
-#include "local/dlocalhelper.h"
+#include <dfm-io/dfmio_global.h>
+#include <dfm-io/denumerator.h>
 
 #include <gio/gio.h>
 
@@ -24,7 +20,7 @@ qint64 readData(GFileInputStream *input_stream, char *data, qint64 maxlen)
 {
     GError *gerror = nullptr;
 
-    qint64 size = g_input_stream_read((GInputStream*)input_stream, data, static_cast<gsize>(maxlen), nullptr, &gerror);
+    qint64 size = g_input_stream_read((GInputStream *)input_stream, data, static_cast<gsize>(maxlen), nullptr, &gerror);
 
     if (gerror) {
         g_error_free(gerror);
@@ -37,7 +33,7 @@ qint64 writeData(GFileOutputStream *output_stream, const char *data, qint64 len)
 {
     GError *gerror = nullptr;
 
-    qint64 size = g_output_stream_write((GOutputStream*)output_stream, data, static_cast<gsize>(len), nullptr, &gerror);
+    qint64 size = g_output_stream_write((GOutputStream *)output_stream, data, static_cast<gsize>(len), nullptr, &gerror);
     if (gerror) {
         g_error_free(gerror);
         return -1;
@@ -62,7 +58,7 @@ static void copy(const QString &url_src, const QString &url_dst)
 
     GFile *gfileTarget = nullptr;
     if (DLocalHelper::checkGFileType(gfileDest, G_FILE_TYPE_DIRECTORY)) {
-        char *basename = g_file_get_basename (gfileSource);
+        char *basename = g_file_get_basename(gfileSource);
         gfileTarget = g_file_get_child(gfileDest, basename);
         g_free(basename);
     } else {
@@ -136,8 +132,6 @@ int main(int argc, char *argv[])
 
     const char *uri_src = argv[1];
     const char *uri_dst = argv[2];
-
-    dfmio_init();
 
     QElapsedTimer timer;
     timer.start();
