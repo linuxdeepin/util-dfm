@@ -560,7 +560,8 @@ bool DLocalHelper::checkGFileType(GFile *file, GFileType type)
 class DCollator : public QCollator
 {
 public:
-    DCollator() : QCollator()
+    DCollator()
+        : QCollator()
     {
         setNumericMode(true);
         setCaseSensitivity(Qt::CaseInsensitive);
@@ -591,7 +592,7 @@ QString DLocalHelper::numberStr(const QString &str, int pos)
         pos--;
     }
 
-    if (pos > 0)
+    if (!isNumber(str.at(pos)))
         pos++;
 
     while (pos < total && isNumber(str.at(pos))) {
@@ -603,7 +604,8 @@ QString DLocalHelper::numberStr(const QString &str, int pos)
 }
 
 // The first is smaller than the second and returns true
-bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2) {
+bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2)
+{
     thread_local static DCollator sortCollator;
     QString suf1 = str1.right(str1.length() - str1.lastIndexOf(".") - 1);
     QString suf2 = str2.right(str2.length() - str2.lastIndexOf(".") - 1);
@@ -615,13 +617,24 @@ bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2) {
 
     bool preIsNum = false;
     bool isSybol1 = false, isSybol2 = false, isHanzi1 = false,
-            isHanzi2 = false, isNumb1 = false, isNumb2 = false;
+         isHanzi2 = false, isNumb1 = false, isNumb2 = false;
 
     for (int i = 0; i < total; ++i) {
         // 判断相等和大小写相等，跳过
         if (str1.at(i) == str2.at(i) || str1.at(i).toLower() == str2.at(i).toLower()) {
             preIsNum = isNumber(str1.at(i));
             continue;
+        }
+        isNumb1 = isNumber(str1.at(i));
+        isNumb2 = isNumber(str2.at(i));
+        if ((preIsNum && (isNumb1 ^ isNumb2)) || (isNumb1 && isNumb2)) {
+            // 取后面几位的数字作比较后面的数字,先比较位数
+            // 位数大的大
+            auto str1n = numberStr(str1, preIsNum ? i - 1 : i).toUInt();
+            auto str2n = numberStr(str2, preIsNum ? i - 1 : i).toUInt();
+            if (str1n == str2n)
+                return str1.at(i) < str2.at(i);
+            return str1n < str2n;
         }
         // 判断特殊字符就排到最后
         isSybol1 = isSymbol(str1.at(i));
@@ -639,22 +652,11 @@ bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2) {
             return !isHanzi1;
 
         if (isHanzi1)
-            return  sortCollator.compare(str1.at(i), str2.at(i)) < 0;
+            return sortCollator.compare(str1.at(i), str2.at(i)) < 0;
 
         // 判断数字或者字符
-        isNumb1 = isNumber(str1.at(i));
-        isNumb2 = isNumber(str2.at(i));
-        if (!isNumb1 && !isNumb2) {
+        if (!isNumb1 && !isNumb2)
             return str1.at(i).toLower() < str2.at(i).toLower();
-        } else if(preIsNum || (isNumb1 && isNumb2)) {
-            // 取后面几位的数字作比较后面的数字,先比较位数
-            // 位数大的大
-            auto str1n = numberStr(str1, i).toUInt();
-            auto str2n = numberStr(str2, i).toUInt();
-            if (str1n == str2n)
-                return str1.at(i) < str2.at(i);
-            return str1n < str2n;
-        }
 
         return isNumb1;
     }
@@ -709,7 +711,7 @@ int DLocalHelper::compareByLastModifed(const FTSENT **left, const FTSENT **right
 
 int DLocalHelper::compareByLastRead(const FTSENT **left, const FTSENT **right)
 {
-    if ((*left)->fts_statp->st_atim.tv_sec == (*right)->fts_statp->st_atim.tv_sec){
+    if ((*left)->fts_statp->st_atim.tv_sec == (*right)->fts_statp->st_atim.tv_sec) {
         if ((*left)->fts_statp->st_atim.tv_nsec > (*right)->fts_statp->st_atim.tv_nsec)
             return compareByName(left, right);
         return (*left)->fts_statp->st_atim.tv_nsec > (*right)->fts_statp->st_atim.tv_nsec;

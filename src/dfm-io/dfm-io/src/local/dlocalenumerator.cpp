@@ -346,9 +346,7 @@ void DLocalEnumeratorPrivate::checkAndResetCancel()
     cancellable = g_cancellable_new();
 }
 
-void DLocalEnumeratorPrivate::insertSortFileInfoList(QList<QSharedPointer<DEnumerator::SortFileInfo> > &fileList
-                                                     , QList<QSharedPointer<DEnumerator::SortFileInfo> > &dirList
-                                                     , FTSENT *ent, FTS *fts, const QSet<QString> &hideList)
+void DLocalEnumeratorPrivate::insertSortFileInfoList(QList<QSharedPointer<DEnumerator::SortFileInfo>> &fileList, QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirList, FTSENT *ent, FTS *fts, const QSet<QString> &hideList)
 {
     QSharedPointer<DFileInfo> info(nullptr);
     bool isDir = S_ISDIR(ent->fts_statp->st_mode);
@@ -377,11 +375,11 @@ void DLocalEnumeratorPrivate::insertSortFileInfoList(QList<QSharedPointer<DEnume
 
 FTS *DLocalEnumeratorPrivate::openDirByfts()
 {
-    FTS *fts{ nullptr };
+    FTS *fts { nullptr };
     QString path = q->uri().path();
-    if (path.endsWith("/"))
+    if (path != "/" && path.endsWith("/"))
         path = path.left(path.length() - 1);
-    char* paths[2] = { nullptr, nullptr };
+    char *paths[2] = { nullptr, nullptr };
     paths[0] = strdup(path.toUtf8().toStdString().data());
     int (*compare)(const FTSENT **, const FTSENT **);
     compare = nullptr;
@@ -397,14 +395,14 @@ FTS *DLocalEnumeratorPrivate::openDirByfts()
 
     fts = fts_open(paths, FTS_COMFOLLOW, compare);
 
+    if (paths[0])
+        free(paths[0]);
+
     if (nullptr == fts) {
         qWarning() << "fts_open open error : " << QString::fromLocal8Bit(strerror(errno));
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FTS_OPEN);
         return nullptr;
     }
-
-    if (paths[0])
-        free(paths[0]);
 
     return fts;
 }
@@ -457,7 +455,6 @@ void DLocalEnumeratorPrivate::createEnumneratorAsync(const QUrl &url, QPointer<D
                                     cancellable,
                                     initAsyncCallback,
                                     dataOp);
-
 }
 
 void DLocalEnumeratorPrivate::setArguments(const QMap<DEnumerator::ArgumentKey, QVariant> &argus)
@@ -467,7 +464,7 @@ void DLocalEnumeratorPrivate::setArguments(const QMap<DEnumerator::ArgumentKey, 
     isMixDirAndFile = argus.value(DEnumerator::ArgumentKey::kArgumentMixDirAndFile).toBool();
 }
 
-QList<QSharedPointer<DEnumerator::SortFileInfo> > DLocalEnumeratorPrivate::sortFileInfoList()
+QList<QSharedPointer<DEnumerator::SortFileInfo>> DLocalEnumeratorPrivate::sortFileInfoList()
 {
     FTS *fts = openDirByfts();
     if (!fts)
@@ -618,7 +615,7 @@ QList<QSharedPointer<DFileInfo>> DLocalEnumerator::fileInfoList()
     return d->fileInfoList();
 }
 
-QList<QSharedPointer<DEnumerator::SortFileInfo> > DLocalEnumerator::sortFileInfoList()
+QList<QSharedPointer<DEnumerator::SortFileInfo>> DLocalEnumerator::sortFileInfoList()
 {
     return d->sortFileInfoList();
 }
