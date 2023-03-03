@@ -29,7 +29,7 @@ foreach(QtModule ${QtFindModules})
 endforeach()
 
 # Use PkgConfig modules
-set(PkgConfigFindModules udisks2 glib-2.0 gio-unix-2.0 libsecret-1)
+set(PkgConfigFindModules udisks2 glib-2.0 gio-unix-2.0 libsecret-1 mount)
 pkg_check_modules(DEPENDS REQUIRED ${PkgConfigFindModules})
 foreach(PkgConfigModule ${PkgConfigFindModules})
     pkg_check_modules(PkgUseModuleVal REQUIRED ${PkgConfigModule})
