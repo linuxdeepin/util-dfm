@@ -80,7 +80,7 @@ target_link_libraries(dfm-watcher dfm-io)
 #        ${CMAKE_CURRENT_BINARY_DIR}/dfm-mkdir
 #        ${CMAKE_CURRENT_BINARY_DIR}/dfm-link
 #        ${CMAKE_CURRENT_BINARY_DIR}/dfm-watcher
-#    DESTINATION /usr/bin/
+#    DESTINATION ${CMAKE_INSTALL_BINDIR}
 #    PERMISSIONS WORLD_EXECUTE
 #)
 
@@ -100,6 +100,6 @@ install (
         dfm-mkdir
         dfm-link
         dfm-watcher
-    DESTINATION /usr/bin/
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
     PERMISSIONS WORLD_EXECUTE
 )
