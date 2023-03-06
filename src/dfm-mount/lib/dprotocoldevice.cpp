@@ -439,9 +439,9 @@ bool DProtocolDevicePrivate::powerOff()
 QString DProtocolDevicePrivate::mountPoint(GMount *mount)
 {
     QString mpt;
-    g_autoptr(GFile) mntRoot = g_mount_get_root(mount);
-    if (mntRoot) {
-        g_autofree char *mntPath = g_file_get_path(mntRoot);
+    g_autoptr(GFile) mntDefLocation = g_mount_get_default_location(mount);
+    if (mntDefLocation) {
+        g_autofree char *mntPath = g_file_get_path(mntDefLocation);
         mpt = QString(mntPath);
     }
     return mpt;

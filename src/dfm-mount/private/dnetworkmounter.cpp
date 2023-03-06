@@ -402,8 +402,19 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
     bool ok = g_file_mount_enclosing_volume_finish(file, res, &err);
     if (!ok && derr == DeviceError::kNoError)
         derr = Utils::castFromGError(err);
+    if (err)
+        g_error_free(err);
+    err = nullptr;
 
     g_autofree char *mntPath = g_file_get_path(file);
+    auto mount = g_file_find_enclosing_mount(file, nullptr, &err);
+    if (mount) {
+        GFile_autoptr defLocation = g_mount_get_default_location(mount);
+        if (defLocation) {
+            if (mntPath) g_free(mntPath);
+            mntPath = g_file_get_path(defLocation);
+        }
+    }
     if (finalize->resultCallback)
         finalize->resultCallback(ok, derr, mntPath);
 
