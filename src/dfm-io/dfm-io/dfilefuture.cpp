@@ -27,11 +27,13 @@ DFileFuture::~DFileFuture()
 
 bool DFileFuture::cancel()
 {
+    // TODO: impl me!
     return false;
 }
 
 bool DFileFuture::isFinished() const
 {
+    // TODO: impl me!
     return false;
 }
 
