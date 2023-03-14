@@ -5,7 +5,6 @@ project(util-dfm)
 # Setup the environment
 SET(CMAKE_CXX_STANDARD 17)
 
-option(BUILD_UTILS "Build utilities" OFF)
 SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 #SET(CMAKE_CXX_STANDARD_REQUIRED ON)
