@@ -12,7 +12,6 @@
 BEGIN_IO_NAMESPACE
 TrashFileHelper::TrashFileHelper()
 {
-
 }
 
 QString TrashFileHelper::getTrashFilename(const char *basename, int id)
@@ -29,11 +28,11 @@ QString TrashFileHelper::getTrashFilename(const char *basename, int id)
 
     dot = strchr(basename, '.');
     if (dot) {
-         temp = g_strdup_printf("%.*s.%d%s", static_cast<int>(dot - basename), basename, id, dot);
-         fileName = temp;
-         g_free(temp);
+        temp = g_strdup_printf("%.*s.%d%s", static_cast<int>(dot - basename), basename, id, dot);
+        fileName = temp;
+        g_free(temp);
         return fileName;
-    }else {
+    } else {
         temp = g_strdup_printf("%s.%d", basename, id);
         fileName = temp;
         g_free(temp);
@@ -99,7 +98,7 @@ QString TrashFileHelper::trashDir(const QString &path, QString *topDir)
         return dir;
 
     if (dir == homeDir) {
-        gchar * trashDir = g_build_filename(g_get_user_data_dir(), "Trash", NULL);
+        gchar *trashDir = g_build_filename(g_get_user_data_dir(), "Trash", NULL);
         dir = trashDir;
         g_free(trashDir);
         return dir;
@@ -118,17 +117,19 @@ QString TrashFileHelper::trashTargetPath(const QString &path, GFile *file)
     if (trashDirStr.isEmpty())
         return trashDirStr;
     gchar *temp = g_file_get_basename(file);
-    char *originalNameEscaped = g_uri_escape_string (path.toStdString().c_str(), "/", FALSE);
+    char *originalNameEscaped = g_uri_escape_string(path.toStdString().c_str(), "/", FALSE);
     QString baseName(temp);
     g_free(temp);
     QString originalName(originalNameEscaped);
     g_free(originalNameEscaped);
     QString buildBaseName = baseName;
+    char *originalTopDirEscaped = g_uri_escape_string(topDir.toStdString().c_str(), "/", FALSE);
+    QString originalTopDir(originalTopDirEscaped);
+    g_free(originalTopDirEscaped);
 
     auto trashFileInfo = trashDirStr + "/info/" + baseName + ".trashinfo";
     auto tmpPath = path;
-    auto targetBase = topDir.isEmpty() ? path : tmpPath.replace(topDir + "/", "");
-    originalName = topDir.isEmpty() ? originalName : originalName.replace(topDir + "/", "");
+    originalName = topDir.isEmpty() ? originalName : originalName.replace(originalTopDir + "/", "");
     int i = 1;
     QStringList baseNameList;
     while (true) {
