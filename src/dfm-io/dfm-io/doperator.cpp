@@ -34,7 +34,9 @@ void DOperatorPrivate::setErrorFromGError(GError *gerror)
     error.setCode(DFMIOErrorCode(gerror->code));
     if (gerror->domain != G_IO_ERROR || gerror->message) {
         error.setCode(DFMIOErrorCode::DFM_ERROR_OTHER_DOMAIN);
-        error.setMessage(gerror->message);
+        auto errmsg = QString(gerror->message);
+        errmsg = errmsg.left(errmsg.indexOf(":")) + errmsg.mid(errmsg.lastIndexOf(":"));
+        error.setMessage(errmsg);
     }
 }
 
