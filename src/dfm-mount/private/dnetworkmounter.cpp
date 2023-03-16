@@ -61,6 +61,7 @@ struct FinalizeHelper
     AskPasswdHelper *askPasswd { nullptr };
     AskQuestionHelper *askQuestion { nullptr };
     DeviceOperateCallbackWithMessage resultCallback;
+    QVariant customData;
 };
 
 bool DNetworkMounter::isDaemonMountEnable()
@@ -270,13 +271,11 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
 
 void DNetworkMounter::mountByGvfs(const QString &address, GetMountPassInfo getPassInfo,
                                   GetUserChoice getUserChoice,
-                                  DeviceOperateCallbackWithMessage mountResult, int msecs)
+                                  DeviceOperateCallbackWithMessage mountResult, int secs)
 {
     auto newAddr = address;
-    if (address.startsWith("ftp") && msecs != 0) {   // only ftp-gvfs supports timeout param now.
-        int sec = msecs < 1000 && msecs != 0 ? 1 : msecs / 1000;
-        newAddr += QString("?socket_timeout=%1").arg(sec);
-    }
+    if (address.startsWith("ftp") && secs > 0)   // only ftp-gvfs supports timeout param now.
+        newAddr += QString("?socket_timeout=%1").arg(secs);
 
     GFile_autoptr file = g_file_new_for_uri(newAddr.toStdString().c_str());
     if (!file) {
@@ -286,22 +285,22 @@ void DNetworkMounter::mountByGvfs(const QString &address, GetMountPassInfo getPa
 
     AskPasswdHelper *passwdHelper = new AskPasswdHelper();
     passwdHelper->callback = getPassInfo;
-    passwdHelper->callOnceFlag =
-            false;   // make sure the signal will not emit continuously when validate failed.
+    passwdHelper->callOnceFlag = false;   // make sure the signal will not emit continuously when validate failed.
 
     AskQuestionHelper *questionHelper = new AskQuestionHelper();
     questionHelper->callback = getUserChoice;
 
     GMountOperation_autoptr op = g_mount_operation_new();
-    g_signal_connect(op, "ask_question", G_CALLBACK(DNetworkMounter::mountByGvfsAskQuestion),
-                     questionHelper);
-    g_signal_connect(op, "ask_password", G_CALLBACK(DNetworkMounter::mountByGvfsAskPasswd),
-                     passwdHelper);
+    g_signal_connect(op, "ask_question",
+                     G_CALLBACK(DNetworkMounter::mountByGvfsAskQuestion), questionHelper);
+    g_signal_connect(op, "ask_password",
+                     G_CALLBACK(DNetworkMounter::mountByGvfsAskPasswd), passwdHelper);
 
     FinalizeHelper *finalizeHelper = new FinalizeHelper;
     finalizeHelper->askPasswd = passwdHelper;
     finalizeHelper->askQuestion = questionHelper;
     finalizeHelper->resultCallback = mountResult;
+    finalizeHelper->customData = address;
 
     GCancellable_autoptr cancellable = nullptr; /*g_cancellable_new();
      if (msecs > 0) {
@@ -406,6 +405,12 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
     if (err)
         g_error_free(err);
     err = nullptr;
+
+    GFile_autoptr srcFile { nullptr };
+    if (finalize->customData.isValid())
+        srcFile = g_file_new_for_uri(finalize->customData.toString().toStdString().c_str());
+    if (srcFile)
+        file = srcFile;
 
     g_autofree char *mntPath = g_file_get_path(file);
     GMount_autoptr mount = g_file_find_enclosing_mount(file, nullptr, &err);
