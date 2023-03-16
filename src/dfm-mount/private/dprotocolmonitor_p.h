@@ -5,7 +5,8 @@
 #ifndef DPROTOCOLMONITOR_P_H
 #define DPROTOCOLMONITOR_P_H
 
-#include "dprotocolmonitor.h"
+#include <dfm-mount/dprotocolmonitor.h>
+
 #include "private/ddevicemonitor_p.h"
 
 #include <QMap>

@@ -5,8 +5,8 @@
 #ifndef DDEVICEPRIVATE_H
 #define DDEVICEPRIVATE_H
 
-#include "base/dmount_global.h"
-#include "base/ddevice.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/base/ddevice.h>
 
 DFM_MOUNT_BEGIN_NS
 

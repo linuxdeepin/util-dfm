@@ -5,9 +5,10 @@
 #ifndef DPROTOCOLDEVICE_P_H
 #define DPROTOCOLDEVICE_P_H
 
-#include "base/dmount_global.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/dprotocoldevice.h>
+
 #include "private/ddevice_p.h"
-#include "dprotocoldevice.h"
 
 #include <QMutex>
 #include <QMutexLocker>

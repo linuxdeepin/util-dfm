@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "base/dmount_global.h"
-#include "base/dmountutils.h"
-#include "dprotocoldevice.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/base/dmountutils.h>
+#include <dfm-mount/dprotocoldevice.h>
+
 #include "private/dprotocoldevice_p.h"
 #include "private/dnetworkmounter.h"
 
@@ -24,9 +25,9 @@ struct CallbackProxyWithData
 {
     CallbackProxyWithData() = delete;
     explicit CallbackProxyWithData(DeviceOperateCallback cb)
-        : caller(cb) { }
+        : caller(cb) {}
     explicit CallbackProxyWithData(DeviceOperateCallbackWithMessage cb)
-        : caller(cb) { }
+        : caller(cb) {}
     CallbackProxy caller;
     QPointer<DProtocolDevice> data;
     DProtocolDevicePrivate *d { nullptr };

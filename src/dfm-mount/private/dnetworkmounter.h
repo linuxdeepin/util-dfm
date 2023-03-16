@@ -5,8 +5,8 @@
 #ifndef DNETWORKMOUNTER_H
 #define DNETWORKMOUNTER_H
 
-#include "base/dmount_global.h"
-#include "dprotocoldevice.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/dprotocoldevice.h>
 
 #include <QString>
 #include <QVariantMap>

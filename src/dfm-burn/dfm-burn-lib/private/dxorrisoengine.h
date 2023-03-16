@@ -5,7 +5,7 @@
 #ifndef XORRISOENGINE_H
 #define XORRISOENGINE_H
 
-#include "dburn_global.h"
+#include <dfm-burn/dburn_global.h>
 
 #include <QObject>
 

@@ -5,7 +5,7 @@
 #ifndef DDEVICEMONITOR_H
 #define DDEVICEMONITOR_H
 
-#include "dmount_global.h"
+#include <dfm-mount/base/dmount_global.h>
 
 #include <QObject>
 #include <QSharedPointer>

@@ -5,7 +5,8 @@
 #ifndef OPTICALDISCINFO_P_H
 #define OPTICALDISCINFO_P_H
 
-#include "dburn_global.h"
+#include <dfm-burn/dburn_global.h>
+
 #include "dxorrisoengine.h"
 
 #include <QSharedData>

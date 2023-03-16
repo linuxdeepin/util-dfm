@@ -5,8 +5,8 @@
 #ifndef DBLOCKDEVICE_H
 #define DBLOCKDEVICE_H
 
-#include "base/ddevice.h"
-#include "base/dmount_global.h"
+#include <dfm-mount/base/ddevice.h>
+#include <dfm-mount/base/dmount_global.h>
 
 #include <QObject>
 

@@ -5,7 +5,7 @@
 #ifndef DBLOCKMONITOR_H
 #define DBLOCKMONITOR_H
 
-#include "base/ddevicemonitor.h"
+#include <dfm-mount/base/ddevicemonitor.h>
 
 #include <QObject>
 

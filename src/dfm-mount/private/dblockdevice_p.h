@@ -5,8 +5,9 @@
 #ifndef DBLOCKDEVICE_P_H
 #define DBLOCKDEVICE_P_H
 
-#include "base/dmount_global.h"
-#include "dblockdevice.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/dblockdevice.h>
+
 #include "private/ddevice_p.h"
 
 extern "C" {

@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dopticaldiscmanager.h"
-#include "dopticaldiscinfo.h"
+#include <dfm-burn/dopticaldiscmanager.h>
+#include <dfm-burn/dopticaldiscinfo.h>
+
 #include "private/dopticaldiscmanager_p.h"
 #include "private/dxorrisoengine.h"
 #include "private/dudfburnengine.h"

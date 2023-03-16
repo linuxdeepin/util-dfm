@@ -5,7 +5,8 @@
 #ifndef DBLOCKMONITOR_P_H
 #define DBLOCKMONITOR_P_H
 
-#include "dblockmonitor.h"
+#include <dfm-mount/dblockmonitor.h>
+
 #include "private/ddevicemonitor_p.h"
 
 #include <QMap>

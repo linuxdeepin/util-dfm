@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "base/dmountutils.h"
+#include <dfm-mount/base/dmountutils.h>
 
 #include <QDebug>
 

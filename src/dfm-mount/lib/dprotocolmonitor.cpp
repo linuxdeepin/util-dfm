@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "base/dmountutils.h"
-#include "dprotocolmonitor.h"
-#include "dprotocoldevice.h"
+#include <dfm-mount/base/dmountutils.h>
+#include <dfm-mount/dprotocolmonitor.h>
+#include <dfm-mount/dprotocoldevice.h>
+
 #include "private/dprotocolmonitor_p.h"
 #include "private/dprotocoldevice_p.h"
 

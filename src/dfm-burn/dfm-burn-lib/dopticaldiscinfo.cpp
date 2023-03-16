@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dopticaldiscinfo.h"
+#include <dfm-burn/dopticaldiscinfo.h>
+
 #include "private/dopticaldiscinfo_p.h"
 
 #include <QDebug>

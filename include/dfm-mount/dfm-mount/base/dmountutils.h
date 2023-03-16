@@ -5,7 +5,7 @@
 #ifndef DMOUNTUTILS_H
 #define DMOUNTUTILS_H
 
-#include "dmount_global.h"
+#include <dfm-mount/base/dmount_global.h>
 
 #include <QVariant>
 #include <QCoreApplication>

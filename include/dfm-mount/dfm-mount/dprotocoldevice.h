@@ -5,8 +5,8 @@
 #ifndef DPROTOCOLDEVICE_H
 #define DPROTOCOLDEVICE_H
 
-#include "base/ddevice.h"
-#include "dprotocolmonitor.h"
+#include <dfm-mount/base/ddevice.h>
+#include <dfm-mount/dprotocolmonitor.h>
 
 #include <QObject>
 

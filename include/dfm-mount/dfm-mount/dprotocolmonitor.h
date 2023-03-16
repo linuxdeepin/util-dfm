@@ -5,7 +5,7 @@
 #ifndef DPROTOCOLMONITOR_H
 #define DPROTOCOLMONITOR_H
 
-#include "base/ddevicemonitor.h"
+#include <dfm-mount/base/ddevicemonitor.h>
 
 #include <QObject>
 

@@ -5,7 +5,7 @@
 #ifndef DDEVICEMANAGER_H
 #define DDEVICEMANAGER_H
 
-#include "base/dmount_global.h"
+#include <dfm-mount/base/dmount_global.h>
 
 #include <QObject>
 

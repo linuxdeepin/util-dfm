@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "base/dmount_global.h"
-#include "base/dmountutils.h"
-#include "dblockdevice.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/base/dmountutils.h>
+#include <dfm-mount/dblockdevice.h>
+
 #include "private/dblockdevice_p.h"
 
 #include <QStorageInfo>

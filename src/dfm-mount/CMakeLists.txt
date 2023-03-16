@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
-project(dfm-mount)
+
+set(BIN_NAME dfm-mount)
 
 # Version
 if (NOT PROJECT_VERSION)
@@ -17,46 +18,30 @@ add_compile_definitions(QT_NO_SIGNALS_SLOTS_KEYWORDS)
 add_definitions(-DQT_NO_KEYWORDS)
 
 find_package(PkgConfig REQUIRED)
+find_package(Qt5 COMPONENTS Core REQUIRED)
+find_package(Qt5 COMPONENTS Concurrent REQUIRED)
+find_package(Qt5 COMPONENTS DBus REQUIRED)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
-# Use Qt modules
-set(QtFindModules Core Gui Widgets Concurrent DBus)
-foreach(QtModule ${QtFindModules})
-    find_package(Qt5 COMPONENTS ${QtModule} REQUIRED)
+pkg_check_modules(udisks2 REQUIRED udisks2 IMPORTED_TARGET)
+pkg_check_modules(glib REQUIRED glib-2.0 IMPORTED_TARGET)
+pkg_check_modules(gio REQUIRED gio-unix-2.0 IMPORTED_TARGET)
+pkg_check_modules(secret REQUIRED libsecret-1 IMPORTED_TARGET)
 
-    # can use target_link_libraries(xxx ${QtUseModules})
-    list(APPEND QtUseModules "Qt5::${QtModule}")
-    message("QtModule found ${QtModule} OK!")
-endforeach()
-
-# Use PkgConfig modules
-set(PkgConfigFindModules udisks2 glib-2.0 gio-unix-2.0 libsecret-1)
-pkg_check_modules(DEPENDS REQUIRED ${PkgConfigFindModules})
-foreach(PkgConfigModule ${PkgConfigFindModules})
-    pkg_check_modules(PkgUseModuleVal REQUIRED ${PkgConfigModule})
-    #can use target_link_libraries(xxx ${PkgUseModule})
-    list(APPEND PkgUseModules ${PkgUseModuleVal_LDFLAGS})
-    include_directories(${PkgUseModuleVal_INCLUDE_DIRS})
-endforeach(PkgConfigModule)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-FILE(GLOB LIB_BASE_HEADER
-    ${CMAKE_CURRENT_LIST_DIR}/include/base/*.h
-)
-FILE(GLOB LIB_HEADER
-    ${CMAKE_CURRENT_LIST_DIR}/include/*.h
-)
-FILE(GLOB LIB_P_HEADER
-    ${CMAKE_CURRENT_LIST_DIR}/private/*.h
-)
-FILE(GLOB LIB_SRCS
-    ${CMAKE_CURRENT_LIST_DIR}/private/*.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/*.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/lib/*/*.cpp
+# public include
+file(GLOB_RECURSE PUBLIC_INCLUDES  CONFIGURE_DEPENDS
+    "${PROJECT_SOURCE_DIR}/include/${BIN_NAME}/*")
+# src
+FILE (GLOB_RECURSE SRCS CONFIGURE_DEPENDS
+    "./*.cpp"
+    "./*.h"
 )
 
-# Build library
-add_library(${PROJECT_NAME} SHARED ${LIB_HEADER} ${LIB_BASE_HEADER} ${LIB_P_HEADER} ${LIB_SRCS})
+# Build
+add_library(${BIN_NAME} SHARED
+            ${PUBLIC_INCLUDES}
+            ${SRCS}
+)
 
 set_target_properties(
     dfm-mount PROPERTIES
@@ -64,27 +49,52 @@ set_target_properties(
     SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
-target_link_libraries(${PROJECT_NAME}
-    ${PkgUseModules}
-    ${QtUseModules}
+target_link_libraries(${BIN_NAME}
+    Qt5::Core
+    Qt5::Concurrent
+    Qt5::DBus
+    Qt5::Widgets
+    PkgConfig::udisks2
+    PkgConfig::glib
+    PkgConfig::gio
+    PkgConfig::secret
+)
+
+target_include_directories(
+    ${BIN_NAME}
+PUBLIC
+    ${PROJECT_SOURCE_DIR}/include/${BIN_NAME}
 )
 
 include(GNUInstallDirs)
 
 # Install lib
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${LIB_HEADER} DESTINATION include/${PROJECT_NAME})
-install(FILES ${LIB_BASE_HEADER} DESTINATION include/${PROJECT_NAME}/base)
-configure_file("./lib/dfm-mount.pc.in" "./lib/dfm-mount.pc" @ONLY)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/lib/dfm-mount.pc"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+install(DIRECTORY
+    ${PROJECT_SOURCE_DIR}/include/${BIN_NAME}
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h"
 )
+install(TARGETS ${BIN_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+# for pc file config
+set(PC_LIBS_PRIVATE Qt${QT_VERSION_MAJOR}Core)
+set(PC_REQ_PRIVATE)
+set(PC_REQ_PUBLIC)
+
+# config pkgconfig file
+configure_file(${PROJECT_SOURCE_DIR}/misc/${BIN_NAME}/${BIN_NAME}.pc.in ${BIN_NAME}.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+# config cmake file
+configure_file(${PROJECT_SOURCE_DIR}/misc/${BIN_NAME}/${BIN_NAME}Config.cmake.in ${BIN_NAME}Config.cmake @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME}Config.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${BIN_NAME})
+
 # Build example
 set(EXAMPLE_SRCS
     example/main.cpp)
-add_executable(${PROJECT_NAME}_example ${EXAMPLE_SRCS})
-target_link_libraries(${PROJECT_NAME}_example ${PROJECT_NAME})
-target_link_libraries(${PROJECT_NAME}_example Qt5::Widgets)
+add_executable(${BIN_NAME}_example ${EXAMPLE_SRCS})
+target_link_libraries(${BIN_NAME}_example ${BIN_NAME})
+target_link_libraries(${BIN_NAME}_example Qt5::Widgets)
 
 #set(CMAKE_CXX_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")
 #set(CMAKE_C_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")

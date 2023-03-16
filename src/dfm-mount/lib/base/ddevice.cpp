@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "base/dmount_global.h"
-#include "base/ddevice.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/base/ddevice.h>
+
 #include "private/ddevice_p.h"
 
 #include <QDebug>

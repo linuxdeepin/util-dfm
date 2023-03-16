@@ -5,7 +5,7 @@
 #ifndef UDFBURNENGINE_H
 #define UDFBURNENGINE_H
 
-#include "dburn_global.h"
+#include <dfm-burn/dburn_global.h>
 
 #include <QObject>
 #include <QLibrary>

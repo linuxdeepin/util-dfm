@@ -5,10 +5,10 @@
 #ifndef DDEVICEMANAGERPRIVATE_H
 #define DDEVICEMANAGERPRIVATE_H
 
-#include "base/dmount_global.h"
-#include "ddevicemanager.h"
-#include "dblockmonitor.h"
-#include "dprotocolmonitor.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/ddevicemanager.h>
+#include <dfm-mount/dblockmonitor.h>
+#include <dfm-mount/dprotocolmonitor.h>
 
 #include <QMap>
 

@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.1.0)
+
 set(BIN_NAME dfm-io)
 
 # Version
@@ -34,7 +36,6 @@ FILE (GLOB_RECURSE IO_SRCS CONFIGURE_DEPENDS
 # Build
 add_library(${BIN_NAME} SHARED
             ${IO_PUBLIC_INCLUDES}
-            ${IO_PRIVATE_INCLUDES}
             ${IO_SRCS}
 )
 

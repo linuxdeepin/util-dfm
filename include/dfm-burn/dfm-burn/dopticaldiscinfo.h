@@ -5,7 +5,7 @@
 #ifndef DOPTICALDISCINFO_H
 #define DOPTICALDISCINFO_H
 
-#include "dburn_global.h"
+#include <dfm-burn/dburn_global.h>
 
 #include <QObject>
 #include <QString>

@@ -5,8 +5,8 @@
 #include <QCoreApplication>
 #include <QDebug>
 
-#include <dopticaldiscmanager.h>
-#include <dopticaldiscinfo.h>
+#include <dfm-burn/dopticaldiscmanager.h>
+#include <dfm-burn/dopticaldiscinfo.h>
 
 DFM_BURN_USE_NS
 

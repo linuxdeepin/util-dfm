@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "base/dmountutils.h"
+#include <dfm-mount/base/dmountutils.h>
+
 #include "dnetworkmounter.h"
 
 #include <QDBusInterface>
@@ -407,7 +408,7 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
     err = nullptr;
 
     g_autofree char *mntPath = g_file_get_path(file);
-    auto mount = g_file_find_enclosing_mount(file, nullptr, &err);
+    GMount_autoptr mount = g_file_find_enclosing_mount(file, nullptr, &err);
     if (mount) {
         GFile_autoptr defLocation = g_mount_get_default_location(mount);
         if (defLocation) {

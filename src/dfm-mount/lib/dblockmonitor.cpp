@@ -2,11 +2,12 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "base/ddevice.h"
-#include "base/dmount_global.h"
-#include "base/dmountutils.h"
-#include "dblockdevice.h"
-#include "dblockmonitor.h"
+#include <dfm-mount/base/ddevice.h>
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/base/dmountutils.h>
+#include <dfm-mount/dblockdevice.h>
+#include <dfm-mount/dblockmonitor.h>
+
 #include "private/dblockdevice_p.h"
 #include "private/dblockmonitor_p.h"
 

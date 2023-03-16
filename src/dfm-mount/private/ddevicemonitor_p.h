@@ -5,8 +5,8 @@
 #ifndef DMONITORPRIVATE_H
 #define DMONITORPRIVATE_H
 
-#include "base/dmount_global.h"
-#include "base/ddevicemonitor.h"
+#include <dfm-mount/base/dmount_global.h>
+#include <dfm-mount/base/ddevicemonitor.h>
 
 #include <QMap>
 

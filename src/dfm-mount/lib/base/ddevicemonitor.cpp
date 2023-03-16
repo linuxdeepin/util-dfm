@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "base/ddevicemonitor.h"
-#include "base/dmount_global.h"
+#include <dfm-mount/base/ddevicemonitor.h>
+#include <dfm-mount/base/dmount_global.h>
+
 #include "private/ddevicemonitor_p.h"
 
 #include <QDebug>
