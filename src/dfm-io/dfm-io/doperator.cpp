@@ -5,10 +5,10 @@
 #include "private/doperator_p.h"
 
 #include "utils/dlocalhelper.h"
-#include "utils/trashfilehelper.h"
 
 #include <QFile>
 #include <QTextStream>
+#include <QDateTime>
 
 #include <glib/gstdio.h>
 
@@ -308,19 +308,16 @@ QString DOperator::trashFile()
     const QUrl &uri = this->uri();
     g_autoptr(GFile) gfile = d->makeGFile(uri);
 
+    QString targetTrashTime = QString::number(QDateTime::currentSecsSinceEpoch()) + "-";
     bool ret = g_file_trash(gfile, nullptr, &gerror);
-    QString targetTrashPath;
-    if (ret) {
-        auto targetTrashPath = TrashFileHelper::trashTargetPath(uri.path(), gfile);
-        if (targetTrashPath.isEmpty())
-            d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_NONE_TARGET_TRASH);
-        return targetTrashPath;
-    }
+    targetTrashTime.append(QString::number(QDateTime::currentSecsSinceEpoch()));
+    if (ret)
+        return targetTrashTime;
 
     if (gerror)
         d->setErrorFromGError(gerror);
 
-    return targetTrashPath;
+    return QString();
 }
 
 bool DOperator::deleteFile()

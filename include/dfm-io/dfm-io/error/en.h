@@ -65,7 +65,6 @@ enum DFMIOErrorCode {
     DFM_IO_ERROR_OPEN_FAILED,   // File open failed
     DFM_IO_ERROR_OPEN_FLAG_ERROR,   // File open flag is error
     DFM_IO_ERROR_INFO_NO_ATTRIBUTE,   // File info has no attribute
-    DFM_IO_ERROR_NONE_TARGET_TRASH,   // Target Trash File Not exist
     DFM_IO_ERROR_FTS_OPEN,   // open file by fts failed
 };
 
@@ -176,8 +175,6 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
         return QObject::tr("File open flag error");
     case DFM_IO_ERROR_INFO_NO_ATTRIBUTE:
         return QObject::tr("File info has no attribute");
-    case DFM_IO_ERROR_NONE_TARGET_TRASH:
-        return QObject::tr("Target Trash File Not exist");
     case DFM_IO_ERROR_FTS_OPEN:
         return QObject::tr("open file by fts failed");
     }
