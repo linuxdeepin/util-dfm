@@ -9,8 +9,8 @@
 #include <QObject>
 
 enum DFMIOErrorCode {
-    DFM_IO_ERROR_NONE = 0,   // No error.
-
+    DFM_IO_ERROR_NONE = -1,   // No error.
+    DFM_IO_ERROR_FAILED,   // Generic error condition for when an operation fails and no more specific DFMIOErrorEnum value is defined.
     DFM_IO_ERROR_NOT_FOUND,   // File not found.
     DFM_IO_ERROR_EXISTS,   // File already exists.
     DFM_IO_ERROR_IS_DIRECTORY,   // File is a directory.
@@ -61,12 +61,11 @@ enum DFMIOErrorCode {
     DFM_IO_ERROR_NOT_CONNECTED,   // Transport endpoint is not connected.
     DFM_IO_ERROR_MESSAGE_TOO_LARGE,   // Message too large.
 
-    DFM_IO_ERROR_FAILED = 1000,   // Generic error condition for when an operation fails and no more specific DFMIOErrorEnum value is defined.
+    DFM_IO_ERROR_USER_FAILED = 1000,   // Generic error condition for when an operation fails and no more specific DFMIOErrorEnum value is defined.
     DFM_IO_ERROR_OPEN_FAILED,   // File open failed
     DFM_IO_ERROR_OPEN_FLAG_ERROR,   // File open flag is error
     DFM_IO_ERROR_INFO_NO_ATTRIBUTE,   // File info has no attribute
     DFM_IO_ERROR_NONE_TARGET_TRASH,   // Target Trash File Not exist
-    DFM_ERROR_OTHER_DOMAIN,   // other domian error
     DFM_IO_ERROR_FTS_OPEN,   // open file by fts failed
 };
 
@@ -179,8 +178,6 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
         return QObject::tr("File info has no attribute");
     case DFM_IO_ERROR_NONE_TARGET_TRASH:
         return QObject::tr("Target Trash File Not exist");
-    case DFM_ERROR_OTHER_DOMAIN:
-        return QString();
     case DFM_IO_ERROR_FTS_OPEN:
         return QObject::tr("open file by fts failed");
     }

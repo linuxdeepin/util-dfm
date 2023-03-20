@@ -32,11 +32,10 @@ void DOperatorPrivate::setErrorFromGError(GError *gerror)
     if (!gerror)
         return;
     error.setCode(DFMIOErrorCode(gerror->code));
-    if (gerror->domain != G_IO_ERROR || gerror->message) {
-        error.setCode(DFMIOErrorCode::DFM_ERROR_OTHER_DOMAIN);
-        auto errmsg = QString(gerror->message);
-        errmsg = errmsg.left(errmsg.indexOf(":")) + errmsg.mid(errmsg.lastIndexOf(":"));
-        error.setMessage(errmsg);
+    if (error.code() == DFMIOErrorCode::DFM_IO_ERROR_FAILED) {
+        QString strErr(gerror->message);
+        strErr = strErr.left(strErr.indexOf(":")) + strErr.mid(strErr.lastIndexOf(":"));
+        error.setMessage(strErr);
     }
 }
 

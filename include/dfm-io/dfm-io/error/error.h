@@ -19,8 +19,9 @@ public:
 
     //! Get the error code.
     DFMIOErrorCode code() const { return errorCode; }
-    QString errorMsg() const {
-        if (errorCode == DFMIOErrorCode::DFM_ERROR_OTHER_DOMAIN)
+    QString errorMsg() const
+    {
+        if (!errMsg.isEmpty())
             return errMsg;
         return GetError_En(errorCode);
     }
@@ -33,8 +34,10 @@ public:
     //! Whether the result is an error.
     bool isError() const { return errorCode != DFM_IO_ERROR_NONE; }
 
-    bool operator==(const DFMIOError &that) const {
-        return errorCode == that.errorCode && errMsg == that.errMsg; }
+    bool operator==(const DFMIOError &that) const
+    {
+        return errorCode == that.errorCode && errMsg == that.errMsg;
+    }
 
     //! Reset error code.
     void clear() { setCode(DFM_IO_ERROR_NONE); }
