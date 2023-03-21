@@ -29,6 +29,7 @@ Q_ENUMS(DGlibUserDirectory);
 
 class DFMUtils
 {
+
 public:
     static bool fileUnmountable(const QString &path);
     static QString devicePathFromUrl(const QUrl &url);

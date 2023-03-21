@@ -11,6 +11,7 @@
 
 #include <QUrl>
 #include <QSet>
+#include <QDebug>
 
 USING_IO_NAMESPACE
 
