@@ -8,8 +8,13 @@ Files: .gitignore
 Copyright: None
 License: CC0-1.0
 
+# ci
+Files: .obs/workflows.yml
+Copyright: None
+License: CC0-1.0
+
 # debian
-Files: debian/* 
+Files: debian/*
 Copyright: None
 License: CC0-1.0
 
@@ -23,12 +28,12 @@ Files: README.md README.zh_CN.md CHANGELOG.md docs/*
 Copyright: UnionTech Software Technology Co., Ltd.
 License: CC-BY-4.0
 
-#cpp-stub
+# cpp-stub
 Files: tests/3rdparty/utils/cpp-stub/*
 Copyright: 2019 coolxv
 License: MIT
 
-#stub-ext
+# stub-ext
 Files: tests/3rdparty/utils/stub-ext/*
 Copyright: 2020 Zhang Yu
 License: MIT
