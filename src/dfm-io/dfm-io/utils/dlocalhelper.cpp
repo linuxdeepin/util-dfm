@@ -384,8 +384,12 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
 
         QList<QString> ret;
         auto names = g_themed_icon_get_names(G_THEMED_ICON(icon));
-        for (int j = 0; names && names[j] != nullptr; ++j)
-            ret.append(QString::fromLocal8Bit(names[j]));
+        for (int j = 0; names && names[j] != nullptr; ++j) {
+            if (strcmp(names[j], "folder") == 0)
+                ret.prepend(QString::fromLocal8Bit(names[j]));
+            else
+                ret.append(QString::fromLocal8Bit(names[j]));
+        }
 
         return QVariant(ret);
     }
