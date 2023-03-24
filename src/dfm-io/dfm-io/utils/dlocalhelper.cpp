@@ -8,6 +8,7 @@
 
 #include <QDebug>
 #include <QCollator>
+#include <QTime>
 
 #include <gio/gfileinfo.h>
 

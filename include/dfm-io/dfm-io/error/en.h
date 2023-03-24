@@ -177,6 +177,8 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
         return QObject::tr("File info has no attribute");
     case DFM_IO_ERROR_FTS_OPEN:
         return QObject::tr("open file by fts failed");
+    case DFM_IO_ERROR_USER_FAILED:
+        return QString();
     }
 
     return QString("Unknown error");

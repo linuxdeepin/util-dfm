@@ -5,6 +5,9 @@
 #include <dfm-io/dfmio_global.h>
 #include <dfm-io/dfileinfo.h>
 
+#include <QDebug>
+#include <QTime>
+
 #include <stdio.h>
 
 USING_IO_NAMESPACE
@@ -26,6 +29,19 @@ static void display(const QUrl &url)
     printf("%s\n", info->dump().toStdString().c_str());
 }
 
+static void displayAsync(const QUrl &url)
+{
+    QSharedPointer<DFileInfo> info { new DFileInfo(url) };
+
+    if (!info) {
+        err_msg("create file info failed.");
+        return;
+    }
+    auto future = info->refreshAsync();
+    future.waitForFinished();
+    printf("%s\n", info->dump().toStdString().c_str());
+}
+
 static void usage()
 {
     err_msg("usage: dfm-info uri.");
@@ -44,8 +60,8 @@ int main(int argc, char *argv[])
 
     if (!url.isValid())
         return 1;
-
     display(url);
+    displayAsync(url);
 
     return 0;
 }
