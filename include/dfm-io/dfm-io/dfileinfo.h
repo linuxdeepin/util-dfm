@@ -12,6 +12,7 @@
 #include <QUrl>
 #include <QSharedData>
 #include <QSharedPointer>
+#include <QtConcurrent>
 
 #include <functional>
 #include <unordered_map>
@@ -87,6 +88,7 @@ public:
         kAccessCanDelete = 103,   // boolean
         kAccessCanTrash = 104,   // boolean
         kAccessCanRename = 105,   // boolean
+        kAccessPermissions = 106,   // DFile::Permissions
 
         kMountableCanMount = 130,   // boolean
         kMountableCanUnmount = 131,   // boolean
@@ -211,6 +213,7 @@ public:
     [[nodiscard]] DFileFuture *existsAsync(int ioPriority, QObject *parent = nullptr) const;
     [[nodiscard]] DFileFuture *refreshAsync(int ioPriority, QObject *parent = nullptr);
     [[nodiscard]] DFileFuture *permissionsAsync(int ioPriority, QObject *parent = nullptr);
+    [[nodiscard]] QFuture<void> refreshAsync();
 
     bool hasAttribute(DFileInfo::AttributeID id) const;
     bool exists() const;
@@ -226,6 +229,7 @@ public:
     void attributeExtend(MediaType type, QList<AttributeExtendID> ids, AttributeExtendFuncCallback callback = nullptr);
     [[nodiscard]] DFileFuture *attributeExtend(MediaType type, QList<AttributeExtendID> ids, int ioPriority, QObject *parent = nullptr);
     bool cancelAttributeExtend();
+    bool cancelAttributes();
     QUrl uri() const;
     char *queryAttributes() const;
     DFileInfo::FileQueryInfoFlags queryInfoFlag() const;

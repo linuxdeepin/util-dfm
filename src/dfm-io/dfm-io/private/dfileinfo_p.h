@@ -46,6 +46,7 @@ public:
     void attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, DFileInfo::AttributeExtendFuncCallback callback = nullptr);
     [[nodiscard]] DFileFuture *attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, int ioPriority, QObject *parent = nullptr);
     bool cancelAttributeExtend();
+    bool cancelAttributes();
     void attributeExtendCallback();
 
     void setErrorFromGError(GError *gerror);
@@ -53,8 +54,14 @@ public:
     void queryInfoAsync(int ioPriority = 0, DFileInfo::InitQuerierAsyncCallback func = nullptr, void *userData = nullptr);
     QVariant attributesBySelf(DFileInfo::AttributeID id);
     QVariant attributesFromUrl(DFileInfo::AttributeID id);
+    void checkAndResetCancel();
 
     [[nodiscard]] DFileFuture *initQuerierAsync(int ioPriority, QObject *parent = nullptr) const;
+    [[nodiscard]] QFuture<void> refreshAsync();
+
+    void cacheAttributes();
+    DFile::Permissions permissions() const;
+    bool exists() const;
 
     static void queryInfoAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
     static void queryInfoAsyncCallback2(GObject *sourceObject, GAsyncResult *res, gpointer userData);
@@ -78,9 +85,17 @@ public:
     QList<DFileInfo::AttributeID> attributesNoBlockIO;
     GFile *gfile { nullptr };
     GFileInfo *gfileinfo { nullptr };
-    bool initFinished { false };
-    bool infoReseted { false };
+    std::atomic_bool initFinished { false };
+    std::atomic_bool infoReseted { false };
+    std::atomic_bool isQuquerying { false };
     GCancellable *gcancellable { nullptr };
+
+    QFuture<void> futureRefresh;
+    std::atomic_bool stoped { false };
+    std::atomic_bool fileExists { false };
+    QMap<DFileInfo::AttributeID, QVariant> caches;
+    std::atomic_bool cacheing { false };
+    std::atomic_bool refreshing { false };
 
     DFMIOError error;
 };

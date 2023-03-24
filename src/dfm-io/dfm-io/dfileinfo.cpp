@@ -13,6 +13,7 @@
 #include <QPointer>
 #include <QTimer>
 #include <QDebug>
+#include <QThread>
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -98,6 +99,11 @@ DFileInfoPrivate::~DFileInfoPrivate()
         g_object_unref(gfile);
         gfile = nullptr;
     }
+
+    if (gcancellable) {
+        g_object_unref(gcancellable);
+        gcancellable = nullptr;
+    }
 }
 
 void DFileInfoPrivate::initNormal()
@@ -167,6 +173,14 @@ bool DFileInfoPrivate::cancelAttributeExtend()
     return true;
 }
 
+bool DFileInfoPrivate::cancelAttributes()
+{
+    if (gcancellable)
+        g_cancellable_cancel(gcancellable);
+
+    return cancelAttributeExtend();
+}
+
 void DFileInfoPrivate::attributeExtendCallback()
 {
     if (this->mediaInfo) {
@@ -207,20 +221,27 @@ void DFileInfoPrivate::setErrorFromGError(GError *gerror)
 
 bool DFileInfoPrivate::queryInfoSync()
 {
+    if (isQuquerying)
+        return false;
+
+    isQuquerying = true;
+
     if (!infoReseted && this->gfileinfo) {
         initFinished = true;
+        isQuquerying = false;
         return true;
     }
 
-    const char *attributes = q->queryAttributes();
-    const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
-
     g_autoptr(GError) gerror = nullptr;
-    GFileInfo *fileinfo = g_file_query_info(gfile, attributes, GFileQueryInfoFlags(flag), nullptr, &gerror);
+    checkAndResetCancel();
+    GFileInfo *fileinfo = g_file_query_info(gfile, attributes, GFileQueryInfoFlags(flag), gcancellable, &gerror);
     if (gerror)
         setErrorFromGError(gerror);
-    if (!fileinfo)
+
+    if (!fileinfo) {
+        isQuquerying = false;
         return false;
+    }
 
     if (this->gfileinfo) {
         g_object_unref(this->gfileinfo);
@@ -228,7 +249,7 @@ bool DFileInfoPrivate::queryInfoSync()
     }
     this->gfileinfo = fileinfo;
     initFinished = true;
-
+    isQuquerying = false;
     return true;
 }
 
@@ -249,8 +270,8 @@ void DFileInfoPrivate::queryInfoAsync(int ioPriority, DFileInfo::InitQuerierAsyn
     dataOp->callback = func;
     dataOp->userData = userData;
     dataOp->me = this;
-
-    g_file_query_info_async(this->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, nullptr, queryInfoAsyncCallback, dataOp);
+    checkAndResetCancel();
+    g_file_query_info_async(this->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, gcancellable, queryInfoAsyncCallback, dataOp);
 }
 
 QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
@@ -451,6 +472,15 @@ QVariant DFileInfoPrivate::attributesFromUrl(DFileInfo::AttributeID id)
     return retValue;
 }
 
+void DFileInfoPrivate::checkAndResetCancel()
+{
+    if (gcancellable) {
+        g_object_unref(gcancellable);
+        gcancellable = nullptr;
+    }
+    gcancellable = g_cancellable_new();
+}
+
 DFileFuture *DFileInfoPrivate::initQuerierAsync(int ioPriority, QObject *parent) const
 {
     const char *attributes = q->queryAttributes();
@@ -461,9 +491,112 @@ DFileFuture *DFileInfoPrivate::initQuerierAsync(int ioPriority, QObject *parent)
     dataOp->future = future;
     dataOp->me = const_cast<DFileInfoPrivate *>(this);
 
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
-    g_file_query_info_async(this->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, cancellable, queryInfoAsyncCallback2, dataOp);
+    const_cast<DFileInfoPrivate *>(this)->checkAndResetCancel();
+    g_file_query_info_async(this->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, gcancellable, queryInfoAsyncCallback2, dataOp);
     return future;
+}
+
+QFuture<void> DFileInfoPrivate::refreshAsync()
+{
+    if (refreshing)
+        return futureRefresh;
+
+    refreshing = true;
+
+    if (futureRefresh.isRunning())
+        return futureRefresh;
+
+    stoped = false;
+    futureRefresh = QtConcurrent::run([=]() {
+        if (stoped) {
+            refreshing = false;
+            return;
+        }
+        if (gfile) {
+            g_object_unref(gfile);
+            gfile = nullptr;
+        }
+        initNormal();
+        if (stoped) {
+            refreshing = false;
+            return;
+        }
+        queryInfoSync();
+
+        if (stoped) {
+            refreshing = false;
+            return;
+        }
+        cacheAttributes();
+        fileExists = exists();
+        refreshing = false;
+    });
+    return futureRefresh;
+}
+
+void DFileInfoPrivate::cacheAttributes()
+{
+    QMap<DFileInfo::AttributeID, QVariant> tmp;
+    for (const auto &[id, key] : DLocalHelper::attributeInfoMapFunc()) {
+        tmp.insert(id, q->attribute(id));
+    }
+
+    tmp.insert(DFileInfo::AttributeID::kAccessPermissions, QVariant::fromValue(permissions()));
+    cacheing = true;
+    caches = tmp;
+    cacheing = false;
+}
+
+DFile::Permissions DFileInfoPrivate::permissions() const
+{
+    DFile::Permissions retValue = DFile::Permission::kNoPermission;
+
+    if (!initFinished) {
+        bool succ = const_cast<DFileInfoPrivate *>(this)->queryInfoSync();
+        if (!succ)
+            return retValue;
+    }
+
+    const QVariant &value = q->attribute(DFileInfo::AttributeID::kUnixMode);
+    if (!value.isValid())
+        return retValue;
+    const uint32_t stMode = value.toUInt();
+
+    if ((stMode & S_IXUSR) == S_IXUSR) {
+        retValue |= DFile::Permission::kExeOwner;
+        retValue |= DFile::Permission::kExeUser;
+    }
+    if ((stMode & S_IWUSR) == S_IWUSR) {
+        retValue |= DFile::Permission::kWriteOwner;
+        retValue |= DFile::Permission::kWriteUser;
+    }
+    if ((stMode & S_IRUSR) == S_IRUSR) {
+        retValue |= DFile::Permission::kReadOwner;
+        retValue |= DFile::Permission::kReadUser;
+    }
+
+    if ((stMode & S_IXGRP) == S_IXGRP)
+        retValue |= DFile::Permission::kExeGroup;
+    if ((stMode & S_IWGRP) == S_IWGRP)
+        retValue |= DFile::Permission::kWriteGroup;
+    if ((stMode & S_IRGRP) == S_IRGRP)
+        retValue |= DFile::Permission::kReadGroup;
+
+    if ((stMode & S_IXOTH) == S_IXOTH)
+        retValue |= DFile::Permission::kExeOther;
+    if ((stMode & S_IWOTH) == S_IWOTH)
+        retValue |= DFile::Permission::kWriteOther;
+    if ((stMode & S_IROTH) == S_IROTH)
+        retValue |= DFile::Permission::kReadOther;
+
+    return retValue;
+}
+
+bool DFileInfoPrivate::exists() const
+{
+    if (!gfileinfo)
+        return false;
+    return g_file_info_get_file_type(gfileinfo) != G_FILE_TYPE_UNKNOWN;
 }
 
 void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
@@ -587,29 +720,7 @@ DFileInfo::~DFileInfo()
 
 bool DFileInfo::initQuerier()
 {
-    if (!d->infoReseted && d->gfileinfo) {
-        d->initFinished = true;
-        return true;
-    }
-
-    const char *attributes = queryAttributes();
-    const DFileInfo::FileQueryInfoFlags flag = queryInfoFlag();
-
-    g_autoptr(GError) gerror = nullptr;
-    GFileInfo *fileinfo = g_file_query_info(d->gfile, attributes, GFileQueryInfoFlags(flag), nullptr, &gerror);
-    if (gerror)
-        d->setErrorFromGError(gerror);
-    if (!fileinfo)
-        return false;
-
-    if (d->gfileinfo) {
-        g_object_unref(d->gfileinfo);
-        d->gfileinfo = nullptr;
-    }
-    d->gfileinfo = fileinfo;
-    d->initFinished = true;
-
-    return true;
+    return d->queryInfoSync();
 }
 
 QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
@@ -640,13 +751,11 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
             }
         }
     }
-
     if (success)
         *success = retValue.isValid();
 
     if (!retValue.isValid())
         retValue = std::get<1>(DLocalHelper::attributeInfoMapFunc().at(id));
-
     return retValue;
 }
 
@@ -700,8 +809,8 @@ DFileFuture *DFileInfo::initQuerierAsync(int ioPriority, QObject *parent)
     dataOp->future = future;
     dataOp->me = d.data();
 
-    g_autoptr(GCancellable) cancellable = g_cancellable_new();
-    g_file_query_info_async(d->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, cancellable, DFileInfoPrivate::queryInfoAsyncCallback2, dataOp);
+    d->checkAndResetCancel();
+    g_file_query_info_async(d->gfile, attributes, GFileQueryInfoFlags(flag), ioPriority, d->gcancellable, DFileInfoPrivate::queryInfoAsyncCallback2, dataOp);
     return future;
 }
 
@@ -788,6 +897,11 @@ DFileFuture *DFileInfo::permissionsAsync(int ioPriority, QObject *parent)
     return future;
 }
 
+QFuture<void> DFileInfo::refreshAsync()
+{
+    return d->refreshAsync();
+}
+
 bool DFileInfo::hasAttribute(DFileInfo::AttributeID id) const
 {
     if (!d->initFinished) {
@@ -808,9 +922,10 @@ bool DFileInfo::hasAttribute(DFileInfo::AttributeID id) const
 
 bool DFileInfo::exists() const
 {
-    if (!d->gfileinfo)
-        return false;
-    return g_file_info_get_file_type(d->gfileinfo) != G_FILE_TYPE_UNKNOWN;
+    if (!d->cacheing && !d->caches.isEmpty())
+        return d->fileExists;
+
+    return d->exists();
 }
 
 bool DFileInfo::refresh()
@@ -824,47 +939,10 @@ bool DFileInfo::refresh()
 
 DFile::Permissions DFileInfo::permissions() const
 {
-    DFile::Permissions retValue = DFile::Permission::kNoPermission;
+    if (!d->cacheing && !d->caches.isEmpty())
+        return d->caches.value(AttributeID::kAccessPermissions).value<DFile::Permissions>();
 
-    if (!d->initFinished) {
-        bool succ = const_cast<DFileInfoPrivate *>(d.data())->queryInfoSync();
-        if (!succ)
-            return retValue;
-    }
-
-    const QVariant &value = this->attribute(DFileInfo::AttributeID::kUnixMode);
-    if (!value.isValid())
-        return retValue;
-    const uint32_t stMode = value.toUInt();
-
-    if ((stMode & S_IXUSR) == S_IXUSR) {
-        retValue |= DFile::Permission::kExeOwner;
-        retValue |= DFile::Permission::kExeUser;
-    }
-    if ((stMode & S_IWUSR) == S_IWUSR) {
-        retValue |= DFile::Permission::kWriteOwner;
-        retValue |= DFile::Permission::kWriteUser;
-    }
-    if ((stMode & S_IRUSR) == S_IRUSR) {
-        retValue |= DFile::Permission::kReadOwner;
-        retValue |= DFile::Permission::kReadUser;
-    }
-
-    if ((stMode & S_IXGRP) == S_IXGRP)
-        retValue |= DFile::Permission::kExeGroup;
-    if ((stMode & S_IWGRP) == S_IWGRP)
-        retValue |= DFile::Permission::kWriteGroup;
-    if ((stMode & S_IRGRP) == S_IRGRP)
-        retValue |= DFile::Permission::kReadGroup;
-
-    if ((stMode & S_IXOTH) == S_IXOTH)
-        retValue |= DFile::Permission::kExeOther;
-    if ((stMode & S_IWOTH) == S_IWOTH)
-        retValue |= DFile::Permission::kWriteOther;
-    if ((stMode & S_IROTH) == S_IROTH)
-        retValue |= DFile::Permission::kReadOther;
-
-    return retValue;
+    return d->permissions();
 }
 
 bool DFileInfo::setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag)
@@ -951,6 +1029,15 @@ DFileFuture *DFileInfo::attributeExtend(DFileInfo::MediaType type, QList<DFileIn
 bool DFileInfo::cancelAttributeExtend()
 {
     return d->cancelAttributeExtend();
+}
+
+bool DFileInfo::cancelAttributes()
+{
+    d->stoped = true;
+    if (d->gcancellable)
+        g_cancellable_cancel(d->gcancellable);
+    cancelAttributeExtend();
+    return true;
 }
 
 QUrl DFileInfo::uri() const

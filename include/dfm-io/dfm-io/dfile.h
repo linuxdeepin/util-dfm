@@ -141,5 +141,5 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(DFile::OpenFlags);
 Q_DECLARE_OPERATORS_FOR_FLAGS(DFile::Permissions);
 
 END_IO_NAMESPACE
-
+Q_DECLARE_METATYPE(dfmio::DFile::Permissions);
 #endif   // DFILE_H

@@ -540,6 +540,7 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
     hideList = DLocalHelper::hideListFromUrl(urlHidden);
     while (1) {
         FTSENT *ent = fts_read(fts);
+
         if (ent == nullptr) {
             break;
         }
