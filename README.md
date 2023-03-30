@@ -1,6 +1,6 @@
 # util-dfm
 
-A Toolkits of libdfm-io 、libdfm-mount and libdfm-burn，developed by UnionTech Software Technology Co., Ltd
+A Toolkit of libdfm-io 、libdfm-mount and libdfm-burn，developed by UnionTech Software Technology Co., Ltd
 
 ### Dependencies
 
