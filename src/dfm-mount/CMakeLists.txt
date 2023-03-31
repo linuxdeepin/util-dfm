@@ -27,6 +27,7 @@ pkg_check_modules(udisks2 REQUIRED udisks2 IMPORTED_TARGET)
 pkg_check_modules(glib REQUIRED glib-2.0 IMPORTED_TARGET)
 pkg_check_modules(gio REQUIRED gio-unix-2.0 IMPORTED_TARGET)
 pkg_check_modules(secret REQUIRED libsecret-1 IMPORTED_TARGET)
+pkg_check_modules(mount REQUIRED mount IMPORTED_TARGET)
 
 # public include
 file(GLOB_RECURSE PUBLIC_INCLUDES  CONFIGURE_DEPENDS
@@ -58,6 +59,7 @@ target_link_libraries(${BIN_NAME}
     PkgConfig::glib
     PkgConfig::gio
     PkgConfig::secret
+    PkgConfig::mount
 )
 
 target_include_directories(
