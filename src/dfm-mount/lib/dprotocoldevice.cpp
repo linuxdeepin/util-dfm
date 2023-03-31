@@ -25,9 +25,9 @@ struct CallbackProxyWithData
 {
     CallbackProxyWithData() = delete;
     explicit CallbackProxyWithData(DeviceOperateCallback cb)
-        : caller(cb) {}
+        : caller(cb) { }
     explicit CallbackProxyWithData(DeviceOperateCallbackWithMessage cb)
-        : caller(cb) {}
+        : caller(cb) { }
     CallbackProxy caller;
     QPointer<DProtocolDevice> data;
     DProtocolDevicePrivate *d { nullptr };
@@ -207,7 +207,7 @@ QString DProtocolDevicePrivate::mount(const QVariantMap &opts)
         //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
         //        qInfo() << "mutexForMount locked" << __FUNCTION__;
-        lastError = DeviceError::kUserErrorAlreadyMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorAlreadyMounted);
         return mountPoint(mountHandler);
     }
 
@@ -221,7 +221,7 @@ QString DProtocolDevicePrivate::mount(const QVariantMap &opts)
         //        qInfo() << "mutexForVolume locked" << __FUNCTION__;
 
         if (!g_volume_can_mount(volumeHandler)) {
-            lastError = DeviceError::kUserErrorNotMountable;
+            lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
             return "";
         }
 
@@ -237,10 +237,10 @@ QString DProtocolDevicePrivate::mount(const QVariantMap &opts)
         } else if (ret == ASyncToSyncHelper::Timeout) {
             if (cancellable)
                 g_cancellable_cancel(cancellable);
-            lastError = DeviceError::kUserErrorTimedOut;
+            lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorTimedOut);
         }
     }
-    lastError = DeviceError::kUserErrorNotMountable;
+    lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
     return "";
 }
 
@@ -250,7 +250,7 @@ void DProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCa
         //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
         QMutexLocker locker(&mutexForMount);
         //        qInfo() << "mutexForMount locked" << __FUNCTION__;
-        lastError = DeviceError::kUserErrorAlreadyMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorAlreadyMounted);
         if (cb)
             cb(true, lastError, mountPoint(mountHandler));
         return;
@@ -258,7 +258,7 @@ void DProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCa
 
     if (volumeHandler) {
         if (!g_volume_can_mount(volumeHandler)) {
-            lastError = DeviceError::kUserErrorNotMountable;
+            lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
             if (cb)
                 cb(false, lastError, "");
             return;
@@ -284,7 +284,7 @@ void DProtocolDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCa
 bool DProtocolDevicePrivate::unmount(const QVariantMap &opts)
 {
     if (!mountHandler) {
-        lastError = DeviceError::kUserErrorNotMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMounted);
         return true;
     } else {
         QString mpt = mountPoint(mountHandler);
@@ -308,7 +308,7 @@ bool DProtocolDevicePrivate::unmount(const QVariantMap &opts)
             if (ret == ASyncToSyncHelper::NoError) {
                 return true;
             } else if (ret == ASyncToSyncHelper::Timeout) {
-                lastError = DeviceError::kUserErrorTimedOut;
+                lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorTimedOut);
                 g_cancellable_cancel(cancellable);
                 return false;
             }
@@ -320,7 +320,7 @@ bool DProtocolDevicePrivate::unmount(const QVariantMap &opts)
 void DProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCallback cb)
 {
     if (!mountHandler) {
-        lastError = DeviceError::kUserErrorNotMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMounted);
         if (cb)
             cb(true, lastError);
         return;
@@ -421,7 +421,7 @@ QString DProtocolDevicePrivate::displayName() const
         return name;
     }
 
-    lastError = DeviceError::kUserErrorNotMountable;
+    lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
     return "";
 }
 
@@ -458,7 +458,7 @@ QVariant DProtocolDevicePrivate::getAttr(DProtocolDevicePrivate::FsAttr type) co
 
     g_autoptr(GFile) mntFile = g_file_new_for_uri(deviceId.toStdString().data());
     if (!mntFile) {
-        lastError = DeviceError::kUnhandledError;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUnhandledError);
         qDebug() << "cannot create file handler for " << deviceId;
         return QVariant();
     }
@@ -471,7 +471,8 @@ QVariant DProtocolDevicePrivate::getAttr(DProtocolDevicePrivate::FsAttr type) co
         if (err) {
             int errCode = err->code;
             QString errMsg = err->message;
-            lastError = Utils::castFromGError(err);
+            lastError.code = Utils::castFromGError(err);
+            lastError.message = errMsg;
             g_error_free(err);
             err = nullptr;
 
@@ -512,15 +513,15 @@ QVariant DProtocolDevicePrivate::getAttr(DProtocolDevicePrivate::FsAttr type) co
     return QVariant();
 }
 
-static bool mountDone(GObject *sourceObj, GAsyncResult *res, DeviceError &derr)
+static bool mountDone(GObject *sourceObj, GAsyncResult *res, OperationErrorInfo &derr)
 {
     auto vol = reinterpret_cast<GVolume *>(sourceObj);
 
-    QString mpt;
     GError *err { nullptr };
     bool ret = g_volume_mount_finish(vol, res, &err);
     if (err) {
-        derr = Utils::castFromGError(err);
+        derr.code = Utils::castFromGError(err);
+        derr.message = err->message;
         qDebug() << "mount failed" << err->message;
         g_error_free(err);
     }
@@ -530,7 +531,7 @@ static bool mountDone(GObject *sourceObj, GAsyncResult *res, DeviceError &derr)
 
 void DProtocolDevicePrivate::mountWithBlocker(GObject *sourceObj, GAsyncResult *res, gpointer blocker)
 {
-    DeviceError err;
+    OperationErrorInfo err;
     bool ret = mountDone(sourceObj, res, err);
     auto helper = static_cast<ASyncToSyncHelper *>(blocker);
     if (helper) {
@@ -549,7 +550,7 @@ void DProtocolDevicePrivate::mountWithBlocker(GObject *sourceObj, GAsyncResult *
 
 void DProtocolDevicePrivate::mountWithCallback(GObject *sourceObj, GAsyncResult *res, gpointer cbProxy)
 {
-    DeviceError err;
+    OperationErrorInfo err;
     auto &&ret = mountDone(sourceObj, res, err);
     auto proxy = static_cast<CallbackProxyWithData *>(cbProxy);
     if (proxy) {
@@ -590,10 +591,11 @@ void DProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncResul
     auto mnt = reinterpret_cast<GMount *>(sourceObj);
 
     GError *err { nullptr };
-    DeviceError derr = DeviceError::kNoError;
+    OperationErrorInfo derr;
     bool ret = g_mount_unmount_with_operation_finish(mnt, res, &err);
     if (err) {
-        // TODO
+        derr.code = Utils::castFromGError(err);
+        derr.message = err->message;
         g_error_free(err);
     }
 

@@ -824,6 +824,16 @@ QString Utils::errorMessage(MonitorError err)
     return errors.value(err);
 }
 
+OperationErrorInfo Utils::genOperateErrorInfo(DeviceError err, const QString &errMsg)
+{
+    OperationErrorInfo ret;
+    ret.code = err;
+    ret.message = errMsg;
+    if (errMsg.isEmpty())
+        ret.message = errorMessage(err);
+    return ret;
+}
+
 QString Utils::gcharToQString(char *tmp)
 {
     if (!tmp)

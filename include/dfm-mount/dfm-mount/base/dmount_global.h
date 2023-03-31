@@ -5,6 +5,7 @@
 #ifndef DMOUNT_GLOBAL_H
 #define DMOUNT_GLOBAL_H
 
+#include <QString>
 #include <QtCore/qglobal.h>
 #include <QtCore/qobjectdefs.h>
 
@@ -647,8 +648,14 @@ enum class PartitionType : uint16_t {
 };
 Q_ENUM_NS(PartitionType)
 
-using DeviceOperateCallback = std::function<void(bool, DeviceError)>;
-using DeviceOperateCallbackWithMessage = std::function<void(bool, DeviceError, QString)>;
+struct OperationErrorInfo
+{
+    DeviceError code { DeviceError::kNoError };
+    QString message;
+};
+
+using DeviceOperateCallback = std::function<void(bool, const OperationErrorInfo &)>;
+using DeviceOperateCallbackWithMessage = std::function<void(bool, const OperationErrorInfo &, QString)>;
 
 DFM_MOUNT_END_NS
 #endif   // DMOUNT_GLOBAL_H

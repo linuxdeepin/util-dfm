@@ -21,9 +21,10 @@ DFM_MOUNT_USE_NS
 
 inline void DBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, bool result, GError *gerr, QString info)
 {
-    DeviceError err = DeviceError::kNoError;
-    if (!result) {
-        err = Utils::castFromGError(gerr);
+    OperationErrorInfo err;
+    if (!result && gerr) {
+        err.code = Utils::castFromGError(gerr);
+        err.message = gerr->message;
         g_error_free(gerr);
     }
 
@@ -256,7 +257,7 @@ bool DBlockDevicePrivate::findJob(JobType type)
                 QString op(udisks_job_get_operation(job));
                 qInfo() << "Working now..." << d->objPath << op;
                 d->hasJob = true;
-                d->d->lastError = Utils::castFromJobOperation(op);
+                d->d->lastError.code = Utils::castFromJobOperation(op);
             },
             &data);
 
@@ -396,7 +397,7 @@ void DBlockDevice::rescanAsync(const QVariantMap &opts, DeviceOperateCallback cb
         dp->rescanAsync(opts, cb);
     } else {
         if (cb)
-            cb(false, DeviceError::kUserErrorFailed);
+            cb(false, Utils::genOperateErrorInfo(DeviceError::kUserErrorFailed));
         qWarning() << "private pointer is null!";
     }
 }
@@ -543,13 +544,13 @@ QString DBlockDevicePrivate::mount(const QVariantMap &opts)
 
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
     if (!fs) {
-        lastError = DeviceError::kUserErrorNotMountable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
         return "";
     }
 
     QStringList mpts = getProperty(Property::kFileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = DeviceError::kUDisksErrorAlreadyMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUDisksErrorAlreadyMounted);
         return mpts.first();
     }
 
@@ -579,7 +580,7 @@ void DBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallb
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
     if (!fs) {
-        lastError = DeviceError::kUserErrorNotMountable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
         if (proxy) {
             proxy->cbWithInfo(false, lastError, "");
             delete proxy;
@@ -589,7 +590,7 @@ void DBlockDevicePrivate::mountAsync(const QVariantMap &opts, DeviceOperateCallb
 
     QStringList mpts = getProperty(Property::kFileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = DeviceError::kUDisksErrorAlreadyMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUDisksErrorAlreadyMounted);
         if (proxy) {
             proxy->cbWithInfo(true, lastError, mpts.first());   // when it's already mounted, return true but report an error refer to `already mounted`.
             delete proxy;
@@ -611,13 +612,13 @@ bool DBlockDevicePrivate::unmount(const QVariantMap &opts)
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
     if (!fs) {
-        lastError = DeviceError::kUserErrorNotMountable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
         return true;   // since device is not mountable, so we just return true here
     }
 
     QStringList mpts = getProperty(Property::kFileSystemMountPoint).toStringList();
     if (mpts.empty()) {
-        lastError = DeviceError::kUDisksErrorNotMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUDisksErrorNotMounted);
         return true;   // since it's not mounted, then this invocation returns true
     }
 
@@ -643,7 +644,7 @@ void DBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCal
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
     if (!fs) {
-        lastError = DeviceError::kUserErrorNotMountable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
         if (proxy) {
             proxy->cb(true, lastError);
             delete proxy;
@@ -653,7 +654,7 @@ void DBlockDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperateCal
 
     QStringList mpts = getProperty(Property::kFileSystemMountPoint).toStringList();
     if (mpts.empty()) {
-        lastError = DeviceError::kUDisksErrorNotMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUDisksErrorNotMounted);
         if (proxy) {
             proxy->cb(true, lastError);
             delete proxy;
@@ -676,13 +677,13 @@ bool DBlockDevicePrivate::rename(const QString &newName, const QVariantMap &opts
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
     if (!fs) {
-        lastError = DeviceError::kUserErrorNotMountable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
         return false;
     }
 
     QStringList mpts = getProperty(Property::kFileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = DeviceError::kUDisksErrorAlreadyMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUDisksErrorAlreadyMounted);
         return false;
     }
 
@@ -712,7 +713,7 @@ void DBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap 
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
 
     if (!fs) {
-        lastError = DeviceError::kUserErrorNotMountable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -722,7 +723,7 @@ void DBlockDevicePrivate::renameAsync(const QString &newName, const QVariantMap 
 
     QStringList mpts = getProperty(Property::kFileSystemMountPoint).toStringList();
     if (!mpts.empty()) {
-        lastError = DeviceError::kUDisksErrorAlreadyMounted;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUDisksErrorAlreadyMounted);
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -744,13 +745,13 @@ bool DBlockDevicePrivate::eject(const QVariantMap &opts)
 
     UDisksDrive_autoptr drv = getDriveHandler();
     if (!drv) {
-        lastError = DeviceError::kUserErrorNoDriver;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoDriver);
         return false;
     }
 
     bool ejectable = q->getProperty(Property::kDriveEjectable).toBool();
     if (!ejectable) {
-        lastError = DeviceError::kUserErrorNotEjectable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotEjectable);
         return false;
     }
 
@@ -777,7 +778,7 @@ void DBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCallb
     CallbackProxy *proxy = cb ? new CallbackProxy(cb) : nullptr;
     bool ejectable = q->getProperty(Property::kDriveEjectable).toBool();
     if (!ejectable) {
-        lastError = DeviceError::kUserErrorNotEjectable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotEjectable);
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -788,7 +789,7 @@ void DBlockDevicePrivate::ejectAsync(const QVariantMap &opts, DeviceOperateCallb
     UDisksDrive_autoptr drv = getDriveHandler();
 
     if (!drv) {
-        lastError = DeviceError::kUserErrorNoDriver;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoDriver);
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -809,7 +810,7 @@ bool DBlockDevicePrivate::powerOff(const QVariantMap &opts)
     UDisksDrive_autoptr drv = getDriveHandler();
 
     if (!drv) {
-        lastError = DeviceError::kUserErrorNoDriver;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoDriver);
         return false;
     }
 
@@ -836,7 +837,7 @@ void DBlockDevicePrivate::powerOffAsync(const QVariantMap &opts, DeviceOperateCa
     UDisksDrive_autoptr drv = getDriveHandler();
 
     if (!drv) {
-        lastError = DeviceError::kUserErrorNoDriver;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoDriver);
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -856,7 +857,7 @@ bool DBlockDevicePrivate::lock(const QVariantMap &opts)
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
-        lastError = DeviceError::kUserErrorNotEncryptable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotEncryptable);
         return false;
     }
 
@@ -882,7 +883,7 @@ void DBlockDevicePrivate::lockAsync(const QVariantMap &opts, DeviceOperateCallba
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
-        lastError = DeviceError::kUserErrorNotEncryptable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotEncryptable);
         if (proxy) {
             proxy->cb(false, lastError);
             delete proxy;
@@ -903,7 +904,7 @@ bool DBlockDevicePrivate::unlock(const QString &passwd, QString &clearTextDev, c
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
-        lastError = DeviceError::kUserErrorNotEncryptable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotEncryptable);
         return false;
     }
 
@@ -933,7 +934,7 @@ void DBlockDevicePrivate::unlockAsync(const QString &passwd, const QVariantMap &
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
-        lastError = DeviceError::kUserErrorNotEncryptable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotEncryptable);
         if (proxy) {
             proxy->cbWithInfo(false, lastError, QString());
             delete proxy;
@@ -979,7 +980,7 @@ void DBlockDevicePrivate::rescanAsync(const QVariantMap &opts, DeviceOperateCall
         udisks_block_call_rescan(blk, Utils::castFromQVariantMap(opts), nullptr, rescanAsyncCallback, proxy);
     } else {
         if (cb)
-            cb(false, DeviceError::kUserErrorNoBlock);
+            cb(false, Utils::genOperateErrorInfo(DeviceError::kUserErrorNoBlock));
         qWarning() << "cannot get block handler";
     }
 }
@@ -987,7 +988,8 @@ void DBlockDevicePrivate::rescanAsync(const QVariantMap &opts, DeviceOperateCall
 inline void DBlockDevicePrivate::handleErrorAndRelease(GError *err)
 {
     if (err) {
-        lastError = Utils::castFromGError(err);
+        lastError.code = Utils::castFromGError(err);
+        lastError.message = err->message;
         g_error_free(err);
     }
 }
@@ -1058,7 +1060,7 @@ QVariant DBlockDevicePrivate::getBlockProperty(Property name) const
     UDisksBlock_autoptr blk = getBlockHandler();
     if (!blk) {
         qDebug() << __FUNCTION__ << "NO BLOCK: " << blkObjPath;
-        lastError = DeviceError::kUserErrorNoBlock;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoBlock);
         return QVariant();
     }
 
@@ -1162,7 +1164,7 @@ QVariant DBlockDevicePrivate::getDriveProperty(Property name) const
     UDisksDrive_autoptr drv = getDriveHandler();
     if (!drv) {
         qDebug() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
-        lastError = DeviceError::kUserErrorNoDriver;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoDriver);
         return "";
     }
 
@@ -1261,7 +1263,7 @@ QVariant DBlockDevicePrivate::getFileSystemProperty(Property name) const
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
     if (!fs) {
         qDebug() << __FUNCTION__ << "NO FILESYSTEM: " << blkObjPath;
-        lastError = DeviceError::kUserErrorNotMountable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
         return QVariant();
     }
 
@@ -1282,7 +1284,7 @@ QVariant DBlockDevicePrivate::getPartitionProperty(Property name) const
 
     if (!partition) {
         qDebug() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
-        lastError = DeviceError::kUserErrorNoPartition;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoPartition);
         return QVariant();
     }
 
@@ -1327,7 +1329,7 @@ QVariant DBlockDevicePrivate::getEncryptedProperty(Property name) const
 
     if (!encrypted) {
         qDebug() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
-        lastError = DeviceError::kUserErrorNotEncryptable;
+        lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotEncryptable);
         return QVariant();
     }
 

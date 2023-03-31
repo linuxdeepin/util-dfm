@@ -14,9 +14,9 @@ class CallbackProxy
 {
 public:
     CallbackProxy(DeviceOperateCallback cb)
-        : cb(cb) {}
+        : cb(cb) { }
     CallbackProxy(DeviceOperateCallbackWithMessage cb)
-        : cbWithInfo(cb) {}
+        : cbWithInfo(cb) { }
     DeviceOperateCallback cb { nullptr };
     DeviceOperateCallbackWithMessage cbWithInfo { nullptr };
 };
@@ -43,7 +43,7 @@ public:
     DDevice::GetPropertyFunc getProperty { nullptr };
     DDevice::DisplayNameFunc displayName { nullptr };
 
-    mutable DeviceError lastError { DeviceError::kNoError };
+    mutable OperationErrorInfo lastError { DeviceError::kNoError, "" };
 
 protected:
     DDevice *q = nullptr;

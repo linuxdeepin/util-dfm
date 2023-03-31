@@ -8,6 +8,11 @@ Files: .gitignore
 Copyright: None
 License: CC0-1.0
 
+# github files
+Files: .github/workflows/*.yml
+Copyright: None
+License: CC0-1.0
+
 # ci
 Files: .obs/workflows.yml
 Copyright: None
@@ -27,6 +32,11 @@ License: CC0-1.0
 Files: README.md README.zh_CN.md CHANGELOG.md docs/*
 Copyright: UnionTech Software Technology Co., Ltd.
 License: CC-BY-4.0
+
+# pc/cmake.in
+Files: misc/dfm-*/dfm-*Config.cmake.in
+Copyright: UnionTech Software Technology Co., Ltd.
+License: GPL-3.0-or-later
 
 # cpp-stub
 Files: tests/3rdparty/utils/cpp-stub/*
