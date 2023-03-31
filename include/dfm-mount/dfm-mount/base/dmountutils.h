@@ -50,18 +50,20 @@ public:
 
     static QString errorMessage(MonitorError err);
 
+    static OperationErrorInfo genOperateErrorInfo(DeviceError err, const QString &errMsg = "");
+
     /*!
- * \brief gcharToQString
- * \param tmp: target char *, which will be free in function, use it caution
- * \return
- */
+     * \brief gcharToQString
+     * \param tmp: target char *, which will be free in function, use it caution
+     * \return
+     */
     static QString gcharToQString(char *tmp);
 
     /*!
- * \brief gcharvToQStringList
- * \param tmp: target char *, which will be free in function, use it caution
- * \return
- */
+     * \brief gcharvToQStringList
+     * \param tmp: target char *, which will be free in function, use it caution
+     * \return
+     */
     static QStringList gcharvToQStringList(char **tmp);
 
     template<typename FromClass, typename ToClass>

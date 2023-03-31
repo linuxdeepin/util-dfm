@@ -134,7 +134,7 @@ QString DDevice::displayName() const
     return d->displayName();
 }
 
-DeviceError DDevice::lastError() const
+OperationErrorInfo DDevice::lastError() const
 {
     return d->lastError;
 }

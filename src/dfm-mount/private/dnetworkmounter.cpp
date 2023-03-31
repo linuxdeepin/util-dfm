@@ -196,7 +196,7 @@ void DNetworkMounter::unmountNetworkDevAsync(const QString &mpt, DeviceOperateCa
         bool ret = watcher->result();
         watcher->deleteLater();
         if (cb)
-            cb(ret, ret ? DeviceError::kNoError : DeviceError::kUserError);
+            cb(ret, Utils::genOperateErrorInfo(ret ? DeviceError::kNoError : DeviceError::kUserError));
     });
     watcher->setFuture(QtConcurrent::run(unmountNetworkDev, mpt));
 }
@@ -223,7 +223,7 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
     QString addr(QUrl::fromPercentEncoding(address.toLower().toLocal8Bit()));
     if (isMounted(addr, mpt)) {
         if (mountResult)
-            mountResult(false, DeviceError::kGIOErrorAlreadyMounted, mpt);
+            mountResult(false, Utils::genOperateErrorInfo(DeviceError::kGIOErrorAlreadyMounted), mpt);
         return;
     }
 
@@ -233,7 +233,7 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
         loginInfo = requestLoginInfo();
         if (loginInfo.cancelled && mountResult) {
             checkThread();
-            mountResult(false, DeviceError::kUserErrorUserCancelled, "");
+            mountResult(false, Utils::genOperateErrorInfo(DeviceError::kUserErrorUserCancelled), "");
             return;
         }
     }
@@ -247,14 +247,14 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
             loginInfo.timeout = secs;
             if (loginInfo.cancelled && mountResult) {
                 checkThread();
-                mountResult(false, DeviceError::kUserErrorUserCancelled, "");
+                mountResult(false, Utils::genOperateErrorInfo(DeviceError::kUserErrorUserCancelled), "");
                 return;
             }
             doLastMount(addr, loginInfo, mountResult);
         } else {
             if (mountResult) {
                 checkThread();
-                mountResult(mntRet.ok, mntRet.err, mntRet.mpt);
+                mountResult(mntRet.ok, Utils::genOperateErrorInfo(mntRet.err), mntRet.mpt);
             }
         }
     });
@@ -396,15 +396,16 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
     if (!finalize)
         return;
 
-    DeviceError derr = finalize->askPasswd->err;
+    OperationErrorInfo derr = Utils::genOperateErrorInfo(finalize->askPasswd->err);
     auto file = reinterpret_cast<GFile *>(srcObj);
     GError_autoptr err = nullptr;
     bool ok = g_file_mount_enclosing_volume_finish(file, res, &err);
-    if (!ok && derr == DeviceError::kNoError)
-        derr = Utils::castFromGError(err);
-    if (err)
+    if (!ok && derr.code == DeviceError::kNoError && err) {
+        derr.code = Utils::castFromGError(err);
+        derr.message = err->message;
         g_error_free(err);
-    err = nullptr;
+        err = nullptr;
+    }
 
     GFile_autoptr srcFile { nullptr };
     if (finalize->customData.isValid())
@@ -496,7 +497,7 @@ void DNetworkMounter::doLastMount(const QString &address, const MountPassInfo in
         if (cb) {
             if (QThread::currentThread() != qApp->thread())
                 qWarning() << "invoking callback in non-main-thread!!!";
-            cb(mntRet.ok, mntRet.err, mntRet.mpt);
+            cb(mntRet.ok, Utils::genOperateErrorInfo(mntRet.err), mntRet.mpt);
         }
     });
     watcher->setFuture(QtConcurrent::run([=] { return mountWithUserInput(address, info); }));

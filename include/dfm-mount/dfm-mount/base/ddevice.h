@@ -48,7 +48,7 @@ public:
     DMNT_VIRTUAL QVariant getProperty(Property name) const;
     DMNT_VIRTUAL QString displayName() const;
 
-    DeviceError lastError() const;
+    OperationErrorInfo lastError() const;
 
 public:
     // type definition
