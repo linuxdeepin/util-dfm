@@ -8,11 +8,13 @@
 
 #include <dfm-io/denumerator.h>
 #include <dfm-io/dfileinfo.h>
+#include <dfm-io/denumeratorfuture.h>
 
 #include <QVariant>
 #include <QPointer>
 #include <QtConcurrent>
 #include <QDebug>
+#include <qobjectdefs.h>
 
 #include <sys/stat.h>
 
@@ -100,7 +102,7 @@ bool DEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DEnumeratorP
         if (gerror)
             setErrorFromGError(gerror);
         ret = false;
-        qWarning() << "create enumerator failed, url: " << uriPath << " error: " << error.errorMsg();
+        qWarning() << "create enumerator failed, url: " << uriPath << " error: " << error.errorMsg() << gerror->message;
     } else {
         stackEnumerator.push_back(genumerator);
     }
@@ -290,6 +292,154 @@ void DEnumeratorPrivate::insertSortFileInfoList(QList<QSharedPointer<DEnumerator
         fileList.push_back(DLocalHelper::createSortFileInfo(ent, info, hideList));
 }
 
+void DEnumeratorPrivate::enumUriAsyncOvered(GList *files, GError *error)
+{
+    if (error) {
+        setErrorFromGError(error);
+        g_error_free(error);
+    }
+    asyncOvered = !files;
+    if (!files) {
+        asyncIteratorOver();
+        return;
+    }
+    GList *l;
+    for (l = files; l != nullptr; l = l->next) {
+        asyncInfos.append(static_cast<GFileInfo *>(l->data));
+    }
+    g_list_free(files);
+}
+
+void DEnumeratorPrivate::startAsyncIterator()
+{
+    qInfo() << "start Async Iterator，uri = " << uri;
+    asyncStoped = false;
+    const QString &uriPath = uri.toString();
+    g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+
+    checkAndResetCancel();
+    EnumUriData *userData = new EnumUriData();
+    userData->pointer = sharedFromThis();
+    g_file_enumerate_children_async(gfile,
+                                    FILE_DEFAULT_ATTRIBUTES,
+                                    G_FILE_QUERY_INFO_NONE,
+                                    G_PRIORITY_DEFAULT,
+                                    cancellable,
+                                    enumUriAsyncCallBack,
+                                    userData);
+}
+
+bool DEnumeratorPrivate::hasNext()
+{
+    if (!asyncOvered)
+        return false;
+
+    if (asyncInfos.isEmpty())
+        return false;
+
+    auto gfileInfo = asyncInfos.takeFirst();
+
+    if (!gfileInfo)
+        return hasNext();
+
+    nextUrl = QUrl::fromLocalFile(uri.path() + "/" + QString(g_file_info_get_name(gfileInfo)));
+
+    dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
+                                                      enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
+
+    g_object_unref(gfileInfo);
+
+    if (!checkFilter())
+        return hasNext();
+
+    return true;
+}
+
+QList<QSharedPointer<DFileInfo>> DEnumeratorPrivate::fileInfoList()
+{
+    if (asyncOvered)
+        return QList<QSharedPointer<DFileInfo>>();
+    for (auto gfileInfo : asyncInfos) {
+        if (!gfileInfo)
+            continue;
+        auto url = QUrl::fromLocalFile(uri.path() + "/" + QString(g_file_info_get_name(gfileInfo)));
+
+        infoList.append(DLocalHelper::createFileInfoByUri(url, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
+                                                          enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone
+                                                                    : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks));
+        g_object_unref(gfileInfo);
+    }
+
+    return infoList;
+}
+
+void DEnumeratorPrivate::enumUriAsyncCallBack(GObject *sourceObject, GAsyncResult *res, gpointer userData)
+{
+    EnumUriData *data = static_cast<EnumUriData *>(userData);
+    if (!data || !data->pointer || data->pointer->asyncStoped) {
+        qInfo() << "user data error " << data;
+        return;
+    }
+
+    GFileEnumerator *enumerator;
+    GError *error { nullptr };
+    enumerator = g_file_enumerate_children_finish(G_FILE(sourceObject), res, &error);
+    if (enumerator == nullptr) {
+        data->pointer->setErrorFromGError(error);
+        if (error) {
+            qInfo() << "enumerator url : " << data->pointer->uri << ". error msg : " << error->message;
+            g_error_free(error);
+        }
+        data->pointer->enumUriAsyncOvered(nullptr, error);
+        return;
+    } else {
+        data->enumerator = enumerator;
+        data->pointer->checkAndResetCancel();
+        g_file_enumerator_next_files_async(enumerator,
+                                           1000,
+                                           G_PRIORITY_DEFAULT,
+                                           data->pointer->cancellable,
+                                           moreFilesCallback,
+                                           data);
+    }
+
+    return;
+}
+
+void DEnumeratorPrivate::moreFilesCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
+{
+    Q_UNUSED(sourceObject);
+    EnumUriData *data = static_cast<EnumUriData *>(userData);
+    if (!data || !data->pointer || data->pointer->asyncStoped) {
+        qInfo() << "user data error " << data;
+        return;
+    }
+
+    GError *error;
+    GList *files;
+    error = nullptr;
+    GFileEnumerator *enumerator = data->enumerator;
+    files = g_file_enumerator_next_files_finish(enumerator,
+                                                res, &error);
+    data->pointer->enumUriAsyncOvered(files, error);
+    if (files) {
+        data->pointer->checkAndResetCancel();
+        g_file_enumerator_next_files_async(enumerator,
+                                           100,
+                                           G_PRIORITY_DEFAULT,
+                                           data->pointer->cancellable,
+                                           moreFilesCallback,
+                                           data);
+    } else {
+        if (!g_file_enumerator_is_closed(data->enumerator)) {
+            g_file_enumerator_close_async(data->enumerator,
+                                          0, nullptr, nullptr, nullptr);
+        }
+        g_object_unref(data->enumerator);
+        data->enumerator = nullptr;
+    }
+}
+
 /************************************************
  * DEnumerator
  ***********************************************/
@@ -396,11 +546,15 @@ bool DEnumerator::cancel()
     if (d->cancellable && !g_cancellable_is_cancelled(d->cancellable))
         g_cancellable_cancel(d->cancellable);
     d->ftsCanceled = true;
+    d->asyncStoped = true;
     return true;
 }
 
 bool DEnumerator::hasNext() const
 {
+    if (d->async)
+        return d->hasNext();
+
     if (!d->inited)
         d->init();
 
@@ -482,6 +636,9 @@ quint64 DEnumerator::fileCount()
 
 QList<QSharedPointer<DFileInfo>> DEnumerator::fileInfoList()
 {
+    if (d->async)
+        return d->fileInfoList();
+
     g_autoptr(GFileEnumerator) enumerator = nullptr;
     g_autoptr(GError) gerror = nullptr;
 
@@ -569,4 +726,22 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
 DFMIOError DEnumerator::lastError() const
 {
     return d->error;
+}
+
+DEnumeratorFuture *DEnumerator::asyncIterator()
+{
+    d->async = true;
+    DEnumeratorFuture *future = new DEnumeratorFuture(sharedFromThis());
+    QObject::connect(d.data(), &DEnumeratorPrivate::asyncIteratorOver, future, &DEnumeratorFuture::onAsyncIteratorOver);
+    return future;
+}
+
+void DEnumerator::startAsyncIterator()
+{
+    d->startAsyncIterator();
+}
+
+bool DEnumerator::isAsyncOver() const
+{
+    return d->asyncOvered;
 }

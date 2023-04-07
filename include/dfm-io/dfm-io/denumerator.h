@@ -17,8 +17,8 @@ BEGIN_IO_NAMESPACE
 
 class DEnumeratorPrivate;
 class DFileInfo;
-
-class DEnumerator
+class DEnumeratorFuture;
+class DEnumerator : public QEnableSharedFromThis<DEnumerator>
 {
 public:
     enum class DirFilter : int16_t {
@@ -108,9 +108,12 @@ public:
     QList<QSharedPointer<DFileInfo>> fileInfoList();
     QList<QSharedPointer<DEnumerator::SortFileInfo>> sortFileInfoList();
     DFMIOError lastError() const;
+    DEnumeratorFuture *asyncIterator();
+    void startAsyncIterator();
+    bool isAsyncOver() const;
 
 private:
-    QScopedPointer<DEnumeratorPrivate> d;
+    QSharedPointer<DEnumeratorPrivate> d;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(DEnumerator::DirFilters);

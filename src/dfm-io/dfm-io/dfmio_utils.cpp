@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <dfm-io/dfmio_utils.h>
+#include <dfm-io/denumeratorfuture.h>
 
 #include "utils/dlocalhelper.h"
 
@@ -12,6 +13,9 @@
 #include <QUrl>
 #include <QSet>
 #include <QDebug>
+
+#include <fstab.h>
+#include <sys/stat.h>
 
 USING_IO_NAMESPACE
 
@@ -148,4 +152,122 @@ QString DFMUtils::userDataDir()
 {
     const gchar *dir = g_get_user_data_dir();
     return QString::fromLocal8Bit(dir);
+}
+
+QString DFMUtils::bindPathTransform(const QString &path, bool toDevice)
+{
+    if (!path.startsWith("/") || path == "/")
+        return path;
+
+    const QMap<QString, QString> &table = fstabBindInfo();
+    if (table.isEmpty())
+        return path;
+
+    QString bindPath(path);
+    if (toDevice) {
+        for (const auto &mntPoint : table.values()) {
+            if (path.startsWith(mntPoint)) {
+                bindPath.replace(mntPoint, table.key(mntPoint));
+                break;
+            }
+        }
+    } else {
+        for (const auto &device : table.keys()) {
+            if (path.startsWith(device)) {
+                bindPath.replace(device, table[device]);
+                break;
+            }
+        }
+    }
+
+    return bindPath;
+}
+
+int DFMUtils::dirFfileCount(const QUrl &url)
+{
+    if (!url.isValid())
+        return 0;
+    DFMIO::DEnumerator enumerator(url);
+    return int(enumerator.fileCount());
+}
+
+QUrl DFMUtils::bindUrlTransform(const QUrl &url)
+{
+    auto tmp = url;
+
+    if (!url.path().contains("\\")) {
+        tmp.setPath(bindPathTransform(url.path(), false));
+        return tmp;
+    }
+
+    auto path = BackslashPathToNormal(url.path());
+    path = bindPathTransform(path, false);
+    path = normalPathToBackslash(path);
+    tmp.setPath(path);
+    return tmp;
+}
+
+QString DFMUtils::BackslashPathToNormal(const QString &trash)
+{
+    if (!trash.contains("\\"))
+        return trash;
+    QString normal = trash;
+    normal = normal.replace("\\", "/");
+    normal = normal.replace("//", "/");
+    return normal;
+}
+
+QString DFMUtils::normalPathToBackslash(const QString &normal)
+{
+    QString trash = normal;
+    trash = trash.replace("/", "\\");
+    trash.push_front("/");
+    return trash;
+}
+
+DEnumeratorFuture *DFMUtils::asyncTrashCount()
+{
+    QSharedPointer<DEnumerator> enumerator(new DEnumerator(QUrl("trash:///")));
+    return enumerator->asyncIterator();
+}
+
+int DFMUtils::syncTrashCount()
+{
+    DEnumerator enumerator(QUrl("trash:///"));
+    QList<QUrl> children;
+    while (enumerator.hasNext()) {
+        auto url = DFMUtils::bindUrlTransform(enumerator.next());
+        if (!children.contains(url))
+            children.append(url);
+    }
+
+    return children.length();
+}
+
+QMap<QString, QString> DFMUtils::fstabBindInfo()
+{
+    static QMutex mutex;
+    static QMap<QString, QString> table;
+    struct stat statInfo;
+    int result = stat("/etc/fstab", &statInfo);
+
+    QMutexLocker locker(&mutex);
+    if (0 == result) {
+        static quint32 lastModify = 0;
+        if (lastModify != statInfo.st_mtime) {
+            lastModify = static_cast<quint32>(statInfo.st_mtime);
+            table.clear();
+            struct fstab *fs;
+
+            setfsent();
+            while ((fs = getfsent()) != nullptr) {
+                QString mntops(fs->fs_mntops);
+                if (mntops.contains("bind"))
+                    table.insert(fs->fs_spec, fs->fs_file);
+            }
+            endfsent();
+        }
+    }
+
+    return table;
 }

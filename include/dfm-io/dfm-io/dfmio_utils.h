@@ -14,6 +14,7 @@ class QUrl;
 
 BEGIN_IO_NAMESPACE
 
+class DEnumeratorFuture;
 enum class DGlibUserDirectory : quint8 {
     kUserDirectoryDesktop,
     kUserDirectoryDocuments,
@@ -45,6 +46,18 @@ public:
     static QStringList systemDataDirs();
     static QString userSpecialDir(DGlibUserDirectory userDirectory);
     static QString userDataDir();
+    static QString bindPathTransform(const QString &path, bool toDevice);
+    static int dirFfileCount(const QUrl &url);
+    static QUrl bindUrlTransform(const QUrl &url);
+    static QString BackslashPathToNormal(const QString &trash);
+    static QString normalPathToBackslash(const QString &normal);
+    // 通过迭代器去获取回收站数量，并做相同挂载点过滤
+    static DEnumeratorFuture *asyncTrashCount();
+    static int syncTrashCount();
+
+private:
+    static QMap<QString, QString>
+    fstabBindInfo();
 };
 
 END_IO_NAMESPACE
