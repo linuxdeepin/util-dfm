@@ -4,14 +4,17 @@
 
 #include <dfm-io/dfmio_global.h>
 #include <dfm-io/denumerator.h>
+#include <dfm-io/denumeratorfuture.h>
 
 #include <stdio.h>
 
 #include <QDebug>
 #include <QUrl>
+#include <QCoreApplication>
+#include <QThread>
+#include <QtConcurrent>
 
 USING_IO_NAMESPACE
-
 // show detail
 static bool lflag = false;
 
@@ -35,6 +38,28 @@ static void enum_uri(const QUrl &url)
         ++count;
     }
     qInfo() << "count: " << count;
+    enumerator.clear();
+}
+
+static void enum_uri_async_test(const QUrl &url)
+{
+    static QSharedPointer<DEnumerator> enumerator { new DEnumerator(url) };
+    if (!enumerator) {
+        err_msg("create enumerator failed.");
+        return;
+    }
+    auto future = enumerator->asyncIterator();
+    QObject::connect(future, &DEnumeratorFuture::asyncIteratorOver, [=]() {
+        int count { 0 };
+        while (enumerator->hasNext()) {
+            const QUrl &url = enumerator->next();
+            qInfo() << url;
+            ++count;
+        }
+        qInfo() << "count: " << count;
+        enumerator.clear();
+    });
+    future->startAsyncIterator();
 }
 
 void usage()
@@ -49,6 +74,8 @@ int main(int argc, char *argv[])
         usage();
         return 1;
     }
+
+    QCoreApplication a(argc, argv);
 
     char *uri = nullptr;
     if (argc == 3) {
@@ -74,5 +101,7 @@ int main(int argc, char *argv[])
 
     enum_uri(url);
 
-    return 0;
+    enum_uri_async_test(url);
+
+    return a.exec();
 }

@@ -25,8 +25,16 @@ BEGIN_IO_NAMESPACE
 class DEnumerator;
 class DFileInfo;
 
-class DEnumeratorPrivate : public QObject
+class DEnumeratorPrivate : public QObject, public QEnableSharedFromThis<DEnumeratorPrivate>
 {
+    Q_OBJECT
+public:
+    struct EnumUriData
+    {
+        QSharedPointer<DEnumeratorPrivate> pointer { nullptr };
+        GFileEnumerator *enumerator { nullptr };
+    };
+
 public:
     explicit DEnumeratorPrivate(DEnumerator *q);
     ~DEnumeratorPrivate();
@@ -42,6 +50,21 @@ public:
                                 QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirList,
                                 FTSENT *ent,
                                 FTS *fts, const QSet<QString> &hideList);
+    void enumUriAsyncOvered(GList *files, GError *error);
+    void startAsyncIterator();
+    bool hasNext();
+    QList<QSharedPointer<DFileInfo>> fileInfoList();
+
+    static void enumUriAsyncCallBack(GObject *sourceObject,
+                                     GAsyncResult *res,
+                                     gpointer userData);
+    static void
+    moreFilesCallback(GObject *sourceObject,
+                      GAsyncResult *res,
+                      gpointer userData);
+
+Q_SIGNALS:
+    void asyncIteratorOver();
 
 public:
     DEnumerator *q { nullptr };
@@ -54,6 +77,7 @@ public:
     QSharedPointer<DFileInfo> dfileInfoNext { nullptr };
     QMap<QUrl, QSet<QString>> hideListMap;
     QList<QSharedPointer<DFileInfo>> infoList;
+    QList<GFileInfo *> asyncInfos;
 
     QStringList nameFilters;
     DEnumerator::DirFilters dirFilters { DEnumerator::DirFilter::kNoFilter };
@@ -66,9 +90,12 @@ public:
     QUrl nextUrl;
     ulong enumTimeout { 0 };
     bool ftsCanceled { false };
-    bool inited { false };
+    std::atomic_bool inited { false };
     bool enumSubDir { false };
     bool enumLinks { false };
+    std::atomic_bool async { false };
+    std::atomic_bool asyncStoped { false };
+    std::atomic_bool asyncOvered { false };
 };
 
 END_IO_NAMESPACE
