@@ -50,7 +50,7 @@ public:
                                 QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirList,
                                 FTSENT *ent,
                                 FTS *fts, const QSet<QString> &hideList);
-    void enumUriAsyncOvered(GList *files, GError *error);
+    void enumUriAsyncOvered(GList *files);
     void startAsyncIterator();
     bool hasNext();
     QList<QSharedPointer<DFileInfo>> fileInfoList();
