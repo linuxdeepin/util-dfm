@@ -49,10 +49,11 @@ void DOperatorPrivate::renameCallback(GObject *sourceObject, GAsyncResult *res, 
     OperateFileOp *data = static_cast<OperateFileOp *>(userData);
     GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
+    auto dataUser = data->userData;
     GFile *gfileRet = g_file_set_display_name_finish(gfile, res, &gerror);
     g_object_unref(gfileRet);
     if (data->callback)
-        data->callback(!gerror, userData);
+        data->callback(!gerror, dataUser);
 
     data->callback = nullptr;
     data->userData = nullptr;
@@ -64,9 +65,10 @@ void DOperatorPrivate::copyCallback(GObject *sourceObject, GAsyncResult *res, gp
     OperateFileOp *data = static_cast<OperateFileOp *>(userData);
     GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
+    auto dataUser = data->userData;
     gboolean succ = g_file_copy_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(succ, userData);
+        data->callback(succ, dataUser);
 
     data->callback = nullptr;
     data->userData = nullptr;
@@ -77,10 +79,11 @@ void DOperatorPrivate::trashCallback(GObject *sourceObject, GAsyncResult *res, g
 {
     OperateFileOp *data = static_cast<OperateFileOp *>(userData);
     GFile *gfile = G_FILE(sourceObject);
+    auto dataUser = data->userData;
     g_autoptr(GError) gerror = nullptr;
     bool succ = g_file_trash_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(succ, userData);
+        data->callback(succ, dataUser);
 
     data->callback = nullptr;
     data->userData = nullptr;
@@ -91,10 +94,11 @@ void DOperatorPrivate::deleteCallback(GObject *sourceObject, GAsyncResult *res, 
 {
     OperateFileOp *data = static_cast<OperateFileOp *>(userData);
     GFile *gfile = G_FILE(sourceObject);
+    auto dataUser = data->userData;
     g_autoptr(GError) gerror = nullptr;
     bool succ = g_file_delete_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(succ, userData);
+        data->callback(succ, dataUser);
 
     data->callback = nullptr;
     data->userData = nullptr;
@@ -104,11 +108,12 @@ void DOperatorPrivate::deleteCallback(GObject *sourceObject, GAsyncResult *res, 
 void DOperatorPrivate::touchCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
     OperateFileOp *data = static_cast<OperateFileOp *>(userData);
+    auto dataUser = data->userData;
     GFile *gfile = G_FILE(sourceObject);
     g_autoptr(GError) gerror = nullptr;
     g_autoptr(GFileOutputStream) stream = g_file_create_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(!stream, userData);
+        data->callback(!stream, dataUser);
 
     data->callback = nullptr;
     data->userData = nullptr;
@@ -119,10 +124,11 @@ void DOperatorPrivate::makeDirCallback(GObject *sourceObject, GAsyncResult *res,
 {
     OperateFileOp *data = static_cast<OperateFileOp *>(userData);
     GFile *gfile = G_FILE(sourceObject);
+    auto dataUser = data->userData;
     g_autoptr(GError) gerror = nullptr;
     bool succ = g_file_make_directory_finish(gfile, res, &gerror);
     if (data->callback)
-        data->callback(succ, userData);
+        data->callback(succ, dataUser);
 
     data->callback = nullptr;
     data->userData = nullptr;

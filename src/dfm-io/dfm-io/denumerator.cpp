@@ -292,12 +292,8 @@ void DEnumeratorPrivate::insertSortFileInfoList(QList<QSharedPointer<DEnumerator
         fileList.push_back(DLocalHelper::createSortFileInfo(ent, info, hideList));
 }
 
-void DEnumeratorPrivate::enumUriAsyncOvered(GList *files, GError *error)
+void DEnumeratorPrivate::enumUriAsyncOvered(GList *files)
 {
-    if (error) {
-        setErrorFromGError(error);
-        g_error_free(error);
-    }
     asyncOvered = !files;
     if (!files) {
         asyncIteratorOver();
@@ -384,14 +380,14 @@ void DEnumeratorPrivate::enumUriAsyncCallBack(GObject *sourceObject, GAsyncResul
     GFileEnumerator *enumerator;
     GError *error { nullptr };
     enumerator = g_file_enumerate_children_finish(G_FILE(sourceObject), res, &error);
-    if (enumerator == nullptr) {
+
+    if (error) {
+        qInfo() << "enumerator url : " << data->pointer->uri << ". error msg : " << error->message;
         data->pointer->setErrorFromGError(error);
-        if (error) {
-            qInfo() << "enumerator url : " << data->pointer->uri << ". error msg : " << error->message;
-            g_error_free(error);
-        }
-        data->pointer->enumUriAsyncOvered(nullptr, error);
-        return;
+    }
+
+    if (enumerator == nullptr || error) {
+        data->pointer->enumUriAsyncOvered(nullptr);
     } else {
         data->enumerator = enumerator;
         data->pointer->checkAndResetCancel();
@@ -402,6 +398,9 @@ void DEnumeratorPrivate::enumUriAsyncCallBack(GObject *sourceObject, GAsyncResul
                                            moreFilesCallback,
                                            data);
     }
+
+    if (error)
+        g_error_free(error);
 
     return;
 }
@@ -421,8 +420,11 @@ void DEnumeratorPrivate::moreFilesCallback(GObject *sourceObject, GAsyncResult *
     GFileEnumerator *enumerator = data->enumerator;
     files = g_file_enumerator_next_files_finish(enumerator,
                                                 res, &error);
-    data->pointer->enumUriAsyncOvered(files, error);
-    if (files) {
+    if (error)
+        data->pointer->setErrorFromGError(error);
+
+    data->pointer->enumUriAsyncOvered(files);
+    if (files && !error) {
         data->pointer->checkAndResetCancel();
         g_file_enumerator_next_files_async(enumerator,
                                            100,
@@ -438,6 +440,10 @@ void DEnumeratorPrivate::moreFilesCallback(GObject *sourceObject, GAsyncResult *
         g_object_unref(data->enumerator);
         data->enumerator = nullptr;
     }
+
+    if (error)
+        g_error_free(error);
+
 }
 
 /************************************************
