@@ -78,26 +78,8 @@ void DWatcherPrivate::watchCallback(GFileMonitor *monitor, GFile *child, GFile *
         return;
     }
 
-    QUrl childUrl;
-    QUrl otherUrl;
-
-    g_autofree gchar *childStr = g_file_get_path(child);
-    if (childStr != nullptr && *childStr != '/') {
-        childUrl = QUrl::fromLocalFile(childStr);
-    } else {
-        g_autofree gchar *uri = g_file_get_uri(child);
-        childUrl = QUrl::fromUserInput(uri);
-    }
-
-    if (other) {
-        g_autofree gchar *otherStr = g_file_get_path(other);
-        if (otherStr != nullptr && *otherStr != '/') {
-            otherUrl = QUrl::fromLocalFile(otherStr);
-        } else {
-            g_autofree gchar *uri = g_file_get_uri(other);
-            otherUrl = QUrl::fromUserInput(uri);
-        }
-    }
+    QUrl childUrl = getUrl(child);
+    QUrl otherUrl = getUrl(other);
 
     if (childUrl.path().startsWith("//"))
         childUrl.setPath(childUrl.path().mid(1));
@@ -138,6 +120,21 @@ void DWatcherPrivate::watchCallback(GFileMonitor *monitor, GFile *child, GFile *
     default:
         g_assert_not_reached();
         break;
+    }
+}
+
+QUrl DWatcherPrivate::getUrl(GFile *file)
+{
+    if (!file)
+        return QUrl();
+
+    g_autofree gchar *path = g_file_get_path(file);
+    QString strPath(path);
+    if (!strPath.isEmpty() && strPath != '/') {
+        return QUrl::fromLocalFile(strPath);
+    } else {
+        g_autofree gchar *uri = g_file_get_uri(file);
+        return QUrl::fromUserInput(uri);
     }
 }
 
