@@ -30,6 +30,7 @@ public:
 
     static void watchCallback(GFileMonitor *monitor, GFile *child, GFile *other,
                               GFileMonitorEvent eventType, gpointer userData);
+    static QUrl getUrl(GFile *file);
 
 public:
     DWatcher *q { nullptr };
