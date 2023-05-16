@@ -273,13 +273,21 @@ void DNetworkMounter::mountByGvfs(const QString &address, GetMountPassInfo getPa
                                   GetUserChoice getUserChoice,
                                   DeviceOperateCallbackWithMessage mountResult, int secs)
 {
-    auto newAddr = address;
-    if (address.startsWith("ftp") && secs > 0)   // only ftp-gvfs supports timeout param now.
-        newAddr += QString("?socket_timeout=%1").arg(secs);
+    QUrl url(address);
+    QString pureAddr = url.toString();
+    pureAddr.remove("?" + url.query());
 
-    GFile_autoptr file = g_file_new_for_uri(newAddr.toStdString().c_str());
+    QString mountAddr = address;
+    if (address.startsWith("ftp") && secs > 0 && !address.contains("socket_timeout=")) {
+        mountAddr += (url.query().isEmpty() ? QString("?socket_timeout=%1").arg(secs)   // address = ftp://1.2.3.4
+                                            : QString(",socket_timeout=%1").arg(secs));   // address = ftp://1.2.3.4?charset=utf8
+    }
+
+    qInfo() << "protocol: the mountAddress is: " << mountAddr << "and pureAddress is: " << pureAddr;
+
+    GFile_autoptr file = g_file_new_for_uri(mountAddr.toStdString().c_str());
     if (!file) {
-        qWarning() << "protocol: cannot generate location for" << newAddr;
+        qWarning() << "protocol: cannot generate location for" << mountAddr;
         return;
     }
 
@@ -300,7 +308,7 @@ void DNetworkMounter::mountByGvfs(const QString &address, GetMountPassInfo getPa
     finalizeHelper->askPasswd = passwdHelper;
     finalizeHelper->askQuestion = questionHelper;
     finalizeHelper->resultCallback = mountResult;
-    finalizeHelper->customData = address;
+    finalizeHelper->customData = pureAddr;
 
     GCancellable_autoptr cancellable = nullptr; /*g_cancellable_new();
      if (msecs > 0) {
