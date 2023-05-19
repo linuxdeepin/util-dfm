@@ -280,7 +280,7 @@ void DNetworkMounter::mountByGvfs(const QString &address, GetMountPassInfo getPa
     QString mountAddr = address;
     if (address.startsWith("ftp") && secs > 0 && !address.contains("socket_timeout=")) {
         mountAddr += (url.query().isEmpty() ? QString("?socket_timeout=%1").arg(secs)   // address = ftp://1.2.3.4
-                                            : QString(",socket_timeout=%1").arg(secs));   // address = ftp://1.2.3.4?charset=utf8
+                                            : QString("&socket_timeout=%1").arg(secs));   // address = ftp://1.2.3.4?charset=utf8
     }
 
     qInfo() << "protocol: the mountAddress is: " << mountAddr << "and pureAddress is: " << pureAddr;
