@@ -645,8 +645,8 @@ bool DLocalHelper::fileIsHidden(const DFileInfo *dfileinfo, const QSet<QString> 
 {
     if (!dfileinfo)
         return false;
-
-    const QString &fileName = dfileinfo->attribute(DFileInfo::AttributeID::kStandardName, nullptr).toString();
+    // if file not exist DFileInfo::AttributeID::kStandardFileName 返回有错误 bug-200989
+    const QString &fileName = dfileinfo->uri().fileName();
     if (fileName.startsWith(".")) {
         return true;
     } else {
