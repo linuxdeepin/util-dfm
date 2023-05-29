@@ -456,8 +456,9 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
     int errNum = mntRet.value(kDaemonMountRetKeyErrno).toInt();
 
     bool ok = !mpt.isEmpty();
-    DeviceError err = info.anonymous ? DeviceError::kUserErrorNetworkAnonymousNotAllowed
-                                     : static_cast<DeviceError>(errNum);
+    DeviceError err = (info.anonymous && errNum == EACCES)
+            ? DeviceError::kUserErrorNetworkAnonymousNotAllowed
+            : static_cast<DeviceError>(errNum);
     if (ok) {
         err = DeviceError::kNoError;
 
