@@ -25,6 +25,7 @@ inline void DBlockDevicePrivate::handleErrorAndRelease(CallbackProxy *proxy, boo
     if (!result && gerr) {
         err.code = Utils::castFromGError(gerr);
         err.message = gerr->message;
+        qInfo() << "error occured while operating device" << err.message;
         g_error_free(gerr);
     }
 
