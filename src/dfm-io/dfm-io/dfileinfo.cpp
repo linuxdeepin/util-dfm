@@ -728,10 +728,16 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
     if (!d->initFinished) {
         bool succ = const_cast<DFileInfoPrivate *>(d.data())->queryInfoSync();
         if (!succ) {
-            if (!d->attributesNoBlockIO.contains(id))
+            if (!d->attributesNoBlockIO.contains(id)) {
+                if (id == DFileInfo::AttributeID::kStandardIsHidden) {
+                    const auto &fileName = d->uri.fileName();
+                    return fileName.startsWith('.');
+                }
+
                 return QVariant();
-            else
+            } else {
                 return const_cast<DFileInfoPrivate *>(d.data())->attributesFromUrl(id);
+            }
         }
     }
 
