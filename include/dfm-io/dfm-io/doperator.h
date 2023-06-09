@@ -34,13 +34,13 @@ public:
 
     bool renameFile(const QString &newName);
     bool renameFile(const QUrl &toUrl);
-    bool copyFile(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
-    bool moveFile(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    bool copyFile(const QUrl &destUri, DFile::CopyFlags flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
+    bool moveFile(const QUrl &destUri, DFile::CopyFlags flag, ProgressCallbackFunc func = nullptr, void *progressCallbackData = nullptr);
     // async
     void renameFileAsync(const QString &newName, int ioPriority = 0, FileOperateCallbackFunc func = nullptr, void *userData = nullptr);
-    void copyFileAsync(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc progressfunc = nullptr, void *progressCallbackData = nullptr,
+    void copyFileAsync(const QUrl &destUri, DFile::CopyFlags flag, ProgressCallbackFunc progressfunc = nullptr, void *progressCallbackData = nullptr,
                        int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
-    void moveFileAsync(const QUrl &destUri, DFile::CopyFlag flag, ProgressCallbackFunc progressFunc = nullptr, void *progressCallbackData = nullptr,
+    void moveFileAsync(const QUrl &destUri, DFile::CopyFlags flag, ProgressCallbackFunc progressFunc = nullptr, void *progressCallbackData = nullptr,
                        int ioPriority = 0, FileOperateCallbackFunc operatefunc = nullptr, void *userData = nullptr);
 
     QString trashFile();

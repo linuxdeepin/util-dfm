@@ -40,14 +40,15 @@ public:
     enum class CopyFlag : uint8_t {
         kNone = 0,   // No flags set.
         kOverwrite = 1,   // Overwrite any existing files.
-        kBackup = 2,   // Make a backup of any existing files.
-        kNoFollowSymlinks = 3,   // Don’t follow symlinks.
-        kAllMetadata = 4,   // Copy all file metadata instead of just default set used for copy.
-        kNoFallbackForMove = 5,   // Don’t use copy and delete fallback if native move not supported.
-        kTargetDefaultPerms = 6,   // Leaves target file with default perms, instead of setting the source file perms.
+        kBackup = (1 << 1),   // Make a backup of any existing files.
+        kNoFollowSymlinks = (1 << 2),   // Don’t follow symlinks.
+        kAllMetadata = (1 << 3),   // Copy all file metadata instead of just default set used for copy.
+        kNoFallbackForMove = (1 << 4),   // Don’t use copy and delete fallback if native move not supported.
+        kTargetDefaultPerms = (1 << 5),   // Leaves target file with default perms, instead of setting the source file perms.
 
-        kUserFlag = 0x10
+        kUserFlag = 0x40
     };
+    Q_DECLARE_FLAGS(CopyFlags, CopyFlag)
 
     enum class SeekType : uint8_t {
         kBegin = 0x00,
@@ -139,6 +140,7 @@ private:
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(DFile::OpenFlags);
 Q_DECLARE_OPERATORS_FOR_FLAGS(DFile::Permissions);
+Q_DECLARE_OPERATORS_FOR_FLAGS(DFile::CopyFlags);
 
 END_IO_NAMESPACE
 Q_DECLARE_METATYPE(dfmio::DFile::Permissions);

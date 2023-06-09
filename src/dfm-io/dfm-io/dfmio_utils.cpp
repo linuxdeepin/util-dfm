@@ -53,6 +53,18 @@ QString DFMUtils::devicePathFromUrl(const QUrl &url)
     return QString();
 }
 
+QString DFMUtils::deviceNameFromUrl(const QUrl &url)
+{
+    if (!url.isValid())
+        return QString();
+
+    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toStdString().c_str());
+    g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
+    if (mount)
+        return QString::fromLocal8Bit(g_unix_mount_get_device_path(mount));
+    return QString();
+}
+
 QString DFMUtils::fsTypeFromUrl(const QUrl &url)
 {
     if (!url.isValid())
@@ -65,6 +77,21 @@ QString DFMUtils::fsTypeFromUrl(const QUrl &url)
     g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(path, nullptr);
     if (mount)
         return QString::fromLocal8Bit(g_unix_mount_get_fs_type(mount));
+    return QString();
+}
+
+QString DFMUtils::mountPathFromUrl(const QUrl &url)
+{
+    if (!url.isValid())
+        return QString();
+
+    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autofree char *path = g_file_get_path(gfile);
+    if (!path)
+        return QString();
+    g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(path, nullptr);
+    if (mount)
+        return QString::fromLocal8Bit(g_unix_mount_get_mount_path(mount));
     return QString();
 }
 
@@ -242,6 +269,41 @@ int DFMUtils::syncTrashCount()
     }
 
     return children.length();
+}
+
+// 传入的url不能是链接文件，如果是链接文件就是链接文件所在磁盘的数据
+qint64 DFMUtils::deviceBytesFree(const QUrl &url)
+{
+    if (!url.isValid())
+        return 0;
+    auto path = url.path();
+    g_autoptr(GFile) file = g_file_new_for_path(QFile::encodeName(path).constData());
+    GError *error = nullptr;
+    g_autoptr(GFileInfo)  gioInfo = g_file_query_filesystem_info(file, "filesystem::*", nullptr, &error);
+
+    if (error || !gioInfo) {
+        if (error)
+            g_error_free(error);
+        error = nullptr;
+        return std::numeric_limits<qint64>::max();
+    }
+
+    quint64 bytesTotal = 0;
+
+    if (g_file_info_has_attribute(gioInfo, G_FILE_ATTRIBUTE_FILESYSTEM_SIZE)) {
+        bytesTotal = g_file_info_get_attribute_uint64(gioInfo, G_FILE_ATTRIBUTE_FILESYSTEM_SIZE);
+    } else {
+        qInfo() << "file do not support G_FILE_ATTRIBUTE_FILESYSTEM_SIZE, returns max of qint64";
+        return std::numeric_limits<qint64>::max();
+    }
+
+    if (g_file_info_has_attribute(gioInfo, G_FILE_ATTRIBUTE_FILESYSTEM_USED)) {
+        quint64 used = g_file_info_get_attribute_uint64(gioInfo, G_FILE_ATTRIBUTE_FILESYSTEM_USED);
+        return static_cast<qint64>(bytesTotal - used);
+    } else {
+        qInfo() << "file do not support G_FILE_ATTRIBUTE_FILESYSTEM_USED, returns max of qint64";
+        return std::numeric_limits<qint64>::max();
+    }
 }
 
 QMap<QString, QString> DFMUtils::fstabBindInfo()
