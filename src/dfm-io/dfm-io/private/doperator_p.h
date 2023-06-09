@@ -25,6 +25,7 @@ public:
 
     void setErrorFromGError(GError *gerror);
     GFile *makeGFile(const QUrl &url);
+    void checkAndResetCancel();
 
     static void renameCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
     static void copyCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);

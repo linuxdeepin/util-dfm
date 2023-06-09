@@ -34,7 +34,9 @@ class DFMUtils
 public:
     static bool fileUnmountable(const QString &path);
     static QString devicePathFromUrl(const QUrl &url);
+    static QString deviceNameFromUrl(const QUrl &url);
     static QString fsTypeFromUrl(const QUrl &url);
+    static QString mountPathFromUrl(const QUrl &url);
     static QUrl directParentUrl(const QUrl &url, const bool localFirst = true);
     static bool fileIsRemovable(const QUrl &url);
     static QSet<QString> hideListFromUrl(const QUrl &url);
@@ -54,6 +56,7 @@ public:
     // 通过迭代器去获取回收站数量，并做相同挂载点过滤
     static DEnumeratorFuture *asyncTrashCount();
     static int syncTrashCount();
+    static qint64 deviceBytesFree(const QUrl &url);
 
 private:
     static QMap<QString, QString>

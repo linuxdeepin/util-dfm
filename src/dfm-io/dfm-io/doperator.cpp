@@ -44,6 +44,17 @@ GFile *DOperatorPrivate::makeGFile(const QUrl &url)
     return g_file_new_for_uri(url.toString().toLocal8Bit().data());
 }
 
+void DOperatorPrivate::checkAndResetCancel()
+{
+    if (gcancellable) {
+        if (!g_cancellable_is_cancelled(gcancellable))
+            g_cancellable_cancel(gcancellable);
+        g_cancellable_reset(gcancellable);
+        return;
+    }
+    gcancellable = g_cancellable_new();
+}
+
 void DOperatorPrivate::renameCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
     OperateFileOp *data = static_cast<OperateFileOp *>(userData);
@@ -147,6 +158,13 @@ DOperator::DOperator(const QUrl &uri)
 
 DOperator::~DOperator()
 {
+    if (d->gcancellable) {
+        if (!g_cancellable_is_cancelled(d->gcancellable))
+            g_cancellable_cancel(d->gcancellable);
+        g_object_unref(d->gcancellable);
+        d->gcancellable = nullptr;
+    }
+
 }
 
 QUrl DOperator::uri() const
@@ -204,7 +222,7 @@ bool DOperator::renameFile(const QUrl &toUrl)
     return ret;
 }
 
-bool DOperator::copyFile(const QUrl &destUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
+bool DOperator::copyFile(const QUrl &destUri, dfmio::DFile::CopyFlags flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
 {
     GError *gerror = nullptr;
 
@@ -223,7 +241,8 @@ bool DOperator::copyFile(const QUrl &destUri, DFile::CopyFlag flag, DOperator::P
     }
     g_object_unref(gfile_to);
 
-    bool ret = g_file_copy(gfile_from, gfileTarget, GFileCopyFlags(flag), nullptr, func, progressCallbackData, &gerror);
+    d->checkAndResetCancel();
+    bool ret = g_file_copy(gfile_from, gfileTarget, GFileCopyFlags(static_cast<uint8_t>(flag)), d->gcancellable, func, progressCallbackData, &gerror);
 
     if (gerror) {
         d->setErrorFromGError(gerror);
@@ -236,7 +255,7 @@ bool DOperator::copyFile(const QUrl &destUri, DFile::CopyFlag flag, DOperator::P
     return ret;
 }
 
-bool DOperator::moveFile(const QUrl &destUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
+bool DOperator::moveFile(const QUrl &destUri, dfmio::DFile::CopyFlags flag, DOperator::ProgressCallbackFunc func, void *progressCallbackData)
 {
     g_autoptr(GError) gerror = nullptr;
 
@@ -245,7 +264,7 @@ bool DOperator::moveFile(const QUrl &destUri, DFile::CopyFlag flag, DOperator::P
 
     g_autoptr(GFile) gfile_to = d->makeGFile(destUri);
 
-    bool ret = g_file_move(gfile_from, gfile_to, GFileCopyFlags(flag), nullptr, func, progressCallbackData, &gerror);
+    bool ret = g_file_move(gfile_from, gfile_to, GFileCopyFlags(static_cast<uint8_t>(flag)), nullptr, func, progressCallbackData, &gerror);
 
     if (gerror)
         d->setErrorFromGError(gerror);
@@ -270,7 +289,7 @@ void DOperator::renameFileAsync(const QString &newName, int ioPriority, DOperato
                                   nullptr, DOperatorPrivate::renameCallback, data);
 }
 
-void DOperator::copyFileAsync(const QUrl &destUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc progressfunc, void *progressCallbackData, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::copyFileAsync(const QUrl &destUri, DFile::CopyFlags flag, DOperator::ProgressCallbackFunc progressfunc, void *progressCallbackData, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     const QUrl &urlFrom = uri();
 
@@ -289,11 +308,11 @@ void DOperator::copyFileAsync(const QUrl &destUri, DFile::CopyFlag flag, DOperat
     data->callback = operatefunc;
     data->userData = userData;
 
-    g_file_copy_async(gfile_from, gfileTarget, GFileCopyFlags(flag), ioPriority,
+    g_file_copy_async(gfile_from, gfileTarget, GFileCopyFlags(static_cast<uint8_t>(flag)), ioPriority,
                       nullptr, progressfunc, progressCallbackData, DOperatorPrivate::copyCallback, data);
 }
 
-void DOperator::moveFileAsync(const QUrl &destUri, DFile::CopyFlag flag, DOperator::ProgressCallbackFunc progressFunc, void *progressCallbackData, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
+void DOperator::moveFileAsync(const QUrl &destUri, dfmio::DFile::CopyFlags flag, DOperator::ProgressCallbackFunc progressFunc, void *progressCallbackData, int ioPriority, DOperator::FileOperateCallbackFunc operatefunc, void *userData)
 {
     // TODO:
     // since 2.72, but current gio version is 2.58
@@ -513,7 +532,9 @@ bool DOperator::setFileInfo(const DFileInfo &fileInfo)
 
 bool DOperator::cancel()
 {
-    // TODO: imple me!
+    if (d->gcancellable && !g_cancellable_is_cancelled(d->gcancellable))
+        g_cancellable_cancel(d->gcancellable);
+
     return true;
 }
 
