@@ -68,11 +68,6 @@ void DWatcherPrivate::watchCallback(GFileMonitor *monitor, GFile *child, GFile *
     QUrl childUrl = getUrl(child);
     QUrl otherUrl = getUrl(other);
 
-    if (childUrl.path().startsWith("//"))
-        childUrl.setPath(childUrl.path().mid(1));
-    if (otherUrl.path().startsWith("//"))
-        otherUrl.setPath(otherUrl.path().mid(1));
-
     switch (eventType) {
     case G_FILE_MONITOR_EVENT_CHANGED:
         watcher->fileChanged(childUrl);
@@ -117,7 +112,11 @@ QUrl DWatcherPrivate::getUrl(GFile *file)
 
     g_autofree gchar *path = g_file_get_path(file);
     QString strPath(path);
-    if (!strPath.isEmpty() && strPath != '/') {
+    // bug-204961 监视根目录时，监视的是"//"路径。所以监视上来的文件创建就是"//path"。
+    // 使用QUrl::fromLocalFile转换"//path"，转换出来的url就是"file:///0.0.0/path"。
+    // 修改在路径前对"//"进行处理。处理完了在做后面的判断，如果路径错误重新使用uri.
+    strPath.replace("//", "/");
+    if (!strPath.isEmpty()) {
         return QUrl::fromLocalFile(strPath);
     } else {
         g_autofree gchar *uri = g_file_get_uri(file);
