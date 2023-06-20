@@ -104,10 +104,15 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
                     if (!info)
                         return;
                     info->insert(static_cast<char *>(k), static_cast<char *>(v));
-                    qDebug() << "######" << *info;
+                    qInfo() << "found saved login info:" << *info;
                 },
                 &attr);
-        passwds.append(attr);
+        if (attr.contains(kSchemaDomain) && attr.contains(kSchemaProtocol)
+            && attr.contains(kSchemaServer) && attr.contains(kSchemaUser))
+            passwds.append(attr);
+        else
+            qInfo() << "got invalid saved keyring, ignore." << attr;
+
         items = items->next;
     }
 
@@ -477,9 +482,9 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &ad
                            QDBusConnection::systemBus());
 
     for (const auto &login : infos) {
-        QVariantMap param { { kLoginUser, login.value(kSchemaUser) },
-                            { kLoginDomain, login.value(kSchemaDomain) },
-                            { kLoginPasswd, login.value(kLoginPasswd) },
+        QVariantMap param { { kLoginUser, login.value(kSchemaUser, "") },
+                            { kLoginDomain, login.value(kSchemaDomain, "") },
+                            { kLoginPasswd, login.value(kLoginPasswd, "") },
                             { kLoginTimeout, secs },
                             { kMountFsType, "cifs" } };
 
