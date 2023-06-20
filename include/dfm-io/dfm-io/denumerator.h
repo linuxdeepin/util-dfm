@@ -63,6 +63,7 @@ public:
     struct SortFileInfo
     {
         QUrl url;
+        qint64 filesize { 0 };
         bool isFile { false };
         bool isDir { false };
         bool isSymLink { false };

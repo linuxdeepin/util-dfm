@@ -847,6 +847,7 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
     auto name = QString(ent->fts_name);
     auto path = QString(ent->fts_path);
     if (info) {
+        sortPointer->filesize = info->attribute(DFileInfo::AttributeID::kStandardSize).toLongLong();
         sortPointer->isDir = info->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool();
         sortPointer->isFile = !sortPointer->isDir;
         sortPointer->isSymLink = info->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool();
@@ -861,6 +862,7 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
         return sortPointer;
     }
 
+    sortPointer->filesize = ent->fts_statp->st_size;
     sortPointer->isDir = S_ISDIR(ent->fts_statp->st_mode);
     sortPointer->isFile = !sortPointer->isDir;
     sortPointer->isSymLink = S_ISLNK(ent->fts_statp->st_mode);
