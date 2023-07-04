@@ -264,137 +264,169 @@ QVariant DLocalHelper::attributeFromGFileInfo(GFileInfo *gfileinfo, DFileInfo::A
         return QVariant();
     }
 
-    // check has attribute
-    const std::string &key = DLocalHelper::attributeStringById(id);
-    bool hasAttr = g_file_info_has_attribute(gfileinfo, key.c_str());
-    if (!hasAttr) {
-        // if has not attribute, return QVariant(), and caller use default value
-        errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
-        return QVariant();
-    }
-
     switch (id) {
     // uint32_t
     case DFileInfo::AttributeID::kStandardType:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_TYPE, errorcode);
     case DFileInfo::AttributeID::kMountableUnixDevice:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_UNIX_DEVICE, errorcode);
     case DFileInfo::AttributeID::kMountableStartStopType:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_START_STOP_TYPE, errorcode);
     case DFileInfo::AttributeID::kTimeModifiedUsec:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_TIME_MODIFIED_USEC, errorcode);
     case DFileInfo::AttributeID::kTimeAccessUsec:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_TIME_ACCESS_USEC, errorcode);
     case DFileInfo::AttributeID::kTimeChangedUsec:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_TIME_CHANGED_USEC, errorcode);
     case DFileInfo::AttributeID::kUnixDevice:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_UNIX_DEVICE, errorcode);
     case DFileInfo::AttributeID::kUnixMode:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_UNIX_MODE, errorcode);
     case DFileInfo::AttributeID::kUnixNlink:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_UNIX_NLINK, errorcode);
     case DFileInfo::AttributeID::kUnixUID:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_UNIX_UID, errorcode);
     case DFileInfo::AttributeID::kUnixGID:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_UNIX_GID, errorcode);
     case DFileInfo::AttributeID::kUnixRdev:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_UNIX_RDEV, errorcode);
     case DFileInfo::AttributeID::kUnixBlockSize:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_UNIX_BLOCK_SIZE, errorcode);
     case DFileInfo::AttributeID::kFileSystemUsePreview:
-    case DFileInfo::AttributeID::kTrashItemCount: {
-        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
-        return QVariant(ret);
-    }
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_FILESYSTEM_USE_PREVIEW, errorcode);
+    case DFileInfo::AttributeID::kTrashItemCount:
+        return getGFileInfoUint32(gfileinfo, G_FILE_ATTRIBUTE_TRASH_ITEM_COUNT, errorcode);
     // int32_t
-    case DFileInfo::AttributeID::kStandardSortOrder: {
-        int32_t ret = g_file_info_get_attribute_int32(gfileinfo, key.c_str());
-        return QVariant(ret);
-    }
+    case DFileInfo::AttributeID::kStandardSortOrder:
+        return getGFileInfoInt32(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_SORT_ORDER, errorcode);
     // uint64_t
     case DFileInfo::AttributeID::kStandardSize:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_SIZE, errorcode);
     case DFileInfo::AttributeID::kStandardAllocatedSize:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_ALLOCATED_SIZE, errorcode);
     case DFileInfo::AttributeID::kTimeModified:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_TIME_MODIFIED, errorcode);
     case DFileInfo::AttributeID::kTimeAccess:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_TIME_ACCESS, errorcode);
     case DFileInfo::AttributeID::kTimeChanged:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_TIME_CHANGED, errorcode);
     case DFileInfo::AttributeID::kUnixInode:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_UNIX_INODE, errorcode);
     case DFileInfo::AttributeID::kUnixBlocks:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_UNIX_BLOCKS, errorcode);
     case DFileInfo::AttributeID::kFileSystemSize:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_FILESYSTEM_SIZE, errorcode);
     case DFileInfo::AttributeID::kFileSystemFree:
-    case DFileInfo::AttributeID::kFileSystemUsed: {
-        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
-        return qulonglong(ret);
-    }
-    case DFileInfo::AttributeID::kRecentModified: {
-        int64_t ret = g_file_info_get_attribute_int64(gfileinfo, key.c_str());
-        return qlonglong(ret);
-    }
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_FILESYSTEM_FREE, errorcode);
+    case DFileInfo::AttributeID::kFileSystemUsed:
+        return getGFileInfoUint64(gfileinfo, G_FILE_ATTRIBUTE_FILESYSTEM_USED, errorcode);
+    // Int64_t
+    case DFileInfo::AttributeID::kRecentModified:
+        return getGFileInfoInt64(gfileinfo, G_FILE_ATTRIBUTE_RECENT_MODIFIED, errorcode);
     // bool
     case DFileInfo::AttributeID::kStandardIsHidden:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_IS_HIDDEN, errorcode);
     case DFileInfo::AttributeID::kStandardIsBackup:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_IS_BACKUP, errorcode);
     case DFileInfo::AttributeID::kStandardIsSymlink:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_IS_SYMLINK, errorcode);
     case DFileInfo::AttributeID::kStandardIsVirtual:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_IS_VIRTUAL, errorcode);
     case DFileInfo::AttributeID::kStandardIsVolatile:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_IS_VOLATILE, errorcode);
     case DFileInfo::AttributeID::kAccessCanRead:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_ACCESS_CAN_READ, errorcode);
     case DFileInfo::AttributeID::kAccessCanWrite:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_ACCESS_CAN_WRITE, errorcode);
     case DFileInfo::AttributeID::kAccessCanExecute:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_ACCESS_CAN_EXECUTE, errorcode);
     case DFileInfo::AttributeID::kAccessCanDelete:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_ACCESS_CAN_DELETE, errorcode);
     case DFileInfo::AttributeID::kAccessCanTrash:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_ACCESS_CAN_TRASH, errorcode);
     case DFileInfo::AttributeID::kAccessCanRename:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_ACCESS_CAN_RENAME, errorcode);
     case DFileInfo::AttributeID::kMountableCanMount:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_MOUNT, errorcode);
     case DFileInfo::AttributeID::kMountableCanUnmount:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_UNMOUNT, errorcode);
     case DFileInfo::AttributeID::kMountableCanEject:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_EJECT, errorcode);
     case DFileInfo::AttributeID::kMountableCanPoll:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_POLL, errorcode);
     case DFileInfo::AttributeID::kMountableIsMediaCheckAutomatic:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_IS_MEDIA_CHECK_AUTOMATIC, errorcode);
     case DFileInfo::AttributeID::kMountableCanStart:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_START, errorcode);
     case DFileInfo::AttributeID::kMountableCanStartDegraded:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_START_DEGRADED, errorcode);
     case DFileInfo::AttributeID::kMountableCanStop:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_STOP, errorcode);
     case DFileInfo::AttributeID::kUnixIsMountPoint:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_UNIX_IS_MOUNTPOINT, errorcode);
     case DFileInfo::AttributeID::kDosIsArchive:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_DOS_IS_ARCHIVE, errorcode);
     case DFileInfo::AttributeID::kDosIsSystem:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_DOS_IS_SYSTEM, errorcode);
     case DFileInfo::AttributeID::kFileSystemReadOnly:
-    case DFileInfo::AttributeID::kFileSystemRemote: {
-        bool ret = g_file_info_get_attribute_boolean(gfileinfo, key.c_str());
-        return QVariant(ret);
-    }
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY, errorcode);
+    case DFileInfo::AttributeID::kFileSystemRemote:
+        return getGFileInfoBool(gfileinfo, G_FILE_ATTRIBUTE_FILESYSTEM_REMOTE, errorcode);
     // byte string
     case DFileInfo::AttributeID::kStandardName:
+        return getGFileInfoByteString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_NAME, errorcode);
     case DFileInfo::AttributeID::kStandardSymlinkTarget:
+        return getGFileInfoByteString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_SYMLINK_TARGET, errorcode);
     case DFileInfo::AttributeID::kTrashOrigPath:
-    case DFileInfo::AttributeID::kThumbnailPath: {
-        const char *ret = g_file_info_get_attribute_byte_string(gfileinfo, key.c_str());
-        return QVariant(ret);
-    }
+        return getGFileInfoByteString(gfileinfo, G_FILE_ATTRIBUTE_TRASH_ORIG_PATH, errorcode);
+    case DFileInfo::AttributeID::kThumbnailPath:
+        return getGFileInfoByteString(gfileinfo, G_FILE_ATTRIBUTE_THUMBNAIL_PATH, errorcode);
     // string
     case DFileInfo::AttributeID::kStandardDisplayName:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, errorcode);
     case DFileInfo::AttributeID::kStandardEditName:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_EDIT_NAME, errorcode);
     case DFileInfo::AttributeID::kStandardCopyName:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_COPY_NAME, errorcode);
     case DFileInfo::AttributeID::kStandardContentType:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE, errorcode);
     case DFileInfo::AttributeID::kStandardFastContentType:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_FAST_CONTENT_TYPE, errorcode);
     case DFileInfo::AttributeID::kStandardTargetUri:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_TARGET_URI, errorcode);
     case DFileInfo::AttributeID::kStandardDescription:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_DESCRIPTION, errorcode);
     case DFileInfo::AttributeID::kEtagValue:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_ETAG_VALUE, errorcode);
     case DFileInfo::AttributeID::kIdFile:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_ID_FILE, errorcode);
     case DFileInfo::AttributeID::kIdFilesystem:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_ID_FILESYSTEM, errorcode);
     case DFileInfo::AttributeID::kMountableUnixDeviceFile:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_UNIX_DEVICE_FILE, errorcode);
     case DFileInfo::AttributeID::kMountableHalUdi:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_MOUNTABLE_HAL_UDI, errorcode);
     case DFileInfo::AttributeID::kOwnerUser:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_OWNER_USER, errorcode);
     case DFileInfo::AttributeID::kOwnerUserReal:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_OWNER_USER_REAL, errorcode);
     case DFileInfo::AttributeID::kOwnerGroup:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_OWNER_GROUP, errorcode);
     case DFileInfo::AttributeID::kFileSystemType:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_FILESYSTEM_TYPE, errorcode);
     case DFileInfo::AttributeID::kGvfsBackend:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_GVFS_BACKEND, errorcode);
     case DFileInfo::AttributeID::kSelinuxContext:
-    case DFileInfo::AttributeID::kTrashDeletionDate: {
-        const char *ret = g_file_info_get_attribute_string(gfileinfo, key.c_str());
-        return QVariant(ret);
-    }
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_SELINUX_CONTEXT, errorcode);
+    case DFileInfo::AttributeID::kTrashDeletionDate:
+        return getGFileInfoString(gfileinfo, G_FILE_ATTRIBUTE_TRASH_DELETION_DATE, errorcode);
     // object
     case DFileInfo::AttributeID::kStandardIcon:
+        return getGFileInfoIcon(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_ICON, errorcode);
     case DFileInfo::AttributeID::kPreviewIcon:
-    case DFileInfo::AttributeID::kStandardSymbolicIcon: {
-        GObject *icon = g_file_info_get_attribute_object(gfileinfo, key.c_str());
-        if (!icon)
-            return QVariant();
-
-        QList<QString> ret;
-        auto names = g_themed_icon_get_names(G_THEMED_ICON(icon));
-        for (int j = 0; names && names[j] != nullptr; ++j) {
-            if (strcmp(names[j], "folder") == 0)
-                ret.prepend(QString::fromLocal8Bit(names[j]));
-            else
-                ret.append(QString::fromLocal8Bit(names[j]));
-        }
-
-        return QVariant(ret);
-    }
-
+        return getGFileInfoIcon(gfileinfo, G_FILE_ATTRIBUTE_PREVIEW_ICON, errorcode);
+    case DFileInfo::AttributeID::kStandardSymbolicIcon:
+        return getGFileInfoIcon(gfileinfo, G_FILE_ATTRIBUTE_STANDARD_SYMBOLIC_ICON, errorcode);
     default:
         return QVariant();
     }
@@ -454,144 +486,166 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
         return false;
     }
 
-    // check has attribute
-    const std::string &key = DLocalHelper::attributeStringById(id);
-    if (key.empty()) {
-        return false;
-    }
-
     switch (id) {
     // uint32_t
     case DFileInfo::AttributeID::kStandardType:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_STANDARD_TYPE, value, gerror);
     case DFileInfo::AttributeID::kMountableUnixDevice:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_UNIX_DEVICE, value, gerror);
     case DFileInfo::AttributeID::kMountableStartStopType:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_START_STOP_TYPE, value, gerror);
     case DFileInfo::AttributeID::kTimeModifiedUsec:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_TIME_MODIFIED_USEC, value, gerror);
     case DFileInfo::AttributeID::kTimeAccessUsec:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_TIME_ACCESS_USEC, value, gerror);
     case DFileInfo::AttributeID::kTimeChangedUsec:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_TIME_CHANGED_USEC, value, gerror);
     case DFileInfo::AttributeID::kTimeCreatedUsec:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_TIME_CREATED_USEC, value, gerror);
     case DFileInfo::AttributeID::kUnixDevice:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_UNIX_DEVICE, value, gerror);
     case DFileInfo::AttributeID::kUnixMode:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_UNIX_MODE, value, gerror);
     case DFileInfo::AttributeID::kUnixNlink:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_UNIX_NLINK, value, gerror);
     case DFileInfo::AttributeID::kUnixUID:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_UNIX_UID, value, gerror);
     case DFileInfo::AttributeID::kUnixGID:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_UNIX_GID, value, gerror);
     case DFileInfo::AttributeID::kUnixRdev:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_UNIX_RDEV, value, gerror);
     case DFileInfo::AttributeID::kUnixBlockSize:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_UNIX_BLOCK_SIZE, value, gerror);
     case DFileInfo::AttributeID::kFileSystemUsePreview:
-    case DFileInfo::AttributeID::kTrashItemCount: {
-        g_file_set_attribute_uint32(gfile, key.c_str(), value.toUInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
-        if (gerror) {
-            g_autofree gchar *url = g_file_get_uri(gfile);
-            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
-
-            return false;
-        }
-        return true;
-    }
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_USE_PREVIEW, value, gerror);
+    case DFileInfo::AttributeID::kTrashItemCount:
+        return setGFileInfoUint32(gfile, G_FILE_ATTRIBUTE_TRASH_ITEM_COUNT, value, gerror);
     // int32_t
-    case DFileInfo::AttributeID::kStandardSortOrder: {
-        g_file_set_attribute_int32(gfile, key.c_str(), value.toInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
-        if (gerror) {
-            g_autofree gchar *url = g_file_get_uri(gfile);
-            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
-            return false;
-        }
-        return true;
-    }
+    case DFileInfo::AttributeID::kStandardSortOrder:
+        return setGFileInfoInt32(gfile, G_FILE_ATTRIBUTE_STANDARD_SORT_ORDER, value, gerror);
     // uint64_t
     case DFileInfo::AttributeID::kStandardSize:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_STANDARD_SIZE, value, gerror);
     case DFileInfo::AttributeID::kStandardAllocatedSize:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_STANDARD_ALLOCATED_SIZE, value, gerror);
     case DFileInfo::AttributeID::kTimeModified:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_TIME_MODIFIED, value, gerror);
     case DFileInfo::AttributeID::kTimeAccess:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_TIME_ACCESS, value, gerror);
     case DFileInfo::AttributeID::kTimeChanged:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_TIME_CHANGED, value, gerror);
     case DFileInfo::AttributeID::kTimeCreated:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_TIME_CREATED, value, gerror);
     case DFileInfo::AttributeID::kUnixInode:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_UNIX_INODE, value, gerror);
     case DFileInfo::AttributeID::kUnixBlocks:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_UNIX_BLOCKS, value, gerror);
     case DFileInfo::AttributeID::kFileSystemSize:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_SIZE, value, gerror);
     case DFileInfo::AttributeID::kFileSystemFree:
-    case DFileInfo::AttributeID::kFileSystemUsed: {
-        bool succ = g_file_set_attribute_uint64(gfile, key.c_str(), value.toULongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
-        return succ;
-    }
-    case DFileInfo::AttributeID::kRecentModified: {
-        bool succ = g_file_set_attribute_int64(gfile, key.c_str(), value.toLongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
-        return succ;
-    }
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_FREE, value, gerror);
+    case DFileInfo::AttributeID::kFileSystemUsed:
+        return setGFileInfoUint64(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_USED, value, gerror);
+    // int64_t
+    case DFileInfo::AttributeID::kRecentModified:
+        return setGFileInfoInt64(gfile, G_FILE_ATTRIBUTE_RECENT_MODIFIED, value, gerror);
     // bool
     case DFileInfo::AttributeID::kStandardIsHidden:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_STANDARD_IS_HIDDEN, value, gerror);
     case DFileInfo::AttributeID::kStandardIsBackup:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_STANDARD_IS_BACKUP, value, gerror);
     case DFileInfo::AttributeID::kStandardIsSymlink:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_STANDARD_IS_SYMLINK, value, gerror);
     case DFileInfo::AttributeID::kStandardIsVirtual:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_STANDARD_IS_VIRTUAL, value, gerror);
     case DFileInfo::AttributeID::kStandardIsVolatile:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_STANDARD_IS_VOLATILE, value, gerror);
     case DFileInfo::AttributeID::kAccessCanRead:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_ACCESS_CAN_READ, value, gerror);
     case DFileInfo::AttributeID::kAccessCanWrite:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_ACCESS_CAN_WRITE, value, gerror);
     case DFileInfo::AttributeID::kAccessCanExecute:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_ACCESS_CAN_EXECUTE, value, gerror);
     case DFileInfo::AttributeID::kAccessCanDelete:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_ACCESS_CAN_DELETE, value, gerror);
     case DFileInfo::AttributeID::kAccessCanTrash:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_ACCESS_CAN_TRASH, value, gerror);
     case DFileInfo::AttributeID::kAccessCanRename:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_ACCESS_CAN_RENAME, value, gerror);
     case DFileInfo::AttributeID::kMountableCanMount:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_MOUNT, value, gerror);
     case DFileInfo::AttributeID::kMountableCanUnmount:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_UNMOUNT, value, gerror);
     case DFileInfo::AttributeID::kMountableCanEject:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_EJECT, value, gerror);
     case DFileInfo::AttributeID::kMountableCanPoll:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_POLL, value, gerror);
     case DFileInfo::AttributeID::kMountableIsMediaCheckAutomatic:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_IS_MEDIA_CHECK_AUTOMATIC, value, gerror);
     case DFileInfo::AttributeID::kMountableCanStart:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_START, value, gerror);
     case DFileInfo::AttributeID::kMountableCanStartDegraded:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_START_DEGRADED, value, gerror);
     case DFileInfo::AttributeID::kMountableCanStop:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_CAN_STOP, value, gerror);
     case DFileInfo::AttributeID::kUnixIsMountPoint:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_UNIX_IS_MOUNTPOINT, value, gerror);
     case DFileInfo::AttributeID::kDosIsArchive:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_DOS_IS_ARCHIVE, value, gerror);
     case DFileInfo::AttributeID::kDosIsSystem:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_DOS_IS_SYSTEM, value, gerror);
     case DFileInfo::AttributeID::kFileSystemReadOnly:
-    case DFileInfo::AttributeID::kFileSystemRemote: {
-        gboolean b = value.toBool();
-        gpointer gpValue = &b;
-        g_file_set_attribute(gfile, key.c_str(), G_FILE_ATTRIBUTE_TYPE_BOOLEAN, gpValue, G_FILE_QUERY_INFO_NONE, nullptr, gerror);
-        if (gerror) {
-            g_autofree gchar *url = g_file_get_uri(gfile);
-            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
-            return false;
-        }
-        return true;
-    }
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY, value, gerror);
+    case DFileInfo::AttributeID::kFileSystemRemote:
+        return setGFileInfoBool(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_REMOTE, value, gerror);
     // byte string
     case DFileInfo::AttributeID::kStandardName:
+        return setGFileInfoByteString(gfile, G_FILE_ATTRIBUTE_STANDARD_NAME, value, gerror);
     case DFileInfo::AttributeID::kStandardSymlinkTarget:
-    case DFileInfo::AttributeID::kThumbnailPath: {
-        g_file_set_attribute_byte_string(gfile, key.c_str(), value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
-        if (gerror) {
-            g_autofree gchar *url = g_file_get_uri(gfile);
-            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
-            return false;
-        }
-        return true;
-    }
+        return setGFileInfoByteString(gfile, G_FILE_ATTRIBUTE_STANDARD_SYMLINK_TARGET, value, gerror);
+    case DFileInfo::AttributeID::kThumbnailPath:
+        return setGFileInfoByteString(gfile, G_FILE_ATTRIBUTE_THUMBNAIL_PATH, value, gerror);
     // string
     case DFileInfo::AttributeID::kStandardDisplayName:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, value, gerror);
     case DFileInfo::AttributeID::kStandardEditName:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_STANDARD_EDIT_NAME, value, gerror);
     case DFileInfo::AttributeID::kStandardCopyName:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_STANDARD_COPY_NAME, value, gerror);
     case DFileInfo::AttributeID::kStandardContentType:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE, value, gerror);
     case DFileInfo::AttributeID::kStandardFastContentType:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_STANDARD_FAST_CONTENT_TYPE, value, gerror);
     case DFileInfo::AttributeID::kStandardTargetUri:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_STANDARD_TARGET_URI, value, gerror);
     case DFileInfo::AttributeID::kStandardDescription:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_STANDARD_DESCRIPTION, value, gerror);
     case DFileInfo::AttributeID::kEtagValue:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_ETAG_VALUE, value, gerror);
     case DFileInfo::AttributeID::kIdFile:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_ID_FILE, value, gerror);
     case DFileInfo::AttributeID::kIdFilesystem:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_ID_FILESYSTEM, value, gerror);
     case DFileInfo::AttributeID::kMountableUnixDeviceFile:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_UNIX_DEVICE_FILE, value, gerror);
     case DFileInfo::AttributeID::kMountableHalUdi:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_MOUNTABLE_HAL_UDI, value, gerror);
     case DFileInfo::AttributeID::kOwnerUser:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_OWNER_USER, value, gerror);
     case DFileInfo::AttributeID::kOwnerUserReal:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_OWNER_USER_REAL, value, gerror);
     case DFileInfo::AttributeID::kOwnerGroup:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_OWNER_GROUP, value, gerror);
     case DFileInfo::AttributeID::kFileSystemType:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_TYPE, value, gerror);
     case DFileInfo::AttributeID::kGvfsBackend:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_GVFS_BACKEND, value, gerror);
     case DFileInfo::AttributeID::kSelinuxContext:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_SELINUX_CONTEXT, value, gerror);
     case DFileInfo::AttributeID::kTrashDeletionDate:
-    case DFileInfo::AttributeID::kTrashOrigPath: {
-        g_file_set_attribute_string(gfile, key.c_str(), value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
-        if (gerror) {
-            g_autofree gchar *url = g_file_get_uri(gfile);
-            //qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
-            return false;
-        }
-        return true;
-    }
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_TRASH_DELETION_DATE, value, gerror);
+    case DFileInfo::AttributeID::kTrashOrigPath:
+        return setGFileInfoString(gfile, G_FILE_ATTRIBUTE_TRASH_ORIG_PATH, value, gerror);
     // object
     case DFileInfo::AttributeID::kStandardIcon:
     case DFileInfo::AttributeID::kStandardSymbolicIcon:
@@ -872,4 +926,176 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
     sortPointer->isExecutable = ent->fts_statp->st_mode & S_IEXEC;
     sortPointer->url = QUrl::fromLocalFile(ent->fts_path);
     return sortPointer;
+}
+
+QVariant DLocalHelper::getGFileInfoIcon(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)
+{
+    assert(key != nullptr);
+    if (!g_file_info_has_attribute(gfileinfo, key)) {
+        errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
+        return QVariant();
+    }
+    GObject *icon = g_file_info_get_attribute_object(gfileinfo, key);
+    if (!icon)
+        return QVariant();
+
+    QList<QString> ret;
+    auto names = g_themed_icon_get_names(G_THEMED_ICON(icon));
+    for (int j = 0; names && names[j] != nullptr; ++j) {
+        if (strcmp(names[j], "folder") == 0)
+            ret.prepend(QString::fromLocal8Bit(names[j]));
+        else
+            ret.append(QString::fromLocal8Bit(names[j]));
+    }
+
+    return QVariant(ret);
+}
+
+QVariant DLocalHelper::getGFileInfoString(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)
+{
+    assert(key != nullptr);
+    if (g_file_info_has_attribute(gfileinfo, key))
+        return g_file_info_get_attribute_string(gfileinfo, key);
+    errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
+    return QVariant();
+}
+
+QVariant DLocalHelper::getGFileInfoByteString(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)
+{
+    assert(key != nullptr);
+    if (g_file_info_has_attribute(gfileinfo, key))
+        return g_file_info_get_attribute_byte_string(gfileinfo, key);
+    errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
+    return QVariant();
+}
+
+QVariant DLocalHelper::getGFileInfoBool(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)
+{
+    assert(key != nullptr);
+    if (g_file_info_has_attribute(gfileinfo, key))
+        return g_file_info_get_attribute_boolean(gfileinfo, key);
+    errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
+    return QVariant();
+}
+
+QVariant DLocalHelper::getGFileInfoUint32(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)
+{
+    assert(key != nullptr);
+    if (g_file_info_has_attribute(gfileinfo, key))
+        return g_file_info_get_attribute_uint32(gfileinfo, key);
+    errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
+    return QVariant();
+}
+
+QVariant DLocalHelper::getGFileInfoInt32(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)
+{
+    assert(key != nullptr);
+    if (g_file_info_has_attribute(gfileinfo, key))
+        return g_file_info_get_attribute_int32(gfileinfo, key);
+    errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
+    return QVariant();
+}
+
+QVariant DLocalHelper::getGFileInfoUint64(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)
+{
+    assert(key != nullptr);
+    if (g_file_info_has_attribute(gfileinfo, key))
+        return qulonglong(g_file_info_get_attribute_uint64(gfileinfo, key));
+    errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
+    return QVariant();
+}
+
+QVariant DLocalHelper::getGFileInfoInt64(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)
+{
+    assert(key != nullptr);
+    if (g_file_info_has_attribute(gfileinfo, key))
+        return qlonglong(g_file_info_get_attribute_int64(gfileinfo, key));
+    errorcode = DFM_IO_ERROR_INFO_NO_ATTRIBUTE;
+    return QVariant();
+}
+
+bool DLocalHelper::setGFileInfoString(GFile *gfile, const char *key, const QVariant &value, GError **gerror)
+{
+    assert(key != nullptr);
+    g_file_set_attribute_string(gfile, key, value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+    if (gerror) {
+        g_autofree gchar *url = g_file_get_uri(gfile);
+        qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+        return false;
+    }
+    return true;
+}
+
+bool DLocalHelper::setGFileInfoByteString(GFile *gfile, const char *key, const QVariant &value, GError **gerror)
+{
+    assert(key != nullptr);
+    g_file_set_attribute_byte_string(gfile, key, value.toString().toLocal8Bit().data(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+    if (gerror) {
+        g_autofree gchar *url = g_file_get_uri(gfile);
+        qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+        return false;
+    }
+    return true;
+}
+
+bool DLocalHelper::setGFileInfoBool(GFile *gfile, const char *key, const QVariant &value, GError **gerror)
+{
+    assert(key != nullptr);
+    gboolean b = value.toBool();
+    gpointer gpValue = &b;
+    g_file_set_attribute(gfile, key, G_FILE_ATTRIBUTE_TYPE_BOOLEAN, gpValue, G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+    if (gerror) {
+        g_autofree gchar *url = g_file_get_uri(gfile);
+        qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+        return false;
+    }
+    return true;
+}
+
+bool DLocalHelper::setGFileInfoUint32(GFile *gfile, const char *key, const QVariant &value, GError **gerror)
+{
+    assert(key != nullptr);
+    g_file_set_attribute_uint32(gfile, key, value.toUInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+    if (gerror) {
+        g_autofree gchar *url = g_file_get_uri(gfile);
+        qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+        return false;
+    }
+    return true;
+}
+
+bool DLocalHelper::setGFileInfoInt32(GFile *gfile, const char *key, const QVariant &value, GError **gerror)
+{
+    assert(key != nullptr);
+    g_file_set_attribute_int32(gfile, key, value.toInt(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+    if (gerror) {
+        g_autofree gchar *url = g_file_get_uri(gfile);
+        qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+        return false;
+    }
+    return true;
+}
+
+bool DLocalHelper::setGFileInfoUint64(GFile *gfile, const char *key, const QVariant &value, GError **gerror)
+{
+    assert(key != nullptr);
+    g_file_set_attribute_uint64(gfile, key, value.toULongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+    if (gerror) {
+        g_autofree gchar *url = g_file_get_uri(gfile);
+        qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+        return false;
+    }
+    return true;
+}
+
+bool DLocalHelper::setGFileInfoInt64(GFile *gfile, const char *key, const QVariant &value, GError **gerror)
+{
+    assert(key != nullptr);
+    g_file_set_attribute_int64(gfile, key, value.toLongLong(), G_FILE_QUERY_INFO_NONE, nullptr, gerror);
+    if (gerror) {
+        g_autofree gchar *url = g_file_get_uri(gfile);
+        qWarning() << "file set attribute failed, url: " << url << " msg: " << (*gerror)->message;
+        return false;
+    }
+    return true;
 }
