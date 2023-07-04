@@ -70,6 +70,22 @@ public:
     static QSharedPointer<DEnumerator::SortFileInfo> createSortFileInfo(const FTSENT *ent,
                                                                         const QSharedPointer<DFileInfo> &info,
                                                                         const QSet<QString> hidList);
+private:
+    static QVariant getGFileInfoIcon(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
+    static QVariant getGFileInfoString(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
+    static QVariant getGFileInfoByteString(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
+    static QVariant getGFileInfoBool(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
+    static QVariant getGFileInfoUint32(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
+    static QVariant getGFileInfoInt32(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
+    static QVariant getGFileInfoUint64(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
+    static QVariant getGFileInfoInt64(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
+    static bool setGFileInfoString(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
+    static bool setGFileInfoByteString(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
+    static bool setGFileInfoBool(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
+    static bool setGFileInfoUint32(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
+    static bool setGFileInfoInt32(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
+    static bool setGFileInfoUint64(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
+    static bool setGFileInfoInt64(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
 };
 
 END_IO_NAMESPACE
