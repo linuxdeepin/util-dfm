@@ -112,6 +112,7 @@ public:
     DEnumeratorFuture *asyncIterator();
     void startAsyncIterator();
     bool isAsyncOver() const;
+    bool initEnumerator(const bool oneByone = true);
 
 private:
     QSharedPointer<DEnumeratorPrivate> d;

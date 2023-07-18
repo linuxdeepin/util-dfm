@@ -45,7 +45,7 @@ public:
     void checkAndResetCancel();
     void setErrorFromGError(GError *gerror);
     bool checkFilter();
-    FTS *openDirByfts();
+    bool openDirByfts();
     void insertSortFileInfoList(QList<QSharedPointer<DEnumerator::SortFileInfo>> &fileList,
                                 QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirList,
                                 FTSENT *ent,
@@ -91,6 +91,7 @@ public:
     ulong enumTimeout { 0 };
     bool ftsCanceled { false };
     std::atomic_bool inited { false };
+    FTS *fts { nullptr };
     bool enumSubDir { false };
     bool enumLinks { false };
     std::atomic_bool async { false };
