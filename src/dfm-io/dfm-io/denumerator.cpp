@@ -231,9 +231,8 @@ bool DEnumeratorPrivate::checkFilter()
     return ret;
 }
 
-FTS *DEnumeratorPrivate::openDirByfts()
+bool DEnumeratorPrivate::openDirByfts()
 {
-    FTS *fts { nullptr };
     QString path = q->uri().path();
     if (path != "/" && path.endsWith("/"))
         path = path.left(path.length() - 1);
@@ -259,10 +258,10 @@ FTS *DEnumeratorPrivate::openDirByfts()
     if (nullptr == fts) {
         qWarning() << "fts_open open error : " << QString::fromLocal8Bit(strerror(errno));
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FTS_OPEN);
-        return nullptr;
+        return false;
     }
 
-    return fts;
+    return true;
 }
 
 void DEnumeratorPrivate::insertSortFileInfoList(QList<QSharedPointer<DEnumerator::SortFileInfo>> &fileList, QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirList, FTSENT *ent, FTS *fts, const QSet<QString> &hideList)
@@ -692,8 +691,10 @@ QList<QSharedPointer<DFileInfo>> DEnumerator::fileInfoList()
 
 QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
 {
-    FTS *fts = d->openDirByfts();
-    if (!fts)
+    if (!d->fts)
+        d->openDirByfts();
+
+    if (!d->fts)
         return {};
 
     QList<QSharedPointer<DEnumerator::SortFileInfo>> listFile;
@@ -702,7 +703,7 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
     const QUrl &urlHidden = QUrl::fromLocalFile(d->uri.path() + "/.hidden");
     hideList = DLocalHelper::hideListFromUrl(urlHidden);
     while (1) {
-        FTSENT *ent = fts_read(fts);
+        FTSENT *ent = fts_read(d->fts);
 
         if (ent == nullptr) {
             break;
@@ -716,11 +717,11 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
         if (QString(ent->fts_path) == d->uri.path() || flag == FTS_DP)
             continue;
 
-        d->insertSortFileInfoList(listFile, listDir, ent, fts, hideList);
+        d->insertSortFileInfoList(listFile, listDir, ent, d->fts, hideList);
     }
 
-    fts_close(fts);
-    fts = nullptr;
+    fts_close(d->fts);
+    d->fts = nullptr;
 
     if (d->isMixDirAndFile)
         return listFile;
@@ -750,4 +751,19 @@ void DEnumerator::startAsyncIterator()
 bool DEnumerator::isAsyncOver() const
 {
     return d->asyncOvered;
+}
+
+bool DEnumerator::initEnumerator(const bool oneByone)
+{
+    if (d->async)
+        return true;
+
+    if (oneByone) {
+        if (d->inited)
+            return true;
+        return d->init();
+    }
+    if (d->fts)
+        return true;
+    return d->openDirByfts();
 }
