@@ -433,7 +433,7 @@ QVariant DFileInfoPrivate::attributesFromUrl(DFileInfo::AttributeID id)
             return fullName.mid(pos2 + 1);
     }
     case DFileInfo::AttributeID::kStandardFilePath: {
-        g_autofree gchar *name = g_path_get_dirname(q->uri().toString().toStdString().c_str());
+        g_autofree gchar *name = g_path_get_dirname(q->uri().path().toStdString().c_str());
         if (name != nullptr)
             return QString::fromLocal8Bit(name);
         return "";
