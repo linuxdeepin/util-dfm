@@ -615,7 +615,8 @@ void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResul
     GFileInfo *fileinfo = g_file_query_info_finish(file, res, &gerror);
 
     if (gerror) {
-        data->me->setErrorFromGError(gerror);
+        if (data->me)
+            data->me->setErrorFromGError(gerror);
         freeQueryInfoAsyncOp(data);
         return;
     }
