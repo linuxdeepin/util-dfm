@@ -9,6 +9,7 @@
 
 #include <gio/gio.h>
 #include <gio-unix-2.0/gio/gunixmounts.h>
+#include <glib/gstdio.h>
 
 #include <QUrl>
 #include <QSet>
@@ -304,6 +305,33 @@ qint64 DFMUtils::deviceBytesFree(const QUrl &url)
         qInfo() << "file do not support G_FILE_ATTRIBUTE_FILESYSTEM_USED, returns max of qint64";
         return std::numeric_limits<qint64>::max();
     }
+}
+
+bool dfmio::DFMUtils::supportTrash(const QUrl &url)
+{
+    if (!url.isValid())
+        return false;
+
+    auto path = url.path();
+    GStatBuf file_stat, home_stat;
+    if (g_stat (path.toStdString().data(), &file_stat) != 0)
+        return false;
+
+    const char *homedir = g_get_home_dir ();
+    g_stat (homedir, &home_stat);
+    // 和当前用的主目录在同一挂载点
+    if (file_stat.st_dev == home_stat.st_dev)
+        return true;
+
+    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autofree char *path1 = g_file_get_path(gfile);
+    if (!path1)
+        return false;
+    g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(path1, nullptr);
+    if (mount == nullptr || g_unix_mount_is_system_internal (mount))
+        return false;
+
+    return true;
 }
 
 QMap<QString, QString> DFMUtils::fstabBindInfo()
