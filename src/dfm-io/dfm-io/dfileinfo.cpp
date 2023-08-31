@@ -607,6 +607,10 @@ void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResul
 
     GFile *file = G_FILE(sourceObject);
     if (!file) {
+
+        if (data->callback)
+            data->callback(false, data->userData);
+
         freeQueryInfoAsyncOp(data);
         return;
     }
@@ -617,6 +621,10 @@ void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResul
     if (gerror) {
         if (data->me)
             data->me->setErrorFromGError(gerror);
+
+        if (data->callback)
+            data->callback(false, data->userData);
+
         freeQueryInfoAsyncOp(data);
         return;
     }
