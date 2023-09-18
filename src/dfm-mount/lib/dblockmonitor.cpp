@@ -187,7 +187,7 @@ QStringList DBlockMonitorPrivate::resolveDeviceOfDrive(const QString &drvObjPath
 {
     if (q->status() != MonitorStatus::kMonitoring)
         initDevices();
-    return blksOfDrive.value(drvObjPath).toList();
+    return blksOfDrive.value(drvObjPath).values();
 }
 
 void DBlockMonitorPrivate::onObjectAdded(GDBusObjectManager *mng, GDBusObject *obj, gpointer userData)

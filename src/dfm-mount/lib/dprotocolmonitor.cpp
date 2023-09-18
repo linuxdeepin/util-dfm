@@ -113,7 +113,7 @@ DeviceType DProtocolMonitorPrivate::monitorObjectType() const
 
 QStringList DProtocolMonitorPrivate::getDevices()
 {
-    return cachedDevices.toList();
+    return cachedDevices.values();
 }
 
 QSharedPointer<DDevice> DProtocolMonitorPrivate::createDevice(const QString &id)
