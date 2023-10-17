@@ -234,6 +234,7 @@ public:
     char *queryAttributes() const;
     DFileInfo::FileQueryInfoFlags queryInfoFlag() const;
     QString dump() const;
+    bool queryAttributeFinished() const;
 
 private:
     QSharedDataPointer<DFileInfoPrivate> d;
