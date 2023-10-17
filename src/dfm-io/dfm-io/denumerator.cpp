@@ -336,8 +336,10 @@ bool DEnumeratorPrivate::hasNext()
 
     if (!gfileInfo)
         return hasNext();
-
-    nextUrl = QUrl::fromLocalFile(uri.path() + "/" + QString(g_file_info_get_name(gfileInfo)));
+    auto path = uri.path()  == "/" ?
+                "/" + QString(g_file_info_get_name(gfileInfo)) :
+                uri.path() + "/" + QString(g_file_info_get_name(gfileInfo));
+    nextUrl = QUrl::fromLocalFile(path);
 
     dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
                                                       enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);

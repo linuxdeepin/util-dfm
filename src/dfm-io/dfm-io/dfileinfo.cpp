@@ -17,6 +17,7 @@
 
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <execinfo.h>
 
 USING_IO_NAMESPACE
 
@@ -1083,4 +1084,9 @@ QString DFileInfo::dump() const
         }
     }
     return ret;
+}
+
+bool DFileInfo::queryAttributeFinished() const
+{
+    return d->initFinished;
 }
