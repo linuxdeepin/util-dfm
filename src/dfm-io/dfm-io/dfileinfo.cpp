@@ -600,6 +600,40 @@ bool DFileInfoPrivate::exists() const
     return g_file_info_get_file_type(gfileinfo) != G_FILE_TYPE_UNKNOWN;
 }
 
+QVariant DFileInfoPrivate::accessPermission(const DFileInfo::AttributeID &id)
+{
+    if (id < DFileInfo::AttributeID::kAccessCanRead || id > DFileInfo::AttributeID::kAccessCanExecute)
+        return QVariant();
+
+    if (!initFinished) {
+        bool succ = const_cast<DFileInfoPrivate *>(this)->queryInfoSync();
+        if (!succ)
+            return QVariant();
+    }
+
+    const QVariant &value = q->attribute(DFileInfo::AttributeID::kUnixMode);
+    uint32_t stMode{0};
+    if (value.isValid()) {
+        stMode = value.toUInt();
+    } else {
+        struct statx statxBuffer;
+        unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
+        const QUrl &url = q->uri();
+        int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
+        if (ret == 0) {
+            stMode = statxBuffer.stx_mode;
+        }
+    }
+    if (id == DFileInfo::AttributeID::kAccessCanRead) {
+        return (stMode & S_IRUSR) == S_IRUSR;
+    } else if (id == DFileInfo::AttributeID::kAccessCanWrite) {
+        return (stMode & S_IWUSR) == S_IWUSR;
+    } else if (id == DFileInfo::AttributeID::kAccessCanExecute) {
+        return (stMode & S_IXUSR) == S_IXUSR;
+    }
+    return QVariant();
+}
+
 void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
     QueryInfoAsyncOp *data = static_cast<QueryInfoAsyncOp *>(userData);
@@ -760,8 +794,11 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
             DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
             if (!d->attributesRealizationSelf.contains(id)) {
                 retValue = DLocalHelper::attributeFromGFileInfo(d->gfileinfo, id, errorCode);
-                if (errorCode != DFM_IO_ERROR_NONE)
+                if (errorCode != DFM_IO_ERROR_NONE) {
                     const_cast<DFileInfoPrivate *>(d.data())->error.setCode(errorCode);
+                    if (id >= DFileInfo::AttributeID::kAccessCanRead && id <= DFileInfo::AttributeID::kAccessCanExecute)
+                        retValue = const_cast<DFileInfoPrivate *>(d.data())->accessPermission(id);
+                }
             } else {
                 retValue = const_cast<DFileInfoPrivate *>(d.data())->attributesBySelf(id);
             }
