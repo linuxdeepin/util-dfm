@@ -62,6 +62,7 @@ public:
     void cacheAttributes();
     DFile::Permissions permissions() const;
     bool exists() const;
+    QVariant accessPermission(const DFileInfo::AttributeID &id);
 
     static void queryInfoAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
     static void queryInfoAsyncCallback2(GObject *sourceObject, GAsyncResult *res, gpointer userData);
