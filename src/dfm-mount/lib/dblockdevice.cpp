@@ -48,6 +48,8 @@ void DBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult *r
     GError *err = nullptr;
     g_autofree char *mountPoint = nullptr;
     bool result = udisks_filesystem_call_mount_finish(fs, &mountPoint, res, &err);
+    if(mountPoint)
+        result = true;
     handleErrorAndRelease(proxy, result, err, mountPoint);   // ignore mount point, which will be notified by onPropertyChanged
 }
 
