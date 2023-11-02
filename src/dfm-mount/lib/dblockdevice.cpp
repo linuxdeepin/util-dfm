@@ -1070,9 +1070,20 @@ QVariant DBlockDevicePrivate::getBlockProperty(Property name) const
     // make sure we can safely get the properties in cross-thread cases: so we use DUP rather than GET when DUP can be used.
     // but we shall release the objects by calling g_free for char * or g_strfreev for char ** funcs.
     switch (name) {
-    case Property::kBlockConfiguration:
-        //                return udisks_block_dup_configuration(blk); TODO
-        return "";
+    case Property::kBlockConfiguration: {
+        QStringList configs;
+        GVariant *var = udisks_block_dup_configuration(blk);
+        if (g_variant_is_of_type(var, G_VARIANT_TYPE("a(sa{sv})"))) {
+            GVariantIter iter;
+            g_variant_iter_init(&iter, var);
+
+            const gchar *key { nullptr };
+            while (g_variant_iter_next(&iter, "(sa{sv})", &key))
+                configs << key;
+        }
+        g_variant_unref(var);
+        return configs;
+    }
     case Property::kBlockUserspaceMountOptions: {
         char **opts = udisks_block_dup_userspace_mount_options(blk);
         return Utils::gcharvToQStringList(opts);
