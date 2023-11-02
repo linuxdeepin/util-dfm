@@ -1,3 +1,9 @@
+util-dfm (1.2.18) unstable; urgency=medium
+
+  * update version to 1.2.18
+
+ -- lvwujun <lvwujun@uniontech.com>  Thur, 2 Nov 2023 11:19:21 +0800
+
 util-dfm (1.2.17) unstable; urgency=medium
 
   * update version to 1.2.17
