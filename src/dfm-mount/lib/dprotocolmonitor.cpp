@@ -170,8 +170,8 @@ void DProtocolMonitorPrivate::initDeviceList()
             g_autofree char *curi = g_file_get_uri(activationRoot);
             d->cachedDevices.insert(curi);
         } else {
-            g_autofree char *volId = g_volume_get_identifier(vol, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);
-            qWarning() << "protocol: cannot get the root of " << volId;
+            //            g_autofree char *volId = g_volume_get_identifier(vol, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);
+            //            qWarning() << "protocol: cannot get the root of " << volId;
         }
     };
     g_list_foreach(vols, static_cast<GFunc>(iterVol), this);
@@ -199,8 +199,8 @@ void DProtocolMonitorPrivate::initDeviceList()
             if (!isNativeMount(mpt) && !isMountByOther(mpt))
                 d->cachedDevices.insert(curi);
         } else {
-            g_autofree char *cname = g_mount_get_name(mnt);
-            qWarning() << "protocol: cannot get the root of " << cname;
+            //            g_autofree char *cname = g_mount_get_name(mnt);
+            //            qWarning() << "protocol: cannot get the root of " << cname;
         }
     };
     g_list_foreach(mnts, static_cast<GFunc>(iterMnt), this);
@@ -223,7 +223,7 @@ void DProtocolMonitorPrivate::onMountAdded(GVolumeMonitor *monitor, GMount *moun
         d->cachedDevices.insert(curi);
         Q_EMIT d->q->mountAdded(curi, mpt);
     } else {
-        qWarning() << "protocol: cannot get the root of " << mpt;
+        //        qWarning() << "protocol: cannot get the root of " << mpt;
     }
 }
 
@@ -257,7 +257,7 @@ void DProtocolMonitorPrivate::onMountRemoved(GVolumeMonitor *monitor, GMount *mo
             d->cachedDevices.remove(curi);
         Q_EMIT d->q->mountRemoved(curi);
     } else {
-        qWarning() << "protocol: cannot get the root of " << mpt;
+        //        qWarning() << "protocol: cannot get the root of " << mpt;
     }
 }
 
@@ -275,7 +275,7 @@ void DProtocolMonitorPrivate::onVolumeAdded(GVolumeMonitor *monitor, GVolume *vo
         d->cachedDevices.insert(curi);
         Q_EMIT d->q->deviceAdded(curi);
     } else {
-        qWarning() << "protocol: cannot get the root of " << volume;
+        //        qWarning() << "protocol: cannot get the root of " << volume;
     }
 }
 
@@ -304,7 +304,7 @@ void DProtocolMonitorPrivate::onVolumeRemoved(GVolumeMonitor *monitor, GVolume *
         d->cachedDevices.remove(curi);
         Q_EMIT d->q->deviceRemoved(curi);
     } else {
-        qWarning() << "protocol: cannot get the root of " << volume;
+        //        qWarning() << "protocol: cannot get the root of " << volume;
     }
 }
 
