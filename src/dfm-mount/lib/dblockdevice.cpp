@@ -48,7 +48,7 @@ void DBlockDevicePrivate::mountAsyncCallback(GObject *sourceObj, GAsyncResult *r
     GError *err = nullptr;
     g_autofree char *mountPoint = nullptr;
     bool result = udisks_filesystem_call_mount_finish(fs, &mountPoint, res, &err);
-    if(mountPoint)
+    if (mountPoint)
         result = true;
     handleErrorAndRelease(proxy, result, err, mountPoint);   // ignore mount point, which will be notified by onPropertyChanged
 }
@@ -1062,7 +1062,7 @@ QVariant DBlockDevicePrivate::getBlockProperty(Property name) const
 {
     UDisksBlock_autoptr blk = getBlockHandler();
     if (!blk) {
-        qDebug() << __FUNCTION__ << "NO BLOCK: " << blkObjPath;
+        //        qDebug() << __FUNCTION__ << "NO BLOCK: " << blkObjPath;
         lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoBlock);
         return QVariant();
     }
@@ -1166,7 +1166,7 @@ QVariant DBlockDevicePrivate::getDriveProperty(Property name) const
 {
     UDisksDrive_autoptr drv = getDriveHandler();
     if (!drv) {
-        qDebug() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
+        //        qDebug() << __FUNCTION__ << "NO DRIVE: " << blkObjPath;
         lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoDriver);
         return "";
     }
@@ -1265,7 +1265,7 @@ QVariant DBlockDevicePrivate::getFileSystemProperty(Property name) const
 {
     UDisksFilesystem_autoptr fs = getFilesystemHandler();
     if (!fs) {
-        qDebug() << __FUNCTION__ << "NO FILESYSTEM: " << blkObjPath;
+        //        qDebug() << __FUNCTION__ << "NO FILESYSTEM: " << blkObjPath;
         lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotMountable);
         return QVariant();
     }
@@ -1286,7 +1286,7 @@ QVariant DBlockDevicePrivate::getPartitionProperty(Property name) const
     UDisksPartition_autoptr partition = getPartitionHandler();
 
     if (!partition) {
-        qDebug() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
+        //        qDebug() << __FUNCTION__ << "NO PARTITION: " << blkObjPath;
         lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNoPartition);
         return QVariant();
     }
@@ -1331,7 +1331,7 @@ QVariant DBlockDevicePrivate::getEncryptedProperty(Property name) const
     UDisksEncrypted_autoptr encrypted = getEncryptedHandler();
 
     if (!encrypted) {
-        qDebug() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
+        //        qDebug() << __FUNCTION__ << "NOT ENCRYPTED: " << blkObjPath;
         lastError = Utils::genOperateErrorInfo(DeviceError::kUserErrorNotEncryptable);
         return QVariant();
     }
