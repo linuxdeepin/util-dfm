@@ -258,9 +258,18 @@ bool DXorrisoEngine::doErase()
     XORRISO_OPT(xorriso, [this]() {
         return Xorriso_option_abort_on(xorriso, PCHAR("ABORT"), 0);
     });
-    int r = XORRISO_OPT(xorriso, [this]() {
-        return Xorriso_option_blank(xorriso, PCHAR("as_needed"), 0);
-    });
+
+    int r = 0;
+    if (mediaTypeProperty() == MediaType::kDVD_PLUS_RW) {
+        r = XORRISO_OPT(xorriso, [this]() {
+            return Xorriso_option_blank(xorriso, PCHAR("full"), 1);
+        });
+    } else {
+        r = XORRISO_OPT(xorriso, [this]() {
+            return Xorriso_option_blank(xorriso, PCHAR("as_needed"), 0);
+        });
+    }
+
     if (JOBFAILED_IF(this, r, xorriso))
         return false;
 
