@@ -19,6 +19,13 @@ pkg_check_modules(isoburn REQUIRED libisoburn-1 IMPORTED_TARGET)
 # public include
 file(GLOB_RECURSE PUBLIC_INCLUDES  CONFIGURE_DEPENDS
     "${PROJECT_SOURCE_DIR}/include/${BIN_NAME}/*")
+
+# udfclient
+FILE (GLOB_RECURSE UDFCLIENT_SRCS CONFIGURE_DEPENDS
+    "../3rdparty/UDFclient.0.8.20/*.c"
+    "../3rdparty/UDFclient.0.8.20/*.h"
+)
+
 # src
 FILE (GLOB_RECURSE SRCS CONFIGURE_DEPENDS
     "./*.cpp"
@@ -29,7 +36,9 @@ FILE (GLOB_RECURSE SRCS CONFIGURE_DEPENDS
 add_library(${BIN_NAME} SHARED
             ${PUBLIC_INCLUDES}
             ${SRCS}
+            ${UDFCLIENT_SRCS}
 )
+
 
 target_link_libraries(${BIN_NAME}
     Qt5::Core
@@ -40,6 +49,25 @@ target_include_directories(
     ${BIN_NAME}
 PUBLIC
     ${PROJECT_SOURCE_DIR}/include/${BIN_NAME}
+)
+
+# for udfclient
+target_compile_definitions(${BIN_NAME} PRIVATE
+    NEEDS_ISPRINT
+    _DEFAULT_SOURCE
+    _BSD_SOURCE
+    _XOPEN_SOURCE=500
+    __USE_BSD
+    _FILE_OFFSET_BITS=64
+    NO_INT_FMTIO
+    NO_STRLCPY
+    st_atimespec=st_atim
+    st_ctimespec=st_ctim
+    st_mtimespec=st_mtim
+    NO_STAT_BIRTHTIME
+    NO_DIRENT_NAMLEN
+    SCSI
+    USCSI_LINUX_SCSI
 )
 
 set_target_properties(
