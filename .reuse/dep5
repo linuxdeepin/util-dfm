@@ -47,3 +47,10 @@ License: MIT
 Files: tests/3rdparty/utils/stub-ext/*
 Copyright: 2020 Zhang Yu
 License: MIT
+
+# udfclient
+Files: src/dfm-burn/3rdparty/UDFclient.0.8.20/*
+Copyright: Reinoud Zandijk <reinoud@netbsd.org>
+License: ClArtistic
+
+
