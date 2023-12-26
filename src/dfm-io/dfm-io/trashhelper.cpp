@@ -56,7 +56,7 @@ bool TrashHelper::getTrashUrls(QList<QUrl> *trashUrls, QString *errorMsg)
         if (errorMsg)
             *errorMsg = error ? error->message : "fialed to create trash iterator!";
         if (error)
-            g_object_unref(error);
+            g_error_free(error);
         g_object_unref(trash);
         return false;
     }
