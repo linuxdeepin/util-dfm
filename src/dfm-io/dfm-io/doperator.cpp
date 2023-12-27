@@ -34,7 +34,8 @@ void DOperatorPrivate::setErrorFromGError(GError *gerror)
     error.setCode(DFMIOErrorCode(gerror->code));
     if (error.code() == DFMIOErrorCode::DFM_IO_ERROR_FAILED) {
         QString strErr(gerror->message);
-        strErr = strErr.left(strErr.indexOf(":")) + strErr.mid(strErr.lastIndexOf(":"));
+        if (strErr.contains(':'))
+            strErr = strErr.left(strErr.indexOf(":")) + strErr.mid(strErr.lastIndexOf(":"));
         error.setMessage(strErr);
     }
 }
@@ -164,7 +165,6 @@ DOperator::~DOperator()
         g_object_unref(d->gcancellable);
         d->gcancellable = nullptr;
     }
-
 }
 
 QUrl DOperator::uri() const
