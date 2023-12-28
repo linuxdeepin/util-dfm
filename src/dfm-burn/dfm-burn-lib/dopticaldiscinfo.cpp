@@ -5,6 +5,7 @@
 #include <dfm-burn/dopticaldiscinfo.h>
 
 #include "private/dopticaldiscinfo_p.h"
+#include "private/scsicommandhelper.h"
 
 #include <QDebug>
 
@@ -62,7 +63,7 @@ quint64 DOpticalDiscInfo::availableSize() const
 
 quint64 DOpticalDiscInfo::totalSize() const
 {
-    return usedSize() + availableSize();
+    return d_ptr->total;
 }
 
 quint64 DOpticalDiscInfo::dataBlocks() const
@@ -89,9 +90,71 @@ void DOpticalDiscInfoPrivate::initData()
     }
     media = isoEngine->mediaTypeProperty();
     isoEngine->mediaStorageProperty(&data, &avail, &datablocks);
+    total = data + avail;
+    if (media == MediaType::kDVD_RW) {
+        bool full { data == total };
+        auto capacity { acquireDVDRWCapacity() };
+        if (capacity != 0 && full) {
+            total = capacity;
+            data = capacity;
+        }
+    }
     formatted = isoEngine->mediaFormattedProperty();
     volid = isoEngine->mediaVolIdProperty();
     writespeed = isoEngine->mediaSpeedProperty();
     isoEngine->clearResult();
     isoEngine->releaseDevice();
+}
+
+quint64 DOpticalDiscInfoPrivate::acquireDVDRWCapacity() const
+{
+    quint64 totalSize { 0 };
+    ScsiCommandHelper cmd { devid };
+    unsigned char formats[260] { 0 };
+
+    cmd[0] = 0x23;   // READ FORMAT CAPACITIES
+    cmd[8] = 12;
+    cmd[9] = 0;
+    if (!cmd.transport(ScsiCommandHelper::kREAD, formats, 12)) {
+        qWarning() << "cannot read dvd-rw capacity";
+        return totalSize;
+    }
+
+    int len { formats[3] };
+    if (len & 7 || len < 16) {
+        qWarning() << "allocation length isn't sane:" << len;
+        return totalSize;
+    }
+
+    cmd[0] = 0x23;   // READ FORMAT CAPACITIES
+    cmd[7] = (4 + len) >> 8;   // now with real length...
+    cmd[8] = (4 + len) & 0xFF;
+    cmd[9] = 0;
+
+    if (!cmd.transport(ScsiCommandHelper::kREAD, formats, static_cast<size_t>(4 + len))) {
+        qWarning() << "cannot read format capacities";
+        return totalSize;
+    }
+
+    if (len != formats[3]) {
+        qWarning() << "parameter length inconsistency";
+        return totalSize;
+    }
+
+    if (len != formats[3]) {
+        qWarning() << "arameter length inconsistency";
+        return totalSize;
+    }
+
+    int i { 12 };
+    Q_ASSERT(i < len);
+    quint64 blocksize {
+        static_cast<quint64>(formats[9] << 16 | formats[10] << 8 | formats[11])
+    };
+    quint64 capacity {
+        static_cast<quint64>(
+                formats[i] << 24 | formats[i + 1] << 16 | formats[i + 2] << 8 | formats[i + 3])
+    };
+    totalSize = blocksize * capacity;
+    return totalSize;
 }
