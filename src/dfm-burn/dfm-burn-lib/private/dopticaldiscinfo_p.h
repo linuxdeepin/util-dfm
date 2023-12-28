@@ -37,6 +37,7 @@ public:
     inline ~DOpticalDiscInfoPrivate() {}
 
     void initData();
+    quint64 acquireDVDRWCapacity() const;
 
     std::unique_ptr<DXorrisoEngine> const isoEngine;
 
@@ -48,6 +49,8 @@ public:
     quint64 data {};
     /** \brief Available size in bytes.*/
     quint64 avail {};
+    /** \brief Total size in bytes */
+    quint64 total {};
     /** \brief Size of on-disc data in number of blocks.*/
     quint64 datablocks {};
     /** \brief List of write speeds supported, e.g. "10.0x".*/
