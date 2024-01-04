@@ -237,7 +237,7 @@ public:
     bool queryAttributeFinished() const;
 
 private:
-    QSharedDataPointer<DFileInfoPrivate> d;
+    mutable QSharedDataPointer<DFileInfoPrivate> d;
 };
 
 END_IO_NAMESPACE
