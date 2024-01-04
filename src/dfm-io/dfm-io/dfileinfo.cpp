@@ -759,6 +759,7 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
         if (d->gfileinfo) {
             DFMIOErrorCode errorCode(DFM_IO_ERROR_NONE);
             if (!d->attributesRealizationSelf.contains(id)) {
+                QMutexLocker lk(&d->mutex);
                 retValue = DLocalHelper::attributeFromGFileInfo(d->gfileinfo, id, errorCode);
                 if (errorCode != DFM_IO_ERROR_NONE)
                     const_cast<DFileInfoPrivate *>(d.data())->error.setCode(errorCode);

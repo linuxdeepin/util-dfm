@@ -96,6 +96,7 @@ public:
     QMap<DFileInfo::AttributeID, QVariant> caches;
     std::atomic_bool cacheing { false };
     std::atomic_bool refreshing { false };
+    QMutex mutex;
 
     DFMIOError error;
 };
