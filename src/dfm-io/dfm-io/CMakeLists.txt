@@ -8,7 +8,7 @@ if (NOT PROJECT_VERSION)
 endif()
 
 if (NOT PROJECT_VERSION_MAJOR)
-    set(PROJECT_VERSION_MAJOR 1)
+    set(PROJECT_VERSION_MAJOR 0)
 endif()
 
 # Setup the environment

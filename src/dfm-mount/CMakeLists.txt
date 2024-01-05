@@ -8,7 +8,7 @@ if (NOT PROJECT_VERSION)
 endif()
 
 if (NOT PROJECT_VERSION_MAJOR)
-    set(PROJECT_VERSION_MAJOR 1)
+    set(PROJECT_VERSION_MAJOR 0)
 endif()
 
 # signals and slots keyword is disable, use Q_SIGNALS and Q_SLOTS instead
