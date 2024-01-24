@@ -47,7 +47,7 @@ QString DFMUtils::devicePathFromUrl(const QUrl &url)
         g_autofree gchar *uri = g_file_get_uri(rootFile);
         return QString::fromLocal8Bit(uri);
     } else {
-        g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
+        g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_get_path(gfile), nullptr);
         if (mount)
             return QString::fromLocal8Bit(g_unix_mount_get_device_path(mount));
     }
