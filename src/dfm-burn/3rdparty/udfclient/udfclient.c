@@ -1664,7 +1664,7 @@ void udfclient_interact(void) {
 	}
 }
 
-#if 0
+#if 1
 int usage(char *program) {
 	fprintf(stderr, "Usage: %s [options] devicename [devicename]*)\n", program);
 	fprintf(stderr, "-u level	UDF system verbose level\n"

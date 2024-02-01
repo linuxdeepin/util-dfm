@@ -22,8 +22,8 @@ file(GLOB_RECURSE PUBLIC_INCLUDES  CONFIGURE_DEPENDS
 
 # udfclient
 FILE (GLOB_RECURSE UDFCLIENT_SRCS CONFIGURE_DEPENDS
-    "../3rdparty/UDFclient.0.8.20/*.c"
-    "../3rdparty/UDFclient.0.8.20/*.h"
+    "../3rdparty/udfclient/*.c"
+    "../3rdparty/udfclient/*.h"
 )
 
 # src
@@ -49,6 +49,7 @@ target_include_directories(
     ${BIN_NAME}
 PUBLIC
     ${PROJECT_SOURCE_DIR}/include/${BIN_NAME}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 # for udfclient
