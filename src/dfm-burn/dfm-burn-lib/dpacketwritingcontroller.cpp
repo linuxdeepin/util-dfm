@@ -323,7 +323,7 @@ bool DPacketWritingController::rm(const QString &fileName)
         printf("rm %s : %s\n", target_name, strerror(error));
         dptr->errorMsg = QString("rm %1 : %2").arg(target_name).arg(strerror(error));
         free(target_name);
-        free(leaf_name);
+        free(leaf_name_bak);
         return false;
     }
 
@@ -333,7 +333,7 @@ bool DPacketWritingController::rm(const QString &fileName)
         dptr->errorMsg = QString("rm %1 : parent lookup failed : %2").arg(target_name).arg(strerror(error));
         free(target_name);
         free(full_parent_name);
-        free(leaf_name);
+        free(leaf_name_bak);
         return false;
     }
 
