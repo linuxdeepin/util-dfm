@@ -88,13 +88,13 @@ DFM_BURN_USE_NS
 //    manager.dumpISO("/home/zhangs/tmp/aabb.iso");
 //}
 
-static void pw()
-{
-    DPacketWritingController controller("/dev/sr1", "/home/zhangs");
-    controller.open();
-    controller.close();
-    qDebug() << "quit!!!";
-}
+//static void pw()
+//{
+//    DPacketWritingController controller("/dev/sr0", "/home/zhangs");
+//    controller.open();
+//    controller.close();
+//    qDebug() << "quit!!!";
+//}
 
 int main(int argc, char *argv[])
 {
@@ -106,6 +106,6 @@ int main(int argc, char *argv[])
     // commitUDF();
     // check();
     // dumpISO();
-    pw();
+    // pw();
     return a.exec();
 }
