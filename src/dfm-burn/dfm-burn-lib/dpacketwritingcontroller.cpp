@@ -201,6 +201,8 @@ void DPacketWritingController::close()
         disc = next_disc;
     }
 
+    free(udf_bufcache);
+    udf_bufcache = NULL;
     qInfo() << "Restore local working path:" << dptr->oldLocalWoringPath;
     dptr->lcd(dptr->oldLocalWoringPath);
     udfclient_pwd(0);

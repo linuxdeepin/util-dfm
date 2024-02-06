@@ -5227,6 +5227,8 @@ udf_init(void)
     dirhash_init();
 
     SLIST_INIT(&udf_discs_list);
+    SLIST_INIT(&udf_volumeset_list);
+    SLIST_INIT(&udf_mountables);
 }
 
 
