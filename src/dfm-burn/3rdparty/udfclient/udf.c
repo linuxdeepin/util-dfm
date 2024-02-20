@@ -106,18 +106,79 @@ extern void udf_dump_alive_sets(void);
 extern void udf_dump_root_dir(struct udf_mountpoint *mountpoint);
 extern void udf_dump_timestamp(char *dscr, struct timestamp *t);
 
+static size_t utf8_char_length(char c) {
+    if ((c & 0x80) == 0x00) {
+        return 1;
+    } else if ((c & 0xE0) == 0xC0) {
+        return 2;
+    } else if ((c & 0xF0) == 0xE0) {
+        return 3;
+    } else if ((c & 0xF8) == 0xF0) {
+        return 4;
+    } else {
+        return 0;
+    }
+}
+
+static size_t string_to_unicode(const char *str, size_t length, uint16_t *unicode) {
+    size_t i = 0, j = 0;
+
+    while (i < length) {
+        size_t char_len = utf8_char_length(str[i]);
+
+        if (char_len == 0) {
+            // 如果遇到无效的UTF-8字符，直接返回转换失败
+            return 0;
+        }
+
+        if (char_len == 1) {
+            unicode[j++] = (uint16_t)str[i];
+        } else {
+            uint32_t code_point = 0;
+
+            for (size_t k = 0; k < char_len; k++) {
+                code_point |= (str[i + k] & 0x3F) << ((char_len - k - 1) * 6);
+            }
+
+            unicode[j++] = (uint16_t)code_point;
+        }
+
+        i += char_len;
+    }
+
+    unicode[j] = 0;
+
+    return j;
+}
+
+static void unicode_to_string(const uint16_t *unicode, size_t length, char *output) {
+    size_t i, j = 0;
+
+    for (i = 0; i < length; i++) {
+        if (unicode[i] <= 0x7F) {
+            output[j++] = (char)unicode[i];
+        } else if (unicode[i] <= 0x7FF) {
+            output[j++] = (char)(0xC0 | (unicode[i] >> 6));
+            output[j++] = (char)(0x80 | (unicode[i] & 0x3F));
+        } else {
+            output[j++] = (char)(0xE0 | (unicode[i] >> 12));
+            output[j++] = (char)(0x80 | ((unicode[i] >> 6) & 0x3F));
+            output[j++] = (char)(0x80 | (unicode[i] & 0x3F));
+        }
+    }
+
+    output[j] = '\0';
+}
 
 /******************************************************************************************
  *
  * Filename space conversion
  *
  ******************************************************************************************/
-
 void udf_to_unix_name(char *result, char *id, int len, struct charspec *chsp) {
     uint16_t  raw_name[1024], unix_name[1024];
-    uint16_t *inchp, ch;
     uint8_t	 *outchp;
-    int       ucode_chars, nice_uchars;
+    int       ucode_chars;
 
     assert(sizeof(char) == sizeof(uint8_t));
     outchp = (uint8_t *) result;
@@ -125,14 +186,7 @@ void udf_to_unix_name(char *result, char *id, int len, struct charspec *chsp) {
         *raw_name = *unix_name = 0;
         ucode_chars = udf_UncompressUnicode(len, (uint8_t *) id, raw_name);
         ucode_chars = UnicodeLength((unicode_t *) raw_name, ucode_chars);
-        nice_uchars = UDFTransName(unix_name, raw_name, ucode_chars);
-        for (inchp = unix_name; nice_uchars>0; inchp++, nice_uchars--) {
-            ch = *inchp;
-            /* sloppy unicode -> latin */
-            *outchp++ = ch & 255;
-            if (!ch) break;
-        }
-        *outchp++ = 0;
+        unicode_to_string(raw_name, (size_t)ucode_chars, result);
     } else {
         /* assume 8bit char length byte latin-1 */
         assert(*id == 8);
@@ -140,25 +194,14 @@ void udf_to_unix_name(char *result, char *id, int len, struct charspec *chsp) {
     }
 }
 
-
 void unix_to_udf_name(char *result, char *name, uint8_t *result_len, struct charspec *chsp) {
     uint16_t  raw_name[1024];
     int       udf_chars, name_len;
-    char     *inchp;
-    uint16_t *outchp;
 
-    /* convert latin-1 or whatever to unicode-16 */
-    *raw_name = 0;
-    name_len  = 0;
-    inchp  = name;
-    outchp = raw_name;
-    while (*inchp) {
-        *outchp++ = (uint16_t) (*inchp++);
-        name_len++;
-    }
-
+    /* convert whatever to unicode-16 */
+    name_len = (int)string_to_unicode(name, strlen(name), raw_name);
     if ((chsp->type == 0) && (strcmp((char *) chsp->inf, "OSTA Compressed Unicode") == 0)) {
-        udf_chars = udf_CompressUnicode(name_len, 8, (unicode_t *) raw_name, (byte *) result);
+        udf_chars = udf_CompressUnicode(name_len, 16, (unicode_t *) raw_name, (byte *) result);
     } else {
         /* assume 8bit char length byte latin-1 */
         *result++ = 8; udf_chars = 1;
@@ -167,7 +210,6 @@ void unix_to_udf_name(char *result, char *name, uint8_t *result_len, struct char
     }
     *result_len = udf_chars;
 }
-
 
 static char *udf_get_compound_name(struct udf_mountpoint *mountpoint) {
     static char         compound[128+128+32+32+1];
