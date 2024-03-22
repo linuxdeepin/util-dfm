@@ -131,6 +131,45 @@ void DBlockDevicePrivate::rescanAsyncCallback(GObject *sourceObj, GAsyncResult *
     handleErrorAndRelease(proxy, result, err);
 }
 
+int DBlockDevicePrivate::dedupMountPoint(struct libmnt_table *table, struct libmnt_fs *a, struct libmnt_fs *b)
+{
+    if (mnt_fs_is_pseudofs(a)
+        || mnt_fs_is_netfs(a)
+        || mnt_fs_is_pseudofs(b)
+        || mnt_fs_is_netfs(b))
+        return 1;
+
+    return !mnt_fs_streq_srcpath(a, mnt_fs_get_srcpath(b));
+}
+
+QString DBlockDevicePrivate::findFirstMountPoint(const QString &device)
+{
+    if (device.isEmpty())
+        return "";
+
+    QString mountPoint;
+    struct libmnt_table *table = mnt_new_table();
+    if (mnt_table_parse_mtab(table, NULL) < 0) {
+        qWarning() << "cannot parse mtab!";
+        return "";
+    }
+
+    mnt_table_uniq_fs(table, MNT_UNIQ_FORWARD, dedupMountPoint);
+    struct libmnt_iter *iter = mnt_new_iter(MNT_ITER_FORWARD);
+    struct libmnt_fs *fs = NULL;
+    while (mnt_table_next_fs(table, iter, &fs) == 0) {
+        const char *src = mnt_fs_get_source(fs);
+        const char *target = mnt_fs_get_target(fs);
+        if (strcmp(src, device.toStdString().c_str()) == 0) {
+            mountPoint = target;
+            break;
+        }
+    }
+    mnt_free_iter(iter);
+    mnt_free_table(table);
+    return mountPoint;
+}
+
 UDisksObject_autoptr DBlockDevicePrivate::getUDisksObject() const
 {
     Q_ASSERT(client);
@@ -1273,7 +1312,17 @@ QVariant DBlockDevicePrivate::getFileSystemProperty(Property name) const
     switch (name) {
     case Property::kFileSystemMountPoint: {
         char **ret = udisks_filesystem_dup_mount_points(fs);
-        return Utils::gcharvToQStringList(ret);
+        QStringList mpts = Utils::gcharvToQStringList(ret);
+        if (mpts.count() > 1) {
+            // make the first mountpoint stays on first position.
+            QString dev = getBlockProperty(Property::kBlockDevice).toString();
+            auto firstMpt = findFirstMountPoint(dev);
+            if (mpts.contains(firstMpt) && !firstMpt.isEmpty()) {
+                mpts.removeAll(firstMpt);
+                mpts.prepend(firstMpt);
+            }
+        }
+        return mpts;
     }
     default:
         Q_ASSERT_X(0, __FUNCTION__, "the property is not supported for block device");
