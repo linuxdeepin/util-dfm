@@ -8,6 +8,8 @@
 #include <dfm-mount/base/dmount_global.h>
 #include <dfm-mount/dblockdevice.h>
 
+#include <libmount.h>
+
 #include "private/ddevice_p.h"
 
 extern "C" {
@@ -71,6 +73,9 @@ private:
     static void lockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
     static void unlockAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
     static void rescanAsyncCallback(GObject *sourceObj, GAsyncResult *res, gpointer userData);
+
+    static int dedupMountPoint(struct libmnt_table *table, struct libmnt_fs *a, struct libmnt_fs *b);
+    static QString findFirstMountPoint(const QString &device);
 
     UDisksObject_autoptr getUDisksObject() const;
     UDisksBlock_autoptr getBlockHandler() const;
