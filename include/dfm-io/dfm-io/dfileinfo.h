@@ -76,6 +76,7 @@ public:
         kStandardTargetUri = 17,   // string
         kStandardSortOrder = 18,   // int32
         kStandardDescription = 19,   // string
+        kOriginalUri = 20,
 
         kEtagValue = 40,   // string
 
