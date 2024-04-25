@@ -59,6 +59,7 @@ DFileInfoPrivate::DFileInfoPrivate(DFileInfo *qq)
     : q(qq)
 {
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kStandardIsHidden);
+    attributesRealizationSelf.push_back(DFileInfo::AttributeID::kOriginalUri);
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeCreated);
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeCreatedUsec);
     attributesRealizationSelf.push_back(DFileInfo::AttributeID::kTimeModified);
@@ -391,6 +392,10 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         }
         return QVariant(ret);
     }
+    case DFileInfo::AttributeID::kOriginalUri:
+        if (gfile)
+            return QUrl(g_file_get_uri(gfile));
+        return uri;
     default:
         return retValue;
     }
@@ -465,6 +470,11 @@ QVariant DFileInfoPrivate::attributesFromUrl(DFileInfo::AttributeID id)
             return fullName;
         else
             return fullName.left(pos2);
+    }
+    case DFileInfo::AttributeID::kOriginalUri: {
+        if (gfile)
+            return QUrl(g_file_get_uri(gfile));
+        return uri;
     }
     default:
         break;
