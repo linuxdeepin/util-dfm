@@ -367,8 +367,10 @@ qint64 DFilePrivate::doWrite(const char *data, qint64 maxSize)
                                          static_cast<gsize>(maxSize),
                                          cancellable,
                                          &gerror);
-    if (gerror)
+    if (gerror) {
         setErrorFromGError(gerror);
+        return -1;
+    }
 
     return write;
 }
@@ -378,6 +380,7 @@ qint64 DFilePrivate::doWrite(const char *data)
     GOutputStream *outputStream = this->outputStream();
     if (!outputStream) {
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        return -1;
     }
 
     gsize bytes_write;
@@ -389,8 +392,10 @@ qint64 DFilePrivate::doWrite(const char *data)
                                              &bytes_write,
                                              cancellable,
                                              &gerror);
-    if (gerror)
+    if (gerror) {
         setErrorFromGError(gerror);
+        return -1;
+    }
 
     return write;
 }
@@ -698,25 +703,44 @@ bool DFile::exists() const
 qint64 DFile::pos() const
 {
     GInputStream *inputStream = d->inputStream();
-    if (!inputStream) {
-        d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
-        return -1;
+    if (inputStream) {
+        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+        gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
+        if (!canSeek) {
+            return -1;
+        }
+
+        GSeekable *seekable = G_SEEKABLE(inputStream);
+        if (!seekable) {
+            return -2;
+        }
+
+        goffset pos = g_seekable_tell(seekable);
+
+        return qint64(pos);
     }
 
-    // seems g_seekable_can_seek only support local file, survey after. todo lanxs
-    gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
-    if (!canSeek) {
-        return false;
+    GOutputStream *outputStream = d->outputStream();
+    if (outputStream){
+        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+        gboolean canSeek = G_IS_SEEKABLE(outputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
+        if (!canSeek) {
+            return -3;
+        }
+
+        GSeekable *seekable = G_SEEKABLE(outputStream);
+        if (!seekable) {
+            return -4;
+        }
+
+        goffset pos = g_seekable_tell(seekable);
+
+        return qint64(pos);
     }
 
-    GSeekable *seekable = G_SEEKABLE(inputStream);
-    if (!seekable) {
-        return false;
-    }
+    d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+    return -5;
 
-    goffset pos = g_seekable_tell(seekable);
-
-    return qint64(pos);
 }
 
 DFile::Permissions DFile::permissions() const
@@ -775,45 +799,89 @@ bool DFile::cancel()
 bool DFile::seek(qint64 pos, DFile::SeekType type) const
 {
     GInputStream *inputStream = d->inputStream();
-    if (!inputStream) {
-        d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
-        return -1;
+    if (inputStream) {
+        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+        gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
+        if (!canSeek) {
+            return false;
+        }
+
+        GSeekable *seekable = G_SEEKABLE(inputStream);
+        if (!seekable) {
+            return false;
+        }
+
+        bool ret = false;
+        GError *gerror = nullptr;
+        GSeekType gtype = G_SEEK_CUR;
+        switch (type) {
+        case DFile::SeekType::kBegin:
+            gtype = G_SEEK_SET;
+            break;
+        case DFile::SeekType::kEnd:
+            gtype = G_SEEK_END;
+            break;
+
+        default:
+            break;
+        }
+
+        d->checkAndResetCancel();
+        ret = g_seekable_seek(seekable, pos, gtype, d->cancellable, &gerror);
+        if (gerror) {
+            qCritical() << " seek err code = " << gerror->code
+                        << " , seek err msg = " << gerror->message;
+            d->setErrorFromGError(gerror);
+            g_error_free(gerror);
+        }
+
+        return ret;
     }
 
-    // seems g_seekable_can_seek only support local file, survey after. todo lanxs
-    gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
-    if (!canSeek) {
-        return false;
+    GOutputStream *out = d->outputStream();
+    if (out) {
+        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+        gboolean canSeek = G_IS_SEEKABLE(out) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
+        if (!canSeek) {
+            return false;
+        }
+
+        GSeekable *seekable = G_SEEKABLE(out);
+        if (!seekable) {
+            return false;
+        }
+
+        bool ret = false;
+        GError *gerror = nullptr;
+        GSeekType gtype = G_SEEK_CUR;
+        switch (type) {
+        case DFile::SeekType::kBegin:
+            gtype = G_SEEK_SET;
+            break;
+        case DFile::SeekType::kEnd:
+            gtype = G_SEEK_END;
+            break;
+
+        default:
+            break;
+        }
+
+        d->checkAndResetCancel();
+        ret = g_seekable_seek(seekable, pos, gtype, d->cancellable, &gerror);
+        if (gerror) {
+            qCritical() << " seek err code = " << gerror->code
+                        << " , seek err msg = " << gerror->message;
+            d->setErrorFromGError(gerror);
+            g_error_free(gerror);
+        }
+
+        return ret;
     }
 
-    GSeekable *seekable = G_SEEKABLE(inputStream);
-    if (!seekable) {
-        return false;
-    }
+    d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+    return false;
 
-    bool ret = false;
-    GError *gerror = nullptr;
-    GSeekType gtype = G_SEEK_CUR;
-    switch (type) {
-    case DFile::SeekType::kBegin:
-        gtype = G_SEEK_SET;
-        break;
-    case DFile::SeekType::kEnd:
-        gtype = G_SEEK_END;
-        break;
 
-    default:
-        break;
-    }
-
-    d->checkAndResetCancel();
-    ret = g_seekable_seek(seekable, pos, gtype, d->cancellable, &gerror);
-    if (gerror) {
-        d->setErrorFromGError(gerror);
-        g_error_free(gerror);
-    }
-
-    return ret;
 }
 
 bool DFile::flush()
@@ -863,7 +931,6 @@ qint64 DFile::read(char *data, qint64 maxSize)
                                       static_cast<gsize>(maxSize),
                                       d->cancellable,
                                       &gerror);
-
     if (gerror) {
         d->setErrorFromGError(gerror);
         return -1;

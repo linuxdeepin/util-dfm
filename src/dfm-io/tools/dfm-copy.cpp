@@ -35,7 +35,7 @@ static void copy(const QUrl &url_src, const QUrl &url_dst)
 {
     const int block = 128 * 1024;
     char buff[block];
-    int read = 0;
+    qint64 read = 0;
 
     QSharedPointer<DFile> stream_src = make_stream(url_src, DFile::OpenFlag::kReadOnly);
     QSharedPointer<DFile> stream_dst = make_stream(url_dst, DFile::OpenFlag::kWriteOnly);
@@ -43,11 +43,20 @@ static void copy(const QUrl &url_src, const QUrl &url_dst)
     if (!stream_src || !stream_dst) {
         return;
     }
+
     while ((read = stream_src->read(buff, block)) > 0) {
-        if (stream_dst->write(buff, read) != read) {
-            err_msg("write failed.");
-            break;
-        }
+        qint64 sizeall = 0, sizeWrite = 0, sizeRead = read;
+        char *surplusData = buff;
+        do {
+            sizeWrite = stream_dst->write(surplusData, sizeRead);
+            sizeall += sizeWrite;
+            surplusData += sizeWrite;
+            sizeRead -= sizeWrite;
+            if (sizeWrite < 0 || (sizeWrite == 0 && sizeRead > 0)){
+                err_msg("write failed.");
+                return;
+            }
+        } while (sizeall < read);
     }
 }
 
