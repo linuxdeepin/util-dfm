@@ -12,8 +12,8 @@ if (NOT PROJECT_VERSION_MAJOR)
 endif()
 
 # Setup the environment
-find_package(Qt5 COMPONENTS Core REQUIRED)
-find_package(Qt5 COMPONENTS Concurrent REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Concurrent REQUIRED)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GLIB glib-2.0 gobject-2.0 gio-2.0)
@@ -46,8 +46,8 @@ set_target_properties(
 )
 
 target_link_libraries(${BIN_NAME}
-    Qt5::Core
-    Qt5::Concurrent
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Concurrent
     PkgConfig::mediainfoVal
     ${mediainfos}
     ${GLIB_LIBRARIES}

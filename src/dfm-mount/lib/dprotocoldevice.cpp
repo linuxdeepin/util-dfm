@@ -128,7 +128,11 @@ QStringList DProtocolDevice::deviceIcons() const
             // iconName: . GThemedIcon drive-removable-media drive-removable drive drive-removable-media-symbolic drive-removable-symbolic drive-symbolic
             QString iconNames(cname);
             iconNames.remove(". GThemedIcon");
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            auto iconLst = iconNames.split(" ", Qt::SkipEmptyParts);
+#else
             auto iconLst = iconNames.split(" ", QString::SkipEmptyParts);
+#endif
             dp->deviceIcons = iconLst;
             return iconLst;
         }

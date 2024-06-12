@@ -2,16 +2,20 @@ add_definitions(-DQT_NO_KEYWORDS)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -fsanitize=address")
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set (CMAKE_VERBOSE_MAKEFILE ON)
-    message("debug type open sanitize check")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
-    set(CMAKE_L_FLAGS "${CMAKE_L_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
-    #set(CMAKE_CXX_FLAGS "-fsanitize=thread")
+if (QT_VERSION_MAJOR EQUAL "5")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set (CMAKE_VERBOSE_MAKEFILE ON)
+        message("debug type open sanitize check")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
+        set(CMAKE_L_FLAGS "${CMAKE_L_FLAGS} -fsanitize=undefined,address,leak -fno-omit-frame-pointer")
 
+        #set(CMAKE_CXX_FLAGS "-fsanitize=thread")
+    endif()
 endif()
+
 
 # include
 include_directories(

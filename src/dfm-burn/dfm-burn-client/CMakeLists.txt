@@ -6,7 +6,7 @@ set(SRCS
     main.cpp
 )
 
-find_package(Qt5Core REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR}Core REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SRCS})
 
@@ -16,6 +16,6 @@ include_directories(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    Qt5::Core
+    Qt${QT_VERSION_MAJOR}::Core
     dfm-burn
 )
