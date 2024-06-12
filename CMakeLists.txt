@@ -12,7 +12,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 set(QT_MINIMUM_VERSION "5.6.3")
 
 include(GNUInstallDirs)
-find_package(Qt5 ${QT_MINIMUM_VERSION} CONFIG REQUIRED Core)
+find_package(QT NAMES Qt6 Qt5 ${QT_MINIMUM_VERSION} CONFIG REQUIRED Core)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+message("Using Qt version: ${QT_VERSION}")
+
 find_package(PkgConfig REQUIRED)
 
 # Install settings

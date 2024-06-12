@@ -18,10 +18,10 @@ add_compile_definitions(QT_NO_SIGNALS_SLOTS_KEYWORDS)
 add_definitions(-DQT_NO_KEYWORDS)
 
 find_package(PkgConfig REQUIRED)
-find_package(Qt5 COMPONENTS Core REQUIRED)
-find_package(Qt5 COMPONENTS Concurrent REQUIRED)
-find_package(Qt5 COMPONENTS DBus REQUIRED)
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Concurrent REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS DBus REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 pkg_check_modules(udisks2 REQUIRED udisks2 IMPORTED_TARGET)
 pkg_check_modules(glib REQUIRED glib-2.0 IMPORTED_TARGET)
@@ -51,10 +51,10 @@ set_target_properties(
 )
 
 target_link_libraries(${BIN_NAME}
-    Qt5::Core
-    Qt5::Concurrent
-    Qt5::DBus
-    Qt5::Widgets
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Concurrent
+    Qt${QT_VERSION_MAJOR}::DBus
+    Qt${QT_VERSION_MAJOR}::Widgets
     PkgConfig::udisks2
     PkgConfig::glib
     PkgConfig::gio
@@ -96,7 +96,7 @@ set(EXAMPLE_SRCS
     example/main.cpp)
 add_executable(${BIN_NAME}_example ${EXAMPLE_SRCS})
 target_link_libraries(${BIN_NAME}_example ${BIN_NAME})
-target_link_libraries(${BIN_NAME}_example Qt5::Widgets)
+target_link_libraries(${BIN_NAME}_example Qt${QT_VERSION_MAJOR}::Widgets)
 
 #set(CMAKE_CXX_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")
 #set(CMAKE_C_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")
