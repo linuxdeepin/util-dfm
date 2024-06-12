@@ -689,7 +689,13 @@ QSet<QString> DLocalHelper::hideListFromUrl(const QUrl &url)
     if (succ) {
         if (contents && len > 0) {
             QString dataStr(contents);
-            return QSet<QString>::fromList(dataStr.split('\n', QString::SkipEmptyParts));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            const QStringList strs { dataStr.split('\n', Qt::SkipEmptyParts) };
+            return QSet<QString> { strs.begin(), strs.end() };
+#else
+            const QStringList strs { dataStr.split('\n', QString::SkipEmptyParts) };
+            return QSet<QString>::fromList(strs);
+#endif
         }
     }
     return {};
@@ -745,12 +751,14 @@ public:
 
 bool DLocalHelper::isNumOrChar(const QChar ch)
 {
-    return (ch >= 48 && ch <= 57) || (ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122);
+    int chValue = ch.unicode();
+    return (chValue >= 48 && chValue <= 57) || (chValue >= 65 && chValue <= 90) || (chValue >= 97 && chValue <= 122);
 }
 
 bool DLocalHelper::isNumber(const QChar ch)
 {
-    return (ch >= 48 && ch <= 57);
+    int chValue = ch.unicode();
+    return (chValue >= 48 && chValue <= 57);
 }
 
 bool DLocalHelper::isSymbol(const QChar ch)

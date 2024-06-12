@@ -12,7 +12,7 @@ if (NOT PROJECT_VERSION_MAJOR)
 endif()
 
 # Setup the environment
-find_package(Qt5 COMPONENTS Core REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(isoburn REQUIRED libisoburn-1 IMPORTED_TARGET)
 
@@ -41,7 +41,7 @@ add_library(${BIN_NAME} SHARED
 
 
 target_link_libraries(${BIN_NAME}
-    Qt5::Core
+    Qt${QT_VERSION_MAJOR}::Core
     PkgConfig::isoburn
 )
 
