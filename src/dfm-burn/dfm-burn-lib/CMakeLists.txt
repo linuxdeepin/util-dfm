@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 
-set(BIN_NAME dfm-burn)
+set(BIN_NAME dfm${DFM_VERSION_MAJOR}-burn)
+set(BASE_NAME dfm-burn)
 
 # Version
 if (NOT PROJECT_VERSION)
@@ -18,7 +19,7 @@ pkg_check_modules(isoburn REQUIRED libisoburn-1 IMPORTED_TARGET)
 
 # public include
 file(GLOB_RECURSE PUBLIC_INCLUDES  CONFIGURE_DEPENDS
-    "${PROJECT_SOURCE_DIR}/include/${BIN_NAME}/*")
+    "${PROJECT_SOURCE_DIR}/include/${BASE_NAME}/*")
 
 # udfclient
 FILE (GLOB_RECURSE UDFCLIENT_SRCS CONFIGURE_DEPENDS
@@ -48,7 +49,7 @@ target_link_libraries(${BIN_NAME}
 target_include_directories(
     ${BIN_NAME}
 PUBLIC
-    ${PROJECT_SOURCE_DIR}/include/${BIN_NAME}
+    ${PROJECT_SOURCE_DIR}/include/${BASE_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
@@ -72,15 +73,15 @@ target_compile_definitions(${BIN_NAME} PRIVATE
 )
 
 set_target_properties(
-    dfm-burn PROPERTIES
+    ${BIN_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
 # Install
 install(DIRECTORY
-    ${PROJECT_SOURCE_DIR}/include/${BIN_NAME}
-    DESTINATION include
+    ${PROJECT_SOURCE_DIR}/include/${BASE_NAME}/${BASE_NAME}
+    DESTINATION include/${BIN_NAME}
     FILES_MATCHING PATTERN "*.h"
 )
 install(TARGETS ${BIN_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -91,11 +92,11 @@ set(PC_REQ_PRIVATE)
 set(PC_REQ_PUBLIC)
 
 # config pkgconfig file
-configure_file(${PROJECT_SOURCE_DIR}/misc/${BIN_NAME}/${BIN_NAME}.pc.in ${BIN_NAME}.pc @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/misc/${BASE_NAME}/${BASE_NAME}.pc.in ${BIN_NAME}.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # config cmake file
-configure_file(${PROJECT_SOURCE_DIR}/misc/${BIN_NAME}/${BIN_NAME}Config.cmake.in ${BIN_NAME}Config.cmake @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/misc/${BASE_NAME}/${BASE_NAME}Config.cmake.in ${BIN_NAME}Config.cmake @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME}Config.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${BIN_NAME})
 
 
