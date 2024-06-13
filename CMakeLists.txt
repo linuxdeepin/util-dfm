@@ -16,9 +16,11 @@ include(GNUInstallDirs)
 
 if(OPT_ENABLE_QT6)
     find_package(QT NAMES Qt6 CONFIG REQUIRED Core)
+    set(DFM_VERSION_MAJOR 6)
 else()
     set(QT_MINIMUM_VERSION "5.6.3")
     find_package(QT NAMES Qt5 ${QT_MINIMUM_VERSION} CONFIG REQUIRED Core)
+    set(DFM_VERSION_MAJOR "")
 endif()
 
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)

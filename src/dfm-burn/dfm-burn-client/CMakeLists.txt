@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1.0)
 
-project(dfm-burn-client)
+project(dfm${DFM_VERSION_MAJOR}-burn-client)
 
 set(SRCS
     main.cpp
@@ -17,5 +17,5 @@ include_directories(
 target_link_libraries(
     ${PROJECT_NAME}
     Qt${QT_VERSION_MAJOR}::Core
-    dfm-burn
+    dfm${DFM_VERSION_MAJOR}-burn
 )
