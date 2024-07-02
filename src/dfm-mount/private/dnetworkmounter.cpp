@@ -177,12 +177,17 @@ void DNetworkMounter::mountNetworkDev(const QString &address, GetMountPassInfo g
                                       GetUserChoice getUserChoice,
                                       DeviceOperateCallbackWithMessage mountResult, int secs)
 {
-    QUrl u(address);
-    // don't mount samba's root by Daemon
-    if (u.scheme() == "smb" && !u.path().remove("/").isEmpty() && isDaemonMountEnable())
+    if (isMountByDae(address))
         mountByDaemon(address, getPassInfo, mountResult, secs);
     else
         mountByGvfs(address, getPassInfo, getUserChoice, mountResult, secs);
+}
+
+bool DNetworkMounter::isMountByDae(const QString &address)
+{
+    QUrl u(address);
+    // don't mount samba's root by Daemon
+    return u.scheme() == "smb" && !u.path().remove("/").isEmpty() && isDaemonMountEnable();
 }
 
 bool DNetworkMounter::unmountNetworkDev(const QString &mpt)
