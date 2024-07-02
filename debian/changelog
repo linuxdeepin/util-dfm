@@ -1,3 +1,9 @@
+util-dfm (1.2.25) unstable; urgency=medium
+
+  * update version to 1.2.25
+
+ -- liujinchang <liujinchang@uniontech.com>  Tue, 02 Jul 2024 15:06:32 +0800
+
 util-dfm (1.2.24) unstable; urgency=medium
 
   * a new attribute is added.
