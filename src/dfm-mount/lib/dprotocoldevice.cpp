@@ -25,9 +25,9 @@ struct CallbackProxyWithData
 {
     CallbackProxyWithData() = delete;
     explicit CallbackProxyWithData(DeviceOperateCallback cb)
-        : caller(cb) { }
+        : caller(cb) {}
     explicit CallbackProxyWithData(DeviceOperateCallbackWithMessage cb)
-        : caller(cb) { }
+        : caller(cb) {}
     CallbackProxy caller;
     QPointer<DProtocolDevice> data;
     DProtocolDevicePrivate *d { nullptr };
@@ -145,6 +145,11 @@ QStringList DProtocolDevice::deviceIcons() const
 void DProtocolDevice::mountNetworkDevice(const QString &address, GetMountPassInfo getPassInfo, GetUserChoice getUserChoice, DeviceOperateCallbackWithMessage mountResult, int secs)
 {
     DNetworkMounter::mountNetworkDev(address, getPassInfo, getUserChoice, mountResult, secs);
+}
+
+bool DProtocolDevice::isMountByDaemon(const QString &address)
+{
+    return DNetworkMounter::isMountByDae(address);
 }
 
 void DProtocolDevice::setOperatorTimeout(int msecs)
