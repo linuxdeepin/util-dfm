@@ -103,7 +103,7 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
                     auto info = static_cast<QVariantMap *>(vm);
                     if (!info)
                         return;
-                    info->insert(static_cast<char *>(k), static_cast<char *>(v));
+                    info->insert(static_cast<char *>(k), QString(static_cast<char *>(v)));
                     qInfo() << "found saved login info:" << *info;
                 },
                 &attr);
@@ -214,9 +214,11 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
                                     DeviceOperateCallbackWithMessage mountResult, int secs)
 {
     auto requestLoginInfo = [address, getPassInfo] {
-        if (getPassInfo)
+        if (getPassInfo) {
+            QSettings settings("/etc/samba/smb.conf", QSettings::IniFormat);
             return getPassInfo(QObject::tr("need authorization to access %1").arg(address),
-                               Utils::currentUser(), "WORKGROUP");
+                               Utils::currentUser(), settings.value("global/workgroup", "WORKGROUP").toString());
+        }
         return MountPassInfo();
     };
     auto checkThread = [] {
