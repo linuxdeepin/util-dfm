@@ -21,6 +21,7 @@ class DNetworkMounter
 {
 public:
     static bool isDaemonMountEnable();
+    static bool isMountByDae(const QString &address);
     static void mountNetworkDev(const QString &, GetMountPassInfo, GetUserChoice, DeviceOperateCallbackWithMessage, int);
     static bool unmountNetworkDev(const QString &);
     static void unmountNetworkDevAsync(const QString &, DeviceOperateCallback);
