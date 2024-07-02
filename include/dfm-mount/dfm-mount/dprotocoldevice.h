@@ -42,6 +42,8 @@ public:
                                    GetUserChoice getUserChoice,
                                    DeviceOperateCallbackWithMessage mountResult, int secs = 0);
 
+    static bool isMountByDaemon(const QString &address);
+
     void setOperatorTimeout(int msecs);
 
 private:
