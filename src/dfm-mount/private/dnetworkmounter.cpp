@@ -37,6 +37,7 @@ static constexpr char kLoginDomain[] { "domain" };
 static constexpr char kLoginPasswd[] { "passwd" };
 static constexpr char kLoginTimeout[] { "timeout" };
 static constexpr char kMountFsType[] { "fsType" };
+static constexpr char kSmbConfigPath[] { "/etc/samba/smb.conf" };
 
 static constexpr char kDaemonMountRetKeyMpt[] { "mountPoint" };
 static constexpr char kDaemonMountRetKeyErrno[] { "errno" };
@@ -219,9 +220,11 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
                                     DeviceOperateCallbackWithMessage mountResult, int secs)
 {
     auto requestLoginInfo = [address, getPassInfo] {
-        if (getPassInfo)
+        if (getPassInfo) {
+            QSettings setting(kSmbConfigPath, QSettings::IniFormat);
             return getPassInfo(QObject::tr("need authorization to access %1").arg(address),
-                               Utils::currentUser(), "WORKGROUP");
+                               Utils::currentUser(), setting.value("global/workgroup", "WORKGROUP").toString());
+        }
         return MountPassInfo();
     };
     auto checkThread = [] {
