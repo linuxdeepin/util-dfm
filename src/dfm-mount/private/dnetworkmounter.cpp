@@ -103,8 +103,7 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
                     auto info = static_cast<QVariantMap *>(vm);
                     if (!info)
                         return;
-                    QVariant vVariant = QVariant::fromValue((void *)v);
-                    info->insert(static_cast<char *>(k), vVariant);
+                    info->insert(static_cast<char *>(k), QString(static_cast<char *>(v)));
                     qInfo() << "found saved login info:" << *info;
                 },
                 &attr);
