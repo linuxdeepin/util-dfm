@@ -66,6 +66,7 @@ enum DFMIOErrorCode {
     DFM_IO_ERROR_OPEN_FLAG_ERROR,   // File open flag is error
     DFM_IO_ERROR_INFO_NO_ATTRIBUTE,   // File info has no attribute
     DFM_IO_ERROR_FTS_OPEN,   // open file by fts failed
+    DFM_IO_ERROR_HOST_IS_DOWN, // remote server maybe down
 };
 
 inline const QString GetError_En(DFMIOErrorCode errorCode)
@@ -179,6 +180,8 @@ inline const QString GetError_En(DFMIOErrorCode errorCode)
         return QObject::tr("open file by fts failed");
     case DFM_IO_ERROR_USER_FAILED:
         return QString();
+    case DFM_IO_ERROR_HOST_IS_DOWN:
+        return QObject::tr("Host is down");
     }
 
     return QString("Unknown error");
