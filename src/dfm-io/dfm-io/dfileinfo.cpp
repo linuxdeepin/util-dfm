@@ -216,6 +216,14 @@ void DFileInfoPrivate::setErrorFromGError(GError *gerror)
 {
     if (!gerror)
         return;
+
+    if (g_error_matches(gerror, G_IO_ERROR,G_IO_ERROR_FAILED) &&
+            QString(gerror->message).contains(strerror(EHOSTDOWN))) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_HOST_IS_DOWN);
+        error.setMessage(gerror->message);
+        return;
+    }
+
     error.setCode(DFMIOErrorCode(gerror->code));
     if (error.code() == DFMIOErrorCode::DFM_IO_ERROR_FAILED)
         error.setMessage(gerror->message);
