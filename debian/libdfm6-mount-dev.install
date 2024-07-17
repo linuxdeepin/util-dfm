@@ -1,0 +1,3 @@
+usr/include/dfm6-mount/*
+usr/lib/*/pkgconfig/dfm6-mount.pc
+usr/lib/*/cmake/dfm6-mount/*.cmake
