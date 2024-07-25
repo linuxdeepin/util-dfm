@@ -68,7 +68,6 @@ public:
     static int compareByLastModifed(const FTSENT **left, const FTSENT **right);
     static int compareByLastRead(const FTSENT **left, const FTSENT **right);
     static QSharedPointer<DEnumerator::SortFileInfo> createSortFileInfo(const FTSENT *ent,
-                                                                        const QSharedPointer<DFileInfo> &info,
                                                                         const QSet<QString> hidList);
 private:
     static QVariant getGFileInfoIcon(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
