@@ -1354,11 +1354,11 @@ QVariant DBlockDevicePrivate::getPartitionProperty(Property name) const
     case Property::kPartitionFlags:
         return quint64(udisks_partition_get_flags(partition));
     case Property::kPartitionName: {
-        char *tmp = udisks_partition_dup_uuid(partition);
+        char *tmp = udisks_partition_dup_name(partition);
         return Utils::gcharToQString(tmp);
     }
     case Property::kPartitionUUID: {
-        char *tmp = udisks_partition_dup_type_(partition);
+        char *tmp = udisks_partition_dup_uuid(partition);
         return Utils::gcharToQString(tmp);
     }
     case Property::kPartitionTable: {
