@@ -105,3 +105,4 @@ target_link_libraries(${BIN_NAME}_example Qt5::Widgets)
 #set(CMAKE_CXX_FLAGS "-fsanitize=thread")
 #set(CMAKE_C_FLAGS "-fsanitize=thread")
 #set(CMAKE_Ｌ_FLAGS "-fsanitize=thread")
+
