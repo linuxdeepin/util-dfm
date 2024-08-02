@@ -23,10 +23,4 @@ if (DFM_BUILD_WITH_QT6)
 include(dfm-io-qt6.cmake)
 endif()
 
-# install headers
-install(DIRECTORY
-    ${PROJECT_SOURCE_DIR}/include/${BASE_NAME}/${BASE_NAME}
-    DESTINATION include/${BIN_NAME}
-    FILES_MATCHING PATTERN "*.h"
-)
 
