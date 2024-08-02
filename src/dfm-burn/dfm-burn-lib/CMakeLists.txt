@@ -26,10 +26,3 @@ if (DFM_BUILD_WITH_QT6)
 include(dfm-burn-qt6.cmake)
 endif()
 
-# install header
-install(DIRECTORY
-    ${PROJECT_SOURCE_DIR}/include/${BASE_NAME}/${BASE_NAME}
-    DESTINATION include/${BASE_NAME}
-    FILES_MATCHING PATTERN "*.h"
-)
-

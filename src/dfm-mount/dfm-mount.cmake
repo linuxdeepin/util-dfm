@@ -52,12 +52,14 @@ PUBLIC
 include(GNUInstallDirs)
 
 # Install lib
+install(TARGETS ${BIN_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+# install headers
 install(DIRECTORY
     ${PROJECT_SOURCE_DIR}/include/${BASE_NAME}/${BASE_NAME}
     DESTINATION include/${BIN_NAME}
     FILES_MATCHING PATTERN "*.h"
 )
-install(TARGETS ${BIN_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # for pc file config
 set(PC_LIBS_PRIVATE Qt${QT_VERSION_MAJOR}Core)
