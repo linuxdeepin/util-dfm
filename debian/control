@@ -7,19 +7,19 @@ Build-Depends:
  cmake,
  pkg-config,
  qtbase5-dev,
- qt6-base-dev | qtbase5-dev,
+ qt6-base-dev | hello,
  qtbase5-private-dev,
- qt6-base-private-dev | qtbase5-private-dev,
+ qt6-base-private-dev | hello,
  qt5-qmake,
- qmake6 | qt5-qmake,
+ qmake6 | hello,
  libglibmm-2.4-dev,
  qttools5-dev-tools,
- qt6-tools-dev-tools | qttools5-dev-tools,
+ qt6-tools-dev-tools | hello,
  libglib2.0-dev,
  libudisks2-dev,
  libisoburn-dev,
- libmediainfo-dev,
- libsecret-1-dev
+ libsecret-1-dev,
+ libmediainfo-dev
 Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm
