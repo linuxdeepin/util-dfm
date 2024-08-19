@@ -54,6 +54,7 @@ public:
     void startAsyncIterator();
     bool hasNext();
     QList<QSharedPointer<DFileInfo>> fileInfoList();
+    void setQueryAttributes(const QString &attributes);
 
     static void enumUriAsyncCallBack(GObject *sourceObject,
                                      GAsyncResult *res,
@@ -78,6 +79,7 @@ public:
     QMap<QUrl, QSet<QString>> hideListMap;
     QList<QSharedPointer<DFileInfo>> infoList;
     QList<GFileInfo *> asyncInfos;
+    QString queryAttributes;
 
     QStringList nameFilters;
     DEnumerator::DirFilters dirFilters { DEnumerator::DirFilter::kNoFilter };
