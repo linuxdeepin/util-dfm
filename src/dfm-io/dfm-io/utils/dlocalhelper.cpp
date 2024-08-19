@@ -894,37 +894,43 @@ int DLocalHelper::compareByLastRead(const FTSENT **left, const FTSENT **right)
     return (*left)->fts_statp->st_atim.tv_sec > (*right)->fts_statp->st_atim.tv_sec;
 }
 
-QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const FTSENT *ent, const QSharedPointer<DFileInfo> &info,
+QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const FTSENT *ent,
                                                                            const QSet<QString> hidList)
 {
     auto sortPointer = QSharedPointer<DEnumerator::SortFileInfo>(new DEnumerator::SortFileInfo);
     auto name = QString(ent->fts_name);
-    auto path = QString(ent->fts_path);
-    if (info) {
-        sortPointer->filesize = info->attribute(DFileInfo::AttributeID::kStandardSize).toLongLong();
-        sortPointer->isDir = info->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool();
-        sortPointer->isFile = !sortPointer->isDir;
-        sortPointer->isSymLink = info->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool();
-        auto fileName = info->attribute(DFileInfo::AttributeID::kStandardFileName).toString();
-        sortPointer->isHide = name.startsWith(".")
-                ? true
-                : hidList.contains(name);
-        sortPointer->isReadable = info->attribute(DFileInfo::AttributeID::kAccessCanRead).toBool();
-        sortPointer->isWriteable = info->attribute(DFileInfo::AttributeID::kAccessCanWrite).toBool();
-        sortPointer->isExecutable = info->attribute(DFileInfo::AttributeID::kAccessCanExecute).toBool();
-        sortPointer->url = QUrl::fromLocalFile(path);
-        return sortPointer;
+    sortPointer->filesize = ent->fts_statp->st_size;
+    sortPointer->isSymLink = S_ISLNK(ent->fts_statp->st_mode);
+    if (sortPointer->isSymLink) {
+        char buffer[4096]{0};
+        auto size = readlink(ent->fts_path, buffer, sizeof(buffer));
+        if (size > 0) {
+            QString symlinkTagetPath = QString::fromUtf8(buffer, static_cast<int>(size));
+            sortPointer->symlinkUrl = QUrl::fromLocalFile(symlinkTagetPath);
+            struct stat st;
+            if (stat(symlinkTagetPath.toStdString().c_str(),&st) == 0)
+                sortPointer->isDir = S_ISDIR(st.st_mode);
+        }
+    } else {
+        sortPointer->isDir = S_ISDIR(ent->fts_statp->st_mode);
     }
 
-    sortPointer->filesize = ent->fts_statp->st_size;
-    sortPointer->isDir = S_ISDIR(ent->fts_statp->st_mode);
     sortPointer->isFile = !sortPointer->isDir;
-    sortPointer->isSymLink = S_ISLNK(ent->fts_statp->st_mode);
     sortPointer->isHide = name.startsWith(".") ? true : hidList.contains(name);
     sortPointer->isReadable = ent->fts_statp->st_mode & S_IREAD;
     sortPointer->isWriteable = ent->fts_statp->st_mode & S_IWRITE;
     sortPointer->isExecutable = ent->fts_statp->st_mode & S_IEXEC;
     sortPointer->url = QUrl::fromLocalFile(ent->fts_path);
+    sortPointer->inode = ent->fts_statp->st_ino;
+    sortPointer->gid = ent->fts_statp->st_gid;
+    sortPointer->uid = ent->fts_statp->st_uid;
+    sortPointer->lastRead = ent->fts_statp->st_atim.tv_sec;
+    sortPointer->lastReadNs = ent->fts_statp->st_atim.tv_nsec;
+    sortPointer->lastModifed = ent->fts_statp->st_mtim.tv_sec;
+    sortPointer->lastModifedNs = ent->fts_statp->st_mtim.tv_nsec;
+    sortPointer->create = ent->fts_statp->st_ctim.tv_sec;
+    sortPointer->createNs = ent->fts_statp->st_ctim.tv_nsec;
+
     return sortPointer;
 }
 
