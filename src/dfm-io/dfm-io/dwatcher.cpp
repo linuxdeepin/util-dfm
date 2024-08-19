@@ -25,8 +25,6 @@ DWatcherPrivate::~DWatcherPrivate()
 
 GFileMonitor *DWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchType type)
 {
-    Q_UNUSED(type)
-
     if (!gfile) {
         error.setCode(DFMIOErrorCode(DFM_IO_ERROR_NOT_FOUND));
         return nullptr;
@@ -36,7 +34,14 @@ GFileMonitor *DWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchType t
     g_autoptr(GCancellable) cancel = g_cancellable_new();
 
     GFileMonitorFlags flags = GFileMonitorFlags(G_FILE_MONITOR_WATCH_MOUNTS | G_FILE_MONITOR_WATCH_MOVES);
-    gmonitor = g_file_monitor(gfile, flags, cancel, &gerror);
+    if (type == DWatcher::WatchType::kAuto) {
+        gmonitor = g_file_monitor(gfile, flags, cancel, &gerror);
+    } else if (type == DWatcher::WatchType::kDir) {
+        gmonitor = g_file_monitor_directory(gfile, flags, cancel, &gerror);
+    } else {
+        gmonitor = g_file_monitor_file(gfile, flags, cancel, &gerror);
+    }
+
 
     if (!gmonitor) {
         setErrorFromGError(gerror);
