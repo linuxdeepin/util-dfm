@@ -71,6 +71,22 @@ public:
         bool isReadable { false };
         bool isWriteable { false };
         bool isExecutable { false };
+        ino_t inode { 0 };
+        QUrl symlinkUrl;
+        uint gid { 0 };
+        uint uid { 0 };
+        qint64 lastRead { 0 };
+        qint64 lastReadNs { 0 };
+        qint64 lastModifed { 0 };
+        qint64 lastModifedNs { 0 };
+        qint64 create { 0 };
+        qint64 createNs { 0 };
+    };
+
+    enum class EnumeratorType : uint8_t{
+        kEnumeratorGio = 0, // enumerator by gio
+        kEnumeratorFts = 0, // enumerator by fts
+        kEnumeratorSystem = 0, // enumerator by system dirent
     };
 
 public:
@@ -99,6 +115,9 @@ public:
 
     void setSortMixed(bool mix);
     bool isSortMixed() const;
+
+    void setQueryAttributes(const QString &attributes);
+    QString queryAttributes() const;
 
 public:
     bool cancel();

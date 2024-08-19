@@ -30,6 +30,7 @@ USING_IO_NAMESPACE
 DEnumeratorPrivate::DEnumeratorPrivate(DEnumerator *q)
     : q(q)
 {
+    queryAttributes = FILE_DEFAULT_ATTRIBUTES;
 }
 
 DEnumeratorPrivate::~DEnumeratorPrivate()
@@ -89,7 +90,7 @@ bool DEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DEnumeratorP
     g_autoptr(GError) gerror = nullptr;
     checkAndResetCancel();
     GFileEnumerator *genumerator = g_file_enumerate_children(gfile,
-                                                             FILE_DEFAULT_ATTRIBUTES,
+                                                             queryAttributes.toStdString().c_str(),
                                                              enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
                                                              cancellable,
                                                              &gerror);
@@ -123,7 +124,6 @@ void DEnumeratorPrivate::setErrorFromGError(GError *gerror)
 {
     if (!gerror)
         return;
-
     error.setCode(DFMIOErrorCode(gerror->code));
     if (error.code() == DFMIOErrorCode::DFM_IO_ERROR_FAILED)
         error.setMessage(gerror->message);
@@ -266,29 +266,22 @@ bool DEnumeratorPrivate::openDirByfts()
 
 void DEnumeratorPrivate::insertSortFileInfoList(QList<QSharedPointer<DEnumerator::SortFileInfo>> &fileList, QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirList, FTSENT *ent, FTS *fts, const QSet<QString> &hideList)
 {
-    QSharedPointer<DFileInfo> info(nullptr);
-    bool isDir = S_ISDIR(ent->fts_statp->st_mode);
-    if (S_ISLNK(ent->fts_statp->st_mode)) {
-        const QUrl &url = QUrl::fromLocalFile(ent->fts_path);
-        info = DLocalHelper::createFileInfoByUri(url);
-        isDir = info->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool();
-    }
-
-    if (isDir)
+    auto sortInfo = DLocalHelper::createSortFileInfo(ent, hideList);
+    if (sortInfo->isDir && !sortInfo->isSymLink)
         fts_set(fts, ent, FTS_SKIP);
 
-    if (isDir && !isMixDirAndFile) {
+    if (sortInfo->isDir && !isMixDirAndFile) {
         if (sortOrder == Qt::DescendingOrder)
-            dirList.push_front(DLocalHelper::createSortFileInfo(ent, info, hideList));
+            dirList.push_front(sortInfo);
         else
-            dirList.push_back(DLocalHelper::createSortFileInfo(ent, info, hideList));
+            dirList.push_back(sortInfo);
         return;
     }
 
     if (sortOrder == Qt::DescendingOrder)
-        fileList.push_front(DLocalHelper::createSortFileInfo(ent, info, hideList));
+        fileList.push_front(sortInfo);
     else
-        fileList.push_back(DLocalHelper::createSortFileInfo(ent, info, hideList));
+        fileList.push_back(sortInfo);
 }
 
 void DEnumeratorPrivate::enumUriAsyncOvered(GList *files)
@@ -316,7 +309,7 @@ void DEnumeratorPrivate::startAsyncIterator()
     EnumUriData *userData = new EnumUriData();
     userData->pointer = sharedFromThis();
     g_file_enumerate_children_async(gfile,
-                                    FILE_DEFAULT_ATTRIBUTES,
+                                    queryAttributes.toStdString().c_str(),
                                     G_FILE_QUERY_INFO_NONE,
                                     G_PRIORITY_DEFAULT,
                                     cancellable,
@@ -341,7 +334,7 @@ bool DEnumeratorPrivate::hasNext()
                 uri.path() + "/" + QString(g_file_info_get_name(gfileInfo));
     nextUrl = QUrl::fromLocalFile(path);
 
-    dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
+    dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl, g_file_info_dup(gfileInfo), queryAttributes.toStdString().c_str(),
                                                       enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
 
     g_object_unref(gfileInfo);
@@ -361,13 +354,18 @@ QList<QSharedPointer<DFileInfo>> DEnumeratorPrivate::fileInfoList()
             continue;
         auto url = QUrl::fromLocalFile(uri.path() + "/" + QString(g_file_info_get_name(gfileInfo)));
 
-        infoList.append(DLocalHelper::createFileInfoByUri(url, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
+        infoList.append(DLocalHelper::createFileInfoByUri(url, g_file_info_dup(gfileInfo), queryAttributes.toStdString().c_str(),
                                                           enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone
                                                                     : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks));
         g_object_unref(gfileInfo);
     }
 
     return infoList;
+}
+
+void DEnumeratorPrivate::setQueryAttributes(const QString &attributes)
+{
+    queryAttributes = attributes;
 }
 
 void DEnumeratorPrivate::enumUriAsyncCallBack(GObject *sourceObject, GAsyncResult *res, gpointer userData)
@@ -546,6 +544,16 @@ void DEnumerator::setSortMixed(bool mix)
 bool DEnumerator::isSortMixed() const
 {
     return d->isMixDirAndFile;
+}
+
+void DEnumerator::setQueryAttributes(const QString &attributes)
+{
+    return d->setQueryAttributes(attributes);
+}
+
+QString DEnumerator::queryAttributes() const
+{
+    return d->queryAttributes;
 }
 
 bool DEnumerator::cancel()
