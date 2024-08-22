@@ -73,10 +73,28 @@ bool DNetworkMounter::isDaemonMountEnable()
     if (!systemBusIFace->isServiceRegistered(kDaemonService))
         return false;
 
-    QDBusInterface daemonIface(kDaemonService, kDaemonPath, kDaemonIntro,
-                               QDBusConnection::systemBus());
-    QDBusReply<QString> reply = daemonIface.call(kDaemonIntroMethod);
-    return reply.value().contains("<node name=\"MountControl\"/>");
+    // check if MountControl interface exists
+    QDBusInterface daemonIntroIface(kDaemonService, kDaemonPath, kDaemonIntro,
+                                    QDBusConnection::systemBus());
+    QDBusReply<QString> reply = daemonIntroIface.call(kDaemonIntroMethod);
+    if (reply.value().contains(R"(<node name="MountControl"/>)")) {
+        // check if "SupportedFileSystems" method exists
+        QDBusInterface introIface(kDaemonService,
+                                  "/com/deepin/filemanager/daemon/MountControl",
+                                  kDaemonIntro,
+                                  QDBusConnection::systemBus());
+        QDBusReply<QString> ifaceDesc = introIface.call(kDaemonIntroMethod);
+        if (!ifaceDesc.value().contains(R"(<method name="SupportedFileSystems">)"))
+            return true;
+
+        QDBusInterface mountIface(kDaemonService,
+                                  "/com/deepin/filemanager/daemon/MountControl",
+                                  "com.deepin.filemanager.daemon.MountControl",
+                                  QDBusConnection::systemBus());
+        QDBusReply<QStringList> supported = mountIface.call("SupportedFileSystems");
+        return supported.value().contains("cifs");
+    }
+    return false;
 }
 
 QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
@@ -105,7 +123,7 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
                         return;
                     info->insert(static_cast<char *>(k), QString(static_cast<char *>(v)));
                     qInfo() << "found saved login info:" << *info;
-                },      
+                },
                 &attr);
         if (attr.contains(kSchemaDomain) && attr.contains(kSchemaProtocol)
             && attr.contains(kSchemaServer) && attr.contains(kSchemaUser))
