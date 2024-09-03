@@ -1,3 +1,9 @@
+util-dfm (1.2.27) unstable; urgency=medium
+
+  * update version to 1.1.27
+
+ -- XuShitong <xushitong@uniontech.com>  Tue, 03 Sep 2024 10:44:47 +0800
+
 util-dfm (1.2.26) unstable; urgency=medium
 
   * update enum
