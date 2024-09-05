@@ -97,6 +97,7 @@ DFileInfoPrivate::~DFileInfoPrivate()
         g_object_unref(gfileinfo);
         gfileinfo = nullptr;
     }
+
     if (gfile) {
         g_object_unref(gfile);
         gfile = nullptr;
