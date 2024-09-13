@@ -18,12 +18,12 @@
 
 DFM_MOUNT_USE_NS
 
-static constexpr char kDaemonService[] { "com.deepin.filemanager.daemon" };
-static constexpr char kDaemonPath[] { "/com/deepin/filemanager/daemon" };
+static constexpr char kDaemonService[] { "org.deepin.Filemanager" };
+static constexpr char kDaemonPath[] { "/org/deepin/Filemanager" };
 static constexpr char kDaemonIntro[] { "org.freedesktop.DBus.Introspectable" };
 static constexpr char kDaemonIntroMethod[] { "Introspect" };
-static constexpr char kMountControlPath[] { "/com/deepin/filemanager/daemon/MountControl" };
-static constexpr char kMountControlIFace[] { "com.deepin.filemanager.daemon.MountControl" };
+static constexpr char kMountControlPath[] { "/org/deepin/Filemanager/MountControl" };
+static constexpr char kMountControlIFace[] { "org.deepin.Filemanager.MountControl" };
 static constexpr char kMountControlMount[] { "Mount" };
 static constexpr char kMountControlUnmount[] { "Unmount" };
 
