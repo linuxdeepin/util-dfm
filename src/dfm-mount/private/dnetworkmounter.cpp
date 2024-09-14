@@ -18,7 +18,7 @@
 
 DFM_MOUNT_USE_NS
 
-static constexpr char kDaemonService[] { "org.deepin.Filemanager" };
+static constexpr char kDaemonService[] { "org.deepin.Filemanager.MountControl" };
 static constexpr char kDaemonPath[] { "/org/deepin/Filemanager" };
 static constexpr char kDaemonIntro[] { "org.freedesktop.DBus.Introspectable" };
 static constexpr char kDaemonIntroMethod[] { "Introspect" };
@@ -81,7 +81,7 @@ bool DNetworkMounter::isDaemonMountEnable()
     if (reply.value().contains(R"(<node name="MountControl"/>)")) {
         // check if "SupportedFileSystems" method exists
         QDBusInterface introIface(kDaemonService,
-                                  "/com/deepin/filemanager/daemon/MountControl",
+                                  kMountControlPath,
                                   kDaemonIntro,
                                   QDBusConnection::systemBus());
         QDBusReply<QString> ifaceDesc = introIface.call(kDaemonIntroMethod);
@@ -89,8 +89,8 @@ bool DNetworkMounter::isDaemonMountEnable()
             return true;
 
         QDBusInterface mountIface(kDaemonService,
-                                  "/com/deepin/filemanager/daemon/MountControl",
-                                  "com.deepin.filemanager.daemon.MountControl",
+                                  kMountControlPath,
+                                  kMountControlIFace,
                                   QDBusConnection::systemBus());
         QDBusReply<QStringList> supported = mountIface.call("SupportedFileSystems");
         return supported.value().contains("cifs");
