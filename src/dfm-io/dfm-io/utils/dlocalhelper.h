@@ -8,6 +8,7 @@
 #include <dfm-io/dfmio_global.h>
 #include <dfm-io/dfileinfo.h>
 #include <dfm-io/denumerator.h>
+#include <dfm-io/dfmio_utils.h>
 
 #include <gio/gio.h>
 
