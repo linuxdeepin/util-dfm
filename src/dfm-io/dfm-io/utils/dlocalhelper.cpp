@@ -907,12 +907,15 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
         if (size > 0) {
             QString symlinkTagetPath = QString::fromUtf8(buffer, static_cast<int>(size));
             sortPointer->symlinkUrl = QUrl::fromLocalFile(symlinkTagetPath);
-            struct stat st;
-            if (stat(symlinkTagetPath.toStdString().c_str(),&st) == 0)
-                sortPointer->isDir = S_ISDIR(st.st_mode);
         }
     } else {
         sortPointer->isDir = S_ISDIR(ent->fts_statp->st_mode);
+    }
+
+    if (sortPointer->symlinkUrl.isValid() && !DFMUtils::isGvfsFile(sortPointer->symlinkUrl)) {
+        struct stat st;
+        if (stat(sortPointer->symlinkUrl.path().toStdString().c_str(),&st) == 0)
+            sortPointer->isDir = S_ISDIR(st.st_mode);
     }
 
     sortPointer->isFile = !sortPointer->isDir;
