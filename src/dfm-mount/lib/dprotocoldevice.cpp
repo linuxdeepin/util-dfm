@@ -297,7 +297,7 @@ bool DProtocolDevicePrivate::unmount(const QVariantMap &opts)
         return true;
     } else {
         QString mpt = mountPoint(mountHandler);
-        if (mpt.contains(QRegularExpression("^/media/.*/smbmounts/")) && DNetworkMounter::isDaemonMountEnable()) {
+        if (mpt.contains(QRegularExpression("^(?:/run/media|/media)/.*")) && DNetworkMounter::isDaemonMountEnable()) {
             return DNetworkMounter::unmountNetworkDev(mpt);
         } else {
             GMountOperation *operation { nullptr };
@@ -335,7 +335,7 @@ void DProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperate
         return;
     } else {
         QString mpt = mountPoint(mountHandler);
-        if (mpt.contains(QRegularExpression("^/media/.*/smbmounts/")) && DNetworkMounter::isDaemonMountEnable()) {
+        if (mpt.contains(QRegularExpression("^(?:/run/media|/media)/.*")) && DNetworkMounter::isDaemonMountEnable()) {
             DNetworkMounter::unmountNetworkDevAsync(mpt, cb);
         } else {
             GCancellable *cancellable { nullptr };
