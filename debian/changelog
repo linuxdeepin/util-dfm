@@ -1,3 +1,9 @@
+util-dfm (1.3.5) unstable; urgency=medium
+
+  * update version 
+
+ -- Liu zheng <liuzheng@uniontech.com>  Mon, 02 Dec 2024 17:42:32 +0800
+
 util-dfm (1.3.4) unstable; urgency=medium
 
   * Qt6 supported
