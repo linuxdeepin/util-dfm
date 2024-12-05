@@ -864,3 +864,36 @@ QString Utils::currentUser()
         return userInfo->pw_name;
     return "";
 }
+
+QVariant Utils::gvariantToQVariant(GVariant *value)
+{
+    if (!value)
+        return QVariant();
+
+    const GVariantType *type = g_variant_get_type(value);
+    if (g_variant_type_equal(type, G_VARIANT_TYPE_STRING)) {
+        return QString::fromUtf8(g_variant_get_string(value, nullptr));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_BYTESTRING)) {
+        return QByteArray(g_variant_get_bytestring(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_BOOLEAN)) {
+        return bool(g_variant_get_boolean(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_BYTE)) {
+        return quint8(g_variant_get_byte(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT16)) {
+        return qint16(g_variant_get_int16(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT16)) {
+        return quint16(g_variant_get_uint16(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT32)) {
+        return qint32(g_variant_get_int32(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT32)) {
+        return quint32(g_variant_get_uint32(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_INT64)) {
+        return qint64(g_variant_get_int64(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_UINT64)) {
+        return quint64(g_variant_get_uint64(value));
+    } else if (g_variant_type_equal(type, G_VARIANT_TYPE_DOUBLE)) {
+        return g_variant_get_double(value);
+    }   // Not all processed
+
+    return QVariant();
+}

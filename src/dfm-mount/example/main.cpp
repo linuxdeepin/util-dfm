@@ -5,8 +5,7 @@
 #include <QApplication>
 #include <QDebug>
 
-#include <dfm-mount/dprotocoldevice.h>
-#include <dfm-mount/ddevicemanager.h>
+#include "dfm-mount/dmount.h"
 
 using namespace dfmmount;
 int main(int argc, char **argv)
