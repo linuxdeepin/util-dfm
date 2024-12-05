@@ -65,6 +65,7 @@ public:
      * \return
      */
     static QStringList gcharvToQStringList(char **tmp);
+    static QVariant gvariantToQVariant(GVariant *value);
 
     template<typename FromClass, typename ToClass>
     static inline ToClass *castClassFromTo(FromClass *p)
