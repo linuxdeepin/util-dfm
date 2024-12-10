@@ -568,7 +568,7 @@ bool DNetworkMounter::isMounted(const QString &address, QString &mpt)
     if (fs) {
         mpt = mnt_fs_get_target(fs);
         qDebug() << "find mounted at: " << mpt << address;
-        QRegularExpression reg("^/media/(.*)/smbmounts/");
+        QRegularExpression reg("^/(?:run/)?media/(.*)/smbmounts/");
         QRegularExpressionMatch match = reg.match(mpt);
 
         if (match.hasMatch()) {
