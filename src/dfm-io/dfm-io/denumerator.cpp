@@ -322,27 +322,27 @@ bool DEnumeratorPrivate::hasNext()
     if (!asyncOvered)
         return false;
 
-    if (asyncInfos.isEmpty())
-        return false;
+    while (!asyncInfos.isEmpty()) {
+        auto gfileInfo = asyncInfos.takeFirst();
 
-    auto gfileInfo = asyncInfos.takeFirst();
+        if (!gfileInfo)
+            continue;
 
-    if (!gfileInfo)
-        return hasNext();
-    auto path = uri.path()  == "/" ?
-                "/" + QString(g_file_info_get_name(gfileInfo)) :
-                uri.path() + "/" + QString(g_file_info_get_name(gfileInfo));
-    nextUrl = QUrl::fromLocalFile(path);
+        auto path = uri.path() == "/" ?
+                    "/" + QString(g_file_info_get_name(gfileInfo)) :
+                    uri.path() + "/" + QString(g_file_info_get_name(gfileInfo));
+        nextUrl = QUrl::fromLocalFile(path);
 
-    dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl, g_file_info_dup(gfileInfo), queryAttributes.toStdString().c_str(),
-                                                      enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
+        dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl, g_file_info_dup(gfileInfo), queryAttributes.toStdString().c_str(),
+                                                          enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
 
-    g_object_unref(gfileInfo);
+        g_object_unref(gfileInfo);
 
-    if (!checkFilter())
-        return hasNext();
+        if (checkFilter())
+            return true;
+    }
 
-    return true;
+    return false;
 }
 
 QList<QSharedPointer<DFileInfo>> DEnumeratorPrivate::fileInfoList()
@@ -573,55 +573,59 @@ bool DEnumerator::hasNext() const
     if (!d->inited)
         d->init();
 
-    if (d->stackEnumerator.isEmpty())
-        return false;
+    while (!d->stackEnumerator.isEmpty()) {
+        GFileEnumerator *enumerator = d->stackEnumerator.top();
+        GFileInfo *gfileInfo = nullptr;
+        GFile *gfile = nullptr;
 
-    // sub dir enumerator
-    if (d->enumSubDir && d->dfileInfoNext && d->dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool()) {
-        bool showDir = true;
-        if (d->dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool()) {
-            // is symlink, need enumSymlink
-            showDir = d->enumLinks;
-        }
-        if (showDir)
-            d->init(d->nextUrl);
-    }
-    if (d->stackEnumerator.isEmpty())
-        return false;
+        g_autoptr(GError) gerror = nullptr;
+        d->checkAndResetCancel();
+        bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfile, d->cancellable, &gerror);
+        
+        if (hasNext) {
+            if (!gfileInfo || !gfile) {
+                // 当前枚举器已完成，弹出并继续下一个
+                GFileEnumerator *enumeratorPop = d->stackEnumerator.pop();
+                g_object_unref(enumeratorPop);
+                continue;
+            }
 
-    GFileEnumerator *enumerator = d->stackEnumerator.top();
-
-    GFileInfo *gfileInfo = nullptr;
-    GFile *gfile = nullptr;
-
-    g_autoptr(GError) gerror = nullptr;
-    d->checkAndResetCancel();
-    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfile, d->cancellable, &gerror);
-    if (hasNext) {
-        if (!gfileInfo || !gfile) {
-            GFileEnumerator *enumeratorPop = d->stackEnumerator.pop();
-            g_object_unref(enumeratorPop);
-            return this->hasNext();
-        }
-
-        g_autofree gchar *path = g_file_get_path(gfile);
-        if (path) {
-            d->nextUrl = QUrl::fromLocalFile(QString::fromLocal8Bit(path));
-        } else {
-            g_autofree gchar *uri = g_file_get_uri(gfile);
-            d->nextUrl = QUrl(QString::fromLocal8Bit(uri));
-        }
-        d->dfileInfoNext = DLocalHelper::createFileInfoByUri(d->nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
+            g_autofree gchar *path = g_file_get_path(gfile);
+            if (path) {
+                d->nextUrl = QUrl::fromLocalFile(QString::fromLocal8Bit(path));
+            } else {
+                g_autofree gchar *uri = g_file_get_uri(gfile);
+                d->nextUrl = QUrl(QString::fromLocal8Bit(uri));
+            }
+            d->dfileInfoNext = DLocalHelper::createFileInfoByUri(d->nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
                                                              d->enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
 
-        if (!d->checkFilter())
-            return this->hasNext();
+            // 如果是目录且需要遍历子目录
+            if (d->enumSubDir && d->dfileInfoNext && d->dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool()) {
+                bool showDir = true;
+                if (d->dfileInfoNext->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool()) {
+                    showDir = d->enumLinks;
+                }
+                if (showDir) {
+                    d->init(d->nextUrl);
+                }
+            }
 
-        return true;
+            if (!d->checkFilter())
+                continue;
+
+            return true;
+        }
+
+        if (gerror) {
+            d->setErrorFromGError(gerror);
+            return false;
+        }
+
+        // 当前枚举器已完成，弹出并继续下一个
+        GFileEnumerator *enumeratorPop = d->stackEnumerator.pop();
+        g_object_unref(enumeratorPop);
     }
-
-    if (gerror)
-        d->setErrorFromGError(gerror);
 
     return false;
 }
