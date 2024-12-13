@@ -5,103 +5,102 @@
 #include <dfm-io/dfmio_global.h>
 #include <dfm-io/denumerator.h>
 #include <dfm-io/denumeratorfuture.h>
+#include <dfm-io/dfileinfo.h>
 
 #include <stdio.h>
 
 #include <QDebug>
 #include <QUrl>
 #include <QCoreApplication>
-#include <QThread>
-#include <QtConcurrent>
 
 USING_IO_NAMESPACE
-// show detail
-static bool lflag = false;
 
-static void err_msg(const char *msg)
+void printFileInfo(const QSharedPointer<DFileInfo> &info)
 {
-    fprintf(stderr, "dfm-list: %s\n", msg);
+    QString type;
+    if (info->attribute(DFileInfo::AttributeID::kStandardIsDir).toBool())
+        type = "DIR ";
+    else if (info->attribute(DFileInfo::AttributeID::kStandardIsSymlink).toBool())
+        type = "LINK";
+    else
+        type = "FILE";
+
+    QString perms;
+    perms += info->attribute(DFileInfo::AttributeID::kAccessCanRead).toBool() ? "r" : "-";
+    perms += info->attribute(DFileInfo::AttributeID::kAccessCanWrite).toBool() ? "w" : "-";
+    perms += info->attribute(DFileInfo::AttributeID::kAccessCanExecute).toBool() ? "x" : "-";
+
+    qInfo() << QString("%1 %2 %3").arg(type, 4).arg(perms, 3)
+            << info->attribute(DFileInfo::AttributeID::kStandardName).toString();
 }
 
-static void enum_uri(const QUrl &url)
+void testFilter(const QUrl &url, DEnumerator::DirFilters filter, const QString &desc)
 {
-    QSharedPointer<DEnumerator> enumerator { new DEnumerator(url) };
+    qInfo() << "\n=== Testing" << desc << "===";
+
+    QSharedPointer<DEnumerator> enumerator(new DEnumerator(url, {}, filter, {}));
     if (!enumerator) {
-        err_msg("create enumerator failed.");
+        qWarning() << "Failed to create enumerator";
         return;
     }
 
-    int count { 0 };
+    int count = 0;
     while (enumerator->hasNext()) {
-        const QUrl &url = enumerator->next();
-        qInfo() << url;
-        ++count;
-    }
-    qInfo() << "count: " << count;
-    enumerator.clear();
-}
-
-static void enum_uri_async_test(const QUrl &url)
-{
-    static QSharedPointer<DEnumerator> enumerator { new DEnumerator(url) };
-    if (!enumerator) {
-        err_msg("create enumerator failed.");
-        return;
-    }
-    auto future = enumerator->asyncIterator();
-    QObject::connect(future, &DEnumeratorFuture::asyncIteratorOver, [=]() {
-        int count { 0 };
-        while (enumerator->hasNext()) {
-            const QUrl &url = enumerator->next();
-            qInfo() << url;
-            ++count;
+        enumerator->next();
+        auto info = enumerator->fileInfo();
+        if (info) {
+            printFileInfo(info);
+            count++;
         }
-        qInfo() << "count: " << count;
-        enumerator.clear();
-    });
-    future->startAsyncIterator();
+    }
+    qInfo() << "Total:" << count << "items\n";
 }
 
-void usage()
-{
-    err_msg("usage: dfm-list [-l] uri.");
-}
-
-// list all children in a directory.
 int main(int argc, char *argv[])
 {
-    if (argc != 2 && argc != 3) {
-        usage();
+    if (argc != 2) {
+        qWarning() << "Usage:" << argv[0] << "<directory_path>";
         return 1;
     }
 
     QCoreApplication a(argc, argv);
+    QUrl url = QUrl::fromLocalFile(QString::fromLocal8Bit(argv[1]));
 
-    char *uri = nullptr;
-    if (argc == 3) {
-        if (strcmp(argv[1], "-l") == 0) {
-            lflag = true;
-            uri = argv[2];
-        } else if (strcmp(argv[2], "-l") == 0) {
-            lflag = true;
-            uri = argv[1];
-        } else {
-            usage();
-            return 1;
-        }
-    } else {
-        // argc == 2
-        uri = argv[1];
+    if (!url.isValid()) {
+        qWarning() << "Invalid URL";
+        return 1;
     }
 
-    QUrl url(QUrl::fromLocalFile(QString::fromLocal8Bit(uri)));
+    // 测试所有基本过滤器
+    testFilter(url, DEnumerator::DirFilter::kNoFilter, "No Filter");
+    testFilter(url, DEnumerator::DirFilter::kDirs, "Directories Only");
+    testFilter(url, DEnumerator::DirFilter::kFiles, "Files Only");
+    testFilter(url, DEnumerator::DirFilter::kAllDirs, "All Directories (including . and ..)");
 
-    if (!url.isValid())
-        return 1;
+    // 测试权限过滤器
+    testFilter(url, DEnumerator::DirFilter::kAllEntries | DEnumerator::DirFilter::kReadable, "Readable");
+    testFilter(url, DEnumerator::DirFilter::kAllEntries | DEnumerator::DirFilter::kWritable, "Writable");
+    testFilter(url, DEnumerator::DirFilter::kAllEntries | DEnumerator::DirFilter::kExecutable, "Executable");
 
-    enum_uri(url);
+    // 测试特殊过滤器
+    testFilter(url, DEnumerator::DirFilter::kAllEntries | DEnumerator::DirFilter::kNoSymLinks, "No Symlinks");
 
-    enum_uri_async_test(url);
+    // 测试组合过滤器
+    testFilter(url,
+               DEnumerator::DirFilter::kAllDirs | DEnumerator::DirFilter::kHidden,
+               "All Dirs + Hidden");
 
-    return a.exec();
+    testFilter(url,
+               DEnumerator::DirFilter::kFiles | DEnumerator::DirFilter::kReadable | DEnumerator::DirFilter::kWritable,
+               "Files + Readable + Writable");
+
+    testFilter(url,
+               DEnumerator::DirFilter::kAllEntries | DEnumerator::DirFilter::kNoDotAndDotDot,
+               "All Entries but no . and ..");
+
+    testFilter(url,
+               DEnumerator::DirFilter::kDirs | DEnumerator::DirFilter::kNoSymLinks,
+               "Directories without symlinks");
+
+    return 0;
 }

@@ -99,6 +99,14 @@ public:
     std::atomic_bool async { false };
     std::atomic_bool asyncStoped { false };
     std::atomic_bool asyncOvered { false };
+
+private:
+    bool shouldShowDotAndDotDot(const QString &fileName);
+    bool checkEntryTypeFilter();
+    bool checkPermissionFilter();
+    bool checkSymlinkFilter();
+    bool checkHiddenFilter();
+    bool checkNameFilter(const QString &fileName);
 };
 
 END_IO_NAMESPACE
