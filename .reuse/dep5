@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name:util-dfm 
 Upstream-Contact: UnionTech Software Technology Co., Ltd. <>
-Source: https://gerrit.uniontech.com/admin/repos/util-dfm
+Source: https://github.com/linuxdeepin/util-dfm
 
 # ignore files
 Files: .gitignore
