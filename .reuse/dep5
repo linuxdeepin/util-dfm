@@ -49,7 +49,7 @@ Copyright: 2020 Zhang Yu
 License: MIT
 
 # udfclient
-Files: src/dfm-burn/3rdparty/UDFclient.0.8.20/*
+Files: src/dfm-burn/3rdparty/udfclient/*
 Copyright: Reinoud Zandijk <reinoud@netbsd.org>
 License: ClArtistic
 
