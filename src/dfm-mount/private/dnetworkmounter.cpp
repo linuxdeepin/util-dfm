@@ -147,8 +147,11 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
                 nullptr);
         if (err)
             qDebug() << "query password failed: " << passwd << err->message;
-        else
-            passwd.insert(kLoginPasswd, QString(pwd));
+        else {
+            // since daemon accept base64-ed passwd to mount cifs, cleartext should be encoded with base64
+            // see commit of dde-file-manager: 3b50664d4034754b15c1a516cfaab8c7fbdd3db9
+            passwd.insert(kLoginPasswd, QString(QByteArray(pwd).toBase64()));
+        }
     }
     return passwds;
 }
@@ -492,8 +495,13 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
     if (ok) {
         err = DeviceError::kNoError;
 
-        if (!info.anonymous && info.savePasswd != NetworkMountPasswdSaveMode::kNeverSavePasswd)
-            savePasswd(address, info);
+        if (!info.anonymous && info.savePasswd != NetworkMountPasswdSaveMode::kNeverSavePasswd) {
+            // since passwd from user input is base64-ed data, so the passwd should be decoded into cleartext for saving.
+            // associated commit of dde-file-manager: 3b50664d4034754b15c1a516cfaab8c7fbdd3db9
+            auto _info = info;
+            _info.passwd = QByteArray::fromBase64(info.passwd.toLocal8Bit());
+            savePasswd(address, _info);
+        }
     }
 
     return { ok, err, mpt };
