@@ -24,7 +24,7 @@ Copyright: None
 License: CC0-1.0
 
 # Project files
-Files: *CMakeLists.txt *.pc.in *.pri
+Files: *CMakeLists.txt *.pc.in *.pri *.cmake
 Copyright: None
 License: CC0-1.0
 
