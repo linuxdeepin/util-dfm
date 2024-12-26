@@ -1,3 +1,9 @@
+util-dfm (1.2.28) unstable; urgency=medium
+
+  * fix cifs password save issue.
+
+ -- XuShitong <xushitong@uniontech.com>  Thu, 26 Dec 2024 15:44:38 +0800
+
 util-dfm (1.2.27) unstable; urgency=medium
 
   * update version to 1.1.27
