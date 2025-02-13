@@ -61,9 +61,9 @@ public:
     static bool isNumOrChar(const QChar ch);
     static bool isNumber(const QChar ch);
     static bool isSymbol(const QChar ch);
-    static bool compareByStringEx(const QString &str1, const QString &str2);
+    static bool compareByStringEx(const QString &str1, const QString &str2, const bool str1HasSuf,const bool str2HasSuf);
     static QString numberStr(const QString &str, int pos);
-    static bool compareByString(const QString &str1, const QString &str2);
+    static bool compareByString(const QString &str1, const QString &str2, const bool str1HasSuf, const bool str2HasSuf);
     static int compareByName(const FTSENT **left, const FTSENT **right);
     static int compareBySize(const FTSENT **left, const FTSENT **right);
     static int compareByLastModifed(const FTSENT **left, const FTSENT **right);
