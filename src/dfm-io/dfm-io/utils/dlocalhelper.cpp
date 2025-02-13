@@ -779,13 +779,13 @@ QString DLocalHelper::numberStr(const QString &str, int pos)
 }
 
 // The first is smaller than the second and returns true
-bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2)
+bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2, const bool str1HasSuf, const bool str2HasSuf)
 {
     thread_local static DCollator sortCollator;
-    QString suf1 = str1.right(str1.length() - str1.lastIndexOf(".") - 1);
-    QString suf2 = str2.right(str2.length() - str2.lastIndexOf(".") - 1);
-    QString name1 = str1.left(str1.lastIndexOf("."));
-    QString name2 = str2.left(str2.lastIndexOf("."));
+    QString suf1 = str1HasSuf ? str1.right(str1.length() - str1.lastIndexOf(".") - 1) : QString();
+    QString suf2 = str2HasSuf ? str2.right(str2.length() - str2.lastIndexOf(".") - 1) : QString();
+    QString name1 = str1HasSuf ? str1.left(str1.lastIndexOf(".")) : str1;
+    QString name2 = str2HasSuf ? str2.left(str2.lastIndexOf(".")) : str2;
     int length1 = name1.length();
     int length2 = name2.length();
     auto total = length1 > length2 ? length2 : length1;
@@ -849,7 +849,7 @@ bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2)
     return length1 < length2;
 }
 
-bool DLocalHelper::compareByString(const QString &str1, const QString &str2)
+bool DLocalHelper::compareByString(const QString &str1, const QString &str2, const bool str1HasSuf, const bool str2HasSuf)
 {
     // 处理文件名称为  新建文件a 新建文件夹 排序错误的问题
     //  按名称排序
@@ -857,13 +857,13 @@ bool DLocalHelper::compareByString(const QString &str1, const QString &str2)
     //  2、其中数字由小到大排列，字母由a～z、 A~Z排列（例如：a A b B），汉字:按拼音首字母由a～z排列；
     //  3、如果首字母相同看第二位字母，以此类推；
     //  4、其他：特殊字符和乱码排在后面；
-    return compareByStringEx(str1, str2);
+    return compareByStringEx(str1, str2, str1HasSuf, str2HasSuf);
 }
 
 int DLocalHelper::compareByName(const FTSENT **left, const FTSENT **right)
 {
     QString str1 = QString((*left)->fts_name), str2 = QString((*right)->fts_name);
-    auto tt = compareByString(str1, str2);
+    auto tt = compareByString(str1, str2, !S_ISDIR((*left)->fts_statp->st_mode), !S_ISDIR((*right)->fts_statp->st_mode));
     return tt ? -1 : 1;
 }
 
