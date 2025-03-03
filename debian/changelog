@@ -1,3 +1,9 @@
+util-dfm (1.3.10) unstable; urgency=medium
+
+  * Remove all Qt5
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Mon, 03 Mar 2025 19:21:35 +0800
+
 util-dfm (1.3.9) unstable; urgency=medium
 
   * fix cifs password save issue
