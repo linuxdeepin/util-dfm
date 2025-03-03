@@ -10,29 +10,19 @@ SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 #SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 
-option(OPT_ENABLE_QT6 "Use Qt6" ON)
-set(DFM_BUILD_WITH_QT6 FALSE)
 
 include(GNUInstallDirs)
 
-if(OPT_ENABLE_QT6)
-    find_package(Qt6 QUIET)
-    if (Qt6_FOUND)
-        message(STATUS "Found Qt6: ${Qt6_VERSION}")
-        set(DFM_BUILD_WITH_QT6 TRUE)
-        set(QT_VERSION_MAJOR 6)
-        set(DFM_VERSION_MAJOR 6)
-    endif()
-endif()
-
-if(NOT DFM_BUILD_WITH_QT6)
-   message(WARNING "Qt6 not found, Use Qt5.")
-   set(QT_VERSION_MAJOR 5)
-   set(DFM_VERSION_MAJOR "")
+find_package(Qt6 QUIET)
+if (Qt6_FOUND)
+    message(STATUS "Found Qt6: ${Qt6_VERSION}")
+    set(QT_VERSION_MAJOR 6)
+    set(DFM_VERSION_MAJOR 6)
+else()
+    message(WARNING "Qt6 not found!")
 endif()
 
 # default
-
 find_package(PkgConfig REQUIRED)
 
 # Install settings

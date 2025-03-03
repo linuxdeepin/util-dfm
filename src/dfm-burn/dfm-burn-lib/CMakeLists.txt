@@ -19,10 +19,8 @@ FILE (GLOB_RECURSE SRCS CONFIGURE_DEPENDS
     "./*.h"
 )
 
-include(dfm-burn-qt5.cmake)
+#include(dfm-burn-qt5.cmake)
 
 # Qt6
-if (DFM_BUILD_WITH_QT6)
 include(dfm-burn-qt6.cmake)
-endif()
 

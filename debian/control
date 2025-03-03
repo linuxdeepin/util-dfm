@@ -6,14 +6,10 @@ Build-Depends:
  debhelper (>=9),
  cmake,
  pkg-config,
- qtbase5-dev,
  qt6-base-dev,
- qtbase5-private-dev,
  qt6-base-private-dev,
- qt5-qmake,
  qmake6,
  libglibmm-2.4-dev,
- qttools5-dev-tools,
  qt6-tools-dev-tools,
  libglib2.0-dev,
  libudisks2-dev,
@@ -24,17 +20,6 @@ Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm
 #Vcs-Git: https://salsa.debian.org/debian/util-dfm.git
-
-Package: libdfm-io
-Architecture: any
-Section: libdevel
-Multi-Arch: same
-Depends:
- ${shlibs:Depends},
- ${misc:Depends},
- libglibmm-2.4-1v5
-Description: A libaray about I/O.
- A libaray that provides I/O interface.
 
 Package: libdfm6-io
 Architecture: any
@@ -47,17 +32,6 @@ Depends:
 Description: A libaray about I/O.
  A libaray that provides I/O interface.
 
-Package: libdfm-io-dev
-Architecture: any
-Section: libdevel
-Multi-Arch: same
-Depends:
- ${shlibs:Depends},
- ${misc:Depends},
- libdfm-io
-Description: A libaray about I/O dev.
- A libaray that provides I/O interface dev.
-
 Package: libdfm6-io-dev
 Architecture: any
 Section: libdevel
@@ -69,16 +43,6 @@ Depends:
 Description: A libaray about I/O dev.
  A libaray that provides I/O interface dev.
 
-Package: libdfm-mount
-Architecture: any
-Section: libdevel
-Multi-Arch: same
-Depends:
- ${shlibs:Depends},
- ${misc:Depends}
-Description: A libaray about mount and umount.
- A libaray that provides mount and umount interface.
-
 Package: libdfm6-mount
 Architecture: any
 Section: libdevel
@@ -88,19 +52,6 @@ Depends:
  ${misc:Depends}
 Description: A libaray about mount and umount.
  A libaray that provides mount and umount interface.
-
-Package: libdfm-mount-dev
-Architecture: any
-Section: libdevel
-Multi-Arch: same
-Depends:
- ${shlibs:Depends}, 
- ${misc:Depends},
- libdfm-mount,
- libsecret-1-dev,
- libudisks2-dev
-Description: A libaray about mount and umount dev.
- A libaray that provides mount and umount interface dev.
 
 Package: libdfm6-mount-dev
 Architecture: any
@@ -115,18 +66,6 @@ Depends:
 Description: A libaray about mount and umount dev.
  A libaray that provides mount and umount interface dev.
 
-Package: libdfm-burn
-Architecture: any
-Section: libdevel
-Multi-Arch: same
-Depends:
- ${shlibs:Depends},
- ${misc:Depends}
-Recommends:
- libudfburn
-Description: A libaray about burning CD.
- A libaray that provides burning CD interface.
-
 Package: libdfm6-burn
 Architecture: any
 Section: libdevel
@@ -138,19 +77,6 @@ Recommends:
  libudfburn
 Description: A libaray about burning CD.
  A libaray that provides burning CD interface.
-
-Package: libdfm-burn-dev
-Architecture: any
-Section: libdevel
-Multi-Arch: same
-Depends:
- ${shlibs:Depends}, 
- ${misc:Depends},
- libdfm-burn,
- libisoburn-dev
-Description: A libaray about mount burning CD.
- A libaray that provides burning CD interface dev.
-
 
 Package: libdfm6-burn-dev
 Architecture: any

@@ -1,3 +1,0 @@
-usr/include/dfm-mount/*
-usr/lib/*/pkgconfig/dfm-mount.pc
-usr/lib/*/cmake/dfm-mount/*.cmake
