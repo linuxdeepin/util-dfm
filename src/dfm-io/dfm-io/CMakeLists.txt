@@ -16,11 +16,7 @@ FILE (GLOB_RECURSE IO_SRCS CONFIGURE_DEPENDS
     "./*.h"
 )
 
-include(dfm-io-qt5.cmake)
-
-# Qt6
-if (DFM_BUILD_WITH_QT6)
+#include(dfm-io-qt5.cmake)
 include(dfm-io-qt6.cmake)
-endif()
 
 
