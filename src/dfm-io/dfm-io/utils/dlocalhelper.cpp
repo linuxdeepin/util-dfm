@@ -877,9 +877,12 @@ int DLocalHelper::compareByName(const FTSENT **left, const FTSENT **right)
 
 int DLocalHelper::compareBySize(const FTSENT **left, const FTSENT **right)
 {
-    if ((*left)->fts_statp->st_size == (*right)->fts_statp->st_size)
+    // 文件夹不参与按文件大小的排序
+    auto sizeL = S_ISDIR((*left)->fts_statp->st_mode) ? -1 : (*left)->fts_statp->st_size;
+    auto sizeR = S_ISDIR((*right)->fts_statp->st_mode) ? -1 : (*right)->fts_statp->st_size;
+    if (sizeL == sizeR)
         return compareByName(left, right);
-    return (*left)->fts_statp->st_size > (*right)->fts_statp->st_size;
+    return sizeL > sizeR;
 }
 
 int DLocalHelper::compareByLastModifed(const FTSENT **left, const FTSENT **right)
