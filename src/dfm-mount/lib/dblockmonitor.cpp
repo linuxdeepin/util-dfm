@@ -16,9 +16,11 @@
 #include <QMap>
 #include <QTime>
 #include <QTimer>
+#include <QDBusConnection>
 
 DFM_MOUNT_USE_NS
 
+#define UDISKS_SERVICE_NAME "org.freedesktop.UDisks2"
 #define UDISKS_BLOCK_PATH_PREFIX "/org/freedesktop/UDisks2/block_devices/"
 #define UDISKS_DRIVE_PATH_PREFIX "/org/freedesktop/UDisks2/drives/"
 #define UDISKS_BLOCK_IFACE_FILESYSTEM "org.freedesktop.UDisks2.Filesystem"
@@ -36,6 +38,9 @@ DBlockMonitorPrivate::DBlockMonitorPrivate(DBlockMonitor *qq)
         g_error_free(err);
     }
 
+    watcher = new QDBusServiceWatcher(UDISKS_SERVICE_NAME,
+                                      QDBusConnection::systemBus(),
+                                      QDBusServiceWatcher::WatchForOwnerChange);
     initDevices();
 }
 
@@ -46,9 +51,45 @@ DBlockMonitorPrivate::~DBlockMonitorPrivate()
         g_object_unref(client);
         client = nullptr;
     }
+
+    if (watcher)
+        delete watcher;
 }
 
 bool DBlockMonitorPrivate::startMonitor()
+{
+    if (!startDeviceMonitor())
+        return false;
+
+    QObject::connect(watcher, &QDBusServiceWatcher::serviceOwnerChanged, watcher,
+                     [=](const QString &serviceName, const QString &oldOwner, const QString &newOwner) {
+                         Q_UNUSED(oldOwner)
+                         if (serviceName == UDISKS_SERVICE_NAME) {
+                             if (newOwner.isEmpty()) {
+                                 qDebug() << "The udisks service has exited and stopped monitoring device signals.";
+                                 stopDeviceMonitor();
+                             } else {
+                                 qDebug() << "The udisks service has started and begun monitoring device signals.";
+                                 startDeviceMonitor();
+                             }
+                         }
+                     });
+
+    qDebug() << "block monitor start";
+    return true;
+}
+
+bool DBlockMonitorPrivate::stopMonitor()
+{
+    watcher->disconnect();
+    if (!stopDeviceMonitor())
+        return false;
+
+    qDebug() << "block monitor stop";
+    return true;
+}
+
+bool DBlockMonitorPrivate::startDeviceMonitor()
 {
     if (!client) {
         qCritical() << "client is not valid";
@@ -77,11 +118,10 @@ bool DBlockMonitorPrivate::startMonitor()
     handler = g_signal_connect(dbusMng, INTERFACE_REMOVED, G_CALLBACK(&DBlockMonitorPrivate::onInterfaceRemoved), q);
     connections.insert(INTERFACE_REMOVED, handler);
 
-    qDebug() << "block monitor start";
     return true;
 }
 
-bool DBlockMonitorPrivate::stopMonitor()
+bool DBlockMonitorPrivate::stopDeviceMonitor()
 {
     if (!client) {
         qDebug() << "client is not valid";
@@ -92,8 +132,6 @@ bool DBlockMonitorPrivate::stopMonitor()
     for (auto iter = connections.cbegin(); iter != connections.cend(); iter++)
         g_signal_handler_disconnect(dbusMng, iter.value());
     connections.clear();
-
-    qDebug() << "block monitor stop";
     return true;
 }
 
