@@ -11,6 +11,7 @@
 
 #include <QMap>
 #include <QSet>
+#include <QDBusServiceWatcher>
 
 extern "C" {
 #include <udisks/udisks.h>
@@ -33,6 +34,8 @@ public:
 
     bool startMonitor() DMNT_OVERRIDE;
     bool stopMonitor() DMNT_OVERRIDE;
+    bool startDeviceMonitor();
+    bool stopDeviceMonitor();
     DeviceType monitorObjectType() const DMNT_OVERRIDE;
     QStringList getDevices() DMNT_OVERRIDE;
     QSharedPointer<DDevice> createDeviceById(const QString &id) DMNT_OVERRIDE;
@@ -53,6 +56,7 @@ private:
 
 public:
     UDisksClient *client = nullptr;
+    QDBusServiceWatcher *watcher = nullptr;
 
     static QMap<QString, QSet<QString>> blksOfDrive;
 };
