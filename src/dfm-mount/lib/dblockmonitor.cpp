@@ -52,8 +52,10 @@ DBlockMonitorPrivate::~DBlockMonitorPrivate()
         client = nullptr;
     }
 
-    if (watcher)
-        delete watcher;
+    if (watcher) {
+        watcher->deleteLater();
+        watcher = nullptr;
+    }
 }
 
 bool DBlockMonitorPrivate::startMonitor()
