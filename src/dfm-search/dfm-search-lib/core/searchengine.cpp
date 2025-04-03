@@ -1,0 +1,132 @@
+
+
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include <dfm-search/searchengine.h>
+#include <dfm-search/searchfactory.h>
+
+#include "contentsearch/contentsearchengine.h"
+#include "filenamesearch/filenamesearchengine.h"
+
+DFM_SEARCH_BEGIN_NS
+
+SearchEngine *SearchEngine::create(SearchType type, QObject *parent)
+{
+    return SearchFactory::createEngine(type, parent);
+}
+
+SearchEngine::~SearchEngine() = default;
+
+SearchType SearchEngine::searchType() const
+{
+    if (d_ptr) {
+        return d_ptr->searchType();
+    }
+    return SearchType::FileName;   // 默认
+}
+
+void SearchEngine::setSearchType(SearchType type)
+{
+    // 如果类型相同且引擎已存在，则不重新创建
+    if (d_ptr && d_ptr->searchType() == type) {
+        return;
+    }
+
+    // 根据类型创建相应的引擎
+    switch (type) {
+    case SearchType::FileName:
+        d_ptr = std::make_unique<FileNameSearchEngine>();
+        break;
+    case SearchType::Content:
+        d_ptr = std::make_unique<ContentSearchEngine>();
+        break;
+    default:
+        qWarning("Unsupported search type: %d", static_cast<int>(type));
+        return;
+    }
+
+    // 连接信号
+    connect(d_ptr.get(), &AbstractSearchEngine::searchStarted,
+            this, &SearchEngine::searchStarted);
+    connect(d_ptr.get(), &AbstractSearchEngine::resultFound,
+            this, &SearchEngine::resultFound);
+    connect(d_ptr.get(), &AbstractSearchEngine::progressChanged,
+            this, &SearchEngine::progressChanged);
+    connect(d_ptr.get(), &AbstractSearchEngine::statusChanged,
+            this, &SearchEngine::statusChanged);
+    connect(d_ptr.get(), &AbstractSearchEngine::searchFinished,
+            this, &SearchEngine::searchFinished);
+    connect(d_ptr.get(), &AbstractSearchEngine::searchCancelled,
+            this, &SearchEngine::searchCancelled);
+    connect(d_ptr.get(), &AbstractSearchEngine::error,
+            this, &SearchEngine::error);
+}
+
+SearchOptions SearchEngine::searchOptions() const
+{
+    if (d_ptr) {
+        return d_ptr->searchOptions();
+    }
+    return SearchOptions();
+}
+
+void SearchEngine::setSearchOptions(const SearchOptions &options)
+{
+    if (d_ptr) {
+        d_ptr->setSearchOptions(options);
+    }
+}
+
+SearchStatus SearchEngine::status() const
+{
+    if (d_ptr) {
+        return d_ptr->status();
+    }
+    return SearchStatus::Error;
+}
+
+void SearchEngine::search(const SearchQuery &query)
+{
+    if (d_ptr) {
+        d_ptr->search(query);
+    }
+}
+
+void SearchEngine::searchWithCallback(const SearchQuery &query, ResultCallback callback)
+{
+    if (d_ptr) {
+        d_ptr->searchWithCallback(query, callback);
+    }
+}
+
+QList<SearchResult> SearchEngine::searchSync(const SearchQuery &query)
+{
+    if (d_ptr) {
+        return d_ptr->searchSync(query);
+    }
+    return QList<SearchResult>();
+}
+
+void SearchEngine::pause()
+{
+    if (d_ptr) {
+        d_ptr->pause();
+    }
+}
+
+void SearchEngine::resume()
+{
+    if (d_ptr) {
+        d_ptr->resume();
+    }
+}
+
+void SearchEngine::cancel()
+{
+    if (d_ptr) {
+        d_ptr->cancel();
+    }
+}
+DFM_SEARCH_END_NS
