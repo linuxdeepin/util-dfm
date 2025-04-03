@@ -17,6 +17,21 @@ SearchEngine *SearchEngine::create(SearchType type, QObject *parent)
     return SearchFactory::createEngine(type, parent);
 }
 
+SearchEngine::SearchEngine(QObject *parent)
+    : QObject(parent),
+      d_ptr(nullptr)
+{
+    // 默认创建文件名搜索引擎
+    setSearchType(SearchType::FileName);
+}
+
+SearchEngine::SearchEngine(SearchType type, QObject *parent)
+    : QObject(parent),
+      d_ptr(nullptr)
+{
+    setSearchType(type);
+}
+
 SearchEngine::~SearchEngine() = default;
 
 SearchType SearchEngine::searchType() const

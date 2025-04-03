@@ -117,7 +117,7 @@ Q_SIGNALS:
     /**
      * @brief 搜索结果信号
      */
-    void resultFound(const SearchResult &result);
+    void resultFound(const DFMSEARCH::SearchResult &result);
 
     /**
      * @brief 搜索进度信号
@@ -137,7 +137,7 @@ Q_SIGNALS:
      *
      * @param results 搜索结果列表
      */
-    void searchFinished(const QList<SearchResult> &results);
+    void searchFinished(const QList<DFMSEARCH::SearchResult> &results);
 
     /**
      * @brief 搜索取消信号

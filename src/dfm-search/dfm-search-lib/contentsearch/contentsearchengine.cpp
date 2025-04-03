@@ -9,6 +9,8 @@ ContentSearchEngine::ContentSearchEngine(QObject *parent)
     // m_searcher = std::make_unique<ContentSearcher>();
 }
 
+ContentSearchEngine::~ContentSearchEngine() = default;
+
 SearchOptions ContentSearchEngine::searchOptions() const
 {
     return m_options;
@@ -62,6 +64,13 @@ QList<SearchResult> ContentSearchEngine::searchSync(const SearchQuery &query)
     // }
 
     return results;
+}
+
+void ContentSearchEngine::pause()
+{
+    if (m_status.load() == SearchStatus::Searching) {
+        setStatus(SearchStatus::Paused);
+    }
 }
 
 void ContentSearchEngine::resume()
