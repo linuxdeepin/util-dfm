@@ -4,9 +4,34 @@
 
 #include <dfm-search/searchoptions.h>
 
+#include <QDir>
+
 #include "searchoptionsdata.h"
 
 DFM_SEARCH_BEGIN_NS
+
+SearchOptionsData::SearchOptionsData()
+    : method(SearchMethod::Indexed),
+      caseSensitive(false),
+      searchPath(QDir::homePath()),
+      includeHidden(false),
+      maxResults(1000)
+{
+}
+
+SearchOptionsData::SearchOptionsData(const SearchOptionsData &other)
+    : method(other.method),
+      caseSensitive(other.caseSensitive),
+      searchPath(other.searchPath),
+      excludePaths(other.excludePaths),
+      includeHidden(other.includeHidden),
+      maxResults(other.maxResults),
+      customOptions(other.customOptions)
+{
+}
+
+/////////////
+
 SearchOptions::SearchOptions()
     : d(std::make_unique<SearchOptionsData>())
 {
