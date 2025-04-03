@@ -7,11 +7,9 @@
 #include <dfm-search/dsearch_global.h>
 
 DFM_SEARCH_BEGIN_NS
-
 namespace SearchUtility {
-
+// Add utility functions or classes here
 }   // namespace SearchUtility
-
 DFM_SEARCH_END_NS
 
 #endif   // SEARCHUTILITY_H
