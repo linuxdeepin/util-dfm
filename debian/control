@@ -15,7 +15,8 @@ Build-Depends:
  libudisks2-dev,
  libisoburn-dev,
  libmediainfo-dev,
- libsecret-1-dev
+ libsecret-1-dev,
+ liblucene++-dev
 Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm
@@ -29,8 +30,8 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends},
  libglibmm-2.4-1v5
-Description: A libaray about I/O.
- A libaray that provides I/O interface.
+Description: A library about I/O.
+ A library that provides I/O interface.
 
 Package: libdfm6-io-dev
 Architecture: any
@@ -39,9 +40,9 @@ Multi-Arch: same
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
- libdfm6-io
-Description: A libaray about I/O dev.
- A libaray that provides I/O interface dev.
+ libdfm6-io (=${binary:Version})
+Description: A library about I/O dev.
+ A library that provides I/O interface dev.
 
 Package: libdfm6-mount
 Architecture: any
@@ -50,8 +51,8 @@ Multi-Arch: same
 Depends:
  ${shlibs:Depends},
  ${misc:Depends}
-Description: A libaray about mount and umount.
- A libaray that provides mount and umount interface.
+Description: A library about mount and umount.
+ A library that provides mount and umount interface.
 
 Package: libdfm6-mount-dev
 Architecture: any
@@ -60,11 +61,11 @@ Multi-Arch: same
 Depends:
  ${shlibs:Depends}, 
  ${misc:Depends},
- libdfm6-mount,
+ libdfm6-mount (=${binary:Version}),
  libsecret-1-dev,
  libudisks2-dev
-Description: A libaray about mount and umount dev.
- A libaray that provides mount and umount interface dev.
+Description: A library about mount and umount dev.
+ A library that provides mount and umount interface dev.
 
 Package: libdfm6-burn
 Architecture: any
@@ -75,8 +76,8 @@ Depends:
  ${misc:Depends}
 Recommends:
  libudfburn
-Description: A libaray about burning CD.
- A libaray that provides burning CD interface.
+Description: A library about burning CD.
+ A library that provides burning CD interface.
 
 Package: libdfm6-burn-dev
 Architecture: any
@@ -85,7 +86,29 @@ Multi-Arch: same
 Depends:
  ${shlibs:Depends}, 
  ${misc:Depends},
- libdfm6-burn,
+ libdfm6-burn (=${binary:Version}),
  libisoburn-dev
-Description: A libaray about mount burning CD.
- A libaray that provides burning CD interface dev.
+Description: A library about mount burning CD.
+ A library that provides burning CD interface dev.
+
+Package: libdfm6-search
+Architecture: any
+Section: libdevel
+Multi-Arch: same
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends}
+Description: A library about searching files.
+ A library that provides file searching interface.
+
+Package: libdfm6-search-dev
+Architecture: any
+Section: libdevel
+Multi-Arch: same
+Depends:
+ ${shlibs:Depends}, 
+ ${misc:Depends},
+ libdfm6-search (=${binary:Version}),
+ liblucene++-dev
+Description: A library about searching files dev.
+ A library that provides file searching interface dev.
