@@ -4,9 +4,7 @@
 #include "searchutility.h"
 
 DFM_SEARCH_BEGIN_NS
-
 namespace SearchUtility {
-
+// Implement utility functions here
 }   // namespace SearchUtility
-
 DFM_SEARCH_END_NS
