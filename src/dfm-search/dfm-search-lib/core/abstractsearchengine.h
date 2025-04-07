@@ -33,7 +33,7 @@ public:
     virtual void search(const SearchQuery &query) = 0;
     virtual void searchWithCallback(const SearchQuery &query,
                                     SearchEngine::ResultCallback callback) = 0;
-    virtual QList<SearchResult> searchSync(const SearchQuery &query) = 0;
+    virtual SearchResultExpected searchSync(const SearchQuery &query) = 0;
 
     virtual void cancel() = 0;
 
@@ -42,7 +42,7 @@ Q_SIGNALS:
     void resultFound(const DFMSEARCH::SearchResult &result);
     void progressChanged(int current, int total);
     void statusChanged(SearchStatus status);
-    void searchFinished(const QList<DFMSEARCH::SearchResult> &results);
+    void searchFinished(const DFMSEARCH::SearchResultList &results);
     void searchCancelled();
     void errorOccurred(const DFMSEARCH::SearchError &error);
 

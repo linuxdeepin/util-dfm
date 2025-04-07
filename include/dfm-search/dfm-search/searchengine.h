@@ -92,7 +92,7 @@ public:
      * @param query 搜索查询
      * @return 搜索结果列表
      */
-    QList<SearchResult> searchSync(const SearchQuery &query);
+    SearchResultExpected searchSync(const SearchQuery &query);
 
     /**
      * @brief 取消当前搜索
@@ -128,7 +128,7 @@ Q_SIGNALS:
      *
      * @param results 搜索结果列表
      */
-    void searchFinished(const QList<DFMSEARCH::SearchResult> &results);
+    void searchFinished(const DFMSEARCH::SearchResultList &results);
 
     /**
      * @brief 搜索取消信号

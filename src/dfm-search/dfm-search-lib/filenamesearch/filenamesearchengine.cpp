@@ -64,7 +64,7 @@ void FileNameSearchEngine::searchWithCallback(const SearchQuery &query,
     // 在实际实现中，可以使用QtConcurrent来异步执行并通过回调返回结果
 }
 
-QList<SearchResult> FileNameSearchEngine::searchSync(const SearchQuery &query)
+SearchResultExpected FileNameSearchEngine::searchSync(const SearchQuery &query)
 {
     // 保存当前查询以便供 convertResults 使用
     m_currentQuery = query;

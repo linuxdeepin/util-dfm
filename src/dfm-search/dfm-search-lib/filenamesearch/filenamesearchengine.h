@@ -34,7 +34,7 @@ public:
     void search(const SearchQuery &query) override;
     void searchWithCallback(const SearchQuery &query,
                             SearchEngine::ResultCallback callback) override;
-    QList<SearchResult> searchSync(const SearchQuery &query) override;
+    SearchResultExpected searchSync(const SearchQuery &query) override;
 
     void cancel() override;
 
