@@ -1,12 +1,7 @@
 #ifndef CONTENT_SEARCH_ENGINE_H
 #define CONTENT_SEARCH_ENGINE_H
 
-#include <memory>
-
-#include "core/abstractsearchengine.h"
-
-// 前向声明
-class ContentSearcher;
+#include "core/genericsearchengine.h"
 
 DFM_SEARCH_BEGIN_NS
 
@@ -15,7 +10,7 @@ DFM_SEARCH_BEGIN_NS
  *
  * 实现基于文件内容的搜索功能
  */
-class ContentSearchEngine : public AbstractSearchEngine
+class ContentSearchEngine : public GenericSearchEngine
 {
     Q_OBJECT
 
@@ -23,26 +18,25 @@ public:
     explicit ContentSearchEngine(QObject *parent = nullptr);
     ~ContentSearchEngine() override;
 
-    // 实现AbstractSearchEngine接口
+    // 实现搜索类型
     SearchType searchType() const override { return SearchType::Content; }
 
-    SearchOptions searchOptions() const override;
-    void setSearchOptions(const SearchOptions &options) override;
+protected:
+    // 设置策略工厂
+    void setupStrategyFactory() override;
+    
+    // 重写验证方法以添加特定验证
+    SearchResultExpected validateSearchConditions(const SearchQuery &query) override;
+};
 
-    SearchStatus status() const override;
-
-    void search(const SearchQuery &query) override;
-    void searchWithCallback(const SearchQuery &query,
-                            SearchEngine::ResultCallback callback) override;
-    SearchResultExpected searchSync(const SearchQuery &query) override;
-
-    void cancel() override;
-
-private:
-    // TODO:
-    // std::unique_ptr<ContentSearcher> m_searcher;
-    SearchOptions m_options;
-    SearchQuery m_currentQuery;   // 当前查询
+/**
+ * @brief 内容搜索策略工厂
+ */
+class ContentSearchStrategyFactory : public SearchStrategyFactory
+{
+public:
+    std::unique_ptr<BaseSearchStrategy> createStrategy(
+        SearchType searchType, const SearchOptions &options) override;
 };
 
 DFM_SEARCH_END_NS

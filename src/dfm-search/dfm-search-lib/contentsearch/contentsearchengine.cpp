@@ -1,79 +1,53 @@
 #include "contentsearchengine.h"
+#include "contentstrategies/indexedstrategy.h"
 
 DFM_SEARCH_BEGIN_NS
+DCORE_USE_NAMESPACE
 
 ContentSearchEngine::ContentSearchEngine(QObject *parent)
-    : AbstractSearchEngine(parent)
+    : GenericSearchEngine(parent)
 {
-    // TODO: 初始化 m_searcher
-    // m_searcher = std::make_unique<ContentSearcher>();
 }
 
 ContentSearchEngine::~ContentSearchEngine() = default;
 
-SearchOptions ContentSearchEngine::searchOptions() const
+void ContentSearchEngine::setupStrategyFactory()
 {
-    return m_options;
+    // 设置内容搜索策略工厂
+    auto factory = std::make_unique<ContentSearchStrategyFactory>();
+    m_worker->setStrategyFactory(std::move(factory));
 }
 
-void ContentSearchEngine::setSearchOptions(const SearchOptions &options)
+SearchResultExpected ContentSearchEngine::validateSearchConditions(const SearchQuery &query)
 {
-}
-
-SearchStatus ContentSearchEngine::status() const
-{
-    return m_status.load();
-}
-
-void ContentSearchEngine::search(const SearchQuery &query)
-{
-    if (m_status.load() == SearchStatus::Searching)
-        return;
-
-    m_cancelled.store(false);
-    setStatus(SearchStatus::Searching);
-    emit searchStarted();
-}
-
-void ContentSearchEngine::searchWithCallback(const SearchQuery &query, SearchEngine::ResultCallback callback)
-{
-    if (m_status.load() == SearchStatus::Searching)
-        return;
-
-    m_cancelled.store(false);
-    setStatus(SearchStatus::Searching);
-    emit searchStarted();
-}
-
-SearchResultExpected ContentSearchEngine::searchSync(const SearchQuery &query)
-{
-
-    // 保存当前查询以便供 convertResults 使用
-    m_currentQuery = query;
-
-    // 注：这里只是演示，实际项目中应使用 ContentSearcher 实现
-    QList<SearchResult> results;
-
-    if (m_cancelled.load()) {
-        return results;
+    // 先执行基类验证
+    auto result = GenericSearchEngine::validateSearchConditions(query);
+    if (!result.hasValue()) {
+        return result;
     }
 
-    // TODO: 这里应调用 m_searcher 进行搜索
-    // if (m_searcher) {
-    //     fakeResults = m_searcher->searchContent(keywords, m_options.searchPath());
-    // }
+    // 内容搜索特定验证
+    if (query.keyword().isEmpty()) {
+        return DUnexpected<DFMSEARCH::SearchError> { SearchError(ContentSearchErrorCode::EncodingError) };
+    }
 
-    return results;
+    return result;
 }
 
-void ContentSearchEngine::cancel()
+std::unique_ptr<BaseSearchStrategy> ContentSearchStrategyFactory::createStrategy(
+        SearchType searchType, const SearchOptions &options)
 {
-    m_cancelled.store(true);
-
-    if (m_status.load() != SearchStatus::Ready && m_status.load() != SearchStatus::Finished) {
-        setStatus(SearchStatus::Cancelled);
-        emit searchCancelled();
+    // 确保搜索类型正确
+    if (searchType != SearchType::Content) {
+        return nullptr;
     }
+
+    // 根据搜索方法创建对应的策略
+    if (options.method() == SearchMethod::Indexed) {
+        return std::make_unique<ContentIndexedStrategy>(options);
+    }
+
+    return nullptr;
 }
 
 DFM_SEARCH_END_NS

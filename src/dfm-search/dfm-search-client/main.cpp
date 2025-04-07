@@ -26,8 +26,8 @@ using namespace dfmsearch;
 // # 内容搜索
 // dfm6-search-client --type=content "hello world" /home/user/Documents
 
-// # 使用索引搜索
-// dfm6-search-client --method=indexed "report" /home/user
+// # 使用realtime搜索
+// dfm6-search-client --method=realtime "report" /home/user
 
 // # 区分大小写的搜索
 // dfm6-search-client --case-sensitive "README" /home/user
@@ -43,7 +43,7 @@ void printUsage()
     std::cout << "Usage: dfm6-search-client [options] <keyword> <search_path>" << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << "  --type=<filename|content>   Search type (default: filename)" << std::endl;
-    std::cout << "  --method=<indexed|realtime> Search method (default: realtime)" << std::endl;
+    std::cout << "  --method=<indexed|realtime> Search method (default: indexed)" << std::endl;
     std::cout << "  --query=<simple|boolean>    Query type (default: simple)" << std::endl;
     std::cout << "  --case-sensitive            Enable case sensitivity" << std::endl;
     std::cout << "  --include-hidden            Include hidden files" << std::endl;
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
     // Add command line options
     QCommandLineOption typeOption(QStringList() << "type", "Search type (filename or content)", "type", "filename");
-    QCommandLineOption methodOption(QStringList() << "method", "Search method (indexed or realtime)", "method", "realtime");
+    QCommandLineOption methodOption(QStringList() << "method", "Search method (indexed or realtime)", "method", "indexed");
     QCommandLineOption queryOption(QStringList() << "query", "Query type (simple or boolean)", "query", "simple");
     QCommandLineOption caseSensitiveOption(QStringList() << "case-sensitive", "Enable case sensitivity");
     QCommandLineOption includeHiddenOption(QStringList() << "include-hidden", "Include hidden files");
@@ -143,11 +143,11 @@ int main(int argc, char *argv[])
     }
 
     // Get search method
-    SearchMethod searchMethod = SearchMethod::Realtime;
+    SearchMethod searchMethod = SearchMethod::Indexed;
     QString methodStr = parser.value(methodOption);
-    if (methodStr == "indexed") {
-        searchMethod = SearchMethod::Indexed;
-    } else if (methodStr != "realtime") {
+    if (methodStr == "realtime") {
+        searchMethod = SearchMethod::Realtime;
+    } else if (methodStr != "indexed") {
         std::cerr << "Error: Invalid search method. Use 'indexed' or 'realtime'" << std::endl;
         return 1;
     }

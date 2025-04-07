@@ -15,7 +15,7 @@ SearchOptionsData::SearchOptionsData()
       caseSensitive(false),
       searchPath(QDir::homePath()),
       includeHidden(false),
-      maxResults(1000)
+      maxResults(-1)
 {
 }
 

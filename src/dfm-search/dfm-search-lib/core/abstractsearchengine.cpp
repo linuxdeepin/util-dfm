@@ -18,6 +18,10 @@ AbstractSearchEngine::~AbstractSearchEngine()
 {
 }
 
+void AbstractSearchEngine::init()
+{
+}
+
 void AbstractSearchEngine::setStatus(SearchStatus status)
 {
     m_status.store(status);

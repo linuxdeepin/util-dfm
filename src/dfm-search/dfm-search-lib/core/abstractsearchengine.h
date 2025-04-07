@@ -21,6 +21,7 @@ class AbstractSearchEngine : public QObject
 public:
     explicit AbstractSearchEngine(QObject *parent = nullptr);
     virtual ~AbstractSearchEngine();
+    virtual void init();
 
     // 公共接口方法
     virtual SearchType searchType() const = 0;
