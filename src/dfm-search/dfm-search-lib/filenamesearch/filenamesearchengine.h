@@ -25,7 +25,6 @@ public:
 
     // 实现AbstractSearchEngine接口
     SearchType searchType() const override { return SearchType::FileName; }
-    void setSearchType(SearchType) override { }   // 类型固定为FileName
 
     SearchOptions searchOptions() const override;
     void setSearchOptions(const SearchOptions &options) override;
@@ -37,8 +36,6 @@ public:
                             SearchEngine::ResultCallback callback) override;
     QList<SearchResult> searchSync(const SearchQuery &query) override;
 
-    void pause() override;
-    void resume() override;
     void cancel() override;
 
 private:

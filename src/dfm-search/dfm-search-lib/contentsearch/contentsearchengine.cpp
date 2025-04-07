@@ -66,32 +66,9 @@ QList<SearchResult> ContentSearchEngine::searchSync(const SearchQuery &query)
     return results;
 }
 
-void ContentSearchEngine::pause()
-{
-    if (m_status.load() == SearchStatus::Searching) {
-        setStatus(SearchStatus::Paused);
-    }
-}
-
-void ContentSearchEngine::resume()
-{
-    if (m_status.load() == SearchStatus::Paused) {
-        m_mutex.lock();
-        setStatus(SearchStatus::Searching);
-        m_pauseCondition.wakeAll();
-        m_mutex.unlock();
-    }
-}
-
 void ContentSearchEngine::cancel()
 {
     m_cancelled.store(true);
-
-    if (m_status.load() == SearchStatus::Paused) {
-        m_mutex.lock();
-        m_pauseCondition.wakeAll();
-        m_mutex.unlock();
-    }
 
     if (m_status.load() != SearchStatus::Ready && m_status.load() != SearchStatus::Finished) {
         setStatus(SearchStatus::Cancelled);

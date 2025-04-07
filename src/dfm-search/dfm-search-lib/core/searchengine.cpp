@@ -124,20 +124,6 @@ QList<SearchResult> SearchEngine::searchSync(const SearchQuery &query)
     return QList<SearchResult>();
 }
 
-void SearchEngine::pause()
-{
-    if (d_ptr) {
-        d_ptr->pause();
-    }
-}
-
-void SearchEngine::resume()
-{
-    if (d_ptr) {
-        d_ptr->resume();
-    }
-}
-
 void SearchEngine::cancel()
 {
     if (d_ptr) {
