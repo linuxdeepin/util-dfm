@@ -7,13 +7,238 @@
 #include <QDir>
 #include <QDateTime>
 #include <QFileInfo>
+#include <QDebug>
 
 DFM_SEARCH_BEGIN_NS
 
-FileNameIndexedStrategy::FileNameIndexedStrategy(const SearchOptions &options, QObject *parent)
-    : FileNameBaseStrategy(options, parent)
+//--------------------------------------------------------------------
+// QueryBuilder 实现
+//--------------------------------------------------------------------
+
+QueryBuilder::QueryBuilder()
 {
-    // 初始化索引搜索能力
+}
+
+Lucene::String QueryBuilder::processString(const QString &str, bool caseSensitive) const
+{
+    String unicodeStr = StringUtils::toUnicode(str.toStdString());
+    if (caseSensitive) {
+        return unicodeStr;
+    } else {
+        StringUtils::toLower(unicodeStr);
+        return unicodeStr;
+    }
+}
+
+Lucene::QueryPtr QueryBuilder::buildTypeQuery(const QStringList &types) const
+{
+    if (types.isEmpty()) {
+        return nullptr;
+    }
+
+    BooleanQueryPtr typeQuery = newLucene<BooleanQuery>();
+
+    for (const QString &type : types) {
+        QString cleanType = type.trimmed().toLower();
+        if (!cleanType.isEmpty()) {
+            QueryPtr termQuery = newLucene<TermQuery>(
+                    newLucene<Term>(L"file_type",
+                                    StringUtils::toUnicode(cleanType.toStdString())));
+            typeQuery->add(termQuery, BooleanClause::SHOULD);
+        }
+    }
+
+    return typeQuery;
+}
+
+Lucene::QueryPtr QueryBuilder::buildPinyinQuery(const QStringList &pinyins) const
+{
+    if (pinyins.isEmpty()) {
+        return nullptr;
+    }
+
+    BooleanQueryPtr pinyinQuery = newLucene<BooleanQuery>();
+
+    for (const QString &pinyin : pinyins) {
+        QString cleanPinyin = pinyin.trimmed().toLower();
+        if (!cleanPinyin.isEmpty()) {
+            QueryPtr termQuery = newLucene<WildcardQuery>(
+                    newLucene<Term>(L"pinyin",
+                                    StringUtils::toUnicode(QString("*%1*").arg(cleanPinyin).toStdString())));
+            pinyinQuery->add(termQuery, BooleanClause::SHOULD);
+        }
+    }
+
+    return pinyinQuery;
+}
+
+Lucene::QueryPtr QueryBuilder::buildFuzzyQuery(const QString &keyword, bool caseSensitive) const
+{
+    if (keyword.isEmpty()) {
+        return nullptr;
+    }
+
+    BooleanQueryPtr booleanQuery = newLucene<BooleanQuery>();
+    booleanQuery->setMaxClauseCount(1024);
+
+    QStringList terms = keyword.split(' ', Qt::SkipEmptyParts);
+    for (const QString &term : terms) {
+        if (term.isEmpty()) continue;
+
+        BooleanQueryPtr termQuery = newLucene<BooleanQuery>();
+        String exactTerm = processString(term, caseSensitive);
+
+        // 精确匹配
+        QueryPtr exactQuery = newLucene<TermQuery>(newLucene<Term>(L"file_name", exactTerm));
+        exactQuery->setBoost(3.0);
+        termQuery->add(exactQuery, BooleanClause::SHOULD);
+
+        // 前缀匹配
+        if (term.length() > 2) {
+            QueryPtr prefixQuery = newLucene<PrefixQuery>(newLucene<Term>(L"file_name", exactTerm));
+            prefixQuery->setBoost(2.0);
+            termQuery->add(prefixQuery, BooleanClause::SHOULD);
+        }
+
+        // 通配符匹配
+        if (term.length() > 3) {
+            for (int i = 1; i < term.length() - 1; i++) {
+                QString fuzzyPattern = term.left(i) + "*" + term.mid(i + 1);
+                String wildcardTerm = processString(fuzzyPattern, caseSensitive);
+                QueryPtr wildcardQuery = newLucene<WildcardQuery>(newLucene<Term>(L"file_name", wildcardTerm));
+                wildcardQuery->setBoost(1.0);
+                termQuery->add(wildcardQuery, BooleanClause::SHOULD);
+            }
+        }
+
+        // 包含匹配
+        String containsTerm = L"*" + exactTerm + L"*";
+        QueryPtr containsQuery = newLucene<WildcardQuery>(newLucene<Term>(L"file_name", containsTerm));
+        containsQuery->setBoost(1.5);
+        termQuery->add(containsQuery, BooleanClause::SHOULD);
+
+        booleanQuery->add(termQuery, BooleanClause::MUST);
+    }
+
+    return booleanQuery;
+}
+
+Lucene::QueryPtr QueryBuilder::buildBooleanQuery(const QStringList &terms, bool caseSensitive) const
+{
+    if (terms.isEmpty()) {
+        return nullptr;
+    }
+
+    BooleanQueryPtr booleanQuery = newLucene<BooleanQuery>();
+    booleanQuery->setMaxClauseCount(1024);
+
+    for (const QString &term : terms) {
+        if (!term.isEmpty()) {
+            String termStr = L"*" + processString(term, caseSensitive) + L"*";
+            TermPtr termObj = newLucene<Term>(L"file_name", termStr);
+            QueryPtr termQuery = newLucene<WildcardQuery>(termObj);
+            booleanQuery->add(termQuery, BooleanClause::MUST);
+        }
+    }
+
+    return booleanQuery;
+}
+
+Lucene::QueryPtr QueryBuilder::buildWildcardQuery(const QString &keyword, bool caseSensitive) const
+{
+    if (keyword.isEmpty()) {
+        return nullptr;
+    }
+
+    return newLucene<WildcardQuery>(
+            newLucene<Term>(L"file_name",
+                            processString(keyword, caseSensitive)));
+}
+
+Lucene::QueryPtr QueryBuilder::buildSimpleQuery(const QString &keyword, bool caseSensitive) const
+{
+    if (keyword.isEmpty()) {
+        return nullptr;
+    }
+
+    String queryString = L"*" + processString(keyword, caseSensitive) + L"*";
+    return newLucene<WildcardQuery>(newLucene<Term>(L"file_name", queryString));
+}
+
+//--------------------------------------------------------------------
+// IndexManager 实现
+//--------------------------------------------------------------------
+
+IndexManager::IndexManager()
+{
+}
+
+FSDirectoryPtr IndexManager::getIndexDirectory(const QString &indexPath) const
+{
+    if (m_cachedDirectory && m_cachedIndexPath == indexPath) {
+        return m_cachedDirectory;
+    }
+
+    m_cachedIndexPath = indexPath;
+    try {
+        m_cachedDirectory = FSDirectory::open(StringUtils::toUnicode(indexPath.toStdString()));
+        return m_cachedDirectory;
+    } catch (const LuceneException &e) {
+        qWarning() << "Failed to open index directory:" << QString::fromStdWString(e.getError());
+        return nullptr;
+    }
+}
+
+IndexReaderPtr IndexManager::getIndexReader(FSDirectoryPtr directory) const
+{
+    if (!directory) {
+        return nullptr;
+    }
+
+    if (m_cachedReader && m_cachedDirectory == directory) {
+        return m_cachedReader;
+    }
+
+    try {
+        if (IndexReader::indexExists(directory)) {
+            m_cachedReader = IndexReader::open(directory, true);
+            return m_cachedReader;
+        }
+    } catch (const LuceneException &e) {
+        qWarning() << "Failed to open index reader:" << QString::fromStdWString(e.getError());
+    }
+
+    return nullptr;
+}
+
+SearcherPtr IndexManager::getSearcher(IndexReaderPtr reader) const
+{
+    if (!reader) {
+        return nullptr;
+    }
+
+    if (m_cachedSearcher && m_cachedReader == reader) {
+        return m_cachedSearcher;
+    }
+
+    try {
+        m_cachedSearcher = newLucene<IndexSearcher>(reader);
+        return m_cachedSearcher;
+    } catch (const LuceneException &e) {
+        qWarning() << "Failed to create searcher:" << QString::fromStdWString(e.getError());
+        return nullptr;
+    }
+}
+
+//--------------------------------------------------------------------
+// FileNameIndexedStrategy 实现
+//--------------------------------------------------------------------
+
+FileNameIndexedStrategy::FileNameIndexedStrategy(const SearchOptions &options, QObject *parent)
+    : FileNameBaseStrategy(options, parent), m_searchCancelled(false), m_count(0), m_total(0)
+{
+    m_queryBuilder = std::make_unique<QueryBuilder>();
+    m_indexManager = std::make_unique<IndexManager>();
     initializeIndexing();
 }
 
@@ -21,10 +246,7 @@ FileNameIndexedStrategy::~FileNameIndexedStrategy() = default;
 
 void FileNameIndexedStrategy::initializeIndexing()
 {
-    // 获取索引目录路径
     m_indexDir = SearchUtility::getAnythingIndexDirectory();
-
-    // 检查索引是否存在
     if (!QFileInfo::exists(m_indexDir)) {
         qWarning() << "Index directory does not exist:" << m_indexDir;
     }
@@ -32,8 +254,10 @@ void FileNameIndexedStrategy::initializeIndexing()
 
 void FileNameIndexedStrategy::search(const SearchQuery &query)
 {
-    m_cancelled.store(false);
+    m_searchCancelled = false;
     m_results.clear();
+    m_count = 0;
+    m_total = 0;
 
     if (!QFileInfo::exists(m_indexDir)) {
         emit errorOccurred(SearchError(SearchErrorCode::InternalError));
@@ -41,106 +265,54 @@ void FileNameIndexedStrategy::search(const SearchQuery &query)
         return;
     }
 
-    QString keyword = query.keyword();
-    bool caseSensitive = m_options.caseSensitive();
-    QString searchPath = m_options.searchPath();
-
     // 获取文件类型设置
     FileNameOptionsAPI optionsApi(const_cast<SearchOptions &>(m_options));
-    QStringList fileTypes = optionsApi.fileTypes();
-    bool pinyinEnabled = optionsApi.pinyinEnabled();
 
-    // 直接将文件类型传递给搜索方法，而不是在结果中过滤
-    QStringList matchedFiles = performIndexSearch(query, searchPath, fileTypes, caseSensitive, pinyinEnabled);
-
-    // 处理搜索结果
-    int maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : INT_MAX;
-    int count = 0;
-    int total = matchedFiles.size();
-
-    for (const QString &path : matchedFiles) {
-        if (m_cancelled.load() || count >= maxResults) {
-            break;
-        }
-
-        QFileInfo fileInfo(path);
-        if (!fileInfo.exists()) {
-            continue;
-        }
-
-        // 创建搜索结果
-        SearchResult result(path);
-        FileNameResultAPI api(result);
-        api.setSize(fileInfo.size());
-        api.setModifiedTime(fileInfo.lastModified().toString());
-        api.setIsDirectory(fileInfo.isDir());
-        api.setFileType(fileInfo.suffix().isEmpty() ? (fileInfo.isDir() ? "directory" : "unknown") : fileInfo.suffix());
-
-        // 添加到结果集合
-        m_results.append(result);
-
-        // 实时发送结果
-        emit resultFound(result);
-
-        count++;
-
-        // 更新进度
-        if (count % 10 == 0) {
-            emit progressChanged(count, total);
-        }
+    // 执行搜索
+    try {
+        performIndexSearch(query, optionsApi);
+    } catch (const LuceneException &e) {
+        qWarning() << "Lucene search exception:" << QString::fromStdWString(e.getError());
+        emit errorOccurred(SearchError(SearchErrorCode::InternalError));
+    } catch (const std::exception &e) {
+        qWarning() << "Standard exception:" << e.what();
+        emit errorOccurred(SearchError(SearchErrorCode::InternalError));
     }
 
-    // 完成搜索
-    emit progressChanged(count, count > 0 ? count : 1);
     emit searchFinished(m_results);
 }
 
-QStringList FileNameIndexedStrategy::performIndexSearch(const SearchQuery &query,
-                                                        const QString &searchPath,
-                                                        const QStringList &fileTypes,
-                                                        bool caseSensitive,
-                                                        bool pinyinEnabled)
+void FileNameIndexedStrategy::performIndexSearch(const SearchQuery &query, const FileNameOptionsAPI &api)
 {
-    // 实现参考LuceneSearchEngine的核心逻辑
-    QStringList results;
+    bool caseSensitive = m_options.caseSensitive();
+    QString searchPath = m_options.searchPath();
 
-    try {
-        // 1. 确定搜索类型
-        SearchType searchType = determineSearchType(query, pinyinEnabled);
+    // TODO (search): anything
+    if (searchPath.startsWith(QDir::homePath()))
+        searchPath.replace(0, QDir::homePath().length(), SearchUtility::getHomeDirectory());
 
-        // 2. 构建查询
-        IndexQuery indexQuery = buildIndexQuery(query, searchType, caseSensitive, fileTypes);
+    QStringList fileTypes = api.fileTypes();
+    bool pinyinEnabled = api.pinyinEnabled();
 
-        // 3. 从索引中获取结果
-        results = executeIndexQuery(indexQuery, searchPath);
+    // 1. 确定搜索类型
+    SearchType searchType = determineSearchType(query, pinyinEnabled, fileTypes);
 
-        // 4. 处理结果排序
-        if (!results.isEmpty()) {
-            // 首先按目录和文件分组
-            QStringList dirs, files;
-            for (const QString &path : results) {
-                QFileInfo info(path);
-                if (info.isDir()) {
-                    dirs.append(path);
-                } else {
-                    files.append(path);
-                }
-            }
+    // 2. 构建查询
+    IndexQuery indexQuery = buildIndexQuery(query, searchType, caseSensitive, fileTypes);
 
-            // 然后合并结果（目录在前，文件在后）
-            results = dirs + files;
-        }
-    } catch (const std::exception &e) {
-        qWarning() << "FileName index search exception:" << e.what();
-    }
-
-    return results;
+    // 3. 执行查询并处理结果
+    executeIndexQuery(indexQuery, searchPath);
 }
 
 FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType(
-        const SearchQuery &query, bool pinyinEnabled) const
+        const SearchQuery &query, bool pinyinEnabled, const QStringList &fileTypes) const
 {
     QString keyword = query.keyword();
+
+    // 空关键词但有文件类型，使用文件类型搜索
+    if (keyword.isEmpty() && !fileTypes.isEmpty()) {
+        return SearchType::FileType;
+    }
 
     // 有通配符的搜索
     if (keyword.contains('*') || keyword.contains('?')) {
@@ -168,181 +340,206 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
         const QStringList &fileTypes)
 {
     IndexQuery result;
-    result.terms.clear();
-    result.fileTypes.clear();
-
-    // 设置查询类型
     result.type = searchType;
-
-    // 是否区分大小写
     result.caseSensitive = caseSensitive;
+    result.fileTypes = fileTypes;
 
-    // 添加文件类型过滤
-    if (!fileTypes.isEmpty()) {
-        result.fileTypes = fileTypes;
-    }
-
-    // 根据查询类型处理关键词
     switch (searchType) {
-    case SearchType::Simple: {
-        // 简单查询，直接添加关键词
+    case SearchType::Simple:
         result.terms.append(query.keyword());
         break;
-    }
-    case SearchType::Wildcard: {
-        // 通配符查询，处理通配符
+    case SearchType::Wildcard:
         result.terms.append(query.keyword());
         break;
-    }
-    case SearchType::Boolean: {
-        // 布尔查询，添加所有关键词
-        QStringList keywords = SearchUtility::extractKeywords(query);
-        result.terms = keywords;
-
-        // 设置布尔操作符
-        if (query.type() == SearchQuery::Type::Boolean) {
-            result.booleanOp = query.booleanOperator();
-        } else {
-            // 对于空格分隔的搜索，默认使用AND
-            result.booleanOp = SearchQuery::BooleanOperator::AND;
-        }
+    case SearchType::Boolean:
+        result.terms = SearchUtility::extractKeywords(query);
+        result.booleanOp = query.type() == SearchQuery::Type::Boolean ? query.booleanOperator() : SearchQuery::BooleanOperator::AND;
         break;
-    }
-    case SearchType::Pinyin: {
-        // 拼音查询，添加原始关键词和拼音支持
+    case SearchType::Pinyin:
         result.terms.append(query.keyword());
         result.usePinyin = true;
         break;
-    }
+    case SearchType::FileType:
+        result.fileTypes = fileTypes;
+        break;
     }
 
     return result;
 }
 
-QStringList FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const QString &searchPath)
+void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const QString &searchPath)
 {
-    QStringList results;
-
-    // 这里模拟索引查询的执行
-    // 在实际实现中，需要与索引系统对接
-
-    // 根据查询类型执行不同的搜索逻辑
-    switch (query.type) {
-    case SearchType::Simple:
-        results = executeSimpleSearch(query.terms, searchPath, query.caseSensitive, query.fileTypes);
-        break;
-    case SearchType::Wildcard:
-        results = executeWildcardSearch(query.terms, searchPath, query.caseSensitive, query.fileTypes);
-        break;
-    case SearchType::Boolean:
-        results = executeBooleanSearch(query.terms, query.booleanOp, searchPath, query.caseSensitive, query.fileTypes);
-        break;
-    case SearchType::Pinyin:
-        results = executePinyinSearch(query.terms, searchPath, query.caseSensitive, query.fileTypes);
-        break;
+    // 获取索引目录
+    FSDirectoryPtr directory = m_indexManager->getIndexDirectory(m_indexDir);
+    if (!directory) {
+        emit errorOccurred(SearchError(SearchErrorCode::InternalError));
+        return;
     }
 
-    return results;
-}
-
-QStringList FileNameIndexedStrategy::executeSimpleSearch(
-        const QStringList &terms,
-        const QString &searchPath,
-        bool caseSensitive,
-        const QStringList &fileTypes)
-{
-    QStringList results;
-
-    // 模拟简单搜索查询
-    // 注意：这只是一个模拟示例，应替换为实际索引查询
-
-    if (terms.isEmpty()) {
-        return results;
+    if (!IndexReader::indexExists(directory)) {
+        qWarning() << "Index does not exist:" << m_indexDir;
+        emit errorOccurred(SearchError(FileNameSearchErrorCode::PatternSyntaxError));
+        return;
     }
 
-    QString term = terms.first();
+    // 获取索引读取器
+    IndexReaderPtr reader = m_indexManager->getIndexReader(directory);
+    if (!reader || reader->numDocs() == 0) {
+        qWarning() << "Index is empty";
+        emit errorOccurred(SearchError(SearchErrorCode::InternalError));
+        return;
+    }
 
-    // 添加模拟结果
-    for (int i = 0; i < 10; i++) {
-        if (m_cancelled.load()) {
+    // 获取搜索器
+    SearcherPtr searcher = m_indexManager->getSearcher(reader);
+    if (!searcher) {
+        emit errorOccurred(SearchError(SearchErrorCode::InternalError));
+        return;
+    }
+
+    // 构建查询
+    QueryPtr luceneQuery;
+    try {
+        luceneQuery = buildLuceneQuery(query);
+        if (!luceneQuery) {
+            emit errorOccurred(SearchError(SearchErrorCode::InvalidQuery));
+            return;
+        }
+    } catch (const LuceneException &e) {
+        qWarning() << "Error building query:" << QString::fromStdWString(e.getError());
+        emit errorOccurred(SearchError(SearchErrorCode::InvalidQuery));
+        return;
+    }
+
+    // 执行搜索
+    TopDocsPtr searchResults;
+    try {
+        int32_t maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : reader->numDocs();
+        searchResults = searcher->search(luceneQuery, maxResults);
+        m_total = searchResults->totalHits;
+    } catch (const LuceneException &e) {
+        qWarning() << "Search execution error:" << QString::fromStdWString(e.getError());
+        emit errorOccurred(SearchError(SearchErrorCode::InternalError));
+        return;
+    }
+
+    // 实时处理搜索结果
+    for (int i = 0; i < searchResults->scoreDocs.size(); i++) {
+        if (m_searchCancelled) {
             break;
         }
 
-        // 生成模拟文件路径
-        QString fileName = QString("file_%1").arg(i);
-        QString suffix = i % 2 == 0 ? ".txt" : ".pdf";
-        QString path = QString("%1/%2%3").arg(searchPath, fileName, suffix);
+        try {
+            ScoreDocPtr scoreDoc = searchResults->scoreDocs[i];
+            DocumentPtr doc = searcher->doc(scoreDoc->doc);
+            QString path = QString::fromStdWString(doc->get(L"full_path"));
 
-        // 检查模拟匹配
-        if (fileName.contains(term, caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
-            // 检查文件类型
-            if (fileTypes.isEmpty() || fileTypes.contains(suffix.mid(1))) {
-                results.append(path);
+            if (!path.startsWith(searchPath)) {
+                continue;
             }
+
+            QString type = QString::fromStdWString(doc->get(L"file_type"));
+            QString time = QString::fromStdWString(doc->get(L"modify_time_str"));
+            QString size = QString::fromStdWString(doc->get(L"file_size_str"));
+
+            // 处理搜索结果
+            processSearchResult(path, type, time, size);
+
+            // 每处理10个结果更新一次进度
+            if (m_count % 10 == 0) {
+                emit progressChanged(m_count, m_total);
+            }
+
+        } catch (const LuceneException &e) {
+            qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());
+            continue;
         }
     }
 
-    return results;
+    // 最终进度更新
+    emit progressChanged(m_count, m_total);
 }
 
-QStringList FileNameIndexedStrategy::executeWildcardSearch(
-        const QStringList &patterns,
-        const QString &searchPath,
-        bool caseSensitive,
-        const QStringList &fileTypes)
+void FileNameIndexedStrategy::processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size)
 {
-    QStringList results;
+    // 创建搜索结果
+    SearchResult result(path);
+    FileNameResultAPI api(result);
+    api.setSize(size);
+    api.setModifiedTime(time);
+    api.setIsDirectory(type == "dir");
+    api.setFileType(type);
 
-    // 模拟通配符搜索
-    // 注意：这只是一个模拟示例，应替换为实际索引查询
+    // 添加结果并通知
+    m_results.append(result);
+    emit resultFound(result);
+    m_count++;
+}
 
-    if (patterns.isEmpty()) {
-        return results;
+Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &query) const
+{
+    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+    bool hasValidQuery = false;
+
+    // 添加文件类型查询
+    if (!query.fileTypes.isEmpty()) {
+        QueryPtr typeQuery = m_queryBuilder->buildTypeQuery(query.fileTypes);
+        if (typeQuery) {
+            finalQuery->add(typeQuery, BooleanClause::MUST);
+            hasValidQuery = true;
+        }
     }
 
-    QString pattern = patterns.first();
+    // 根据搜索类型添加相应的查询
+    switch (query.type) {
+    case SearchType::Simple:
+        if (!query.terms.isEmpty()) {
+            QueryPtr simpleQuery = m_queryBuilder->buildSimpleQuery(query.terms.first(), query.caseSensitive);
+            if (simpleQuery) {
+                finalQuery->add(simpleQuery, BooleanClause::MUST);
+                hasValidQuery = true;
+            }
+        }
+        break;
+    case SearchType::Wildcard:
+        if (!query.terms.isEmpty()) {
+            QueryPtr wildcardQuery = m_queryBuilder->buildWildcardQuery(query.terms.first(), query.caseSensitive);
+            if (wildcardQuery) {
+                finalQuery->add(wildcardQuery, BooleanClause::MUST);
+                hasValidQuery = true;
+            }
+        }
+        break;
+    case SearchType::Boolean:
+        if (!query.terms.isEmpty()) {
+            QueryPtr booleanQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive);
+            if (booleanQuery) {
+                finalQuery->add(booleanQuery, BooleanClause::MUST);
+                hasValidQuery = true;
+            }
+        }
+        break;
+    case SearchType::Pinyin:
+        if (!query.terms.isEmpty()) {
+            QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(query.terms);
+            if (pinyinQuery) {
+                finalQuery->add(pinyinQuery, BooleanClause::MUST);
+                hasValidQuery = true;
+            }
+        }
+        break;
+    case SearchType::FileType:
+        // 文件类型查询已经在上面处理完成
+        // 如果只有文件类型，这里不需要额外操作
+        break;
+    }
 
-    // 简化处理：将通配符替换为简单的包含搜索
-    QString simplifiedPattern = pattern;
-    simplifiedPattern.remove('*').remove('?');
-
-    // 复用简单搜索逻辑
-    QStringList terms;
-    terms.append(simplifiedPattern);
-    return executeSimpleSearch(terms, searchPath, caseSensitive, fileTypes);
-}
-
-QStringList FileNameIndexedStrategy::executeBooleanSearch(
-        const QStringList &terms,
-        SearchQuery::BooleanOperator op,
-        const QString &searchPath,
-        bool caseSensitive,
-        const QStringList &fileTypes)
-{
-    QStringList results;
-
-    return results;
-}
-
-QStringList FileNameIndexedStrategy::executePinyinSearch(
-        const QStringList &terms,
-        const QString &searchPath,
-        bool caseSensitive,
-        const QStringList &fileTypes)
-{
-    // 模拟拼音搜索
-    // 注意：这只是一个模拟示例，应替换为实际的拼音索引查询
-
-    QStringList results;
-
-    // 简化处理：暂时复用简单搜索
-    // 在实际实现中，应使用拼音索引
-    return executeSimpleSearch(terms, searchPath, caseSensitive, fileTypes);
+    return hasValidQuery ? finalQuery : nullptr;
 }
 
 void FileNameIndexedStrategy::cancel()
 {
-    m_cancelled.store(true);
+    m_searchCancelled = true;
 }
 
 DFM_SEARCH_END_NS

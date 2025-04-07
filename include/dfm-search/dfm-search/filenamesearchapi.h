@@ -63,8 +63,8 @@ public:
      */
     explicit FileNameResultAPI(SearchResult &result);
 
-    qint64 size() const;
-    void setSize(qint64 size);
+    QString size() const;
+    void setSize(const QString &QString);
 
     QString modifiedTime() const;
     void setModifiedTime(const QString &time);
