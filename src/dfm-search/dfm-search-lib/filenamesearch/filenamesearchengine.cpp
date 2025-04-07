@@ -2,91 +2,57 @@
 #include <QDebug>
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QDateTime>
+#include <QMutexLocker>
+#include "filenamestrategies/realtimestrategy.h"
+#include "filenamestrategies/indexedstrategy.h"
 
 DFM_SEARCH_BEGIN_NS
+DCORE_USE_NAMESPACE
 
 FileNameSearchEngine::FileNameSearchEngine(QObject *parent)
-    : AbstractSearchEngine(parent)
+    : GenericSearchEngine(parent)
 {
-    // TODO : 实际项目中这里应初始化 m_engine
-    // m_engine = std::make_unique<LuceneSearchEngine>();
 }
 
 FileNameSearchEngine::~FileNameSearchEngine() = default;
 
-SearchOptions FileNameSearchEngine::searchOptions() const
+void FileNameSearchEngine::setupStrategyFactory()
 {
-    return m_options;
+    // 设置文件名搜索策略工厂
+    auto factory = std::make_unique<FileNameSearchStrategyFactory>();
+    m_worker->setStrategyFactory(std::move(factory));
 }
 
-void FileNameSearchEngine::setSearchOptions(const SearchOptions &options)
+SearchResultExpected FileNameSearchEngine::validateSearchConditions(const SearchQuery &query)
 {
-    m_options = options;
-
-    // 配置底层引擎
-}
-
-SearchStatus FileNameSearchEngine::status() const
-{
-    return m_status.load();
-}
-
-void FileNameSearchEngine::search(const SearchQuery &query)
-{
-    if (m_status.load() == SearchStatus::Searching)
-        return;
-
-    m_cancelled.store(false);
-    setStatus(SearchStatus::Searching);
-    emit searchStarted();
-
-    // 保存当前查询以便供 convertResults 使用
-    m_currentQuery = query;
-
-    // 实现搜索逻辑...
-    // 在实际实现中，可以使用QtConcurrent来异步执行并发出结果信号
-}
-
-void FileNameSearchEngine::searchWithCallback(const SearchQuery &query,
-                                              SearchEngine::ResultCallback callback)
-{
-    if (m_status.load() == SearchStatus::Searching)
-        return;
-
-    m_cancelled.store(false);
-    setStatus(SearchStatus::Searching);
-    emit searchStarted();
-
-    // 保存当前查询以便供 convertResults 使用
-    m_currentQuery = query;
-
-    // 实现带回调的搜索逻辑...
-    // 在实际实现中，可以使用QtConcurrent来异步执行并通过回调返回结果
-}
-
-SearchResultExpected FileNameSearchEngine::searchSync(const SearchQuery &query)
-{
-    // 保存当前查询以便供 convertResults 使用
-    m_currentQuery = query;
-
-    // 注：这里只是演示，实际项目中应使用 LuceneSearchEngine 实现
-    QList<SearchResult> results;
-
-    if (m_cancelled.load()) {
-        return results;
+    // 先执行基类验证
+    auto result = GenericSearchEngine::validateSearchConditions(query);
+    if (!result.hasValue()) {
+        return result;
     }
 
-    return results;
+    // 文件名搜索特定验证
+    if (query.keyword().isEmpty()) {
+        return DUnexpected<DFMSEARCH::SearchError> { SearchError(FileNameSearchErrorCode::InvalidFileName) };
+    }
+
+    return result;
 }
 
-void FileNameSearchEngine::cancel()
+std::unique_ptr<BaseSearchStrategy> FileNameSearchStrategyFactory::createStrategy(
+        SearchType searchType, const SearchOptions &options)
 {
-    // TODO: use parent cancel
-    m_cancelled.store(true);
+    // 确保搜索类型正确
+    if (searchType != SearchType::FileName) {
+        return nullptr;
+    }
 
-    if (m_status.load() != SearchStatus::Ready && m_status.load() != SearchStatus::Finished) {
-        setStatus(SearchStatus::Cancelled);
-        emit searchCancelled();
+    // 根据搜索方法创建对应的策略
+    if (options.method() == SearchMethod::Indexed) {
+        return std::make_unique<FileNameIndexedStrategy>(options);
+    } else {
+        return std::make_unique<FileNameRealTimeStrategy>(options);
     }
 }
 

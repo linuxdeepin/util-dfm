@@ -1,21 +1,14 @@
 #ifndef FILENAME_SEARCH_ENGINE_H
 #define FILENAME_SEARCH_ENGINE_H
 
-#include <memory>
-
-#include "core/abstractsearchengine.h"
-
-// 前向声明
-// TODO: class LuceneSearchEngine;
+#include "core/genericsearchengine.h"
 
 DFM_SEARCH_BEGIN_NS
 
 /**
  * @brief 文件名搜索引擎
- *
- * 实现基于文件名的搜索功能
  */
-class FileNameSearchEngine : public AbstractSearchEngine
+class FileNameSearchEngine : public GenericSearchEngine
 {
     Q_OBJECT
 
@@ -23,27 +16,27 @@ public:
     explicit FileNameSearchEngine(QObject *parent = nullptr);
     ~FileNameSearchEngine() override;
 
-    // 实现AbstractSearchEngine接口
+    // 实现搜索类型
     SearchType searchType() const override { return SearchType::FileName; }
 
-    SearchOptions searchOptions() const override;
-    void setSearchOptions(const SearchOptions &options) override;
+protected:
+    // 设置策略工厂
+    void setupStrategyFactory() override;
+    
+    // 重写验证方法以添加特定验证
+    SearchResultExpected validateSearchConditions(const SearchQuery &query) override;
+};
 
-    SearchStatus status() const override;
-
-    void search(const SearchQuery &query) override;
-    void searchWithCallback(const SearchQuery &query,
-                            SearchEngine::ResultCallback callback) override;
-    SearchResultExpected searchSync(const SearchQuery &query) override;
-
-    void cancel() override;
-
-private:
-    // TODO : std::unique_ptr<LuceneSearchEngine> m_engine;
-    SearchOptions m_options;
-    SearchQuery m_currentQuery;   // 当前查询
+/**
+ * @brief 文件名搜索策略工厂
+ */
+class FileNameSearchStrategyFactory : public SearchStrategyFactory
+{
+public:
+    std::unique_ptr<BaseSearchStrategy> createStrategy(
+        SearchType searchType, const SearchOptions &options) override;
 };
 
 DFM_SEARCH_END_NS
 
-#endif   // FILENAME_SEARCH_ENGINE_H
+#endif // FILENAME_SEARCH_ENGINE_H

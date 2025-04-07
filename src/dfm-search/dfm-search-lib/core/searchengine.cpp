@@ -62,6 +62,8 @@ void SearchEngine::setSearchType(SearchType type)
         return;
     }
 
+    d_ptr->init();
+
     // 连接信号
     connect(d_ptr.get(), &AbstractSearchEngine::searchStarted,
             this, &SearchEngine::searchStarted);
