@@ -1,5 +1,7 @@
 # Setup the environment
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
+find_package(Dtk${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Lucene REQUIRED IMPORTED_TARGET liblucene++ liblucene++-contrib)
 
@@ -11,6 +13,7 @@ add_library(${BIN_NAME} SHARED
 
 target_link_libraries(${BIN_NAME}
     Qt${QT_VERSION_MAJOR}::Core
+    Dtk${QT_VERSION_MAJOR}::Core
     PkgConfig::Lucene
 )
 

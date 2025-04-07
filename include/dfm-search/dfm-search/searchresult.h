@@ -4,7 +4,10 @@
 #ifndef SEARCHRESULT_H
 #define SEARCHRESULT_H
 
+#include <DExpected>
+
 #include <dfm-search/dsearch_global.h>
+#include <dfm-search/searcherror.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -61,6 +64,9 @@ public:
 protected:
     std::unique_ptr<SearchResultData> d;
 };
+
+using SearchResultList = QList<DFMSEARCH::SearchResult>;
+using SearchResultExpected = Dtk::Core::DExpected<QList<SearchResult>, DFMSEARCH::SearchError>;
 
 DFM_SEARCH_END_NS
 

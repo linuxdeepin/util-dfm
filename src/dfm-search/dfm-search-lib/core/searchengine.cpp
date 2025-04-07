@@ -116,7 +116,7 @@ void SearchEngine::searchWithCallback(const SearchQuery &query, ResultCallback c
     }
 }
 
-QList<SearchResult> SearchEngine::searchSync(const SearchQuery &query)
+SearchResultExpected SearchEngine::searchSync(const SearchQuery &query)
 {
     if (d_ptr) {
         return d_ptr->searchSync(query);

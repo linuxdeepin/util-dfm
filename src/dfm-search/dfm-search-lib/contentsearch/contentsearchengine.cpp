@@ -45,7 +45,7 @@ void ContentSearchEngine::searchWithCallback(const SearchQuery &query, SearchEng
     emit searchStarted();
 }
 
-QList<SearchResult> ContentSearchEngine::searchSync(const SearchQuery &query)
+SearchResultExpected ContentSearchEngine::searchSync(const SearchQuery &query)
 {
 
     // 保存当前查询以便供 convertResults 使用
