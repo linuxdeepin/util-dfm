@@ -9,6 +9,7 @@
 #include <dfm-search/searchresult.h>
 #include <dfm-search/searchoptions.h>
 #include <dfm-search/searchquery.h>
+#include <dfm-search/searcherror.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -140,7 +141,7 @@ Q_SIGNALS:
      *
      * @param message 错误消息
      */
-    void error(const QString &message);
+    void errorOccurred(const DFMSEARCH::SearchError &error);
 
 protected:
     explicit SearchEngine(QObject *parent = nullptr);

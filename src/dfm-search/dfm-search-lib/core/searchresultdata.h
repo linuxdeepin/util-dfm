@@ -32,6 +32,4 @@ public:
 
 DFM_SEARCH_END_NS
 
-Q_DECLARE_METATYPE(DFMSEARCH::SearchResultData)
-
 #endif   // SEARCH_RESULT_DATA_H
