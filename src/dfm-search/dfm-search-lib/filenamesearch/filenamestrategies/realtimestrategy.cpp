@@ -97,7 +97,7 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
             // 创建搜索结果
             SearchResult result(path);
             FileNameResultAPI api(result);
-            api.setSize(info.size());
+            //  api.setSize(info.size());
             api.setModifiedTime(info.lastModified().toString());
             api.setIsDirectory(info.isDir());
             api.setFileType(info.suffix().isEmpty() ? (info.isDir() ? "directory" : "unknown") : info.suffix());

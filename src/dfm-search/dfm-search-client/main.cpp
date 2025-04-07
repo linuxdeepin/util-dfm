@@ -66,7 +66,7 @@ void printSearchResult(const SearchResult &result, SearchType searchType)
             std::cout << "  Type: Directory" << std::endl;
         } else {
             std::cout << "  Type: " << resultAPI.fileType().toStdString() << std::endl;
-            std::cout << "  Size: " << resultAPI.size() << " bytes" << std::endl;
+            std::cout << "  Size: " << resultAPI.size().toStdString() << " bytes" << std::endl;
         }
 
         std::cout << "  Modified: " << resultAPI.modifiedTime().toStdString() << std::endl;

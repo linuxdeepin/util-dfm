@@ -34,12 +34,12 @@ FileNameResultAPI::FileNameResultAPI(SearchResult &result)
 {
 }
 
-qint64 FileNameResultAPI::size() const
+QString FileNameResultAPI::size() const
 {
-    return m_result.customAttribute("size").toLongLong();
+    return m_result.customAttribute("size").toString();
 }
 
-void FileNameResultAPI::setSize(qint64 size)
+void FileNameResultAPI::setSize(const QString &size)
 {
     m_result.setCustomAttribute("size", size);
 }

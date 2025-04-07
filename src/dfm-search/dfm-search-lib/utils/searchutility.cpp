@@ -10,6 +10,21 @@
 DFM_SEARCH_BEGIN_NS
 namespace SearchUtility {
 
+QString getHomeDirectory()
+{
+    QString homeDir;
+
+    if (QFileInfo::exists("/data/home")) {
+        homeDir = "/data";
+    } else if (QFileInfo::exists("/persistent/home")) {
+        homeDir = "/persistent";
+    }
+
+    homeDir.append(QDir::homePath());
+
+    return homeDir;
+}
+
 QString getAnythingIndexDirectory()
 {
     return QString("/run/user/%1/deepin-anything-server").arg(getuid());
