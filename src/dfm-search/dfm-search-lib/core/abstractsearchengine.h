@@ -24,7 +24,6 @@ public:
 
     // 公共接口方法
     virtual SearchType searchType() const = 0;
-    virtual void setSearchType(SearchType type) = 0;
 
     virtual SearchOptions searchOptions() const = 0;
     virtual void setSearchOptions(const SearchOptions &options) = 0;
@@ -36,16 +35,14 @@ public:
                                     SearchEngine::ResultCallback callback) = 0;
     virtual QList<SearchResult> searchSync(const SearchQuery &query) = 0;
 
-    virtual void pause() = 0;
-    virtual void resume() = 0;
     virtual void cancel() = 0;
 
 Q_SIGNALS:
     void searchStarted();
-    void resultFound(const SearchResult &result);
+    void resultFound(const DFMSEARCH::SearchResult &result);
     void progressChanged(int current, int total);
     void statusChanged(SearchStatus status);
-    void searchFinished(const QList<SearchResult> &results);
+    void searchFinished(const QList<DFMSEARCH::SearchResult> &results);
     void searchCancelled();
     void error(const QString &message);
 
@@ -57,8 +54,6 @@ protected:
 
     std::atomic<SearchStatus> m_status;
     std::atomic<bool> m_cancelled;
-    QMutex m_mutex;
-    QWaitCondition m_pauseCondition;
 };
 
 DFM_SEARCH_END_NS

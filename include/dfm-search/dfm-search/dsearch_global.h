@@ -27,10 +27,11 @@ Q_ENUM_NS(SearchType)
 enum SearchStatus {
     Ready,   // 准备就绪
     Searching,   // 正在搜索
-    Paused,   // 已暂停
     Finished,   // 已完成
     Cancelled,   // 已取消
     Error   // 错误
+
+    // Pause ?
 };
 Q_ENUM_NS(SearchStatus)
 

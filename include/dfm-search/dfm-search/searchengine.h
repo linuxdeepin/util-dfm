@@ -94,16 +94,6 @@ public:
     QList<SearchResult> searchSync(const SearchQuery &query);
 
     /**
-     * @brief 暂停当前搜索
-     */
-    void pause();
-
-    /**
-     * @brief 恢复暂停的搜索
-     */
-    void resume();
-
-    /**
      * @brief 取消当前搜索
      */
     void cancel();
