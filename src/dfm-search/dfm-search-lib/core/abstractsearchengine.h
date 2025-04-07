@@ -44,13 +44,13 @@ Q_SIGNALS:
     void statusChanged(SearchStatus status);
     void searchFinished(const QList<DFMSEARCH::SearchResult> &results);
     void searchCancelled();
-    void error(const QString &message);
+    void errorOccurred(const DFMSEARCH::SearchError &error);
 
 protected:
     // 辅助方法
     void setStatus(SearchStatus status);
     void reportProgress(int current, int total);
-    void reportError(const QString &message);
+    void reportError(const SearchError &error);
 
     std::atomic<SearchStatus> m_status;
     std::atomic<bool> m_cancelled;

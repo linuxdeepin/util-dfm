@@ -253,10 +253,11 @@ int main(int argc, char *argv[])
         QCoreApplication::quit();
     });
 
-    QObject::connect(engine, &SearchEngine::error, [](const QString &message) {
-        std::cerr << "Error: " << message.toStdString() << std::endl;
-        QCoreApplication::quit();
-    });
+    // TODO
+    // QObject::connect(engine, &SearchEngine::error, [](const QString &message) {
+    //     std::cerr << "Error: " << message.toStdString() << std::endl;
+    //     QCoreApplication::quit();
+    // });
 
     // Start search
     std::cout << "Searching for: " << keyword.toStdString() << std::endl;

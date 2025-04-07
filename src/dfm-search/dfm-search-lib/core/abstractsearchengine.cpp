@@ -10,6 +10,8 @@ AbstractSearchEngine::AbstractSearchEngine(QObject *parent)
       m_status(SearchStatus::Ready),
       m_cancelled(false)
 {
+    qRegisterMetaType<DFMSEARCH::SearchError>();
+    qRegisterMetaType<DFMSEARCH::SearchResult>();
 }
 
 AbstractSearchEngine::~AbstractSearchEngine()
@@ -27,9 +29,9 @@ void AbstractSearchEngine::reportProgress(int current, int total)
     emit progressChanged(current, total);
 }
 
-void AbstractSearchEngine::reportError(const QString &message)
+void AbstractSearchEngine::reportError(const SearchError &error)
 {
-    emit error(message);
+    emit errorOccurred(error);
 }
 
 DFM_SEARCH_END_NS

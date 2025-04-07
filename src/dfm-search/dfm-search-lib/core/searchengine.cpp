@@ -75,8 +75,8 @@ void SearchEngine::setSearchType(SearchType type)
             this, &SearchEngine::searchFinished);
     connect(d_ptr.get(), &AbstractSearchEngine::searchCancelled,
             this, &SearchEngine::searchCancelled);
-    connect(d_ptr.get(), &AbstractSearchEngine::error,
-            this, &SearchEngine::error);
+    connect(d_ptr.get(), &AbstractSearchEngine::errorOccurred,
+            this, &SearchEngine::errorOccurred);
 }
 
 SearchOptions SearchEngine::searchOptions() const
