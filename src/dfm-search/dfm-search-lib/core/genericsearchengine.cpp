@@ -37,8 +37,6 @@ void GenericSearchEngine::init()
             this, &GenericSearchEngine::handleSearchResult);
     connect(m_worker, &SearchWorker::searchFinished,
             this, &GenericSearchEngine::handleSearchFinished);
-    connect(m_worker, &SearchWorker::progressChanged,
-            this, &GenericSearchEngine::handleProgressChanged);
     connect(m_worker, &SearchWorker::errorOccurred,
             this, &GenericSearchEngine::handleErrorOccurred);
 
@@ -188,12 +186,6 @@ void GenericSearchEngine::handleSearchFinished(const DFMSEARCH::SearchResultList
 
     // 唤醒等待的线程（如果有）
     m_waitCond.wakeAll();
-}
-
-void GenericSearchEngine::handleProgressChanged(int current, int total)
-{
-    // 转发进度信号
-    reportProgress(current, total);
 }
 
 void GenericSearchEngine::handleErrorOccurred(const DFMSEARCH::SearchError &error)

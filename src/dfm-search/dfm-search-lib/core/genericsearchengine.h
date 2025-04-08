@@ -49,7 +49,6 @@ protected:
 private Q_SLOTS:
     void handleSearchResult(const DFMSEARCH::SearchResult &result);
     void handleSearchFinished(const DFMSEARCH::SearchResultList &results);
-    void handleProgressChanged(int current, int total);
     void handleErrorOccurred(const DFMSEARCH::SearchError &error);
 
 protected:
