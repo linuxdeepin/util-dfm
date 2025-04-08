@@ -4,7 +4,7 @@
 #ifndef SEARCHOPTIONSDATA_H
 #define SEARCHOPTIONSDATA_H
 
-#include <QVariantMap>
+#include <QVariantHash>
 #include <QStringList>
 
 #include <dfm-search/dsearch_global.h>
@@ -24,11 +24,10 @@ public:
     SearchMethod method;
     bool caseSensitive;
     QString searchPath;
-    QStringList excludePaths;
     bool includeHidden;
     int maxResults;
-    QVariantMap customOptions;
-    bool recursive = true;   // 默认递归搜索
+    QVariantHash customOptions;
+    bool enableResultFound;
 };
 
 DFM_SEARCH_END_NS

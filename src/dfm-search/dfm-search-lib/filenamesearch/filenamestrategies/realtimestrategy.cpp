@@ -21,7 +21,6 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
     QString searchPath = m_options.searchPath();
     bool caseSensitive = m_options.caseSensitive();
     bool includeHidden = m_options.includeHidden();
-    QStringList excludePaths = m_options.excludePaths();
     int maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : INT_MAX;
 
     // 获取文件类型过滤
@@ -50,19 +49,6 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
     while (it.hasNext() && count < maxResults && !m_cancelled.load()) {
         QString path = it.next();
         QFileInfo info(path);
-
-        // 检查排除路径
-        bool excluded = false;
-        for (const QString &excludePath : excludePaths) {
-            if (path.startsWith(excludePath)) {
-                excluded = true;
-                break;
-            }
-        }
-
-        if (excluded) {
-            continue;
-        }
 
         // 检查文件名是否匹配查询
         QString fileName = info.fileName();

@@ -445,12 +445,19 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
                 continue;
             }
 
-            QString type = QString::fromStdWString(doc->get(L"file_type"));
-            QString time = QString::fromStdWString(doc->get(L"modify_time_str"));
-            QString size = QString::fromStdWString(doc->get(L"file_size_str"));
-
             // 处理搜索结果
-            processSearchResult(path, type, time, size);
+            if (Q_UNLIKELY(m_options.resultFoundEnabled())) {
+                QString type = QString::fromStdWString(doc->get(L"file_type"));
+                QString time = QString::fromStdWString(doc->get(L"modify_time_str"));
+                QString size = QString::fromStdWString(doc->get(L"file_size_str"));
+                m_results.append(processSearchResult(path, type, time, size));
+            } else {
+                // perf: quickly
+                SearchResult result(path);
+                m_results.append(result);
+            }
+
+            m_count++;
 
         } catch (const LuceneException &e) {
             qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());
@@ -461,20 +468,20 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     qInfo() << "Result processing time:" << resultTimer.elapsed() << "ms";
 }
 
-void FileNameIndexedStrategy::processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size)
+SearchResult FileNameIndexedStrategy::processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size)
 {
     // 创建搜索结果
     SearchResult result(path);
+
     FileNameResultAPI api(result);
     api.setSize(size);
     api.setModifiedTime(time);
     api.setIsDirectory(type == "dir");
     api.setFileType(type);
 
-    // 添加结果并通知
-    m_results.append(result);
+    // perf: resultFound too slow!
     emit resultFound(result);
-    m_count++;
+    return result;
 }
 
 Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &query) const
