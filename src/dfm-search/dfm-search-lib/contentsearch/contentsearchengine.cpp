@@ -1,4 +1,5 @@
 #include "contentsearchengine.h"
+
 #include "contentstrategies/indexedstrategy.h"
 
 DFM_SEARCH_BEGIN_NS
@@ -26,7 +27,16 @@ SearchError ContentSearchEngine::validateSearchConditions()
         return result;
     }
 
-    // TODO (search): 内容搜索特定验证
+    // 内容搜索特定验证
+    ContentOptionsAPI api(m_options);
+    if (m_options.method() != SearchMethod::Indexed) {
+        return SearchError(SearchErrorCode::InvalidSerchMethod);
+    }
+
+    if (m_currentQuery.type() == SearchQuery::Type::Simple
+        && m_currentQuery.keyword().size() < Global::kMinContentSearchKeywordLength) {
+        return SearchError(ContentSearchErrorCode::KeywordTooShort);
+    }
 
     return result;
 }

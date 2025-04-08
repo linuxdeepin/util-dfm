@@ -8,9 +8,18 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QStandardPaths>
 
 DFM_SEARCH_BEGIN_NS
 namespace SearchUtility {
+
+QString contentIndexDirectory()
+{
+    QString configDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+    QDir deepinDir(configDir);
+    QString indexPath = deepinDir.filePath("deepin/dde-file-manager/index");
+    return indexPath;
+}
 
 QString anythingIndexDirectory()
 {

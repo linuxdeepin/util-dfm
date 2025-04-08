@@ -20,7 +20,9 @@ std::string SearchErrorCategory::message(int ev) const
         return "Internal error: An unexpected error occurred during the search operation. Please check the logs for more details.";
     case SearchErrorCode::InvalidBoolean:
         return "Invalid boolean: The boolean operation specified in the query is not valid. Please check the query syntax.";
-    // ... 其他错误消息
+    case SearchErrorCode::InvalidSerchMethod:
+        return "Invalid search method";
+        // ... 其他错误消息
     default:
         return "Unknown error: An unknown error occurred. Please contact support.";
     }

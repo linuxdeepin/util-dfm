@@ -11,6 +11,8 @@ file(GLOB_RECURSE PUBLIC_INCLUDES CONFIGURE_DEPENDS
 FILE (GLOB_RECURSE SRCS CONFIGURE_DEPENDS
     "./*.cpp"
     "./*.h"
+    "../3rdparty/*.cpp"
+    "../3rdparty/*.h"
 )
 
 # Qt6

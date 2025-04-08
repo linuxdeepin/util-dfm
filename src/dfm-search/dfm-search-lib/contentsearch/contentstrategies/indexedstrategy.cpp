@@ -5,13 +5,24 @@
 #include <QMimeDatabase>
 #include <QTextStream>
 #include <QThread>
+#include <QElapsedTimer>
+
+#include <lucene++/LuceneHeaders.h>
+#include <lucene++/QueryParser.h>
+#include <lucene++/BooleanQuery.h>
+#include <lucene++/QueryWrapperFilter.h>
+#include <lucene++/WildcardQuery.h>
+
+#include "ChineseAnalyzer.h"
+#include "utils/searchutility.h"
+
+using namespace Lucene;
 
 DFM_SEARCH_BEGIN_NS
 
 ContentIndexedStrategy::ContentIndexedStrategy(const SearchOptions &options, QObject *parent)
     : ContentBaseStrategy(options, parent)
 {
-    // 初始化内容索引
     initializeIndexing();
 }
 
@@ -20,11 +31,11 @@ ContentIndexedStrategy::~ContentIndexedStrategy() = default;
 void ContentIndexedStrategy::initializeIndexing()
 {
     // 获取索引目录
-    m_indexDir = QDir::homePath() + "/.config/deepin/dde-file-manager/index";
+    m_indexDir = SearchUtility::contentIndexDirectory();
 
-    // 检查索引是否存在
+    // 检查索引目录是否存在
     if (!QDir(m_indexDir).exists()) {
-        qWarning() << "Index dir is not exitsts:" << m_indexDir;
+        qWarning() << "Content index directory does not exist:" << m_indexDir;
     }
 }
 
@@ -34,12 +45,9 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
     m_results.clear();
     m_searching.store(true);
 
-    int maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : INT_MAX;
-    QString searchPath = m_options.searchPath();
-
     try {
         // 执行内容索引搜索
-        SearchResultList contentResults = performContentSearch(query, searchPath, maxResults);
+        SearchResultList contentResults = performContentSearch(query);
 
         // 处理和发送结果
         for (int i = 0; i < contentResults.size(); i++) {
@@ -51,7 +59,8 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
             m_results.append(contentResults[i]);
 
             // 实时发送结果
-            emit resultFound(contentResults[i]);
+            if (Q_UNLIKELY(m_options.resultFoundEnabled()))
+                emit resultFound(contentResults[i]);
         }
 
         // 完成搜索
@@ -64,111 +73,134 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
     m_searching.store(false);
 }
 
-SearchResultList ContentIndexedStrategy::performContentSearch(const SearchQuery &query,
-                                                              const QString &searchPath,
-                                                              int maxResults)
+Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer)
+{
+    try {
+        // 创建查询解析器
+        Lucene::QueryParserPtr parser = newLucene<Lucene::QueryParser>(
+                Lucene::LuceneVersion::LUCENE_CURRENT,
+                L"contents",
+                analyzer);
+
+        parser->setAllowLeadingWildcard(true);
+
+        if (query.type() == SearchQuery::Type::Boolean) {
+            // 处理布尔查询
+            Lucene::BooleanQueryPtr booleanQuery = newLucene<Lucene::BooleanQuery>();
+
+            // 添加所有子查询
+            for (const auto &subQuery : query.subQueries()) {
+                Lucene::QueryPtr termQuery = parser->parse(subQuery.keyword().toStdWString());
+                booleanQuery->add(termQuery,
+                                  query.booleanOperator() == SearchQuery::BooleanOperator::AND ? Lucene::BooleanClause::MUST : Lucene::BooleanClause::SHOULD);
+            }
+
+            return booleanQuery;
+        } else {
+            // 处理简单查询
+            return parser->parse(query.keyword().toStdWString());
+        }
+    } catch (const Lucene::LuceneException &e) {
+        qWarning() << "Error building query:" << QString::fromStdWString(e.getError());
+        return nullptr;
+    }
+}
+
+SearchResultList ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr &searcher,
+                                                              const Lucene::Collection<Lucene::ScoreDocPtr> &scoreDocs)
 {
     SearchResultList results;
 
-    // 1. 处理布尔查询
-    QStringList keywords;
-    if (query.type() == SearchQuery::Type::Boolean) {
-        // 收集所有子查询的关键词
-        for (const auto &subQuery : query.subQueries()) {
-            keywords.append(subQuery.keyword());
-        }
-        if (keywords.isEmpty()) {
-            keywords.append(query.keyword());
-        }
-    } else {
-        // 简单查询
-        keywords.append(query.keyword());
-    }
-
-    // 2. 从索引中查找匹配项
-    // 此处为模拟实现，实际应使用内容索引系统
-    QStringList matchedFiles = findMatchingContentFiles(keywords, searchPath, maxResults);
-
-    // 3. 处理搜索结果，提取高亮内容
-    for (const QString &path : matchedFiles) {
-        if (results.size() >= maxResults || m_cancelled.load()) {
+    QString searchPath = m_options.searchPath();
+    for (int32_t i = 0; i < scoreDocs.size(); ++i) {
+        if (m_cancelled.load()) {
             break;
         }
 
-        QFileInfo fileInfo(path);
-        if (!fileInfo.exists()) {
+        try {
+            Lucene::ScoreDocPtr scoreDoc = scoreDocs[i];
+            Lucene::DocumentPtr doc = searcher->doc(scoreDoc->doc);
+            QString path = QString::fromStdWString(doc->get(L"path"));
+
+            if (!path.startsWith(searchPath)) {
+                continue;
+            }
+            // 创建搜索结果
+            SearchResult result(path);
+
+            // 设置内容结果
+            ContentResultAPI api(result);
+            // TODO (search): 高亮内容
+            // api.setHighlightedContent(QString::fromStdWString(doc->get(L"contents")));
+
+            results.append(result);
+
+        } catch (const Lucene::LuceneException &e) {
+            qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());
             continue;
         }
-
-        // 创建搜索结果
-        SearchResult result(path);
-
-        // 提取内容片段并高亮
-        QString highlightedContent = extractHighlightedContent(path, keywords);
-        ContentResultAPI api(result);
-        api.setHighlightedContent(highlightedContent);
-
-        results.append(result);
     }
 
     return results;
 }
 
-QStringList ContentIndexedStrategy::findMatchingContentFiles(const QStringList &keywords,
-                                                             const QString &searchPath,
-                                                             int maxResults)
+SearchResultList ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
 {
-    QStringList results;
+    SearchResultList results;
 
-    // 模拟索引搜索结果
-    // 在实际实现中，这里应该是调用内容索引系统的API
-    for (int i = 0; i < 20 && results.size() < maxResults && !m_cancelled.load(); i++) {
-        QString path = QString("%1/document_%2.txt").arg(searchPath).arg(i);
-
-        // 模拟匹配检查
-        bool allMatch = true;
-        for (const QString &keyword : keywords) {
-            // 假设这个文件包含所有关键词
-            if (i % 3 != 0) {   // 只有1/3的文件会匹配
-                allMatch = false;
-                break;
-            }
+    try {
+        // 获取索引目录
+        FSDirectoryPtr directory = FSDirectory::open(m_indexDir.toStdWString());
+        if (!directory) {
+            qWarning() << "Failed to open index directory:" << m_indexDir;
+            emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexNotFound));
+            return results;
         }
 
-        if (allMatch) {
-            results.append(path);
+        // 获取索引读取器
+        IndexReaderPtr reader = IndexReader::open(directory, true);
+        if (!reader || reader->numDocs() == 0) {
+            qWarning() << "Index is empty or cannot be opened";
+            emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexNotFound));
+            return results;
         }
+
+        // 创建搜索器
+        IndexSearcherPtr searcher = newLucene<IndexSearcher>(reader);
+
+        // 创建分析器
+        AnalyzerPtr analyzer = newLucene<ChineseAnalyzer>();
+
+        // 构建查询
+        QueryPtr luceneQuery = buildLuceneQuery(query, analyzer);
+        if (!luceneQuery) {
+            qWarning() << "Failed to build Lucene query";
+            emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
+            return results;
+        }
+
+        // 执行搜索
+        int32_t maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : reader->numDocs();
+        TopDocsPtr topDocs = searcher->search(luceneQuery, maxResults);
+        Collection<ScoreDocPtr> scoreDocs = topDocs->scoreDocs;
+
+        // 处理搜索结果
+        results = processSearchResults(searcher, scoreDocs);
+
+    } catch (const LuceneException &e) {
+        qWarning() << "Lucene search exception:" << QString::fromStdWString(e.getError());
+        emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
+    } catch (const std::exception &e) {
+        qWarning() << "Standard exception:" << e.what();
+        emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
     }
 
     return results;
-}
-
-QString ContentIndexedStrategy::extractHighlightedContent(const QString &path,
-                                                          const QStringList &keywords)
-{
-    // 这里应该是从索引中获取预处理的高亮内容
-    // 为了简单起见，我们模拟一个高亮内容返回
-
-    QString content = QString("This is a sample content from file %1. ").arg(path);
-
-    // 添加关键词
-    for (const QString &keyword : keywords) {
-        content += QString("It contains the keyword <b style=\"color:red;\">%1</b>. ").arg(keyword);
-    }
-
-    return content;
 }
 
 void ContentIndexedStrategy::cancel()
 {
     m_cancelled.store(true);
-
-    // 等待当前搜索完成
-    int timeout = 100;   // 最多等待10秒
-    while (m_searching.load() && timeout > 0) {
-        QThread::msleep(100);
-        timeout--;
-    }
 }
 
 DFM_SEARCH_END_NS
