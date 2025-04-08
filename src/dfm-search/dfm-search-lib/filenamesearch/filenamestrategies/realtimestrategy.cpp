@@ -175,23 +175,6 @@ bool FileNameRealTimeStrategy::matchBoolean(const QString &fileName, const Searc
         }
         return false;
     }
-
-    case SearchQuery::BooleanOperator::NOT: {
-        // 主查询匹配且子查询不匹配
-        bool mainMatch = fileName.contains(query.keyword(),
-                                           caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive);
-        if (!mainMatch) {
-            return false;
-        }
-
-        for (const auto &subQuery : subQueries) {
-            bool subMatch = matchBoolean(fileName, subQuery, caseSensitive, pinyinEnabled);
-            if (subMatch) {
-                return false;
-            }
-        }
-        return true;
-    }
     }
 
     return false;

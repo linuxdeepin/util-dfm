@@ -1,11 +1,14 @@
 #include "filenamesearchengine.h"
+
 #include <QDebug>
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QDateTime>
 #include <QMutexLocker>
+
 #include "filenamestrategies/realtimestrategy.h"
 #include "filenamestrategies/indexedstrategy.h"
+#include "utils/searchutility.h"
 
 DFM_SEARCH_BEGIN_NS
 DCORE_USE_NAMESPACE
@@ -32,10 +35,28 @@ SearchError FileNameSearchEngine::validateSearchConditions()
         return result;
     }
 
-    // 文件名搜索特定验证
     FileNameOptionsAPI api(m_options);
+    const auto &fileTypes = api.fileTypes();
+
+    // Validate each file type in fileTypes against deepinAnythingFileTypes using std algorithms
+    if (!fileTypes.isEmpty()) {
+        auto invalidType = std::find_if(fileTypes.begin(), fileTypes.end(), [](const QString &type) {
+            return !SearchUtility::deepinAnythingFileTypes().contains(type.trimmed().toLower());
+        });
+
+        if (invalidType != fileTypes.end()) {
+            return SearchError(FileNameSearchErrorCode::InvalidFileTypes);
+        }
+    }
+
+    // pinyin
+    if (api.pinyinEnabled() && !SearchUtility::isPurePinyin(m_currentQuery.keyword())) {
+        return SearchError(FileNameSearchErrorCode::InvalidPinyinFormat);
+    }
+
+    // 文件名搜索特定验证
     if (m_currentQuery.type() == SearchQuery::Type::Simple
-        && m_currentQuery.keyword().isEmpty() && api.fileTypes().isEmpty()) {
+        && m_currentQuery.keyword().isEmpty() && fileTypes.isEmpty()) {
         return SearchError(FileNameSearchErrorCode::KeywordIsEmpty);
     }
 

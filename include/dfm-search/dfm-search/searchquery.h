@@ -32,8 +32,8 @@ public:
      */
     enum class BooleanOperator {
         AND,   // 逻辑与
-        OR,   // 逻辑或
-        NOT   // 逻辑非
+        OR   // 逻辑或
+        // TODO: 逻辑非
     };
 
     /**

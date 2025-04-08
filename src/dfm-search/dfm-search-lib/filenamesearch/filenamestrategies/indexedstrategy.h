@@ -100,7 +100,7 @@ public:
     QueryPtr buildTypeQuery(const QStringList &types) const;
     QueryPtr buildPinyinQuery(const QStringList &pinyins) const;
     QueryPtr buildFuzzyQuery(const QString &keyword, bool caseSensitive) const;
-    QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive) const;
+    QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op) const;
     QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive) const;
     QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive) const;
 
