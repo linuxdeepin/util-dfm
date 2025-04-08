@@ -287,10 +287,6 @@ void FileNameIndexedStrategy::performIndexSearch(const SearchQuery &query, const
     bool caseSensitive = m_options.caseSensitive();
     QString searchPath = m_options.searchPath();
 
-    // TODO (search): anything
-    if (searchPath.startsWith(QDir::homePath()))
-        searchPath.replace(0, QDir::homePath().length(), SearchUtility::getHomeDirectory());
-
     QStringList fileTypes = api.fileTypes();
     bool pinyinEnabled = api.pinyinEnabled();
 

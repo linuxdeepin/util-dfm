@@ -14,7 +14,6 @@ DFM_SEARCH_BEGIN_NS
 
 namespace SearchUtility {
 
-QString getHomeDirectory();
 /**
  * @brief 获取索引目录路径
  * @return 返回系统索引目录路径
