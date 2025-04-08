@@ -15,6 +15,7 @@
 
 #include "ChineseAnalyzer.h"
 #include "utils/searchutility.h"
+#include "utils/contenthighlighter.h"
 
 using namespace Lucene;
 
@@ -130,8 +131,11 @@ SearchResultList ContentIndexedStrategy::processSearchResults(const Lucene::Inde
 
             // 设置内容结果
             ContentResultAPI api(result);
-            // TODO (search): 高亮内容
-            // api.setHighlightedContent(QString::fromStdWString(doc->get(L"contents")));
+            
+            // 使用ContentHighlighter命名空间进行高亮
+            const QString &content = QString::fromStdWString(doc->get(L"contents"));
+            const QString &highlightedContent = ContentHighlighter::highlight(content, m_currentQuery, 50);
+            api.setHighlightedContent(highlightedContent);
 
             results.append(result);
 
@@ -172,8 +176,8 @@ SearchResultList ContentIndexedStrategy::performContentSearch(const SearchQuery 
         AnalyzerPtr analyzer = newLucene<ChineseAnalyzer>();
 
         // 构建查询
-        QueryPtr luceneQuery = buildLuceneQuery(query, analyzer);
-        if (!luceneQuery) {
+        m_currentQuery = buildLuceneQuery(query, analyzer);
+        if (!m_currentQuery) {
             qWarning() << "Failed to build Lucene query";
             emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
             return results;
@@ -181,7 +185,7 @@ SearchResultList ContentIndexedStrategy::performContentSearch(const SearchQuery 
 
         // 执行搜索
         int32_t maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : reader->numDocs();
-        TopDocsPtr topDocs = searcher->search(luceneQuery, maxResults);
+        TopDocsPtr topDocs = searcher->search(m_currentQuery, maxResults);
         Collection<ScoreDocPtr> scoreDocs = topDocs->scoreDocs;
 
         // 处理搜索结果

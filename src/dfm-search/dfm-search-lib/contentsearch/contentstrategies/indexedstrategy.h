@@ -44,6 +44,7 @@ private:
 
     QString m_indexDir;
     std::atomic<bool> m_searching { false };
+    Lucene::QueryPtr m_currentQuery;  // 存储当前查询
 };
 
 DFM_SEARCH_END_NS
