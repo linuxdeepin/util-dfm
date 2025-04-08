@@ -44,7 +44,7 @@ protected:
     SearchResultExpected doSyncSearch(const SearchQuery &query);
 
     // 检查搜索条件
-    virtual SearchResultExpected validateSearchConditions(const SearchQuery &query);
+    virtual SearchError validateSearchConditions();
 
 private Q_SLOTS:
     void handleSearchResult(const DFMSEARCH::SearchResult &result);

@@ -63,7 +63,7 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
         emit searchFinished(m_results);
     } catch (const std::exception &e) {
         qWarning() << "Content Index Search Exception:" << e.what();
-        emit errorOccurred(SearchError(ContentSearchErrorCode::EncodingError));
+        emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
     }
 
     m_searching.store(false);

@@ -80,9 +80,9 @@ void GenericSearchEngine::search(const SearchQuery &query)
     m_currentQuery = query;
 
     // 验证搜索条件
-    auto validationResult = validateSearchConditions(query);
-    if (!validationResult.hasValue()) {
-        reportError(validationResult.error());
+    auto validationResult = validateSearchConditions();
+    if (validationResult.isError()) {
+        reportError(validationResult);
         setStatus(SearchStatus::Error);
         return;
     }
@@ -112,9 +112,9 @@ void GenericSearchEngine::searchWithCallback(const SearchQuery &query,
     m_callback = callback;
 
     // 验证搜索条件
-    auto validationResult = validateSearchConditions(query);
-    if (!validationResult.hasValue()) {
-        reportError(validationResult.error());
+    auto validationResult = validateSearchConditions();
+    if (validationResult.isError()) {
+        reportError(validationResult);
         setStatus(SearchStatus::Error);
         return;
     }
@@ -132,9 +132,9 @@ SearchResultExpected GenericSearchEngine::searchSync(const SearchQuery &query)
     m_currentQuery = query;
 
     // 验证搜索条件
-    auto validationResult = validateSearchConditions(query);
-    if (!validationResult.hasValue()) {
-        return validationResult;
+    auto validationResult = validateSearchConditions();
+    if (validationResult.isError()) {
+        return DUnexpected<SearchError>(validationResult);
     }
 
     // 执行同步搜索
@@ -231,6 +231,7 @@ SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
     // 等待搜索完成或超时
     while (!m_syncSearchDone) {
         // 最多等待30秒
+        // TODO (search): config
         if (!m_waitCond.wait(&m_mutex, 30000)) {
             // 超时
             QMetaObject::invokeMethod(m_worker, "cancelSearch");
@@ -251,24 +252,30 @@ SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
     return m_results;
 }
 
-SearchResultExpected GenericSearchEngine::validateSearchConditions(const SearchQuery &query)
+SearchError GenericSearchEngine::validateSearchConditions()
 {
-    // 检查必要条件
-    if (query.keyword().isEmpty()) {
-        return DUnexpected<DFMSEARCH::SearchError> { SearchError(SearchErrorCode::InvalidQuery) };
-    }
+    if (m_currentQuery.type() == SearchQuery::Type::Simple) {
+        if (m_options.searchPath().isEmpty()) {
+            return SearchError(SearchErrorCode::PathIsEmpty);
+        }
 
-    if (m_options.searchPath().isEmpty()) {
-        return DUnexpected<DFMSEARCH::SearchError> { SearchError(SearchErrorCode::PathNotFound) };
-    }
+        // 检查目录是否存在且是否为目录
+        QFileInfo pathInfo(m_options.searchPath());
+        if (!pathInfo.exists() || !pathInfo.isDir()) {
+            return SearchError(SearchErrorCode::PathNotFound);
+        }
 
-    QFileInfo pathInfo(m_options.searchPath());
-    if (!pathInfo.exists() || !pathInfo.isDir()) {
-        return DUnexpected<DFMSEARCH::SearchError> { SearchError(SearchErrorCode::PathNotFound) };
+        // 检查读权限
+        if (!pathInfo.isReadable()) {
+            return SearchError(SearchErrorCode::PermissionDenied);
+        }
+    } else if (m_currentQuery.type() == SearchQuery::Type::Boolean) {
+        if (m_currentQuery.subQueries().isEmpty())
+            return SearchError(SearchErrorCode::InvalidBoolean);
     }
 
     // 返回空结果列表表示条件有效
-    return QList<SearchResult>();
+    return SearchError(SearchErrorCode::Success);
 }
 
 DFM_SEARCH_END_NS

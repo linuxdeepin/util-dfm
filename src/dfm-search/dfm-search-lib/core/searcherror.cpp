@@ -5,6 +5,7 @@ DFM_SEARCH_BEGIN_NS
 // 实现基础错误分类的消息
 std::string SearchErrorCategory::message(int ev) const
 {
+    // TODO (search):
     switch (static_cast<SearchErrorCode>(ev)) {
     case SearchErrorCode::Success:
         return "Success";
@@ -25,8 +26,7 @@ QString SearchErrorCategory::qMessage(int ev) const
 std::string FileNameSearchErrorCategory::message(int ev) const
 {
     switch (static_cast<FileNameSearchErrorCode>(ev)) {
-    case FileNameSearchErrorCode::InvalidFileName:
-        return "Invalid file name";
+    // TODO (search):
     // ... 其他错误消息
     default:
         return "Unknown filename search error";
@@ -35,9 +35,10 @@ std::string FileNameSearchErrorCategory::message(int ev) const
 
 std::string ContentSearchErrorCategory::message(int ev) const
 {
+    // TODO (search):
     switch (static_cast<ContentSearchErrorCode>(ev)) {
-    case ContentSearchErrorCode::UnsupportedFileType:
-        return "Unsupported file type";
+    case ContentSearchErrorCode::KeywordTooShort:
+        return "keyword too shortKeywordTooShort";
     // ... 其他错误消息
     default:
         return "Unknown content search error";
@@ -75,4 +76,8 @@ QString SearchError::message() const
     return QString::fromStdString(m_code.message());
 }
 
+QString SearchError::name() const
+{
+    return QString::fromLocal8Bit(m_code.category().name());
+}
 DFM_SEARCH_END_NS

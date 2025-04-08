@@ -24,17 +24,19 @@ void FileNameSearchEngine::setupStrategyFactory()
     m_worker->setStrategyFactory(std::move(factory));
 }
 
-SearchResultExpected FileNameSearchEngine::validateSearchConditions(const SearchQuery &query)
+SearchError FileNameSearchEngine::validateSearchConditions()
 {
     // 先执行基类验证
-    auto result = GenericSearchEngine::validateSearchConditions(query);
-    if (!result.hasValue()) {
+    auto result = GenericSearchEngine::validateSearchConditions();
+    if (result.isError()) {
         return result;
     }
 
     // 文件名搜索特定验证
-    if (query.keyword().isEmpty()) {
-        return DUnexpected<DFMSEARCH::SearchError> { SearchError(FileNameSearchErrorCode::InvalidFileName) };
+    FileNameOptionsAPI api(m_options);
+    if (m_currentQuery.type() == SearchQuery::Type::Simple
+        && m_currentQuery.keyword().isEmpty() && api.fileTypes().isEmpty()) {
+        return SearchError(FileNameSearchErrorCode::KeywordIsEmpty);
     }
 
     return result;

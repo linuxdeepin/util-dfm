@@ -18,18 +18,15 @@ void ContentSearchEngine::setupStrategyFactory()
     m_worker->setStrategyFactory(std::move(factory));
 }
 
-SearchResultExpected ContentSearchEngine::validateSearchConditions(const SearchQuery &query)
+SearchError ContentSearchEngine::validateSearchConditions()
 {
     // 先执行基类验证
-    auto result = GenericSearchEngine::validateSearchConditions(query);
-    if (!result.hasValue()) {
+    auto result = GenericSearchEngine::validateSearchConditions();
+    if (result.isError()) {
         return result;
     }
 
-    // 内容搜索特定验证
-    if (query.keyword().isEmpty()) {
-        return DUnexpected<DFMSEARCH::SearchError> { SearchError(ContentSearchErrorCode::EncodingError) };
-    }
+    // TODO (search): 内容搜索特定验证
 
     return result;
 }

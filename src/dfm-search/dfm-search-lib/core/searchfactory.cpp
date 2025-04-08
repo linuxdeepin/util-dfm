@@ -38,4 +38,12 @@ SearchQuery SearchFactory::createQuery(const QString &keyword, SearchQuery::Type
     return SearchQuery(keyword);
 }
 
+SearchQuery SearchFactory::createQuery(const QStringList &keywords, SearchQuery::Type type)
+{
+    if (type == SearchQuery::Type::Boolean)
+        return SearchQuery::createBooleanQuery(keywords);
+
+    return SearchQuery();
+}
+
 DFM_SEARCH_END_NS

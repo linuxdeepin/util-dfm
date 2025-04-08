@@ -11,29 +11,43 @@ DFM_SEARCH_BEGIN_NS
 // 基础搜索错误枚举
 enum class SearchErrorCode {
     Success = 0,
-    InvalidQuery,   // 无效的搜索查询
+
+    // 系统资源相关
+    PermissionDenied = 1,
+
+    // 查询通用错误
+    InvalidQuery = 100,
+    PathIsEmpty,
     PathNotFound,   // 搜索路径不存在
-    AccessDenied,   // 访问被拒绝
-    InvalidPattern,   // 无效的搜索模式
-    ResourceBusy,   // 资源繁忙
     SearchTimeout,   // 搜索超时
     InternalError,   // 内部错误
+    InvalidBoolean,
+
     // ... 其他通用错误
 };
 
 // 文件名搜索特定错误
 enum class FileNameSearchErrorCode {
-    InvalidFileName = 1000,   // 无效的文件名
-    PatternSyntaxError,   // 模式语法错误
-    // ... 特定错误
+    KeywordIsEmpty = 1000,
+    KeywordTooLong,
+
+    // 拼音搜索相关
+    InvalidPinyinFormat = 1050,
+
+    // TODO (search): 文件类型过滤相关
+
+    // 文件名索引特定错误
+    FileNameIndexNotFound = 1200,
+    FileNameIndexException
 };
 
 // 内容搜索特定错误
 enum class ContentSearchErrorCode {
-    UnsupportedFileType = 2000,   // 不支持的文件类型
-    FileCorrupted,   // 文件损坏
-    EncodingError,   // 编码错误
-    // ... 特定错误
+    KeywordTooShort = 2000,
+
+    // 内容索引特定错误
+    ContentIndexNotFound = 2200,
+    ContentIndexException
 };
 
 // 搜索错误分类基类
@@ -97,6 +111,7 @@ public:
     bool isError() const { return m_code.value() != static_cast<int>(SearchErrorCode::Success); }
     const std::error_code &code() const { return m_code; }
     QString message() const;
+    QString name() const;
 
 private:
     std::error_code m_code;

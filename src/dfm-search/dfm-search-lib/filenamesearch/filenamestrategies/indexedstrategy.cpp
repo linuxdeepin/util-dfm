@@ -378,7 +378,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
 
     if (!IndexReader::indexExists(directory)) {
         qWarning() << "Index does not exist:" << m_indexDir;
-        emit errorOccurred(SearchError(FileNameSearchErrorCode::PatternSyntaxError));
+        emit errorOccurred(SearchError(FileNameSearchErrorCode::FileNameIndexNotFound));
         return;
     }
 
