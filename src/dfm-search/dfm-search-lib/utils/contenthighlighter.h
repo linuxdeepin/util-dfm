@@ -4,6 +4,9 @@
 #include <QString>
 #include <QStringList>
 
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include <lucene++/LuceneHeaders.h>
 
 #include <dfm-search/dsearch_global.h>
@@ -53,8 +56,8 @@ QString customHighlight(const QString &content, const Lucene::QueryPtr &query, i
  * @param maxLength 最大显示长度
  * @return 高亮后的内容
  */
-QString highlightKeywordInContext(const QString &content, const QString &keyword, 
-                                int matchPos, int maxLength);
+QString highlightKeywordInContext(const QString &content, const QString &keyword,
+                                  int matchPos, int maxLength);
 
 /**
  * @brief 从查询中提取关键词
@@ -67,4 +70,4 @@ QStringList extractKeywords(const Lucene::QueryPtr &query);
 
 DFM_SEARCH_END_NS
 
-#endif   // CONTENTHIGHLIGHTER_H 
+#endif   // CONTENTHIGHLIGHTER_H

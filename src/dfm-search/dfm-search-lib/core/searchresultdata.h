@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef SEARCH_RESULT_DATA_H
 #define SEARCH_RESULT_DATA_H
 
@@ -12,7 +15,7 @@ DFM_SEARCH_BEGIN_NS
 
 /**
  * @brief The SearchResultData class provides the base private implementation for SearchResult
- * 
+ *
  * This class implements the PIMPL pattern for SearchResult, containing only the
  * data fields that are common to all types of search results.
  */
@@ -55,8 +58,8 @@ public:
     SearchResultData &operator=(SearchResultData &&other) noexcept;
 
     // Public data fields
-    QString path;                ///< The file path
-    QVariantMap customAttributes;  ///< Custom attributes associated with the result
+    QString path;   ///< The file path
+    QVariantMap customAttributes;   ///< Custom attributes associated with the result
 };
 
 DFM_SEARCH_END_NS

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef CONTENT_INDEXED_STRATEGY_H
 #define CONTENT_INDEXED_STRATEGY_H
 
@@ -44,7 +47,7 @@ private:
 
     QString m_indexDir;
     std::atomic<bool> m_searching { false };
-    Lucene::QueryPtr m_currentQuery;  // 存储当前查询
+    Lucene::QueryPtr m_currentQuery;   // 存储当前查询
 };
 
 DFM_SEARCH_END_NS

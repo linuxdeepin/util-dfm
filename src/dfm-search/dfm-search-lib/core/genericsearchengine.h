@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef GENERICSEARCHENGINE_H
 #define GENERICSEARCHENGINE_H
 
@@ -11,7 +14,7 @@ DFM_SEARCH_BEGIN_NS
 
 /**
  * @brief The GenericSearchEngine class provides a base implementation for all search engines
- * 
+ *
  * This class implements the common functionality required by all search engines,
  * including thread management, result handling, and error reporting. It serves as
  * a base class for specific search engine implementations.
@@ -84,7 +87,7 @@ public:
 protected:
     /**
      * @brief Set up the strategy factory for this search engine
-     * 
+     *
      * This pure virtual method must be implemented by derived classes
      * to provide the appropriate search strategy factory.
      */
@@ -123,17 +126,17 @@ private Q_SLOTS:
     void handleErrorOccurred(const DFMSEARCH::SearchError &error);
 
 protected:
-    SearchOptions m_options;              ///< Current search options
-    SearchQuery m_currentQuery;           ///< Current search query
-    SearchEngine::ResultCallback m_callback;  ///< Current result callback
-    SearchResultList m_results;           ///< List of search results
+    SearchOptions m_options;   ///< Current search options
+    SearchQuery m_currentQuery;   ///< Current search query
+    SearchEngine::ResultCallback m_callback;   ///< Current result callback
+    SearchResultList m_results;   ///< List of search results
 
-    QThread m_workerThread;               ///< Worker thread for search operations
-    SearchWorker *m_worker;               ///< Search worker object
-    QMutex m_mutex;                       ///< Mutex for thread synchronization
-    QWaitCondition m_waitCond;            ///< Condition variable for thread synchronization
-    bool m_syncSearchDone;                ///< Flag indicating sync search completion
-    SearchError m_lastError;              ///< Last occurred error
+    QThread m_workerThread;   ///< Worker thread for search operations
+    SearchWorker *m_worker;   ///< Search worker object
+    QMutex m_mutex;   ///< Mutex for thread synchronization
+    QWaitCondition m_waitCond;   ///< Condition variable for thread synchronization
+    bool m_syncSearchDone;   ///< Flag indicating sync search completion
+    SearchError m_lastError;   ///< Last occurred error
 };
 
 DFM_SEARCH_END_NS

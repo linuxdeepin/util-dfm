@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include "indexedstrategy.h"
 
 #include <QDir>
@@ -131,7 +134,7 @@ SearchResultList ContentIndexedStrategy::processSearchResults(const Lucene::Inde
 
             // 设置内容结果
             ContentResultAPI api(result);
-            
+
             // 使用ContentHighlighter命名空间进行高亮
             const QString &content = QString::fromStdWString(doc->get(L"contents"));
             const QString &highlightedContent = ContentHighlighter::highlight(content, m_currentQuery, 50);

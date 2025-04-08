@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include <dfm-search/filenamesearchapi.h>
 
 DFM_SEARCH_BEGIN_NS
