@@ -40,8 +40,6 @@ void SearchWorker::doSearch(const SearchQuery &query,
             this, &SearchWorker::resultFound);
     connect(m_strategy.get(), &BaseSearchStrategy::searchFinished,
             this, &SearchWorker::searchFinished);
-    connect(m_strategy.get(), &BaseSearchStrategy::progressChanged,
-            this, &SearchWorker::progressChanged);
     connect(m_strategy.get(), &BaseSearchStrategy::errorOccurred,
             this, &SearchWorker::errorOccurred);
 

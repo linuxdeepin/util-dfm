@@ -28,11 +28,6 @@ void AbstractSearchEngine::setStatus(SearchStatus status)
     emit statusChanged(status);
 }
 
-void AbstractSearchEngine::reportProgress(int current, int total)
-{
-    emit progressChanged(current, total);
-}
-
 void AbstractSearchEngine::reportError(const SearchError &error)
 {
     emit errorOccurred(error);

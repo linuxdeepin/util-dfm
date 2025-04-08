@@ -46,8 +46,6 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
 
     QDirIterator it(searchPath, dirFilters, flags);
     int count = 0;
-    int progress = 0;
-    int totalEstimate = 1000;   // 初始估计值
 
     while (it.hasNext() && count < maxResults && !m_cancelled.load()) {
         QString path = it.next();
@@ -110,20 +108,7 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
 
             count++;
         }
-
-        // 每处理100个文件更新一次进度
-        progress++;
-        if (progress % 100 == 0) {
-            // 动态调整总估计值
-            if (progress > totalEstimate / 2) {
-                totalEstimate = progress * 2;
-            }
-            emit progressChanged(progress, totalEstimate);
-        }
     }
-
-    // 发送最终进度
-    emit progressChanged(progress, progress);
 
     // 搜索完成
     emit searchFinished(m_results);

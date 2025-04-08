@@ -11,7 +11,7 @@
 
 DFM_SEARCH_BEGIN_NS
 
-class SearchStrategyFactory; // 前向声明
+class SearchStrategyFactory;   // 前向声明
 
 /**
  * @brief 通用搜索工作线程
@@ -19,47 +19,42 @@ class SearchStrategyFactory; // 前向声明
 class SearchWorker : public QObject
 {
     Q_OBJECT
-    
+
 public:
     explicit SearchWorker(QObject *parent = nullptr);
     ~SearchWorker();
-    
+
     void setStrategyFactory(std::unique_ptr<SearchStrategyFactory> factory);
-    
+
 public Q_SLOTS:
     /**
      * @brief 执行搜索操作
      */
-    void doSearch(const DFMSEARCH::SearchQuery &query, 
-                 const DFMSEARCH::SearchOptions &options, 
-                 DFMSEARCH::SearchType searchType);
-    
+    void doSearch(const DFMSEARCH::SearchQuery &query,
+                  const DFMSEARCH::SearchOptions &options,
+                  DFMSEARCH::SearchType searchType);
+
     /**
      * @brief 取消搜索操作
      */
     void cancelSearch();
-    
+
 Q_SIGNALS:
     /**
      * @brief 搜索结果信号
      */
     void resultFound(const DFMSEARCH::SearchResult &result);
-    
+
     /**
      * @brief 搜索完成信号
      */
     void searchFinished(const DFMSEARCH::SearchResultList &results);
-    
-    /**
-     * @brief 搜索进度信号
-     */
-    void progressChanged(int current, int total);
-    
+
     /**
      * @brief 搜索错误信号
      */
     void errorOccurred(const DFMSEARCH::SearchError &error);
-    
+
 private:
     std::unique_ptr<SearchStrategyFactory> m_strategyFactory;
     std::unique_ptr<BaseSearchStrategy> m_strategy;
@@ -73,10 +68,10 @@ class SearchStrategyFactory
 public:
     virtual ~SearchStrategyFactory() = default;
     virtual std::unique_ptr<BaseSearchStrategy> createStrategy(
-        SearchType searchType, 
-        const SearchOptions &options) = 0;
+            SearchType searchType,
+            const SearchOptions &options) = 0;
 };
 
 DFM_SEARCH_END_NS
 
-#endif // CORE_SEARCHWORKER_H 
+#endif   // CORE_SEARCHWORKER_H

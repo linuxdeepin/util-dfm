@@ -41,7 +41,6 @@ public:
 Q_SIGNALS:
     void searchStarted();
     void resultFound(const DFMSEARCH::SearchResult &result);
-    void progressChanged(int current, int total);
     void statusChanged(SearchStatus status);
     void searchFinished(const DFMSEARCH::SearchResultList &results);
     void searchCancelled();
@@ -50,7 +49,6 @@ Q_SIGNALS:
 protected:
     // 辅助方法
     void setStatus(SearchStatus status);
-    void reportProgress(int current, int total);
     void reportError(const SearchError &error);
 
     std::atomic<SearchStatus> m_status;

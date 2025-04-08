@@ -69,8 +69,6 @@ void SearchEngine::setSearchType(SearchType type)
             this, &SearchEngine::searchStarted);
     connect(d_ptr.get(), &AbstractSearchEngine::resultFound,
             this, &SearchEngine::resultFound);
-    connect(d_ptr.get(), &AbstractSearchEngine::progressChanged,
-            this, &SearchEngine::progressChanged);
     connect(d_ptr.get(), &AbstractSearchEngine::statusChanged,
             this, &SearchEngine::statusChanged);
     connect(d_ptr.get(), &AbstractSearchEngine::searchFinished,

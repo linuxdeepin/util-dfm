@@ -111,14 +111,6 @@ Q_SIGNALS:
     void resultFound(const DFMSEARCH::SearchResult &result);
 
     /**
-     * @brief 搜索进度信号
-     *
-     * @param current 当前进度
-     * @param total 总进度
-     */
-    void progressChanged(int current, int total);
-
-    /**
      * @brief 搜索状态改变信号
      */
     void statusChanged(SearchStatus status);

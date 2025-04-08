@@ -52,11 +52,6 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
 
             // 实时发送结果
             emit resultFound(contentResults[i]);
-
-            // 更新进度
-            if (i % 10 == 0) {
-                emit progressChanged(i, contentResults.size());
-            }
         }
 
         // 完成搜索

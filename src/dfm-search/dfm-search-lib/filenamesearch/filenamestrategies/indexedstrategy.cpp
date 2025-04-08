@@ -8,6 +8,7 @@
 #include <QDateTime>
 #include <QFileInfo>
 #include <QDebug>
+#include <QElapsedTimer>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -406,6 +407,9 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
         emit errorOccurred(SearchError(SearchErrorCode::InvalidQuery));
         return;
     }
+    // Measure the time taken to execute the search
+    QElapsedTimer searchTimer;
+    searchTimer.start();
 
     // 执行搜索
     TopDocsPtr searchResults;
@@ -419,8 +423,15 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
         return;
     }
 
+    qInfo() << "Search execution time:" << searchTimer.elapsed() << "ms";
+
+    // Measure the time taken to process search results
+    QElapsedTimer resultTimer;
+    resultTimer.start();
+    auto docsSize = searchResults->scoreDocs.size();
+    m_results.reserve(docsSize);
     // 实时处理搜索结果
-    for (int i = 0; i < searchResults->scoreDocs.size(); i++) {
+    for (int i = 0; i < docsSize; i++) {
         if (m_searchCancelled) {
             break;
         }
@@ -441,19 +452,13 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
             // 处理搜索结果
             processSearchResult(path, type, time, size);
 
-            // 每处理10个结果更新一次进度
-            if (m_count % 10 == 0) {
-                emit progressChanged(m_count, m_total);
-            }
-
         } catch (const LuceneException &e) {
             qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());
             continue;
         }
     }
 
-    // 最终进度更新
-    emit progressChanged(m_count, m_total);
+    qInfo() << "Result processing time:" << resultTimer.elapsed() << "ms";
 }
 
 void FileNameIndexedStrategy::processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size)
