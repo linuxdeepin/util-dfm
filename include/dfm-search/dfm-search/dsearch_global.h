@@ -15,29 +15,33 @@
 DFM_SEARCH_BEGIN_NS
 Q_NAMESPACE
 
+namespace Global {
+inline constexpr int kMinContentSearchKeywordLength = 2;
+}   // namespace Global
+
 // Enumeration for different types of search methods
 enum SearchType {
     FileName,   // Search by file name
-    Content,    // Search by content within files
-    Custom = 50 // User-defined search type
+    Content,   // Search by content within files
+    Custom = 50   // User-defined search type
 };
 Q_ENUM_NS(SearchType)
 
 // Enumeration for the status of the search operation
 enum SearchStatus {
-    Ready,      // The search engine is ready to perform a search
-    Searching,  // The search operation is currently in progress
+    Ready,   // The search engine is ready to perform a search
+    Searching,   // The search operation is currently in progress
     Finished,   // The search operation has completed
-    Cancelled,  // The search operation has been cancelled
-    Error       // An error occurred during the search operation
+    Cancelled,   // The search operation has been cancelled
+    Error   // An error occurred during the search operation
     // Pause ?   // Optional: Indicates if the search can be paused
 };
 Q_ENUM_NS(SearchStatus)
 
 // Enumeration for the method of searching
 enum SearchMethod {
-    Indexed,    // Search using pre-built indexes for faster results
-    Realtime    // Search the file system in real-time for the most current results
+    Indexed,   // Search using pre-built indexes for faster results
+    Realtime   // Search the file system in real-time for the most current results
 };
 Q_ENUM_NS(SearchMethod)
 

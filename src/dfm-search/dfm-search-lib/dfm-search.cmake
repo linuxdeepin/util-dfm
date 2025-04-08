@@ -16,12 +16,13 @@ target_link_libraries(${BIN_NAME}
     Dtk${QT_VERSION_MAJOR}::Core
     PkgConfig::Lucene
 )
-
 target_include_directories(
     ${BIN_NAME}
 PUBLIC
-    ${PROJECT_SOURCE_DIR}/include/${BASE_NAME}
+    ${PROJECT_SOURCE_DIR}/include/${BASE_NAME}  
+    ${PROJECT_SOURCE_DIR}/3rdparty/fulltext
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/fulltext
 )
 
 if (NOT VERSION)
