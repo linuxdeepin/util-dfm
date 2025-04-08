@@ -12,7 +12,7 @@ DFM_SEARCH_BEGIN_NS
 
 /**
  * @brief The ContentOptionsAPI class provides content search specific options
- * 
+ *
  * This class extends the base SearchOptions with content search specific settings,
  * such as file type filters and content preview length.
  */
@@ -49,7 +49,7 @@ public:
      */
     int maxPreviewLength() const;
 
-    // TODO: html
+    // TODO (dfm-search): html
 
 private:
     SearchOptions &m_options;
@@ -57,7 +57,7 @@ private:
 
 /**
  * @brief The ContentResultAPI class provides content search specific result handling
- * 
+ *
  * This class extends the base SearchResult with content search specific features,
  * such as highlighted content preview.
  */
