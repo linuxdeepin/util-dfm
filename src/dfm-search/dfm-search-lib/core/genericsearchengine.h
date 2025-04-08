@@ -10,59 +10,130 @@
 DFM_SEARCH_BEGIN_NS
 
 /**
- * @brief 通用搜索引擎基类
- *
- * 所有类型搜索引擎的基类实现
+ * @brief The GenericSearchEngine class provides a base implementation for all search engines
+ * 
+ * This class implements the common functionality required by all search engines,
+ * including thread management, result handling, and error reporting. It serves as
+ * a base class for specific search engine implementations.
  */
 class GenericSearchEngine : public AbstractSearchEngine
 {
     Q_OBJECT
 
 public:
+    /**
+     * @brief Constructor
+     * @param parent The parent QObject
+     */
     explicit GenericSearchEngine(QObject *parent = nullptr);
+
+    /**
+     * @brief Virtual destructor
+     */
     virtual ~GenericSearchEngine();
-    // 初始化工作线程
+
+    /**
+     * @brief Initialize the search engine and its worker thread
+     */
     virtual void init() override;
 
-    // 实现AbstractSearchEngine核心接口
+    /**
+     * @brief Get the current search options
+     * @return The current SearchOptions
+     */
     SearchOptions searchOptions() const override;
+
+    /**
+     * @brief Set the search options
+     * @param options The new SearchOptions
+     */
     void setSearchOptions(const SearchOptions &options) override;
+
+    /**
+     * @brief Get the current search status
+     * @return The current SearchStatus
+     */
     SearchStatus status() const override;
 
+    /**
+     * @brief Perform an asynchronous search
+     * @param query The search query to execute
+     */
     void search(const SearchQuery &query) override;
+
+    /**
+     * @brief Perform an asynchronous search with callback
+     * @param query The search query to execute
+     * @param callback The callback function to process results
+     */
     void searchWithCallback(const SearchQuery &query,
                             SearchEngine::ResultCallback callback) override;
+
+    /**
+     * @brief Perform a synchronous search
+     * @param query The search query to execute
+     * @return A SearchResultExpected containing the results or an error
+     */
     SearchResultExpected searchSync(const SearchQuery &query) override;
 
+    /**
+     * @brief Cancel the current search operation
+     */
     void cancel() override;
 
 protected:
-    // 设置策略工厂
+    /**
+     * @brief Set up the strategy factory for this search engine
+     * 
+     * This pure virtual method must be implemented by derived classes
+     * to provide the appropriate search strategy factory.
+     */
     virtual void setupStrategyFactory() = 0;
 
-    // 执行同步搜索
+    /**
+     * @brief Execute a synchronous search operation
+     * @param query The search query to execute
+     * @return A SearchResultExpected containing the results or an error
+     */
     SearchResultExpected doSyncSearch(const SearchQuery &query);
 
-    // 检查搜索条件
+    /**
+     * @brief Validate search conditions
+     * @return A SearchError indicating any validation errors
+     */
     virtual SearchError validateSearchConditions();
 
 private Q_SLOTS:
+    /**
+     * @brief Handle a new search result
+     * @param result The found search result
+     */
     void handleSearchResult(const DFMSEARCH::SearchResult &result);
+
+    /**
+     * @brief Handle search completion
+     * @param results The list of all search results
+     */
     void handleSearchFinished(const DFMSEARCH::SearchResultList &results);
+
+    /**
+     * @brief Handle search errors
+     * @param error The SearchError that occurred
+     */
     void handleErrorOccurred(const DFMSEARCH::SearchError &error);
 
 protected:
-    SearchOptions m_options;
-    SearchQuery m_currentQuery;
-    SearchEngine::ResultCallback m_callback;
-    SearchResultList m_results;
+    SearchOptions m_options;              ///< Current search options
+    SearchQuery m_currentQuery;           ///< Current search query
+    SearchEngine::ResultCallback m_callback;  ///< Current result callback
+    SearchResultList m_results;           ///< List of search results
 
-    QThread m_workerThread;
-    SearchWorker *m_worker;
-    QMutex m_mutex;
-    QWaitCondition m_waitCond;
-    bool m_syncSearchDone;
-    SearchError m_lastError;
+    QThread m_workerThread;               ///< Worker thread for search operations
+    SearchWorker *m_worker;               ///< Search worker object
+    QMutex m_mutex;                       ///< Mutex for thread synchronization
+    QWaitCondition m_waitCond;            ///< Condition variable for thread synchronization
+    bool m_syncSearchDone;                ///< Flag indicating sync search completion
+    SearchError m_lastError;              ///< Last occurred error
 };
 
 DFM_SEARCH_END_NS

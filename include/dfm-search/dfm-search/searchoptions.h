@@ -18,99 +18,101 @@ class SearchOptions
 {
 public:
     /**
-     * @brief 构造函数
+     * @brief Constructor
      */
     SearchOptions();
 
     /**
-     * @brief 拷贝构造函数
+     * @brief Copy constructor
      */
     SearchOptions(const SearchOptions &other);
 
     /**
-     * @brief 移动构造函数
+     * @brief Move constructor
      */
     SearchOptions(SearchOptions &&other) noexcept;
 
     /**
-     * @brief 析构函数
+     * @brief Destructor
      */
     virtual ~SearchOptions();
 
     /**
-     * @brief 赋值操作符
+     * @brief Assignment operator
      */
     SearchOptions &operator=(const SearchOptions &other);
 
     /**
-     * @brief 移动赋值操作符
+     * @brief Move assignment operator
      */
     SearchOptions &operator=(SearchOptions &&other) noexcept;
 
     /**
-     * @brief 获取搜索方法
+     * @brief Get the search method
      */
     SearchMethod method() const;
 
     /**
-     * @brief 设置搜索方法
-     * 索引搜索适合已建立索引的目录，速度快但可能不是最新结果
-     * 实时搜索直接扫描文件系统，结果是最新的但速度可能较慢
+     * @brief Set the search method
+     * Indexed search is suitable for directories with established indexes, 
+     * it is fast but may not provide the latest results.
+     * Real-time search directly scans the file system, 
+     * the results are the latest but may be slower.
      */
     void setSearchMethod(SearchMethod method);
 
     /**
-     * @brief 判断是否区分大小写
+     * @brief Check if case sensitivity is enabled
      */
     bool caseSensitive() const;
 
     /**
-     * @brief 设置是否区分大小写
+     * @brief Set case sensitivity
      */
     void setCaseSensitive(bool sensitive);
 
     /**
-     * @brief 获取起始搜索路径
+     * @brief Get the starting search path
      */
     QString searchPath() const;
 
     /**
-     * @brief 设置起始搜索路径
+     * @brief Set the starting search path
      */
     void setSearchPath(const QString &path);
 
     /**
-     * @brief 设置是否包含隐藏文件
+     * @brief Set whether to include hidden files
      */
     void setIncludeHidden(bool include);
 
     /**
-     * @brief 是否包含隐藏文件
+     * @brief Check if hidden files are included
      */
     bool includeHidden() const;
 
     /**
-     * @brief 获取最大结果数量限制
+     * @brief Get the maximum result count limit
      */
     int maxResults() const;
 
     /**
-     * @brief 设置最大结果数量限制
+     * @brief Set the maximum result count limit
      */
     void setMaxResults(int count);
 
     /**
-     * @brief 设置自定义选项
+     * @brief Set a custom option
      */
     void setCustomOption(const QString &key, const QVariant &value);
 
     /**
-     * @brief 获取自定义选项
+     * @brief Get a custom option
      */
     QVariant customOption(const QString &key) const;
 
     /**
-     * @brief 判断是否设置了指定的自定义选项
+     * @brief Check if a specific custom option is set
      */
     bool hasCustomOption(const QString &key) const;
 

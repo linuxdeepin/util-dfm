@@ -11,123 +11,147 @@ DFM_SEARCH_BEGIN_NS
 class SearchQueryData;
 
 /**
- * @brief 搜索查询类
- *
- * 封装搜索查询条件
+ * @brief The SearchQuery class encapsulates search query conditions
+ * 
+ * This class provides a flexible way to construct and manage search queries,
+ * supporting both simple keyword searches and complex boolean queries.
+ * It allows for combining multiple search terms using logical operators.
  */
 class SearchQuery
 {
 public:
     /**
-     * @brief 查询类型枚举
+     * @brief Enumeration of query types
      */
     enum class Type {
-        Simple,   // 简单查询
-        Boolean,   // 布尔查询（与、或、非）
-        // TODO: 通配符查询
+        Simple,   ///< Simple keyword search
+        Boolean,  ///< Boolean query (AND, OR)
+        // TODO: Wildcard search
     };
 
     /**
-     * @brief 布尔操作符枚举
+     * @brief Enumeration of boolean operators
      */
     enum class BooleanOperator {
-        AND,   // 逻辑与
-        OR   // 逻辑或
-        // TODO: 逻辑非
+        AND,  ///< Logical AND operation
+        OR    ///< Logical OR operation
+        // TODO: Logical NOT operation
     };
 
     /**
-     * @brief 构造函数
+     * @brief Default constructor
      */
     SearchQuery();
 
     /**
-     * @brief 使用关键词构造
+     * @brief Constructor with keyword
+     * @param keyword The search keyword
      */
     explicit SearchQuery(const QString &keyword);
 
     /**
-     * @brief 使用关键词和类型构造
+     * @brief Constructor with keyword and type
+     * @param keyword The search keyword
+     * @param type The query type
      */
     SearchQuery(const QString &keyword, Type type);
 
     /**
-     * @brief 复制构造函数
+     * @brief Copy constructor
+     * @param other The SearchQuery object to copy from
      */
     SearchQuery(const SearchQuery &other);
 
     /**
-     * @brief 移动构造函数
+     * @brief Move constructor
+     * @param other The SearchQuery object to move from
      */
     SearchQuery(SearchQuery &&other) noexcept;
 
     /**
-     * @brief 析构函数
+     * @brief Destructor
      */
     ~SearchQuery();
 
     /**
-     * @brief 赋值操作符
+     * @brief Copy assignment operator
+     * @param other The SearchQuery object to copy from
+     * @return Reference to this object
      */
     SearchQuery &operator=(const SearchQuery &other);
 
     /**
-     * @brief 移动赋值操作符
+     * @brief Move assignment operator
+     * @param other The SearchQuery object to move from
+     * @return Reference to this object
      */
     SearchQuery &operator=(SearchQuery &&other) noexcept;
 
     /**
-     * @brief 获取关键词
+     * @brief Get the search keyword
+     * @return The search keyword
      */
     QString keyword() const;
 
     /**
-     * @brief 设置关键词
+     * @brief Set the search keyword
+     * @param keyword The new search keyword
      */
     void setKeyword(const QString &keyword);
 
     /**
-     * @brief 获取查询类型
+     * @brief Get the query type
+     * @return The current query type
      */
     Type type() const;
 
     /**
-     * @brief 设置查询类型
+     * @brief Set the query type
+     * @param type The new query type
      */
     void setType(Type type);
 
     /**
-     * @brief 获取布尔操作符
+     * @brief Get the boolean operator
+     * @return The current boolean operator
      */
     BooleanOperator booleanOperator() const;
 
     /**
-     * @brief 设置布尔操作符
+     * @brief Set the boolean operator
+     * @param op The new boolean operator
      */
     void setBooleanOperator(BooleanOperator op);
 
     /**
-     * @brief 添加子查询（用于布尔查询）
+     * @brief Add a sub-query for boolean operations
+     * @param query The sub-query to add
      */
     void addSubQuery(const SearchQuery &query);
 
     /**
-     * @brief 获取子查询列表
+     * @brief Get the list of sub-queries
+     * @return List of sub-queries
      */
     QList<SearchQuery> subQueries() const;
 
     /**
-     * @brief 清空子查询
+     * @brief Clear all sub-queries
      */
     void clearSubQueries();
 
     /**
-     * @brief 创建简单查询
+     * @brief Create a simple search query
+     * @param keyword The search keyword
+     * @return A new SearchQuery object
      */
     static SearchQuery createSimpleQuery(const QString &keyword);
 
     /**
-     * @brief 创建布尔查询
+     * @brief Create a boolean search query
+     * @param keywords List of search keywords
+     * @param op The boolean operator to use
+     * @return A new SearchQuery object
      */
     static SearchQuery createBooleanQuery(const QStringList &keywords, BooleanOperator op = BooleanOperator::AND);
 

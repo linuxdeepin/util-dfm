@@ -15,30 +15,29 @@
 DFM_SEARCH_BEGIN_NS
 Q_NAMESPACE
 
-// 搜索类型枚举
+// Enumeration for different types of search methods
 enum SearchType {
-    FileName,   // 文件名搜索
-    Content,   // 内容搜索
-    Custom = 50   // 用户自定义搜索类型
+    FileName,   // Search by file name
+    Content,    // Search by content within files
+    Custom = 50 // User-defined search type
 };
 Q_ENUM_NS(SearchType)
 
-// 搜索状态枚举
+// Enumeration for the status of the search operation
 enum SearchStatus {
-    Ready,   // 准备就绪
-    Searching,   // 正在搜索
-    Finished,   // 已完成
-    Cancelled,   // 已取消
-    Error   // 错误
-
-    // Pause ?
+    Ready,      // The search engine is ready to perform a search
+    Searching,  // The search operation is currently in progress
+    Finished,   // The search operation has completed
+    Cancelled,  // The search operation has been cancelled
+    Error       // An error occurred during the search operation
+    // Pause ?   // Optional: Indicates if the search can be paused
 };
 Q_ENUM_NS(SearchStatus)
 
-// 搜索方式
+// Enumeration for the method of searching
 enum SearchMethod {
-    Indexed,   // 索引搜索
-    Realtime   // 实时搜索
+    Indexed,    // Search using pre-built indexes for faster results
+    Realtime    // Search the file system in real-time for the most current results
 };
 Q_ENUM_NS(SearchMethod)
 

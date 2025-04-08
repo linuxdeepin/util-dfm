@@ -11,37 +11,41 @@
 DFM_SEARCH_BEGIN_NS
 
 /**
- * @brief 内容搜索API
- *
- * 提供内容搜索特有的选项设置
+ * @brief The ContentOptionsAPI class provides content search specific options
+ * 
+ * This class extends the base SearchOptions with content search specific settings,
+ * such as file type filters and content preview length.
  */
 class ContentOptionsAPI
 {
 public:
     /**
-     * @brief 构造函数
-     *
-     * @param options 要操作的搜索选项对象
+     * @brief Constructor
+     * @param options The SearchOptions object to operate on
      */
     explicit ContentOptionsAPI(SearchOptions &options);
 
     /**
-     * @brief 设置文件类型过滤器
+     * @brief Set file type filters for content search
+     * @param extensions List of file extensions to include in search
      */
     void setFileTypeFilters(const QStringList &extensions);
 
     /**
-     * @brief 获取文件类型过滤器
+     * @brief Get the current file type filters
+     * @return List of file extensions
      */
     QStringList fileTypeFilters() const;
 
     /**
-     * @brief 设置最大内容预览长度
+     * @brief Set the maximum length for content preview
+     * @param length The maximum preview length in characters
      */
     void setMaxPreviewLength(int length);
 
     /**
-     * @brief 获取最大内容预览长度
+     * @brief Get the maximum content preview length
+     * @return The maximum preview length in characters
      */
     int maxPreviewLength() const;
 
@@ -52,14 +56,30 @@ private:
 };
 
 /**
- * @brief 内容搜索结果API
- *
+ * @brief The ContentResultAPI class provides content search specific result handling
+ * 
+ * This class extends the base SearchResult with content search specific features,
+ * such as highlighted content preview.
  */
 class ContentResultAPI
 {
 public:
+    /**
+     * @brief Constructor
+     * @param result The SearchResult object to operate on
+     */
     ContentResultAPI(SearchResult &result);
+
+    /**
+     * @brief Get the highlighted content preview
+     * @return The highlighted content as QString
+     */
     QString highlightedContent() const;
+
+    /**
+     * @brief Set the highlighted content preview
+     * @param content The highlighted content to set
+     */
     void setHighlightedContent(const QString &content);
 
 private:

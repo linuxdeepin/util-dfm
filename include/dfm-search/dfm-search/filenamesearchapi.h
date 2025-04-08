@@ -11,39 +11,49 @@
 DFM_SEARCH_BEGIN_NS
 
 /**
- * @brief 文件名搜索API
- *
- * 提供文件名搜索特有的选项设置
+ * @brief The FileNameOptionsAPI class provides file name search specific options
+ * 
+ * This class extends the base SearchOptions with file name search specific settings,
+ * such as pinyin search and file type filtering.
  */
 class FileNameOptionsAPI
 {
 public:
     /**
-     * @brief 构造函数
-     *
-     * @param options 要操作的搜索选项对象
+     * @brief Constructor
+     * @param options The SearchOptions object to operate on
      */
     explicit FileNameOptionsAPI(SearchOptions &options);
 
     /**
-     * @brief 设置是否启用拼音搜索
+     * @brief Enable or disable pinyin search
+     * @param enabled true to enable pinyin search, false to disable
      */
     void setPinyinEnabled(bool enabled);
 
     /**
-     * @brief 获取是否启用拼音搜索
+     * @brief Check if pinyin search is enabled
+     * @return true if pinyin search is enabled, false otherwise
      */
     bool pinyinEnabled() const;
 
     /**
-     * @brief 设置文件类型过滤
-     *
-     * all types: app, archive, audio, doc, pic, video
+     * @brief Set file type filters
+     * @param types List of file types to include in search
+     * 
+     * Supported file types:
+     * - app: Application files
+     * - archive: Archive files
+     * - audio: Audio files
+     * - doc: Document files
+     * - pic: Picture files
+     * - video: Video files
      */
     void setFileTypes(const QStringList &types);
 
     /**
-     * @brief 获取文件类型过滤
+     * @brief Get the current file type filters
+     * @return List of file types
      */
     QStringList fileTypes() const;
 
@@ -52,29 +62,66 @@ private:
 };
 
 /**
- * @brief 文件名搜索结果API
- *
+ * @brief The FileNameResultAPI class provides file name search specific result handling
+ * 
+ * This class extends the base SearchResult with file name search specific features,
+ * such as file size, modification time, and file type information.
  */
 class FileNameResultAPI
 {
 public:
     /**
-     * @brief 构造函数
-     *
-     * @param options
+     * @brief Constructor
+     * @param result The SearchResult object to operate on
      */
     explicit FileNameResultAPI(SearchResult &result);
 
+    /**
+     * @brief Get the file size
+     * @return The file size as formatted string
+     */
     QString size() const;
-    void setSize(const QString &QString);
 
+    /**
+     * @brief Set the file size
+     * @param size The file size as formatted string
+     */
+    void setSize(const QString &size);
+
+    /**
+     * @brief Get the file modification time
+     * @return The modification time as formatted string
+     */
     QString modifiedTime() const;
+
+    /**
+     * @brief Set the file modification time
+     * @param time The modification time as formatted string
+     */
     void setModifiedTime(const QString &time);
 
+    /**
+     * @brief Check if the result is a directory
+     * @return true if the result is a directory, false otherwise
+     */
     bool isDirectory() const;
+
+    /**
+     * @brief Set whether the result is a directory
+     * @param isDir true if the result is a directory, false otherwise
+     */
     void setIsDirectory(bool isDir);
 
+    /**
+     * @brief Get the file type
+     * @return The file type as string
+     */
     QString fileType() const;
+
+    /**
+     * @brief Set the file type
+     * @param type The file type to set
+     */
     void setFileType(const QString &type) const;
 
 private:
