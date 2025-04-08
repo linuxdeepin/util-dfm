@@ -74,7 +74,7 @@ private:
     QueryPtr buildLuceneQuery(const IndexQuery &query) const;
 
     // 处理搜索结果
-    void processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size);
+    SearchResult processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size);
 
     // 成员变量
     QString m_indexDir;   // 索引目录路径

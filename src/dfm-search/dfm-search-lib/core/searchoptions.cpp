@@ -15,7 +15,8 @@ SearchOptionsData::SearchOptionsData()
       caseSensitive(false),
       searchPath(QDir::homePath()),
       includeHidden(false),
-      maxResults(-1)
+      maxResults(-1),
+      enableResultFound(false)
 {
 }
 
@@ -23,10 +24,10 @@ SearchOptionsData::SearchOptionsData(const SearchOptionsData &other)
     : method(other.method),
       caseSensitive(other.caseSensitive),
       searchPath(other.searchPath),
-      excludePaths(other.excludePaths),
       includeHidden(other.includeHidden),
       maxResults(other.maxResults),
-      customOptions(other.customOptions)
+      customOptions(other.customOptions),
+      enableResultFound(other.enableResultFound)
 {
 }
 
@@ -95,21 +96,6 @@ void SearchOptions::setSearchPath(const QString &path)
     d->searchPath = path;
 }
 
-QStringList SearchOptions::excludePaths() const
-{
-    return d->excludePaths;
-}
-
-void SearchOptions::setExcludePaths(const QStringList &paths)
-{
-    d->excludePaths = paths;
-}
-
-void SearchOptions::addExcludePath(const QString &path)
-{
-    d->excludePaths.append(path);
-}
-
 void SearchOptions::setIncludeHidden(bool include)
 {
     d->includeHidden = include;
@@ -143,6 +129,16 @@ QVariant SearchOptions::customOption(const QString &key) const
 bool SearchOptions::hasCustomOption(const QString &key) const
 {
     return d->customOptions.contains(key);
+}
+
+void SearchOptions::enableResultFound(bool enable)
+{
+    d->enableResultFound = enable;
+}
+
+bool SearchOptions::resultFoundEnabled() const
+{
+    return d->enableResultFound;
 }
 
 DFM_SEARCH_END_NS

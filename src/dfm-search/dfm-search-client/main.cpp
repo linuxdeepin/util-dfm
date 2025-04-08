@@ -50,7 +50,6 @@ void printUsage()
     std::cout << "  --pinyin                    Enable pinyin search (for filename search)" << std::endl;
     std::cout << "  --file-types=<types>        Filter by file types, comma separated" << std::endl;
     std::cout << "  --max-results=<number>      Maximum number of results" << std::endl;
-    std::cout << "  --exclude-path=<path>       Path to exclude (can be used multiple times)" << std::endl;
     std::cout << "  --max-preview=<length>      Max content preview length (for content search)" << std::endl;
     std::cout << "  --help                      Display this help" << std::endl;
 }
@@ -95,7 +94,6 @@ int main(int argc, char *argv[])
     QCommandLineOption pinyinOption(QStringList() << "pinyin", "Enable pinyin search (for filename search)");
     QCommandLineOption fileTypesOption(QStringList() << "file-types", "Filter by file types, comma separated", "types");
     QCommandLineOption maxResultsOption(QStringList() << "max-results", "Maximum number of results", "number", "100");
-    QCommandLineOption excludePathOption(QStringList() << "exclude-path", "Path to exclude", "path");
     QCommandLineOption maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200");
 
     parser.addOption(typeOption);
@@ -106,7 +104,6 @@ int main(int argc, char *argv[])
     parser.addOption(pinyinOption);
     parser.addOption(fileTypesOption);
     parser.addOption(maxResultsOption);
-    parser.addOption(excludePathOption);
     parser.addOption(maxPreviewOption);
 
     // Setup positional arguments
@@ -185,12 +182,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Add exclude paths if specified
-    if (parser.isSet(excludePathOption)) {
-        QStringList excludePaths = parser.values(excludePathOption);
-        options.setExcludePaths(excludePaths);
-    }
-
     // Set type-specific options
     if (searchType == SearchType::FileName) {
         FileNameOptionsAPI fileNameOptions(options);
@@ -235,12 +226,17 @@ int main(int argc, char *argv[])
         std::cout << "Search started..." << std::endl;
     });
 
-    // QObject::connect(engine, &SearchEngine::resultFound, [searchType](const SearchResult &result) {
-    //       printSearchResult(result, searchType);
-    // });
+    QObject::connect(engine, &SearchEngine::resultFound, [searchType](const SearchResult &result) {
+        printSearchResult(result, searchType);
+    });
 
-    QObject::connect(engine, &SearchEngine::searchFinished, [](const QList<SearchResult> &results) {
+    QObject::connect(engine, &SearchEngine::searchFinished, [options, searchType](const QList<SearchResult> &results) {
         std::cout << "Search finished. Total results: " << results.size() << std::endl;
+        if (!options.resultFoundEnabled()) {
+            std::for_each(results.begin(), results.end(), [searchType](const SearchResult &result) {
+                printSearchResult(result, searchType);
+            });
+        }
         QCoreApplication::quit();
     });
 

@@ -80,21 +80,6 @@ public:
     void setSearchPath(const QString &path);
 
     /**
-     * @brief 获取排除路径列表
-     */
-    QStringList excludePaths() const;
-
-    /**
-     * @brief 设置排除路径列表
-     */
-    void setExcludePaths(const QStringList &paths);
-
-    /**
-     * @brief 添加排除路径
-     */
-    void addExcludePath(const QString &path);
-
-    /**
      * @brief 设置是否包含隐藏文件
      */
     void setIncludeHidden(bool include);
@@ -128,6 +113,9 @@ public:
      * @brief 判断是否设置了指定的自定义选项
      */
     bool hasCustomOption(const QString &key) const;
+
+    void enableResultFound(bool enable);
+    bool resultFoundEnabled() const;
 
 private:
     std::unique_ptr<SearchOptionsData> d;   // PIMPL
