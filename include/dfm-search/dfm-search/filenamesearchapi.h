@@ -37,6 +37,8 @@ public:
 
     /**
      * @brief 设置文件类型过滤
+     *
+     * all types: app, archive, audio, doc, pic, video
      */
     void setFileTypes(const QStringList &types);
 

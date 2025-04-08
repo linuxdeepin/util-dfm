@@ -33,7 +33,7 @@ using namespace dfmsearch;
 // dfm6-search-client --case-sensitive "README" /home/user
 
 // # 文件类型过滤
-// dfm6-search-client --file-types=txt,doc,docx /home/user
+// dfm6-search-client --file-types=doc,pic "" /home/user
 
 // # 布尔查询
 // dfm6-search-client --query=boolean "meeting,notes,2023" /home/user/Documents

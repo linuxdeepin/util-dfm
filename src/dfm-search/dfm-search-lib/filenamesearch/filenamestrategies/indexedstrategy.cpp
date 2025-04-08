@@ -123,7 +123,7 @@ Lucene::QueryPtr QueryBuilder::buildFuzzyQuery(const QString &keyword, bool case
     return booleanQuery;
 }
 
-Lucene::QueryPtr QueryBuilder::buildBooleanQuery(const QStringList &terms, bool caseSensitive) const
+Lucene::QueryPtr QueryBuilder::buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op) const
 {
     if (terms.isEmpty()) {
         return nullptr;
@@ -137,7 +137,7 @@ Lucene::QueryPtr QueryBuilder::buildBooleanQuery(const QStringList &terms, bool 
             String termStr = L"*" + processString(term, caseSensitive) + L"*";
             TermPtr termObj = newLucene<Term>(L"file_name", termStr);
             QueryPtr termQuery = newLucene<WildcardQuery>(termObj);
-            booleanQuery->add(termQuery, BooleanClause::MUST);
+            booleanQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
         }
     }
 
@@ -246,7 +246,7 @@ FileNameIndexedStrategy::~FileNameIndexedStrategy() = default;
 
 void FileNameIndexedStrategy::initializeIndexing()
 {
-    m_indexDir = SearchUtility::getAnythingIndexDirectory();
+    m_indexDir = SearchUtility::anythingIndexDirectory();
     if (!QFileInfo::exists(m_indexDir)) {
         qWarning() << "Index directory does not exist:" << m_indexDir;
     }
@@ -348,7 +348,7 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
         result.terms.append(query.keyword());
         break;
     case SearchType::Boolean:
-        result.terms = SearchUtility::extractKeywords(query);
+        result.terms = SearchUtility::extractBooleanKeywords(query);
         result.booleanOp = query.type() == SearchQuery::Type::Boolean ? query.booleanOperator() : SearchQuery::BooleanOperator::AND;
         break;
     case SearchType::Pinyin:
@@ -477,15 +477,6 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
     bool hasValidQuery = false;
 
-    // 添加文件类型查询
-    if (!query.fileTypes.isEmpty()) {
-        QueryPtr typeQuery = m_queryBuilder->buildTypeQuery(query.fileTypes);
-        if (typeQuery) {
-            finalQuery->add(typeQuery, BooleanClause::MUST);
-            hasValidQuery = true;
-        }
-    }
-
     // 根据搜索类型添加相应的查询
     switch (query.type) {
     case SearchType::Simple:
@@ -508,7 +499,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         break;
     case SearchType::Boolean:
         if (!query.terms.isEmpty()) {
-            QueryPtr booleanQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive);
+            QueryPtr booleanQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive, query.booleanOp);
             if (booleanQuery) {
                 finalQuery->add(booleanQuery, BooleanClause::MUST);
                 hasValidQuery = true;
@@ -525,8 +516,13 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         }
         break;
     case SearchType::FileType:
-        // 文件类型查询已经在上面处理完成
-        // 如果只有文件类型，这里不需要额外操作
+        if (!query.fileTypes.isEmpty()) {
+            QueryPtr typeQuery = m_queryBuilder->buildTypeQuery(query.fileTypes);
+            if (typeQuery) {
+                finalQuery->add(typeQuery, BooleanClause::MUST);
+                hasValidQuery = true;
+            }
+        }
         break;
     }
 

@@ -3,19 +3,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "searchutility.h"
 
+#include <unistd.h>
+
 #include <QDir>
 #include <QFileInfo>
-#include <unistd.h>
+#include <QRegularExpression>
 
 DFM_SEARCH_BEGIN_NS
 namespace SearchUtility {
 
-QString getAnythingIndexDirectory()
+QString anythingIndexDirectory()
 {
     return QString("/run/user/%1/deepin-anything-server").arg(getuid());
 }
 
-QStringList extractKeywords(const SearchQuery &query)
+QStringList extractBooleanKeywords(const SearchQuery &query)
 {
     QStringList keywords;
 
@@ -37,6 +39,18 @@ QStringList extractKeywords(const SearchQuery &query)
     keywords.removeAll("");
 
     return keywords;
+}
+
+QStringList deepinAnythingFileTypes()
+{
+    static const QStringList kTypes { "app", "archive", "audio", "doc", "pic", "video" };
+    return kTypes;
+}
+
+bool isPurePinyin(const QString &str)
+{
+    static QRegularExpression regex(R"(^[a-zA-Z]+$)");
+    return regex.match(str).hasMatch();
 }
 
 }   // namespace SearchUtility

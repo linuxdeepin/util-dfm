@@ -18,14 +18,18 @@ namespace SearchUtility {
  * @brief 获取索引目录路径
  * @return 返回系统索引目录路径
  */
-QString getAnythingIndexDirectory();
+QString anythingIndexDirectory();
 
 /**
  * @brief 从查询中提取关键词列表
  * @param query 搜索查询
  * @return 关键词列表
  */
-QStringList extractKeywords(const SearchQuery &query);
+QStringList extractBooleanKeywords(const SearchQuery &query);
+
+QStringList deepinAnythingFileTypes();
+
+bool isPurePinyin(const QString &str);
 
 }   // namespace SearchUtility
 DFM_SEARCH_END_NS

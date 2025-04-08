@@ -34,7 +34,8 @@ enum class FileNameSearchErrorCode {
     // 拼音搜索相关
     InvalidPinyinFormat = 1050,
 
-    // TODO (search): 文件类型过滤相关
+    // 文件类型过滤相关
+    InvalidFileTypes = 1100,
 
     // 文件名索引特定错误
     FileNameIndexNotFound = 1200,
