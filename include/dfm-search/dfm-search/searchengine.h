@@ -16,122 +16,124 @@ DFM_SEARCH_BEGIN_NS
 class AbstractSearchEngine;
 
 /**
- * @brief 搜索引擎类
- *
- * 提供统一的搜索接口，内部使用具体的搜索引擎实现
+ * @brief The SearchEngine class provides a unified interface for file searching
+ * 
+ * This class serves as the main entry point for all search operations. It uses
+ * the factory pattern to create specific search engine implementations based on
+ * the search type. The class manages the search lifecycle and provides both
+ * synchronous and asynchronous search capabilities.
  */
-
 class SearchEngine : public QObject
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief 搜索结果回调函数类型
+     * @brief Callback function type for search results
+     * @param result The search result to process
      */
     using ResultCallback = std::function<void(const SearchResult &)>;
 
     /**
-     * @brief 创建特定类型的搜索引擎
-     *
-     * 使用工厂模式创建引擎，这是唯一创建SearchEngine的方法
-     * 返回的对象由Qt父子关系管理生命周期
+     * @brief Creates a search engine of the specified type
+     * @param type The type of search engine to create
+     * @param parent The parent QObject
+     * @return A pointer to the created SearchEngine instance
      */
     static SearchEngine *create(SearchType type, QObject *parent = nullptr);
 
     /**
-     * @brief 析构函数
+     * @brief Destructor
      */
     ~SearchEngine() override;
 
     /**
-     * @brief 获取搜索类型
+     * @brief Get the current search type
+     * @return The current SearchType
      */
     SearchType searchType() const;
 
     /**
-     * @brief 设置搜索类型
+     * @brief Set the search type
+     * @param type The new SearchType
      */
     void setSearchType(SearchType type);
 
     /**
-     * @brief 获取搜索选项
+     * @brief Get the current search options
+     * @return The current SearchOptions
      */
     SearchOptions searchOptions() const;
 
     /**
-     * @brief 设置搜索选项
+     * @brief Set the search options
+     * @param options The new SearchOptions
      */
     void setSearchOptions(const SearchOptions &options);
 
     /**
-     * @brief 获取当前搜索状态
+     * @brief Get the current search status
+     * @return The current SearchStatus
      */
     SearchStatus status() const;
 
     /**
-     * @brief 异步执行搜索
-     *
-     * @param query 搜索查询
-     * @return
+     * @brief Perform an asynchronous search
+     * @param query The search query to execute
      */
     void search(const SearchQuery &query);
 
     /**
-     * @brief 异步执行搜索，并通过回调返回结果
-     *
-     * @param query 搜索查询
-     * @param callback 结果回调函数
-     * @return
+     * @brief Perform an asynchronous search with a callback
+     * @param query The search query to execute
+     * @param callback The callback function to process results
      */
     void searchWithCallback(const SearchQuery &query, ResultCallback callback);
 
     /**
-     * @brief 同步执行搜索
-     *
-     * @param query 搜索查询
-     * @return 搜索结果列表
+     * @brief Perform a synchronous search
+     * @param query The search query to execute
+     * @return A SearchResultExpected containing the results or an error
      */
     SearchResultExpected searchSync(const SearchQuery &query);
 
     /**
-     * @brief 取消当前搜索
+     * @brief Cancel the current search operation
      */
     void cancel();
 
 Q_SIGNALS:
     /**
-     * @brief 搜索开始信号
+     * @brief Emitted when a search operation starts
      */
     void searchStarted();
 
     /**
-     * @brief 搜索结果信号
+     * @brief Emitted when a new search result is found
+     * @param result The found search result
      */
     void resultFound(const DFMSEARCH::SearchResult &result);
 
     /**
-     * @brief 搜索状态改变信号
+     * @brief Emitted when the search status changes
+     * @param status The new search status
      */
     void statusChanged(SearchStatus status);
 
     /**
-     * @brief 搜索完成信号
-     *
-     * @param results 搜索结果列表
+     * @brief Emitted when a search operation completes
+     * @param results The list of all search results
      */
     void searchFinished(const DFMSEARCH::SearchResultList &results);
 
     /**
-     * @brief 搜索取消信号
+     * @brief Emitted when a search operation is cancelled
      */
     void searchCancelled();
 
-    // TODO: better error
     /**
-     * @brief 搜索错误信号
-     *
-     * @param message 错误消息
+     * @brief Emitted when an error occurs during search
+     * @param error The SearchError that occurred
      */
     void errorOccurred(const DFMSEARCH::SearchError &error);
 

@@ -12,23 +12,35 @@
 
 DFM_SEARCH_BEGIN_NS
 
+/**
+ * @brief The SearchUtility namespace provides utility functions for search operations
+ */
 namespace SearchUtility {
 
 /**
- * @brief 获取索引目录路径
- * @return 返回系统索引目录路径
+ * @brief Get the system index directory path
+ * @return The path to the system index directory
  */
 QString anythingIndexDirectory();
 
 /**
- * @brief 从查询中提取关键词列表
- * @param query 搜索查询
- * @return 关键词列表
+ * @brief Extract keywords from a boolean search query
+ * @param query The search query to process
+ * @return List of extracted keywords
  */
 QStringList extractBooleanKeywords(const SearchQuery &query);
 
+/**
+ * @brief Get the list of supported file types for Deepin Anything
+ * @return List of supported file types
+ */
 QStringList deepinAnythingFileTypes();
 
+/**
+ * @brief Check if a string contains only pinyin characters
+ * @param str The string to check
+ * @return true if the string contains only pinyin, false otherwise
+ */
 bool isPurePinyin(const QString &str);
 
 }   // namespace SearchUtility
