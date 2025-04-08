@@ -33,7 +33,7 @@ using namespace dfmsearch;
 // dfm6-search-client --case-sensitive "README" /home/user
 
 // # 文件类型过滤
-// dfm6-search-client --file-types=txt,doc,docx "report" /home/user
+// dfm6-search-client --file-types=txt,doc,docx /home/user
 
 // # 布尔查询
 // dfm6-search-client --query=boolean "meeting,notes,2023" /home/user/Documents
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
     } else {
         // For boolean query, split keywords by comma and create a boolean query
         QStringList keywords = keyword.split(',', Qt::SkipEmptyParts);
-        query = SearchFactory::createQuery(keyword, SearchQuery::Type::Boolean);
+        query = SearchFactory::createQuery(keywords, SearchQuery::Type::Boolean);
         query.setBooleanOperator(SearchQuery::BooleanOperator::AND);
     }
 
@@ -253,11 +253,12 @@ int main(int argc, char *argv[])
         QCoreApplication::quit();
     });
 
-    // TODO
-    // QObject::connect(engine, &SearchEngine::error, [](const QString &message) {
-    //     std::cerr << "Error: " << message.toStdString() << std::endl;
-    //     QCoreApplication::quit();
-    // });
+    QObject::connect(engine, &SearchEngine::errorOccurred, [](const DFMSEARCH::SearchError &error) {
+        std::cerr << "[Error]: " << error.code()
+                  << "[Name]: " << error.name().toStdString()
+                  << "[Message]:" << error.message().toStdString() << std::endl;
+        QCoreApplication::quit();
+    });
 
     // Start search
     std::cout << "Searching for: " << keyword.toStdString() << std::endl;

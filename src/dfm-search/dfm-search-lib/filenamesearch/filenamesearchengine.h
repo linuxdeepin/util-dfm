@@ -22,9 +22,9 @@ public:
 protected:
     // 设置策略工厂
     void setupStrategyFactory() override;
-    
+
     // 重写验证方法以添加特定验证
-    SearchResultExpected validateSearchConditions(const SearchQuery &query) override;
+    SearchError validateSearchConditions() override;
 };
 
 /**
@@ -34,9 +34,9 @@ class FileNameSearchStrategyFactory : public SearchStrategyFactory
 {
 public:
     std::unique_ptr<BaseSearchStrategy> createStrategy(
-        SearchType searchType, const SearchOptions &options) override;
+            SearchType searchType, const SearchOptions &options) override;
 };
 
 DFM_SEARCH_END_NS
 
-#endif // FILENAME_SEARCH_ENGINE_H
+#endif   // FILENAME_SEARCH_ENGINE_H

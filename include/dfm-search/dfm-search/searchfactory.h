@@ -16,6 +16,7 @@ class SearchFactory
 public:
     static SearchEngine *createEngine(SearchType type, QObject *parent = nullptr);
     static SearchQuery createQuery(const QString &keyword, SearchQuery::Type type = SearchQuery::Type::Simple);
+    static SearchQuery createQuery(const QStringList &keywords, SearchQuery::Type type = SearchQuery::Type::Boolean);
 };
 
 DFM_SEARCH_END_NS
