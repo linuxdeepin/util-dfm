@@ -157,11 +157,6 @@ void GenericSearchEngine::handleSearchResult(const DFMSEARCH::SearchResult &resu
     // 存储结果
     m_results.append(result);
 
-    // 如果设置了回调，调用回调
-    if (m_callback) {
-        m_callback(result);
-    }
-
     // 发送结果信号
     emit resultFound(result);
 }
@@ -181,6 +176,13 @@ void GenericSearchEngine::handleSearchFinished(const DFMSEARCH::SearchResultList
     // 设置状态为完成
     setStatus(SearchStatus::Finished);
 
+    // TODO (search): perf
+    // 如果设置了回调，调用回调
+    if (m_callback) {
+        std::for_each(results.begin(), results.end(), [this](const SearchResult &result) {
+            m_callback(result);
+        });
+    }
     // 发送完成信号
     emit searchFinished(m_results);
 
