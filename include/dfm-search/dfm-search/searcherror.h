@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef DFM_SEARCH_ERROR_H
 #define DFM_SEARCH_ERROR_H
 
