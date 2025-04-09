@@ -5,14 +5,15 @@
 
 #include <QMutexLocker>
 #include <QFileInfo>
+#include <QEventLoop>
+#include <QTimer>
 
 DFM_SEARCH_BEGIN_NS
 DCORE_USE_NAMESPACE
 
 GenericSearchEngine::GenericSearchEngine(QObject *parent)
     : AbstractSearchEngine(parent),
-      m_worker(nullptr),
-      m_syncSearchDone(false)
+      m_worker(nullptr)
 {
 
     // 设置初始状态
@@ -166,11 +167,6 @@ void GenericSearchEngine::handleSearchResult(const DFMSEARCH::SearchResult &resu
 
 void GenericSearchEngine::handleSearchFinished(const DFMSEARCH::SearchResultList &results)
 {
-    QMutexLocker locker(&m_mutex);
-
-    // 更新完成状态
-    m_syncSearchDone = true;
-
     // 确保所有结果都已添加到m_results
     if (m_results.size() != results.size()) {
         m_results = results;
@@ -188,15 +184,10 @@ void GenericSearchEngine::handleSearchFinished(const DFMSEARCH::SearchResultList
     }
     // 发送完成信号
     emit searchFinished(m_results);
-
-    // 唤醒等待的线程（如果有）
-    m_waitCond.wakeAll();
 }
 
 void GenericSearchEngine::handleErrorOccurred(const DFMSEARCH::SearchError &error)
 {
-    QMutexLocker locker(&m_mutex);
-
     // 保存错误
     m_lastError = error;
 
@@ -205,40 +196,46 @@ void GenericSearchEngine::handleErrorOccurred(const DFMSEARCH::SearchError &erro
 
     // 转发错误信号
     reportError(error);
-
-    // 唤醒等待的线程（如果有）
-    m_syncSearchDone = true;
-    m_waitCond.wakeAll();
 }
 
 SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
 {
-    QMutexLocker locker(&m_mutex);
-
     // 重置同步搜索状态
-    m_syncSearchDone = false;
     m_results.clear();
+    m_lastError = SearchError(SearchErrorCode::Success);
 
-    // 启动异步搜索，通过条件变量等待完成
+    // 创建事件循环
+    QEventLoop eventLoop;
+    QTimer timeoutTimer;
+    timeoutTimer.setSingleShot(true);
+    timeoutTimer.setInterval(10000);   // 10秒超时
+
+    // 连接信号到事件循环
+    connect(this, &GenericSearchEngine::searchFinished, &eventLoop, &QEventLoop::quit);
+    connect(this, &GenericSearchEngine::errorOccurred, &eventLoop, &QEventLoop::quit);
+    connect(&timeoutTimer, &QTimer::timeout, &eventLoop, &QEventLoop::quit);
+
+    // 启动异步搜索
     QMetaObject::invokeMethod(m_worker, "doSearch",
                               Q_ARG(DFMSEARCH::SearchQuery, query),
                               Q_ARG(DFMSEARCH::SearchOptions, m_options),
                               Q_ARG(DFMSEARCH::SearchType, searchType()));
 
-    // 等待搜索完成或超时
-    while (!m_syncSearchDone) {
-        // 最多等待30秒
-        // TODO (search): config
-        if (!m_waitCond.wait(&m_mutex, 30000)) {
-            // 超时
-            QMetaObject::invokeMethod(m_worker, "cancelSearch");
-            return DUnexpected<DFMSEARCH::SearchError> { SearchError(SearchErrorCode::SearchTimeout) };
-        }
+    // 启动超时计时器
+    timeoutTimer.start();
 
-        // 检查是否被取消
-        if (m_cancelled.load()) {
-            return m_results;
-        }
+    // 进入事件循环等待
+    eventLoop.exec();
+
+    // 检查是否超时
+    if (!timeoutTimer.isActive()) {
+        QMetaObject::invokeMethod(m_worker, "cancelSearch");
+        return DUnexpected<DFMSEARCH::SearchError> { SearchError(SearchErrorCode::SearchTimeout) };
+    }
+
+    // 检查是否被取消
+    if (m_cancelled.load()) {
+        return m_results;
     }
 
     // 检查是否有错误
