@@ -1,6 +1,6 @@
 # Setup the environment
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
-find_package(Dtk${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
+find_package(Dtk${DFM_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Lucene REQUIRED IMPORTED_TARGET liblucene++ liblucene++-contrib)
