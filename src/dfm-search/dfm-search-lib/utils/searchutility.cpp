@@ -12,7 +12,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <lucene++/LuceneHeaders.h>
+#include <lucene++/FSDirectory.h>
+
 DFM_SEARCH_BEGIN_NS
+using namespace Lucene;
 
 // TODO (search): use dconfig
 namespace Global {
@@ -58,7 +62,11 @@ bool isPathInContentIndexDirectory(const QString &path)
 
 bool isContentIndexAvailable()
 {
-    const QString &statusFile = contentIndexDirectory() + "/index_status.json";
+    const QString &dir = contentIndexDirectory();
+    if (!IndexReader::indexExists(FSDirectory::open(dir.toStdWString())))
+        return false;
+
+    const QString &statusFile = dir + "/index_status.json";
 
     // 1. 尝试打开文件
     QFile file(statusFile);
@@ -104,7 +112,7 @@ bool isPathInFileNameIndexDirectory(const QString &path)
 
 bool isFileNameIndexDirectoryAvailable()
 {
-    return QDir(fileNameIndexDirectory()).exists();
+    return IndexReader::indexExists(FSDirectory::open(fileNameIndexDirectory().toStdWString()));
 }
 
 QString fileNameIndexDirectory()
