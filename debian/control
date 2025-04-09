@@ -8,6 +8,7 @@ Build-Depends:
  pkg-config,
  qt6-base-dev,
  qt6-base-private-dev,
+ libdtk6core-dev,
  qmake6,
  libglibmm-2.4-dev,
  qt6-tools-dev-tools,
@@ -16,7 +17,8 @@ Build-Depends:
  libisoburn-dev,
  libmediainfo-dev,
  libsecret-1-dev,
- liblucene++-dev
+ liblucene++-dev,
+ libboost-filesystem-dev
 Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm
@@ -108,7 +110,6 @@ Multi-Arch: same
 Depends:
  ${shlibs:Depends}, 
  ${misc:Depends},
- libdfm6-search (=${binary:Version}),
- liblucene++-dev
+ libdfm6-search (=${binary:Version})
 Description: A library about searching files dev.
  A library that provides file searching interface dev.
