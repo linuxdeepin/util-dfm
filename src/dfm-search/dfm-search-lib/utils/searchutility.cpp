@@ -9,6 +9,8 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -17,7 +19,7 @@ namespace Global {
 
 static const QSet<QString> &supportedExtensions()
 {
-    static const QSet<QString> extensions = {
+    static const QSet<QString> kExtensions = {
         "rtf", "odt", "ods", "odp", "odg", "docx",
         "xlsx", "pptx", "ppsx", "md", "xls", "xlsb",
         "doc", "dot", "wps", "ppt", "pps", "txt",
@@ -26,22 +28,60 @@ static const QSet<QString> &supportedExtensions()
         "css", "yaml", "ini", "bat", "js", "sql",
         "uof", "ofd"
     };
-    return extensions;
+    return kExtensions;
 }
 
-bool isSupportedFullTextSearchExtension(const QString &suffix)
+bool isSupportedContentSearchExtension(const QString &suffix)
 {
     return supportedExtensions().contains(suffix.toLower());
 }
 
-QStringList defaultFullTextSearchExtensions()
+QStringList defaultContentSearchExtensions()
 {
     return supportedExtensions().values();
 }
 
-QString defaultIndexedDirectory()
+QStringList defaultIndexedDirectory()
 {
-    return QDir::homePath();
+    return { QDir::homePath() };
+}
+
+bool isPathInContentIndexDirectory(const QString &path)
+{
+    if (!isContentIndexAvailable())
+        return false;
+
+    const QStringList &dirs = defaultIndexedDirectory();
+    return std::any_of(dirs.cbegin(), dirs.cend(),
+                       [&path](const QString &dir) { return path.startsWith(dir); });
+}
+
+bool isContentIndexAvailable()
+{
+    const QString &statusFile = contentIndexDirectory() + "/index_status.json";
+
+    // 1. 尝试打开文件
+    QFile file(statusFile);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return false;   // 文件无法打开
+    }
+
+    // 2. 读取并解析 JSON
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    if (doc.isNull() || !doc.isObject()) {
+        return false;   // JSON 格式无效
+    }
+
+    // 3. 检查 lastUpdateTime 字段
+    QJsonObject obj = doc.object();
+    if (!obj.contains("lastUpdateTime")) {
+        return false;   // 字段不存在
+    }
+
+    const QString lastUpdateTime = obj["lastUpdateTime"].toString();
+    return !lastUpdateTime.isEmpty();   // 字段值非空则为有效
 }
 
 QString contentIndexDirectory()
@@ -52,7 +92,22 @@ QString contentIndexDirectory()
     return indexPath;
 }
 
-QString anythingIndexDirectory()
+bool isPathInFileNameIndexDirectory(const QString &path)
+{
+    if (!isFileNameIndexDirectoryAvailable())
+        return false;
+
+    const QStringList &dirs = defaultIndexedDirectory();
+    return std::any_of(dirs.cbegin(), dirs.cend(),
+                       [&path](const QString &dir) { return path.startsWith(dir); });
+}
+
+bool isFileNameIndexDirectoryAvailable()
+{
+    return QDir(fileNameIndexDirectory()).exists();
+}
+
+QString fileNameIndexDirectory()
 {
     return QString("/run/user/%1/deepin-anything-server").arg(getuid());
 }

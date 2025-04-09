@@ -20,34 +20,76 @@ inline constexpr int kMinContentSearchKeywordLength = 2;
 
 /**
  * @brief Check if the given file extension is supported for full-text search.
+ * This function checks if the specified file extension is included in the list of supported extensions
+ * for performing full-text searches within the application.
  * @param suffix The file extension to check.
  * @return True if the extension is supported, false otherwise.
  */
-bool isSupportedFullTextSearchExtension(const QString &suffix);
+bool isSupportedContentSearchExtension(const QString &suffix);
 
 /**
  * @brief Get a list of default file extensions that are supported for full-text search.
+ * This function returns a list of file extensions that the application can process for full-text search,
+ * ensuring that users can search through various document types.
  * @return A QStringList containing the supported file extensions.
  */
-QStringList defaultFullTextSearchExtensions();
+QStringList defaultContentSearchExtensions();
 
 /**
  * @brief Get the default directory path for indexed files.
+ * This function retrieves the default directory where indexed files are stored,
+ * allowing the application to access and manage the indexed content efficiently.
  * @return A QString representing the path to the default indexed directory.
  */
-QString defaultIndexedDirectory();
+QStringList defaultIndexedDirectory();
 
 /**
- * @brief Get the content index directory path
- * @return The path to the content index directory
+ * @brief Check if the specified path is within the content index directory.
+ * This function verifies whether a given file path is located within the designated content index directory,
+ * which is important for ensuring that only relevant files are included in search operations.
+ * @param path The file path to check.
+ * @return True if the path is within the content index directory, false otherwise.
+ */
+bool isPathInContentIndexDirectory(const QString &path);
+
+/**
+ * @brief Check if the content index is available.
+ * This function checks the status of the content index to determine if it is accessible and ready for search operations.
+ * @return True if the content index is available, false otherwise.
+ */
+bool isContentIndexAvailable();
+
+/**
+ * @brief Get the content index directory path.
+ * This function provides the path to the directory where the content index is stored,
+ * which is essential for performing searches on indexed content.
+ * @return The path to the content index directory.
  */
 QString contentIndexDirectory();
 
 /**
- * @brief Get the system index directory path
- * @return The path to the system index directory
+ * @brief Check if the specified path is within the filename index directory.
+ * This function verifies whether a given file path is located within the designated filename index directory,
+ * ensuring that only relevant files are included in filename search operations.
+ * @param path The file path to check.
+ * @return True if the path is within the filename index directory, false otherwise.
  */
-QString anythingIndexDirectory();
+bool isPathInFileNameIndexDirectory(const QString &path);
+
+/**
+ * @brief Check if the filename index directory is available.
+ * This function checks the status of the filename index directory to determine if it is accessible and ready for search operations.
+ * @return True if the filename index directory is available, false otherwise.
+ */
+bool isFileNameIndexDirectoryAvailable();
+
+/**
+ * @brief Get the filename index directory path.
+ * This function provides the path to the directory where the filename index is stored,
+ * which is essential for performing searches on indexed filenames.
+ * @return The path to the filename index directory.
+ */
+QString fileNameIndexDirectory();
 
 }   // namespace Global
 
