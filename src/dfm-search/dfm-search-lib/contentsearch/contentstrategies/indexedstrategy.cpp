@@ -35,7 +35,7 @@ ContentIndexedStrategy::~ContentIndexedStrategy() = default;
 void ContentIndexedStrategy::initializeIndexing()
 {
     // 获取索引目录
-    m_indexDir = SearchUtility::contentIndexDirectory();
+    m_indexDir = Global::contentIndexDirectory();
 
     // 检查索引目录是否存在
     if (!QDir(m_indexDir).exists()) {

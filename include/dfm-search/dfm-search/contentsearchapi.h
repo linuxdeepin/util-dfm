@@ -49,7 +49,7 @@ public:
      */
     int maxPreviewLength() const;
 
-    // TODO (dfm-search): html
+    // TODO (search): html
 
 private:
     SearchOptions &m_options;

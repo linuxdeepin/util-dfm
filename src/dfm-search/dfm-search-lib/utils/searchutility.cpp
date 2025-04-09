@@ -11,7 +11,38 @@
 #include <QStandardPaths>
 
 DFM_SEARCH_BEGIN_NS
-namespace SearchUtility {
+
+// TODO (search): use dconfig
+namespace Global {
+
+static const QSet<QString> &supportedExtensions()
+{
+    static const QSet<QString> extensions = {
+        "rtf", "odt", "ods", "odp", "odg", "docx",
+        "xlsx", "pptx", "ppsx", "md", "xls", "xlsb",
+        "doc", "dot", "wps", "ppt", "pps", "txt",
+        "pdf", "dps", "sh", "html", "htm", "xml",
+        "xhtml", "dhtml", "shtm", "shtml", "json",
+        "css", "yaml", "ini", "bat", "js", "sql",
+        "uof", "ofd"
+    };
+    return extensions;
+}
+
+bool isSupportedFullTextSearchExtension(const QString &suffix)
+{
+    return supportedExtensions().contains(suffix.toLower());
+}
+
+QStringList defaultFullTextSearchExtensions()
+{
+    return supportedExtensions().values();
+}
+
+QString defaultIndexedDirectory()
+{
+    return QDir::homePath();
+}
 
 QString contentIndexDirectory()
 {
@@ -25,6 +56,10 @@ QString anythingIndexDirectory()
 {
     return QString("/run/user/%1/deepin-anything-server").arg(getuid());
 }
+
+}   //  namespace Global
+
+namespace SearchUtility {
 
 QStringList extractBooleanKeywords(const SearchQuery &query)
 {
