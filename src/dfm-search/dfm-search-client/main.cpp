@@ -2,13 +2,15 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <iostream>
+
 #include <QCoreApplication>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QDebug>
 #include <QStringList>
 #include <QFileInfo>
-#include <iostream>
+#include <QDir>
 
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search/searchengine.h>
@@ -77,9 +79,51 @@ void printSearchResult(const SearchResult &result, SearchType searchType)
     std::cout << std::endl;
 }
 
+void testGlobal()
+{
+    std::cout << "================= test global start =================" << std::endl;
+
+    // Test supported content search extensions
+    QStringList testExtensions = { "txt", "pdf", "docx", "unknown" };
+    for (const auto &ext : testExtensions) {
+        std::cout << "Check if '" << ext.toStdString() << "' is supported: "
+                  << (Global::isSupportedContentSearchExtension(ext) ? "Yes" : "No") << std::endl;
+    }
+
+    // Test default content search extensions
+    QStringList defaultExtensions = Global::defaultContentSearchExtensions();
+    std::cout << "Default supported content search extensions: "
+              << defaultExtensions.join(", ").toStdString() << std::endl;
+
+    // Test content index availability
+    std::cout << "Is content index available: "
+              << (Global::isContentIndexAvailable() ? "Yes" : "No") << std::endl;
+
+    // Test content index directory
+    std::cout << "Content index directory: "
+              << Global::contentIndexDirectory().toStdString() << std::endl;
+
+    // Test path in content index directory
+    QString testPath = QDir::homePath() + "/test.txt";
+    std::cout << "Is path in content index directory: "
+              << (Global::isPathInContentIndexDirectory(testPath) ? "Yes" : "No") << std::endl;
+
+    // Test filename index directory availability
+    std::cout << "Is filename index directory available: "
+              << (Global::isFileNameIndexDirectoryAvailable() ? "Yes" : "No") << std::endl;
+
+    // Test filename index directory
+    std::cout << "Filename index directory: "
+              << Global::fileNameIndexDirectory().toStdString() << std::endl;
+
+    std::cout << "================= test global end =================" << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+
+    testGlobal();
 
     QCommandLineParser parser;
     parser.setApplicationDescription("DFM Search Client");
