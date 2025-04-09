@@ -133,9 +133,6 @@ protected:
 
     QThread m_workerThread;   ///< Worker thread for search operations
     SearchWorker *m_worker;   ///< Search worker object
-    QMutex m_mutex;   ///< Mutex for thread synchronization
-    QWaitCondition m_waitCond;   ///< Condition variable for thread synchronization
-    bool m_syncSearchDone;   ///< Flag indicating sync search completion
     SearchError m_lastError;   ///< Last occurred error
 };
 
