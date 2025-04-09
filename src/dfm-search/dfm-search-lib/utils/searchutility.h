@@ -21,18 +21,6 @@ DFM_SEARCH_BEGIN_NS
 namespace SearchUtility {
 
 /**
- * @brief Get the content index directory path
- * @return The path to the content index directory
- */
-QString contentIndexDirectory();
-
-/**
- * @brief Get the system index directory path
- * @return The path to the system index directory
- */
-QString anythingIndexDirectory();
-
-/**
  * @brief Extract keywords from a boolean search query
  * @param query The search query to process
  * @return List of extracted keywords

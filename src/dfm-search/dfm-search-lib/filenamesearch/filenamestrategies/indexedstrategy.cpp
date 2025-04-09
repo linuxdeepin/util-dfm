@@ -250,7 +250,7 @@ FileNameIndexedStrategy::~FileNameIndexedStrategy() = default;
 
 void FileNameIndexedStrategy::initializeIndexing()
 {
-    m_indexDir = SearchUtility::anythingIndexDirectory();
+    m_indexDir = Global::anythingIndexDirectory();
     if (!QFileInfo::exists(m_indexDir)) {
         qWarning() << "Index directory does not exist:" << m_indexDir;
     }

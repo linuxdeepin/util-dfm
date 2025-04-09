@@ -17,6 +17,38 @@ Q_NAMESPACE
 
 namespace Global {
 inline constexpr int kMinContentSearchKeywordLength = 2;
+
+/**
+ * @brief Check if the given file extension is supported for full-text search.
+ * @param suffix The file extension to check.
+ * @return True if the extension is supported, false otherwise.
+ */
+bool isSupportedFullTextSearchExtension(const QString &suffix);
+
+/**
+ * @brief Get a list of default file extensions that are supported for full-text search.
+ * @return A QStringList containing the supported file extensions.
+ */
+QStringList defaultFullTextSearchExtensions();
+
+/**
+ * @brief Get the default directory path for indexed files.
+ * @return A QString representing the path to the default indexed directory.
+ */
+QString defaultIndexedDirectory();
+
+/**
+ * @brief Get the content index directory path
+ * @return The path to the content index directory
+ */
+QString contentIndexDirectory();
+
+/**
+ * @brief Get the system index directory path
+ * @return The path to the system index directory
+ */
+QString anythingIndexDirectory();
+
 }   // namespace Global
 
 // Enumeration for different types of search methods
