@@ -55,7 +55,7 @@ Lucene::QueryPtr QueryBuilder::buildTypeQuery(const QStringList &types) const
     return typeQuery;
 }
 
-Lucene::QueryPtr QueryBuilder::buildPinyinQuery(const QStringList &pinyins) const
+Lucene::QueryPtr QueryBuilder::buildPinyinQuery(const QStringList &pinyins, SearchQuery::BooleanOperator op) const
 {
     if (pinyins.isEmpty()) {
         return nullptr;
@@ -65,11 +65,11 @@ Lucene::QueryPtr QueryBuilder::buildPinyinQuery(const QStringList &pinyins) cons
 
     for (const QString &pinyin : pinyins) {
         QString cleanPinyin = pinyin.trimmed().toLower();
-        if (!cleanPinyin.isEmpty()) {
+        if (!cleanPinyin.isEmpty() && SearchUtility::isPurePinyin(cleanPinyin)) {
             QueryPtr termQuery = newLucene<WildcardQuery>(
                     newLucene<Term>(L"pinyin",
                                     StringUtils::toUnicode(QString("*%1*").arg(cleanPinyin).toStdString())));
-            pinyinQuery->add(termQuery, BooleanClause::SHOULD);
+            pinyinQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
         }
     }
 
@@ -298,35 +298,47 @@ void FileNameIndexedStrategy::performIndexSearch(const SearchQuery &query, const
     SearchType searchType = determineSearchType(query, pinyinEnabled, fileTypes);
 
     // 2. 构建查询
-    IndexQuery indexQuery = buildIndexQuery(query, searchType, caseSensitive, fileTypes);
+    IndexQuery indexQuery = buildIndexQuery(query, searchType, caseSensitive, pinyinEnabled, fileTypes);
 
     // 3. 执行查询并处理结果
     executeIndexQuery(indexQuery, searchPath);
 }
 
 FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType(
-        const SearchQuery &query, bool pinyinEnabled, const QStringList &fileTypes) const
+        const SearchQuery &query,
+        bool pinyinEnabled,
+        const QStringList &fileTypes) const
 {
     QString keyword = query.keyword();
+    bool hasKeyword = !keyword.isEmpty();
+    bool hasFileTypes = !fileTypes.isEmpty();
+    bool isBoolean = (query.type() == SearchQuery::Type::Boolean);
+
+    // 检查是否需要组合搜索
+    bool combinedWithTypes = (hasKeyword || isBoolean) && hasFileTypes;
+    bool combinedWithPinyin = isBoolean && pinyinEnabled;
+    if (combinedWithTypes || combinedWithPinyin) {
+        return SearchType::Combined;
+    }
 
     // 空关键词但有文件类型，使用文件类型搜索
-    if (keyword.isEmpty() && !fileTypes.isEmpty()) {
+    if (!hasKeyword && hasFileTypes) {
         return SearchType::FileType;
     }
 
     // 有通配符的搜索
-    if (keyword.contains('*') || keyword.contains('?')) {
+    if (hasKeyword && (keyword.contains('*') || keyword.contains('?'))) {
         return SearchType::Wildcard;
     }
 
     // 布尔查询
-    if (query.type() == SearchQuery::Type::Boolean || keyword.contains(' ')) {
+    if (isBoolean) {
         return SearchType::Boolean;
     }
 
     // 启用拼音搜索
     if (pinyinEnabled) {
-        return SearchType::Pinyin;
+        return SearchType::PinyinOnly;
     }
 
     // 默认简单搜索
@@ -337,12 +349,14 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
         const SearchQuery &query,
         SearchType searchType,
         bool caseSensitive,
+        bool pinyinEnabled,
         const QStringList &fileTypes)
 {
     IndexQuery result;
     result.type = searchType;
     result.caseSensitive = caseSensitive;
     result.fileTypes = fileTypes;
+    result.usePinyin = pinyinEnabled;   // 设置拼音搜索标志
 
     switch (searchType) {
     case SearchType::Simple:
@@ -355,12 +369,16 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
         result.terms = SearchUtility::extractBooleanKeywords(query);
         result.booleanOp = query.type() == SearchQuery::Type::Boolean ? query.booleanOperator() : SearchQuery::BooleanOperator::AND;
         break;
-    case SearchType::Pinyin:
+    case SearchType::PinyinOnly:
         result.terms.append(query.keyword());
-        result.usePinyin = true;
         break;
     case SearchType::FileType:
         result.fileTypes = fileTypes;
+        break;
+    case SearchType::Combined:
+        result.terms = query.type() == SearchQuery::Type::Boolean ? SearchUtility::extractBooleanKeywords(query) : QStringList { query.keyword() };
+        result.booleanOp = query.type() == SearchQuery::Type::Boolean ? query.booleanOperator() : SearchQuery::BooleanOperator::AND;
+        result.combineWithFileType = !fileTypes.isEmpty();
         break;
     }
 
@@ -492,7 +510,6 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
     bool hasValidQuery = false;
 
-    // 根据搜索类型添加相应的查询
     switch (query.type) {
     case SearchType::Simple:
         if (!query.terms.isEmpty()) {
@@ -521,7 +538,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
             }
         }
         break;
-    case SearchType::Pinyin:
+    case SearchType::PinyinOnly:
         if (!query.terms.isEmpty()) {
             QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(query.terms);
             if (pinyinQuery) {
@@ -532,6 +549,40 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         break;
     case SearchType::FileType:
         if (!query.fileTypes.isEmpty()) {
+            QueryPtr typeQuery = m_queryBuilder->buildTypeQuery(query.fileTypes);
+            if (typeQuery) {
+                finalQuery->add(typeQuery, BooleanClause::MUST);
+                hasValidQuery = true;
+            }
+        }
+        break;
+    case SearchType::Combined:
+        if (!query.terms.isEmpty()) {
+            BooleanQueryPtr combinedQuery = newLucene<BooleanQuery>();
+
+            // 构建布尔关键词查询
+            QueryPtr keywordQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive, query.booleanOp);
+            if (keywordQuery) {
+                combinedQuery->add(keywordQuery, BooleanClause::SHOULD);
+                hasValidQuery = true;
+            }
+
+            // 添加拼音查询
+            if (query.usePinyin) {
+                QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(query.terms, query.booleanOp);
+                if (pinyinQuery) {
+                    combinedQuery->add(pinyinQuery, BooleanClause::SHOULD);
+                    hasValidQuery = true;
+                }
+            }
+
+            if (hasValidQuery) {
+                finalQuery->add(combinedQuery, BooleanClause::MUST);
+            }
+        }
+
+        // 构建文件类型查询
+        if (query.combineWithFileType && !query.fileTypes.isEmpty()) {
             QueryPtr typeQuery = m_queryBuilder->buildTypeQuery(query.fileTypes);
             if (typeQuery) {
                 finalQuery->add(typeQuery, BooleanClause::MUST);

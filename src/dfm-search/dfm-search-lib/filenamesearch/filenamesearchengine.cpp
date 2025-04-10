@@ -52,15 +52,17 @@ SearchError FileNameSearchEngine::validateSearchConditions()
         }
     }
 
-    // pinyin
-    if (api.pinyinEnabled() && !SearchUtility::isPurePinyin(m_currentQuery.keyword())) {
-        return SearchError(FileNameSearchErrorCode::InvalidPinyinFormat);
-    }
-
     // 文件名搜索特定验证
-    if (m_currentQuery.type() == SearchQuery::Type::Simple
-        && m_currentQuery.keyword().isEmpty() && fileTypes.isEmpty()) {
-        return SearchError(FileNameSearchErrorCode::KeywordIsEmpty);
+    if (m_currentQuery.type() == SearchQuery::Type::Simple) {
+        // 允许对一个类型进行搜索，获取类型下所有文件
+        if (m_currentQuery.keyword().isEmpty() && fileTypes.isEmpty()) {
+            return SearchError(FileNameSearchErrorCode::KeywordIsEmpty);
+        }
+
+        // pinyin
+        if (api.pinyinEnabled() && !SearchUtility::isPurePinyin(m_currentQuery.keyword())) {
+            return SearchError(FileNameSearchErrorCode::InvalidPinyinFormat);
+        }
     }
 
     return result;

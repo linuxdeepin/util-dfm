@@ -33,8 +33,9 @@ public:
         Simple,   // 简单关键词搜索
         Wildcard,   // 通配符搜索
         Boolean,   // 布尔多关键词搜索
-        Pinyin,   // 拼音搜索
+        PinyinOnly,   // 拼音搜索
         FileType,   // 文件类型搜索
+        Combined   // 组合搜索(关键词+文件类型/拼音)
     };
 
     // 索引查询结构
@@ -46,6 +47,7 @@ public:
         bool caseSensitive = false;
         bool usePinyin = false;
         SearchQuery::BooleanOperator booleanOp = SearchQuery::BooleanOperator::AND;
+        bool combineWithFileType = false;   // 是否与文件类型组合
     };
 
     explicit FileNameIndexedStrategy(const SearchOptions &options, QObject *parent = nullptr);
@@ -62,12 +64,15 @@ private:
     void performIndexSearch(const SearchQuery &query, const FileNameOptionsAPI &api);
 
     // 确定搜索类型
-    SearchType determineSearchType(const SearchQuery &query, bool pinyinEnabled, const QStringList &fileTypes) const;
+    SearchType determineSearchType(const SearchQuery &query,
+                                   bool pinyinEnabled,
+                                   const QStringList &fileTypes) const;
 
     // 构建索引查询
     IndexQuery buildIndexQuery(const SearchQuery &query,
                                SearchType searchType,
                                bool caseSensitive,
+                               bool pinyinEnabled,
                                const QStringList &fileTypes);
 
     // 执行索引查询并处理结果
@@ -101,7 +106,7 @@ public:
 
     // 构建各种类型的查询
     QueryPtr buildTypeQuery(const QStringList &types) const;
-    QueryPtr buildPinyinQuery(const QStringList &pinyins) const;
+    QueryPtr buildPinyinQuery(const QStringList &pinyins, SearchQuery::BooleanOperator op = SearchQuery::BooleanOperator::AND) const;
     QueryPtr buildFuzzyQuery(const QString &keyword, bool caseSensitive) const;
     QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op) const;
     QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive) const;

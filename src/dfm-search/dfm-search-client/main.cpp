@@ -40,6 +40,11 @@ using namespace dfmsearch;
 // # 布尔查询
 // dfm6-search-client --query=boolean "meeting,notes,2023" /home/user/Documents
 
+// # Combined
+// dfm6-search-client --file-types="dir,doc" --query=boolean "dde,file" /
+// dfm6-search-client --pinyin --query=boolean "wendang,xinjian" /
+// dfm6-search-client --pinyin --file-types="doc,pic" --query=boolean "wen,dang" /
+
 void printUsage()
 {
     std::cout << "Usage: dfm6-search-client [options] <keyword> <search_path>" << std::endl;
