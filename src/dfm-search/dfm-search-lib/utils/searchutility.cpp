@@ -150,7 +150,7 @@ QStringList extractBooleanKeywords(const SearchQuery &query)
 
 QStringList deepinAnythingFileTypes()
 {
-    static const QStringList kTypes { "app", "archive", "audio", "doc", "pic", "video", "dir" };
+    static const QStringList kTypes { "app", "archive", "audio", "doc", "pic", "video", "dir", "other" };
     return kTypes;
 }
 
