@@ -33,13 +33,6 @@ QStringList extractBooleanKeywords(const SearchQuery &query);
  */
 QStringList deepinAnythingFileTypes();
 
-/**
- * @brief Check if a string contains only pinyin characters
- * @param str The string to check
- * @return true if the string contains only pinyin, false otherwise
- */
-bool isPurePinyin(const QString &str);
-
 }   // namespace SearchUtility
 DFM_SEARCH_END_NS
 
