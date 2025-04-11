@@ -18,9 +18,33 @@
 DFM_SEARCH_BEGIN_NS
 using namespace Lucene;
 
-// TODO (search): use dconfig
 namespace Global {
 
+// 辅助递归函数，尝试所有可能的分割方法
+static bool isPinyinSequenceHelper(const QString &str, int startPos, const QSet<QString> &validSyllables)
+{
+    int len = str.length();
+
+    // 如果已经处理到字符串末尾，则匹配成功
+    if (startPos >= len)
+        return true;
+
+    // 尝试从长到短匹配音节
+    for (int syllableLen = qMin(6, len - startPos); syllableLen >= 1; syllableLen--) {
+        QString syllable = str.mid(startPos, syllableLen);
+
+        if (validSyllables.contains(syllable)) {
+            // 当前音节匹配成功，递归处理剩余部分
+            if (isPinyinSequenceHelper(str, startPos + syllableLen, validSyllables))
+                return true;
+        }
+    }
+
+    // 所有可能的分割方式都尝试失败
+    return false;
+}
+
+// TODO (search): use dconfig
 static const QSet<QString> &supportedExtensions()
 {
     static const QSet<QString> kExtensions = {
@@ -33,6 +57,91 @@ static const QSet<QString> &supportedExtensions()
         "uof", "ofd"
     };
     return kExtensions;
+}
+
+bool isPinyinSequence(const QString &input)
+{
+    if (input.isEmpty())
+        return false;
+
+    // 合法的拼音音节表（预先定义所有可能的拼音音节组合）
+    static const QSet<QString> validSyllables = {
+        // 单韵母音节 - 只有 a, o, e 可以单独成音节
+        "a", "o", "e", "ai", "ei", "ao", "ou", "an", "en", "ang", "eng", "er",
+        // b开头音节
+        "ba", "bo", "bi", "bu", "bai", "bei", "bao", "ban", "ben", "bin", "bie", "biao", "bian", "bing", "bang", "beng",
+        // p开头音节
+        "pa", "po", "pi", "pu", "pai", "pei", "pao", "pan", "pen", "pin", "pie", "piao", "pian", "ping", "pang", "peng",
+        // m开头音节
+        "ma", "mo", "me", "mi", "mu", "mai", "mei", "mao", "mou", "man", "men", "min", "mie", "miao", "miu", "mian", "min", "ming", "mang", "meng",
+        // f开头音节
+        "fa", "fo", "fu", "fei", "fan", "fen", "fang", "feng",
+        // d开头音节
+        "da", "de", "di", "du", "dai", "dao", "dou", "dan", "den", "dang", "deng", "ding", "dong", "die", "diao", "diu", "dian", "duan", "dun", "duo",
+        // t开头音节
+        "ta", "te", "ti", "tu", "tai", "tao", "tou", "tan", "tang", "teng", "ting", "tong", "tie", "tiao", "tian", "tuan", "tun", "tuo",
+        // n开头音节
+        "na", "ne", "ni", "nu", "nv", "nai", "nei", "nao", "nou", "nan", "nen", "nang", "neng", "ning", "nong", "nie", "niao", "niu", "nian", "niang", "nuan", "nve", "nuo", "nun",
+        // l开头音节
+        "la", "le", "li", "lu", "lv", "lai", "lei", "lao", "lou", "lan", "lang", "leng", "ling", "long", "lie", "liao", "liu", "lian", "liang", "luan", "lun", "luo", "lve",
+        // g开头音节
+        "ga", "ge", "gu", "gai", "gei", "gao", "gou", "gan", "gen", "gang", "geng", "gong", "gua", "guo", "guai", "gui", "guan", "gun", "guang",
+        // k开头音节
+        "ka", "ke", "ku", "kai", "kao", "kou", "kan", "ken", "kang", "keng", "kong", "kua", "kuo", "kuai", "kui", "kuan", "kun", "kuang",
+        // h开头音节
+        "ha", "he", "hu", "hai", "hei", "hao", "hou", "han", "hen", "hang", "heng", "hong", "hua", "huo", "huai", "hui", "huan", "hun", "huang",
+        // j开头音节
+        "ji", "ju", "jue", "jiu", "jie", "jia", "jin", "jing", "jiang", "jiong", "juan", "jun", "jian", "jiao",
+        // q开头音节
+        "qi", "qu", "que", "qiu", "qie", "qia", "qin", "qing", "qiang", "qiong", "quan", "qun", "qian", "qiao",
+        // x开头音节
+        "xi", "xu", "xue", "xiu", "xie", "xia", "xin", "xing", "xiang", "xiong", "xuan", "xun", "xian", "xiao",
+        // zh开头音节
+        "zha", "zhe", "zhi", "zhu", "zhai", "zhao", "zhou", "zhan", "zhen", "zhang", "zheng", "zhong", "zhua", "zhuo", "zhuai", "zhui", "zhuan", "zhun", "zhuang",
+        // ch开头音节
+        "cha", "che", "chi", "chu", "chai", "chao", "chou", "chan", "chen", "chang", "cheng", "chong", "chua", "chuo", "chuai", "chui", "chuan", "chun", "chuang",
+        // sh开头音节
+        "sha", "she", "shi", "shu", "shai", "shao", "shou", "shan", "shen", "shang", "sheng", "shua", "shuo", "shuai", "shui", "shuan", "shun", "shuang",
+        // r开头音节
+        "ra", "re", "ri", "ru", "rao", "rou", "ran", "ren", "rang", "reng", "rong", "rua", "ruo", "rui", "ruan", "run",
+        // z开头音节
+        "za", "ze", "zi", "zu", "zai", "zei", "zao", "zou", "zan", "zen", "zang", "zeng", "zong", "zuo", "zui", "zuan", "zun",
+        // c开头音节
+        "ca", "ce", "ci", "cu", "cai", "cao", "cou", "can", "cen", "cang", "ceng", "cong", "cuo", "cui", "cuan", "cun",
+        // s开头音节
+        "sa", "se", "si", "su", "sai", "sao", "sou", "san", "sen", "sang", "seng", "song", "suo", "sui", "suan", "sun",
+        // y开头音节 - 注意yi/you/yao等整体认读音节
+        "ya", "ye", "yi", "yo", "yu", "yue", "yao", "you", "yan", "yin", "yang", "ying", "yong", "yuan", "yun",
+        // w开头音节 - 注意wu/wei等整体认读音节
+        "wa", "wo", "wu", "wai", "wei", "wan", "wen", "wang", "weng"
+    };
+
+    // 特殊处理规则：单个字母'i', 'u', 'v', 'ü'不能单独成音节
+    if (input.length() == 1) {
+        QChar ch = input.toLower()[0];
+        if (ch == 'i' || ch == 'u' || ch == 'v' || ch == QChar(0x00FC)) // 0x00FC是ü的Unicode编码
+            return false;
+    }
+    
+    // 特殊处理规则：检查重复字母如'vvv'
+    if (input.length() >= 3) {
+        bool allSame = true;
+        QChar firstChar = input.toLower()[0];
+        for (int i = 1; i < input.length(); i++) {
+            if (input.toLower()[i] != firstChar) {
+                allSame = false;
+                break;
+            }
+        }
+        if (allSame)
+            return false;
+    }
+
+    QString str = input.toLower();
+    str.replace("ü", "v"); // 统一处理 ü
+
+    // 尝试所有可能的分割方式
+    return isPinyinSequenceHelper(str, 0, validSyllables);
 }
 
 bool isSupportedContentSearchExtension(const QString &suffix)
@@ -152,12 +261,6 @@ QStringList deepinAnythingFileTypes()
 {
     static const QStringList kTypes { "app", "archive", "audio", "doc", "pic", "video", "dir", "other" };
     return kTypes;
-}
-
-bool isPurePinyin(const QString &str)
-{
-    static QRegularExpression regex(R"(^[a-zA-Z]+$)");
-    return regex.match(str).hasMatch();
 }
 
 }   // namespace SearchUtility

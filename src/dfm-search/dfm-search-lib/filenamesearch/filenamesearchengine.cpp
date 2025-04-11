@@ -60,8 +60,8 @@ SearchError FileNameSearchEngine::validateSearchConditions()
         }
 
         // pinyin
-        if (api.pinyinEnabled() && !SearchUtility::isPurePinyin(m_currentQuery.keyword())) {
-            return SearchError(FileNameSearchErrorCode::InvalidPinyinFormat);
+        if (api.pinyinEnabled() && !Global::isPinyinSequence(m_currentQuery.keyword())) {
+            qWarning() << SearchError(FileNameSearchErrorCode::InvalidPinyinFormat).message() << "key: " << m_currentQuery.keyword();
         }
     }
 

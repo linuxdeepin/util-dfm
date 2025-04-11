@@ -65,7 +65,7 @@ Lucene::QueryPtr QueryBuilder::buildPinyinQuery(const QStringList &pinyins, Sear
 
     for (const QString &pinyin : pinyins) {
         QString cleanPinyin = pinyin.trimmed().toLower();
-        if (!cleanPinyin.isEmpty() && SearchUtility::isPurePinyin(cleanPinyin)) {
+        if (!cleanPinyin.isEmpty() && Global::isPinyinSequence(cleanPinyin)) {
             QueryPtr termQuery = newLucene<WildcardQuery>(
                     newLucene<Term>(L"pinyin",
                                     StringUtils::toUnicode(QString("*%1*").arg(cleanPinyin).toStdString())));
@@ -338,7 +338,7 @@ FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType
 
     // 启用拼音搜索
     if (pinyinEnabled) {
-        return SearchType::PinyinOnly;
+        return SearchType::Pinyin;
     }
 
     // 默认简单搜索
@@ -369,7 +369,7 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
         result.terms = SearchUtility::extractBooleanKeywords(query);
         result.booleanOp = query.type() == SearchQuery::Type::Boolean ? query.booleanOperator() : SearchQuery::BooleanOperator::AND;
         break;
-    case SearchType::PinyinOnly:
+    case SearchType::Pinyin:
         result.terms.append(query.keyword());
         break;
     case SearchType::FileType:
@@ -538,12 +538,28 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
             }
         }
         break;
-    case SearchType::PinyinOnly:
+    case SearchType::Pinyin:
         if (!query.terms.isEmpty()) {
-            QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(query.terms);
-            if (pinyinQuery) {
-                finalQuery->add(pinyinQuery, BooleanClause::MUST);
+            BooleanQueryPtr combinedQuery = newLucene<BooleanQuery>();
+
+            // 添加拼音查询
+            if (Global::isPinyinSequence(query.terms.first())) {
+                QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(query.terms);
+                if (pinyinQuery) {
+                    combinedQuery->add(pinyinQuery, BooleanClause::SHOULD);
+                    hasValidQuery = true;
+                }
+            }
+
+            // 添加普通关键词查询
+            QueryPtr simpleQuery = m_queryBuilder->buildSimpleQuery(query.terms.first(), query.caseSensitive);
+            if (simpleQuery) {
+                combinedQuery->add(simpleQuery, BooleanClause::SHOULD);
                 hasValidQuery = true;
+            }
+
+            if (hasValidQuery) {
+                finalQuery->add(combinedQuery, BooleanClause::MUST);
             }
         }
         break;

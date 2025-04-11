@@ -124,11 +124,155 @@ void testGlobal()
     std::cout << "================= test global end =================" << std::endl;
 }
 
+void doTestPinyin(const std::string &caseName, const QString &input, bool expected)
+{
+    bool actual = Global::isPinyinSequence(input);
+    std::cout << "测试用例 [" << caseName << "]\t"
+              << "输入值: " << input.toStdString() << "\t"
+              << "预期结果: " << (expected ? "有效" : "无效") << "\t"
+              << "实际结果: " << (actual ? "有效" : "无效") << "\t"
+              << "状态: " << (actual == expected ? "通过" : "失败") << "\n"
+              << "---------------------------------\n";
+}
+
+void testPinyin()
+{
+    // 有效拼音测试集
+    std::vector<std::pair<QString, bool>> validCases = {
+        // 单韵母
+        { "a", true },   // 单韵母
+        { "o", true },   // 单韵母
+        { "e", true },   // 单韵母
+        { "O", true },   // 大写单韵母
+
+        // 声母+韵母
+        { "ba", true },   // 普通音节
+        { "po", true },   // 普通音节
+        { "mi", true },   // 普通音节
+
+        // 特殊音节
+        { "zhi", true },   // 整体认读音节
+        { "chi", true },   // 整体认读音节
+        { "shi", true },   // 整体认读音节
+
+        // 复韵母
+        { "ai", true },   // 复韵母
+        { "er", true },   // 儿化音
+        { "ang", true },   // 复韵母
+
+        // ü相关
+        { "lv", true },   // ü的v替代写法
+        { "nü", true },   // ü的unicode写法
+        { "lüe", true },   // ü开头的复韵母
+
+        // 多音节
+        { "nihao", true },   // 常见词
+        { "pinyin", true },   // 常见词
+        { "zhongwen", true },   // 常见词
+        { "shuang", true },   // 双声母+复韵母
+        { "xian", true },   // 特殊声母规则
+        { "quan", true },   // 特殊声母规则
+        { "jiang", true },   // 特殊声母规则
+
+        // 大小写混合
+        { "ZhongGuo", true },   // 大小写混合
+        { "XIONG", true },   // 全大写
+        { "PinYin", true },   // 大小写混合
+
+        { "make", true },
+        { "xinjian", true },
+        { "zhangsheng", true },
+        { "wendan", true },
+        { "wendang", true },
+        { "xiaa", true },
+        { "chaojichangdeyijuhua", true },
+        { "chengong", true },
+        { "shibai", true },
+        { "case", true },
+        { "sougou", true },
+        { "sousuo", true },
+        { "jieshi", true },
+        { "zongjie", true },
+        { "jiu", true },
+        { "chengdu", true },
+        { "beijing", true },
+        { "xian", true },
+        { "chongqing", true },
+        { "chongqin", true },
+        { "chenqin", true },
+        { "shanghai", true },
+    };
+
+    // 无效拼音测试集
+    std::vector<std::pair<QString, bool>> invalidCases = {
+        // 基本无效情况
+        { "", false },   // 空字符串
+        { "vvv", false },   // 重复字母
+        { "kkkk", false },   // 重复声母
+        { "i", false },   // i不能单独成音节
+        { "u", false },   // u不能单独成音节
+
+        // 非法拼音组合
+        { "xqiong", false },   // 非法声母组合
+        { "jin'an", false },   // 包含特殊字符
+        { "ni hao", false },   // 包含空格
+
+        // 英文单词
+        { "hello", false },   // 英文单词
+        { "world", false },   // 英文单词
+        { "cmake", false },   // 英文单词
+
+        // 数字和特殊字符
+        { "ni3hao", false },   // 包含数字
+        { "zh@ng", false },   // 包含特殊字符
+        { "pin-yin", false },   // 包含连字符
+
+        // 不完整或错误的拼音
+        { "zh", false },   // 只有声母
+        { "zho", false },   // 非法组合
+        { "jx", false },   // 非法组合
+
+        // 特殊规则测试
+        { "yi", true },   // 整体认读音节
+        { "wu", true },   // 整体认读音节
+        { "yu", true },   // 整体认读音节
+        { "yue", true },   // 特殊组合
+        { "yuan", true },   // 特殊组合
+
+        // 边界情况
+        { "v", false },   // 单个v
+        { "ü", false },   // 单个ü
+        { "ng", false },   // 非法音节
+        { "gn", false },   // 非法音节
+
+        { "123", false },
+        { "ni*hao", false },
+        { "z", false },
+        { "zh", false },
+        { "p", false },
+        { "m", false },
+        { "b", false },
+        { "jiv", false },
+
+    };
+
+    std::cout << "====== 开始拼音有效性测试 ======\n";
+    for (const auto &[input, expected] : validCases) {
+        doTestPinyin("有效拼音验证", input, expected);
+    }
+
+    std::cout << "====== 开始拼音无效性测试 ======\n";
+    for (const auto &[input, expected] : invalidCases) {
+        doTestPinyin("无效拼音检测", input, expected);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
     testGlobal();
+    testPinyin();
 
     QCommandLineParser parser;
     parser.setApplicationDescription("DFM Search Client");

@@ -19,6 +19,13 @@ namespace Global {
 inline constexpr int kMinContentSearchKeywordLength = 2;
 
 /**
+ * @brief Check if a string contains only pinyin characters
+ * @param input The string to check
+ * @return true if the string contains only pinyin, false otherwise
+ */
+bool isPinyinSequence(const QString &input);
+
+/**
  * @brief Check if the given file extension is supported for full-text search.
  * This function checks if the specified file extension is included in the list of supported extensions
  * for performing full-text searches within the application.

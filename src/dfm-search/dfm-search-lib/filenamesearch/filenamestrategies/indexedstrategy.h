@@ -33,7 +33,7 @@ public:
         Simple,   // 简单关键词搜索
         Wildcard,   // 通配符搜索
         Boolean,   // 布尔多关键词搜索
-        PinyinOnly,   // 拼音搜索
+        Pinyin,   // 拼音搜索
         FileType,   // 文件类型搜索
         Combined   // 组合搜索(关键词+文件类型/拼音)
     };
