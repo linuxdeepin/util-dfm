@@ -129,6 +129,13 @@ SearchResultList ContentIndexedStrategy::processSearchResults(const Lucene::Inde
             if (!path.startsWith(searchPath)) {
                 continue;
             }
+
+#ifdef DFM_SEARCH_INDEXED_HIDDEN_ENABLE
+            if (Q_LIKELY(!m_options.includeHidden()) && SearchUtility::isHiddenPathOrInHiddenDir(path)) {
+                continue;
+            }
+#endif
+
             // 创建搜索结果
             SearchResult result(path);
 

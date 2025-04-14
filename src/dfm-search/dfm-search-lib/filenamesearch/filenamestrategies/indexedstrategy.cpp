@@ -466,6 +466,12 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
                 continue;
             }
 
+#ifdef DFM_SEARCH_INDEXED_HIDDEN_ENABLE
+            if (Q_LIKELY(!m_options.includeHidden()) && SearchUtility::isHiddenPathOrInHiddenDir(path)) {
+                continue;
+            }
+#endif
+
             // 处理搜索结果
             if (Q_UNLIKELY(m_options.resultFoundEnabled())) {
                 QString type = QString::fromStdWString(doc->get(L"file_type"));

@@ -33,6 +33,17 @@ QStringList extractBooleanKeywords(const SearchQuery &query);
  */
 QStringList deepinAnythingFileTypes();
 
+/**
+ * Determines if the given absolute path represents a hidden file/directory
+ * or is contained within a hidden directory.
+ *
+ * A path is considered hidden if any component (except root) starts with '.'
+ * and is not the special "." (current) or ".." (parent) directory.
+ *
+ * @param absolutePath The absolute filesystem path to check (must be normalized)
+ * @return true if the path is hidden or inside hidden directories, false otherwise
+ */
+bool isHiddenPathOrInHiddenDir(const QString &absolutePath);
 }   // namespace SearchUtility
 DFM_SEARCH_END_NS
 
