@@ -119,10 +119,10 @@ bool isPinyinSequence(const QString &input)
     // 特殊处理规则：单个字母'i', 'u', 'v', 'ü'不能单独成音节
     if (input.length() == 1) {
         QChar ch = input.toLower()[0];
-        if (ch == 'i' || ch == 'u' || ch == 'v' || ch == QChar(0x00FC)) // 0x00FC是ü的Unicode编码
+        if (ch == 'i' || ch == 'u' || ch == 'v' || ch == QChar(0x00FC))   // 0x00FC是ü的Unicode编码
             return false;
     }
-    
+
     // 特殊处理规则：检查重复字母如'vvv'
     if (input.length() >= 3) {
         bool allSame = true;
@@ -138,7 +138,7 @@ bool isPinyinSequence(const QString &input)
     }
 
     QString str = input.toLower();
-    str.replace("ü", "v"); // 统一处理 ü
+    str.replace("ü", "v");   // 统一处理 ü
 
     // 尝试所有可能的分割方式
     return isPinyinSequenceHelper(str, 0, validSyllables);
@@ -261,6 +261,38 @@ QStringList deepinAnythingFileTypes()
 {
     static const QStringList kTypes { "app", "archive", "audio", "doc", "pic", "video", "dir", "other" };
     return kTypes;
+}
+
+bool isHiddenPathOrInHiddenDir(const QString &absolutePath)
+{
+    int start = 0;
+    int len = absolutePath.length();
+
+    // 跳过根目录标记（如果是绝对路径）
+    if (len > 0 && absolutePath[0] == '/') {
+        start = 1;
+    }
+
+    for (int i = start; i < len; ++i) {
+        // 找到路径分隔符或到达字符串末尾
+        if (absolutePath[i] == '/' || i == len - 1) {
+            // 计算当前目录/文件名的起始位置
+            int nameStart = (start == i) ? start : start + 1;
+
+            // 如果目录/文件名以.开头且不是"."或".."
+            if (nameStart < i && absolutePath[nameStart] == '.') {
+                // 排除 "." 和 ".." 这两个特殊目录
+                if (!(i - nameStart == 1 || (i - nameStart == 2 && absolutePath[nameStart + 1] == '.'))) {
+                    return true;
+                }
+            }
+
+            // 更新下一段的起始位置
+            start = i;
+        }
+    }
+
+    return false;
 }
 
 }   // namespace SearchUtility

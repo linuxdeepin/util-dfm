@@ -12,7 +12,7 @@ DFM_SEARCH_BEGIN_NS
 
 /**
  * @brief The FileNameOptionsAPI class provides file name search specific options
- * 
+ *
  * This class extends the base SearchOptions with file name search specific settings,
  * such as pinyin search and file type filtering.
  */
@@ -40,7 +40,7 @@ public:
     /**
      * @brief Set file type filters
      * @param types List of file types to include in search
-     * 
+     *
      * Supported file types:
      * - app: Application files
      * - archive: Archive files
@@ -48,6 +48,8 @@ public:
      * - doc: Document files
      * - pic: Picture files
      * - video: Video files
+     * - dir: folder
+     * - other: other files
      */
     void setFileTypes(const QStringList &types);
 
@@ -63,7 +65,7 @@ private:
 
 /**
  * @brief The FileNameResultAPI class provides file name search specific result handling
- * 
+ *
  * This class extends the base SearchResult with file name search specific features,
  * such as file size, modification time, and file type information.
  */
