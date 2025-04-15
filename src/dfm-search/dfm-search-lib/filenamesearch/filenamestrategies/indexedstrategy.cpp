@@ -239,7 +239,7 @@ SearcherPtr IndexManager::getSearcher(IndexReaderPtr reader) const
 //--------------------------------------------------------------------
 
 FileNameIndexedStrategy::FileNameIndexedStrategy(const SearchOptions &options, QObject *parent)
-    : FileNameBaseStrategy(options, parent), m_searchCancelled(false), m_count(0), m_total(0)
+    : FileNameBaseStrategy(options, parent), m_searchCancelled(false)
 {
     m_queryBuilder = std::make_unique<QueryBuilder>();
     m_indexManager = std::make_unique<IndexManager>();
@@ -260,8 +260,6 @@ void FileNameIndexedStrategy::search(const SearchQuery &query)
 {
     m_searchCancelled = false;
     m_results.clear();
-    m_count = 0;
-    m_total = 0;
 
     if (!QFileInfo::exists(m_indexDir)) {
         emit errorOccurred(SearchError(SearchErrorCode::InternalError));
@@ -437,7 +435,6 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     try {
         int32_t maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : reader->numDocs();
         searchResults = searcher->search(luceneQuery, maxResults);
-        m_total = searchResults->totalHits;
     } catch (const LuceneException &e) {
         qWarning() << "Search execution error:" << QString::fromStdWString(e.getError());
         emit errorOccurred(SearchError(SearchErrorCode::InternalError));
@@ -483,8 +480,6 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
                 SearchResult result(path);
                 m_results.append(result);
             }
-
-            m_count++;
 
         } catch (const LuceneException &e) {
             qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());

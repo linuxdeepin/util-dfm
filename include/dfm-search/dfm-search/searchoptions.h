@@ -54,9 +54,9 @@ public:
 
     /**
      * @brief Set the search method
-     * Indexed search is suitable for directories with established indexes, 
+     * Indexed search is suitable for directories with established indexes,
      * it is fast but may not provide the latest results.
-     * Real-time search directly scans the file system, 
+     * Real-time search directly scans the file system,
      * the results are the latest but may be slower.
      */
     void setSearchMethod(SearchMethod method);
@@ -116,7 +116,24 @@ public:
      */
     bool hasCustomOption(const QString &key) const;
 
+    /**
+     * @brief Enables or disables detailed per-file search result notifications.
+     *
+     * When enabled, the signal @c resultFound will be emitted for each matching file,
+     * providing more detailed search results. Note that this may cause significant
+     * performance overhead, especially in index-based search modes where it is
+     * NOT RECOMMENDED.
+     *
+     * @param enable Set @c true to enable per-file notifications, @c false to disable.
+     */
     void enableResultFound(bool enable);
+
+    /**
+     * @brief Returns whether per-file result notifications are enabled.
+     *
+     * @return @c true if detailed per-file results are being emitted (with performance
+     * overhead), @c false otherwise.
+     */
     bool resultFoundEnabled() const;
 
 private:

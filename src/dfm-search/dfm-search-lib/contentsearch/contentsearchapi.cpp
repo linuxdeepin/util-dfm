@@ -10,16 +10,6 @@ ContentOptionsAPI::ContentOptionsAPI(SearchOptions &options)
 {
 }
 
-void ContentOptionsAPI::setFileTypeFilters(const QStringList &extensions)
-{
-    m_options.setCustomOption("fileTypeFilters", extensions);
-}
-
-QStringList ContentOptionsAPI::fileTypeFilters() const
-{
-    return m_options.customOption("fileTypeFilters").toStringList();
-}
-
 void ContentOptionsAPI::setMaxPreviewLength(int length)
 {
     m_options.setCustomOption("maxPreviewLength", length);
@@ -28,6 +18,16 @@ void ContentOptionsAPI::setMaxPreviewLength(int length)
 int ContentOptionsAPI::maxPreviewLength() const
 {
     return m_options.customOption("maxPreviewLength").toInt();
+}
+
+void ContentOptionsAPI::setSearchResultHighlightEnabled(bool enable)
+{
+    m_options.setCustomOption("searchResultHighligh", enable);
+}
+
+bool ContentOptionsAPI::isSearchResultHighlightEnabled() const
+{
+    return m_options.customOption("searchResultHighligh").toBool();
 }
 
 ContentResultAPI::ContentResultAPI(SearchResult &result)

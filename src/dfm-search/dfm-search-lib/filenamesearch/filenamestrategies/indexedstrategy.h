@@ -87,8 +87,6 @@ private:
     // 成员变量
     QString m_indexDir;   // 索引目录路径
     mutable bool m_searchCancelled;   // 搜索取消标志
-    int m_count;   // 当前找到的结果数
-    int m_total;   // 预计的总结果数
 
     // Lucene 相关组件
     std::unique_ptr<QueryBuilder> m_queryBuilder;   // 查询构建器
