@@ -76,7 +76,7 @@ private:
                                const QStringList &fileTypes);
 
     // 执行索引查询并处理结果
-    void executeIndexQuery(const IndexQuery &query, const QString &searchPath);
+    void executeIndexQuery(const IndexQuery &query, const QString &searchPath, const QStringList &searchExcludedPaths);
 
     // 构建 Lucene 查询
     QueryPtr buildLuceneQuery(const IndexQuery &query) const;

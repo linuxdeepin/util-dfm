@@ -101,6 +101,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     resultTimer.start();
 
     QString searchPath = m_options.searchPath();
+    const QStringList &searchExcludedPaths = m_options.searchExcludedPaths();
     auto docsSize = scoreDocs.size();
 
     ContentOptionsAPI optAPI(m_options);
@@ -119,6 +120,11 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             QString path = QString::fromStdWString(doc->get(L"path"));
 
             if (!path.startsWith(searchPath)) {
+                continue;
+            }
+
+            if (std::any_of(searchExcludedPaths.cbegin(), searchExcludedPaths.cend(),
+                            [&path](const auto &excluded) { return path.startsWith(excluded); })) {
                 continue;
             }
 

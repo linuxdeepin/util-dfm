@@ -20,17 +20,6 @@ SearchOptionsData::SearchOptionsData()
 {
 }
 
-SearchOptionsData::SearchOptionsData(const SearchOptionsData &other)
-    : method(other.method),
-      caseSensitive(other.caseSensitive),
-      searchPath(other.searchPath),
-      includeHidden(other.includeHidden),
-      maxResults(other.maxResults),
-      customOptions(other.customOptions),
-      enableResultFound(other.enableResultFound)
-{
-}
-
 /////////////
 
 SearchOptions::SearchOptions()
@@ -94,6 +83,16 @@ QString SearchOptions::searchPath() const
 void SearchOptions::setSearchPath(const QString &path)
 {
     d->searchPath = path;
+}
+
+QStringList SearchOptions::searchExcludedPaths() const
+{
+    return d->searchExcludedPaths;
+}
+
+void SearchOptions::setSearchExcludedPaths(const QStringList &excludedPaths)
+{
+    d->searchExcludedPaths = excludedPaths;
 }
 
 void SearchOptions::setIncludeHidden(bool include)

@@ -82,6 +82,25 @@ public:
     void setSearchPath(const QString &path);
 
     /**
+     * @brief Returns the current list of excluded search paths.
+     *
+     * @return A list of absolute directory paths that are excluded from searches.
+     *         Returns an empty list if no exclusions are set.
+     */
+    QStringList searchExcludedPaths() const;
+
+    /**
+     * @brief Sets the list of excluded paths for search operations.
+     *
+     * When a path is in this list, it and its contents will be skipped during searches.
+     * Paths should be absolute and normalized (use QDir::cleanPath for consistency).
+     *
+     * @param excludedPaths A list of directory paths to exclude from searches.
+     *                      Empty list means no exclusions.
+     */
+    void setSearchExcludedPaths(const QStringList &excludedPaths);
+
+    /**
      * @brief Set whether to include hidden files
      */
     void setIncludeHidden(bool include);

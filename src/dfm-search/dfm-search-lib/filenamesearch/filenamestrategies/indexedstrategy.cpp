@@ -287,7 +287,8 @@ void FileNameIndexedStrategy::search(const SearchQuery &query)
 void FileNameIndexedStrategy::performIndexSearch(const SearchQuery &query, const FileNameOptionsAPI &api)
 {
     bool caseSensitive = m_options.caseSensitive();
-    QString searchPath = m_options.searchPath();
+    const QString &searchPath = m_options.searchPath();
+    const QStringList &searchExcludedPaths = m_options.searchExcludedPaths();
 
     QStringList fileTypes = api.fileTypes();
     bool pinyinEnabled = api.pinyinEnabled();
@@ -299,7 +300,7 @@ void FileNameIndexedStrategy::performIndexSearch(const SearchQuery &query, const
     IndexQuery indexQuery = buildIndexQuery(query, searchType, caseSensitive, pinyinEnabled, fileTypes);
 
     // 3. 执行查询并处理结果
-    executeIndexQuery(indexQuery, searchPath);
+    executeIndexQuery(indexQuery, searchPath, searchExcludedPaths);
 }
 
 FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType(
@@ -383,7 +384,7 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
     return result;
 }
 
-void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const QString &searchPath)
+void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const QString &searchPath, const QStringList &searchExcludedPaths)
 {
     // 获取索引目录
     FSDirectoryPtr directory = m_indexManager->getIndexDirectory(m_indexDir);
@@ -460,6 +461,11 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
             QString path = QString::fromStdWString(doc->get(L"full_path"));
 
             if (!path.startsWith(searchPath)) {
+                continue;
+            }
+
+            if (std::any_of(searchExcludedPaths.cbegin(), searchExcludedPaths.cend(),
+                            [&path](const auto &excluded) { return path.startsWith(excluded); })) {
                 continue;
             }
 
