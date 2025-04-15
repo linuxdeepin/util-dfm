@@ -9,9 +9,12 @@ ContentOptionsAPI::ContentOptionsAPI(SearchOptions &options)
     : m_options(options)
 {
     // init default
-    setMaxPreviewLength(50);
-    setSearchResultHighlightEnabled(false);
-    setFullTextRetrievalEnabled(true);
+    if (!m_options.hasCustomOption("maxPreviewLength"))
+        setMaxPreviewLength(50);
+    if (!m_options.hasCustomOption("searchResultHighligh"))
+        setSearchResultHighlightEnabled(false);
+    if (!m_options.hasCustomOption("fullTextRetrieval"))
+        setFullTextRetrievalEnabled(true);
 }
 
 void ContentOptionsAPI::setMaxPreviewLength(int length)

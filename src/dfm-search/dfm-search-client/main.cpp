@@ -391,7 +391,9 @@ int main(int argc, char *argv[])
         //     QStringList extensions = parser.value(fileTypesOption).split(',', Qt::SkipEmptyParts);
         //     contentOptions.setFileTypeFilters(extensions);
         // }
-
+        contentOptions.setMaxPreviewLength(51);
+        contentOptions.setFullTextRetrievalEnabled(true);
+        contentOptions.setSearchResultHighlightEnabled(true);
         if (parser.isSet(maxPreviewOption)) {
             bool ok;
             int previewLength = parser.value(maxPreviewOption).toInt(&ok);

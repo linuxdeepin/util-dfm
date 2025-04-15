@@ -47,6 +47,7 @@ private:
 
     QString m_indexDir;
     Lucene::QueryPtr m_currentQuery;   // 存储当前查询
+    QStringList m_keywords;
 };
 
 DFM_SEARCH_END_NS
