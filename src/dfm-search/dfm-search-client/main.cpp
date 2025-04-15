@@ -365,6 +365,8 @@ int main(int argc, char *argv[])
     options.setCaseSensitive(parser.isSet(caseSensitiveOption));
     options.setIncludeHidden(parser.isSet(includeHiddenOption));
     options.setSearchPath(searchPath);
+    if (searchMethod == SearchMethod::Realtime)
+        options.setResultFoundEnabled(true);
 
     // Set max results if specified
     if (parser.isSet(maxResultsOption)) {

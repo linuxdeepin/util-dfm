@@ -33,7 +33,7 @@ public:
     bool includeHidden;   ///< Whether to include hidden files
     int maxResults;   ///< Maximum number of results to return
     QVariantHash customOptions;   ///< Custom search options
-    bool enableResultFound;   ///< Whether to enable result found notifications
+    bool resultFoundEnabled;   ///< Whether to enable result found notifications
 };
 
 DFM_SEARCH_END_NS

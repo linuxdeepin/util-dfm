@@ -16,7 +16,7 @@ SearchOptionsData::SearchOptionsData()
       searchPath(QDir::homePath()),
       includeHidden(false),
       maxResults(-1),
-      enableResultFound(false)
+      resultFoundEnabled(false)
 {
 }
 
@@ -130,14 +130,14 @@ bool SearchOptions::hasCustomOption(const QString &key) const
     return d->customOptions.contains(key);
 }
 
-void SearchOptions::enableResultFound(bool enable)
+void SearchOptions::setResultFoundEnabled(bool enable)
 {
-    d->enableResultFound = enable;
+    d->resultFoundEnabled = enable;
 }
 
 bool SearchOptions::resultFoundEnabled() const
 {
-    return d->enableResultFound;
+    return d->resultFoundEnabled;
 }
 
 DFM_SEARCH_END_NS

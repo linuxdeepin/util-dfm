@@ -145,7 +145,7 @@ public:
      *
      * @param enable Set @c true to enable per-file notifications, @c false to disable.
      */
-    void enableResultFound(bool enable);
+    void setResultFoundEnabled(bool enable);
 
     /**
      * @brief Returns whether per-file result notifications are enabled.
