@@ -423,8 +423,9 @@ int main(int argc, char *argv[])
         std::cout << "Search started..." << std::endl;
     });
 
-    QObject::connect(engine, &SearchEngine::resultFound, [searchType](const SearchResult &result) {
-        printSearchResult(result, searchType);
+    QObject::connect(engine, &SearchEngine::resultsFound, [searchType](const SearchResultList &results) {
+        for (const auto &result : results)
+            printSearchResult(result, searchType);
     });
 
     QObject::connect(engine, &SearchEngine::searchFinished, [options, searchType](const QList<SearchResult> &results) {

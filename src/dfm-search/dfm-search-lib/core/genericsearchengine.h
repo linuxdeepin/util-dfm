@@ -6,7 +6,8 @@
 
 #include <QThread>
 #include <QMutex>
-#include <QWaitCondition>
+#include <QTimer>
+
 #include "abstractsearchengine.h"
 #include "searchstrategy/searchworker.h"
 
@@ -134,6 +135,10 @@ protected:
     QThread m_workerThread;   ///< Worker thread for search operations
     SearchWorker *m_worker;   ///< Search worker object
     SearchError m_lastError;   ///< Last occurred error
+
+    // Result batching members
+    QTimer m_batchTimer;   ///< Timer for batch sending results
+    SearchResultList m_batchResults;   ///< Cached results waiting to be sent
 };
 
 DFM_SEARCH_END_NS

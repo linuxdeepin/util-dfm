@@ -17,7 +17,7 @@ class AbstractSearchEngine;
 
 /**
  * @brief The SearchEngine class provides a unified interface for file searching
- * 
+ *
  * This class serves as the main entry point for all search operations. It uses
  * the factory pattern to create specific search engine implementations based on
  * the search type. The class manages the search lifecycle and provides both
@@ -110,9 +110,9 @@ Q_SIGNALS:
 
     /**
      * @brief Emitted when a new search result is found
-     * @param result The found search result
+     * @param results The found search results
      */
-    void resultFound(const DFMSEARCH::SearchResult &result);
+    void resultsFound(const DFMSEARCH::SearchResultList &results);
 
     /**
      * @brief Emitted when the search status changes
