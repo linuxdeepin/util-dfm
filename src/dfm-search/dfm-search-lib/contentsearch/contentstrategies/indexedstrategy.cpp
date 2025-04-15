@@ -68,12 +68,14 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
 
         parser->setAllowLeadingWildcard(true);
 
+        m_keywords.clear();
         if (query.type() == SearchQuery::Type::Boolean) {
             // 处理布尔查询
             Lucene::BooleanQueryPtr booleanQuery = newLucene<Lucene::BooleanQuery>();
 
             // 添加所有子查询
             for (const auto &subQuery : query.subQueries()) {
+                m_keywords.append(subQuery.keyword());
                 Lucene::QueryPtr termQuery = parser->parse(subQuery.keyword().toStdWString());
                 booleanQuery->add(termQuery,
                                   query.booleanOperator() == SearchQuery::BooleanOperator::AND ? Lucene::BooleanClause::MUST : Lucene::BooleanClause::SHOULD);
@@ -82,6 +84,7 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
             return booleanQuery;
         } else {
             // 处理简单查询
+            m_keywords.append(query.keyword());
             return parser->parse(query.keyword().toStdWString());
         }
     } catch (const Lucene::LuceneException &e) {
@@ -99,6 +102,11 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
     QString searchPath = m_options.searchPath();
     auto docsSize = scoreDocs.size();
+
+    ContentOptionsAPI optAPI(m_options);
+    bool enableHTML = optAPI.isSearchResultHighlightEnabled();
+    int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
+    bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
 
     for (int32_t i = 0; i < docsSize; ++i) {
         if (m_cancelled.load()) {
@@ -125,15 +133,11 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
             // 设置内容结果
             ContentResultAPI resultApi(result);
-            ContentOptionsAPI optAPI(m_options);
 
             // 使用ContentHighlighter命名空间进行高亮
-            bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
             if (enableRetrieval) {
                 const QString &content = QString::fromStdWString(doc->get(L"contents"));
-                bool enableHTML = optAPI.isSearchResultHighlightEnabled();
-                int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
-                const QString &highlightedContent = ContentHighlighter::highlight(content, m_currentQuery, previewLen, enableHTML);
+                const QString &highlightedContent = ContentHighlighter::customHighlight(m_keywords, content, previewLen, enableHTML);
                 resultApi.setHighlightedContent(highlightedContent);
             }
             // 添加到结果集合
