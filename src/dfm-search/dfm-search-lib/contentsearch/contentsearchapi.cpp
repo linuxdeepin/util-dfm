@@ -8,6 +8,10 @@ DFM_SEARCH_BEGIN_NS
 ContentOptionsAPI::ContentOptionsAPI(SearchOptions &options)
     : m_options(options)
 {
+    // init default
+    setMaxPreviewLength(50);
+    setSearchResultHighlightEnabled(false);
+    setFullTextRetrievalEnabled(true);
 }
 
 void ContentOptionsAPI::setMaxPreviewLength(int length)
@@ -28,6 +32,16 @@ void ContentOptionsAPI::setSearchResultHighlightEnabled(bool enable)
 bool ContentOptionsAPI::isSearchResultHighlightEnabled() const
 {
     return m_options.customOption("searchResultHighligh").toBool();
+}
+
+void ContentOptionsAPI::setFullTextRetrievalEnabled(bool enable)
+{
+    m_options.setCustomOption("fullTextRetrieval", enable);
+}
+
+bool ContentOptionsAPI::isFullTextRetrievalEnabled() const
+{
+    return m_options.customOption("fullTextRetrieval").toBool();
 }
 
 ContentResultAPI::ContentResultAPI(SearchResult &result)
