@@ -56,6 +56,24 @@ public:
      */
     bool isSearchResultHighlightEnabled() const;
 
+    /**
+     * @brief Enables or disables full-text content retrieval in search results.
+     *
+     * When enable, search operations will return the complete file content along with metadata.
+     * This provides more detailed results but significantly increases memory usage and processing time.
+     *
+     * @param enable Set to @c true to retrieve full file contents, @c false to return metadata only.
+     */
+    void setFullTextRetrievalEnabled(bool enable);
+
+    /**
+     * @brief Checks if full-text content retrieval is enabled.
+     *
+     * @return @c true if search results will include complete file contents,
+     *         @c false if only file metadata will be returned.
+     */
+    bool isFullTextRetrievalEnabled() const;
+
 private:
     SearchOptions &m_options;
 };

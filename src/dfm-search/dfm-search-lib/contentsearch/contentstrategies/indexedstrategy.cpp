@@ -128,12 +128,14 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             ContentOptionsAPI optAPI(m_options);
 
             // 使用ContentHighlighter命名空间进行高亮
-            const QString &content = QString::fromStdWString(doc->get(L"contents"));
-            bool enableHTML = optAPI.isSearchResultHighlightEnabled();
-            int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
-            const QString &highlightedContent = ContentHighlighter::highlight(content, m_currentQuery, previewLen, enableHTML);
-            resultApi.setHighlightedContent(highlightedContent);
-
+            bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
+            if (enableRetrieval) {
+                const QString &content = QString::fromStdWString(doc->get(L"contents"));
+                bool enableHTML = optAPI.isSearchResultHighlightEnabled();
+                int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
+                const QString &highlightedContent = ContentHighlighter::highlight(content, m_currentQuery, previewLen, enableHTML);
+                resultApi.setHighlightedContent(highlightedContent);
+            }
             // 添加到结果集合
             m_results.append(result);
 
