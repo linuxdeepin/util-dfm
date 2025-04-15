@@ -67,8 +67,8 @@ void SearchEngine::setSearchType(SearchType type)
     // 连接信号
     connect(d_ptr.get(), &AbstractSearchEngine::searchStarted,
             this, &SearchEngine::searchStarted);
-    connect(d_ptr.get(), &AbstractSearchEngine::resultFound,
-            this, &SearchEngine::resultFound);
+    connect(d_ptr.get(), &AbstractSearchEngine::resultsFound,
+            this, &SearchEngine::resultsFound);
     connect(d_ptr.get(), &AbstractSearchEngine::statusChanged,
             this, &SearchEngine::statusChanged);
     connect(d_ptr.get(), &AbstractSearchEngine::searchFinished,

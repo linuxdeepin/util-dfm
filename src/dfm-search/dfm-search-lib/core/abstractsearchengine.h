@@ -17,7 +17,7 @@ DFM_SEARCH_BEGIN_NS
 
 /**
  * @brief The AbstractSearchEngine class provides the base interface for all search engines
- * 
+ *
  * This abstract class defines the common interface that all search engine implementations
  * must provide. It includes methods for search operations, status management, and error handling.
  */
@@ -99,9 +99,9 @@ Q_SIGNALS:
 
     /**
      * @brief Emitted when a new search result is found
-     * @param result The found search result
+     * @param results The found search results
      */
-    void resultFound(const DFMSEARCH::SearchResult &result);
+    void resultsFound(const DFMSEARCH::SearchResultList &results);
 
     /**
      * @brief Emitted when the search status changes
@@ -140,7 +140,7 @@ protected:
     void reportError(const SearchError &error);
 
     std::atomic<SearchStatus> m_status;   ///< Current search status
-    std::atomic<bool> m_cancelled;        ///< Search cancellation flag
+    std::atomic<bool> m_cancelled;   ///< Search cancellation flag
 };
 
 DFM_SEARCH_END_NS

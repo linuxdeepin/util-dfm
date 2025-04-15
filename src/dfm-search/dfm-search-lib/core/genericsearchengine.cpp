@@ -11,13 +11,23 @@
 DFM_SEARCH_BEGIN_NS
 DCORE_USE_NAMESPACE
 
+constexpr int kDefaultBatchTime = 100;   // 100ms
+
 GenericSearchEngine::GenericSearchEngine(QObject *parent)
     : AbstractSearchEngine(parent),
       m_worker(nullptr)
 {
-
     // 设置初始状态
     m_status.store(SearchStatus::Ready);
+
+    // 设置批处理定时器
+    m_batchTimer.setInterval(kDefaultBatchTime);
+    connect(&m_batchTimer, &QTimer::timeout, this, [this]() {
+        if (!m_batchResults.isEmpty() && m_status.load() == SearchStatus::Searching) {
+            emit resultsFound(m_batchResults);
+            m_batchResults.clear();
+        }
+    });
 }
 
 GenericSearchEngine::~GenericSearchEngine()
@@ -25,6 +35,9 @@ GenericSearchEngine::~GenericSearchEngine()
     // 停止工作线程
     m_workerThread.quit();
     m_workerThread.wait();
+
+    // 停止批处理定时器
+    m_batchTimer.stop();
 }
 
 void GenericSearchEngine::init()
@@ -78,6 +91,10 @@ void GenericSearchEngine::search(const SearchQuery &query)
     // 清空结果列表
     m_results.clear();
 
+    // 清空批处理结果并启动定时器
+    m_batchResults.clear();
+    m_batchTimer.start();
+
     // 保存当前查询
     m_currentQuery = query;
 
@@ -108,6 +125,10 @@ void GenericSearchEngine::searchWithCallback(const SearchQuery &query,
 
     // 清空结果列表
     m_results.clear();
+
+    // 清空批处理结果并启动定时器
+    m_batchResults.clear();
+    m_batchTimer.start();
 
     // 保存当前查询和回调
     m_currentQuery = query;
@@ -150,6 +171,9 @@ void GenericSearchEngine::cancel()
     // 通知工作线程取消搜索
     QMetaObject::invokeMethod(m_worker, "cancelSearch");
 
+    // 停止批处理定时器
+    m_batchTimer.stop();
+
     if (m_status.load() != SearchStatus::Ready && m_status.load() != SearchStatus::Finished) {
         setStatus(SearchStatus::Cancelled);
         emit searchCancelled();
@@ -158,15 +182,24 @@ void GenericSearchEngine::cancel()
 
 void GenericSearchEngine::handleSearchResult(const DFMSEARCH::SearchResult &result)
 {
-    // 存储结果
+    // 存储结果到全局结果列表
     m_results.append(result);
 
-    // 发送结果信号
-    emit resultFound(result);
+    // 将结果添加到批处理队列
+    m_batchResults.append(result);
 }
 
 void GenericSearchEngine::handleSearchFinished(const DFMSEARCH::SearchResultList &results)
 {
+    // 停止批处理定时器
+    m_batchTimer.stop();
+
+    // 发送剩余的批处理结果
+    if (!m_batchResults.isEmpty()) {
+        emit resultsFound(m_batchResults);
+        m_batchResults.clear();
+    }
+
     // 确保所有结果都已添加到m_results
     if (m_results.size() != results.size()) {
         m_results = results;
@@ -188,6 +221,9 @@ void GenericSearchEngine::handleSearchFinished(const DFMSEARCH::SearchResultList
 
 void GenericSearchEngine::handleErrorOccurred(const DFMSEARCH::SearchError &error)
 {
+    // 停止批处理定时器
+    m_batchTimer.stop();
+
     // 保存错误
     m_lastError = error;
 
