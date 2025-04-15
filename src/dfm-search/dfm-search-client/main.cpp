@@ -387,10 +387,10 @@ int main(int argc, char *argv[])
     } else if (searchType == SearchType::Content) {
         ContentOptionsAPI contentOptions(options);
 
-        if (parser.isSet(fileTypesOption)) {
-            QStringList extensions = parser.value(fileTypesOption).split(',', Qt::SkipEmptyParts);
-            contentOptions.setFileTypeFilters(extensions);
-        }
+        // if (parser.isSet(fileTypesOption)) {
+        //     QStringList extensions = parser.value(fileTypesOption).split(',', Qt::SkipEmptyParts);
+        //     contentOptions.setFileTypeFilters(extensions);
+        // }
 
         if (parser.isSet(maxPreviewOption)) {
             bool ok;

@@ -140,12 +140,15 @@ SearchResultList ContentIndexedStrategy::processSearchResults(const Lucene::Inde
             SearchResult result(path);
 
             // 设置内容结果
-            ContentResultAPI api(result);
+            ContentResultAPI resultApi(result);
+            ContentOptionsAPI optAPI(m_options);
 
             // 使用ContentHighlighter命名空间进行高亮
             const QString &content = QString::fromStdWString(doc->get(L"contents"));
-            const QString &highlightedContent = ContentHighlighter::highlight(content, m_currentQuery, 50);
-            api.setHighlightedContent(highlightedContent);
+            bool enableHTML = optAPI.isSearchResultHighlightEnabled();
+            int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
+            const QString &highlightedContent = ContentHighlighter::highlight(content, m_currentQuery, previewLen, enableHTML);
+            resultApi.setHighlightedContent(highlightedContent);
 
             results.append(result);
 

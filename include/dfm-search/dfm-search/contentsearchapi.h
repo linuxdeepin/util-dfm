@@ -26,18 +26,6 @@ public:
     explicit ContentOptionsAPI(SearchOptions &options);
 
     /**
-     * @brief Set file type filters for content search
-     * @param extensions List of file extensions to include in search
-     */
-    void setFileTypeFilters(const QStringList &extensions);
-
-    /**
-     * @brief Get the current file type filters
-     * @return List of file extensions
-     */
-    QStringList fileTypeFilters() const;
-
-    /**
      * @brief Set the maximum length for content preview
      * @param length The maximum preview length in characters
      */
@@ -49,7 +37,24 @@ public:
      */
     int maxPreviewLength() const;
 
-    // TODO (search): html
+    /**
+     * @brief Enables or disables HTML highlighting in search results.
+     *
+     * When enabled, matching keywords in search results will be wrapped in HTML tags
+     * (e.g., `<span style="color:red">keyword</span>`) for visual highlighting.
+     * Note: Enabling this feature may incur additional processing overhead.
+     *
+     * @param enable Set to @c true to enable HTML highlighting, @c false to disable.
+     */
+    void setSearchResultHighlightEnabled(bool enable);
+
+    /**
+     * @brief Returns whether HTML highlighting in search results is enabled.
+     *
+     * @return @c true if search results will include HTML highlighting tags,
+     *         @c false otherwise (plaintext results).
+     */
+    bool isSearchResultHighlightEnabled() const;
 
 private:
     SearchOptions &m_options;
