@@ -47,34 +47,14 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
 {
     m_cancelled.store(false);
     m_results.clear();
-    m_searching.store(true);
 
     try {
         // 执行内容索引搜索
-        SearchResultList contentResults = performContentSearch(query);
-
-        // 处理和发送结果
-        for (int i = 0; i < contentResults.size(); i++) {
-            if (m_cancelled.load()) {
-                break;
-            }
-
-            // 添加到结果集合
-            m_results.append(contentResults[i]);
-
-            // 实时发送结果
-            if (Q_UNLIKELY(m_options.resultFoundEnabled()))
-                emit resultFound(contentResults[i]);
-        }
-
-        // 完成搜索
-        emit searchFinished(m_results);
+        performContentSearch(query);
     } catch (const std::exception &e) {
         qWarning() << "Content Index Search Exception:" << e.what();
         emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
     }
-
-    m_searching.store(false);
 }
 
 Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer)
@@ -110,13 +90,17 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
     }
 }
 
-SearchResultList ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr &searcher,
-                                                              const Lucene::Collection<Lucene::ScoreDocPtr> &scoreDocs)
+void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr &searcher,
+                                                  const Lucene::Collection<Lucene::ScoreDocPtr> &scoreDocs)
 {
-    SearchResultList results;
+    // Measure the time taken to process search results
+    QElapsedTimer resultTimer;
+    resultTimer.start();
 
     QString searchPath = m_options.searchPath();
-    for (int32_t i = 0; i < scoreDocs.size(); ++i) {
+    auto docsSize = scoreDocs.size();
+
+    for (int32_t i = 0; i < docsSize; ++i) {
         if (m_cancelled.load()) {
             break;
         }
@@ -150,7 +134,12 @@ SearchResultList ContentIndexedStrategy::processSearchResults(const Lucene::Inde
             const QString &highlightedContent = ContentHighlighter::highlight(content, m_currentQuery, previewLen, enableHTML);
             resultApi.setHighlightedContent(highlightedContent);
 
-            results.append(result);
+            // 添加到结果集合
+            m_results.append(result);
+
+            // 实时发送结果
+            if (Q_UNLIKELY(m_options.resultFoundEnabled()))
+                emit resultFound(result);
 
         } catch (const Lucene::LuceneException &e) {
             qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());
@@ -158,20 +147,19 @@ SearchResultList ContentIndexedStrategy::processSearchResults(const Lucene::Inde
         }
     }
 
-    return results;
+    qInfo() << "Content Result processing time:" << resultTimer.elapsed() << "ms";
+    emit searchFinished(m_results);
 }
 
-SearchResultList ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
+void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
 {
-    SearchResultList results;
-
     try {
         // 获取索引目录
         FSDirectoryPtr directory = FSDirectory::open(m_indexDir.toStdWString());
         if (!directory) {
             qWarning() << "Failed to open index directory:" << m_indexDir;
             emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexNotFound));
-            return results;
+            return;
         }
 
         // 获取索引读取器
@@ -179,7 +167,7 @@ SearchResultList ContentIndexedStrategy::performContentSearch(const SearchQuery 
         if (!reader || reader->numDocs() == 0) {
             qWarning() << "Index is empty or cannot be opened";
             emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexNotFound));
-            return results;
+            return;
         }
 
         // 创建搜索器
@@ -193,16 +181,21 @@ SearchResultList ContentIndexedStrategy::performContentSearch(const SearchQuery 
         if (!m_currentQuery) {
             qWarning() << "Failed to build Lucene query";
             emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
-            return results;
+            return;
         }
 
         // 执行搜索
+        // Measure the time taken to execute the search
+        QElapsedTimer searchTimer;
+        searchTimer.start();
+
         int32_t maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : reader->numDocs();
         TopDocsPtr topDocs = searcher->search(m_currentQuery, maxResults);
         Collection<ScoreDocPtr> scoreDocs = topDocs->scoreDocs;
+        qInfo() << "Content search execution time:" << searchTimer.elapsed() << "ms";
 
         // 处理搜索结果
-        results = processSearchResults(searcher, scoreDocs);
+        processSearchResults(searcher, scoreDocs);
 
     } catch (const LuceneException &e) {
         qWarning() << "Lucene search exception:" << QString::fromStdWString(e.getError());
@@ -211,8 +204,6 @@ SearchResultList ContentIndexedStrategy::performContentSearch(const SearchQuery 
         qWarning() << "Standard exception:" << e.what();
         emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
     }
-
-    return results;
 }
 
 void ContentIndexedStrategy::cancel()

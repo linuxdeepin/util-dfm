@@ -239,7 +239,7 @@ SearcherPtr IndexManager::getSearcher(IndexReaderPtr reader) const
 //--------------------------------------------------------------------
 
 FileNameIndexedStrategy::FileNameIndexedStrategy(const SearchOptions &options, QObject *parent)
-    : FileNameBaseStrategy(options, parent), m_searchCancelled(false)
+    : FileNameBaseStrategy(options, parent)
 {
     m_queryBuilder = std::make_unique<QueryBuilder>();
     m_indexManager = std::make_unique<IndexManager>();
@@ -258,7 +258,7 @@ void FileNameIndexedStrategy::initializeIndexing()
 
 void FileNameIndexedStrategy::search(const SearchQuery &query)
 {
-    m_searchCancelled = false;
+    m_cancelled.store(false);
     m_results.clear();
 
     if (!QFileInfo::exists(m_indexDir)) {
@@ -450,7 +450,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     m_results.reserve(docsSize);
     // 实时处理搜索结果
     for (int i = 0; i < docsSize; i++) {
-        if (m_searchCancelled) {
+        if (m_cancelled.load()) {
             break;
         }
 
@@ -614,7 +614,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
 
 void FileNameIndexedStrategy::cancel()
 {
-    m_searchCancelled = true;
+    m_cancelled.store(true);
 }
 
 DFM_SEARCH_END_NS

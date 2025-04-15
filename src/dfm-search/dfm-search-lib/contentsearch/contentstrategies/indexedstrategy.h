@@ -36,17 +36,16 @@ private:
     void initializeIndexing();
 
     // 执行内容搜索
-    SearchResultList performContentSearch(const SearchQuery &query);
+    void performContentSearch(const SearchQuery &query);
 
     // 构建Lucene查询
     Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer);
 
     // 处理搜索结果
-    SearchResultList processSearchResults(const Lucene::IndexSearcherPtr &searcher,
-                                          const Lucene::Collection<Lucene::ScoreDocPtr> &scoreDocs);
+    void processSearchResults(const Lucene::IndexSearcherPtr &searcher,
+                              const Lucene::Collection<Lucene::ScoreDocPtr> &scoreDocs);
 
     QString m_indexDir;
-    std::atomic<bool> m_searching { false };
     Lucene::QueryPtr m_currentQuery;   // 存储当前查询
 };
 
