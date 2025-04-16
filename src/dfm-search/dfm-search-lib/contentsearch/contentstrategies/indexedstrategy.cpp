@@ -16,8 +16,7 @@
 #include <lucene++/QueryWrapperFilter.h>
 #include <lucene++/WildcardQuery.h>
 
-#include "ChineseAnalyzer.h"
-#include "utils/searchutility.h"
+#include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/contenthighlighter.h"
 
 using namespace Lucene;
@@ -65,8 +64,6 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
                 Lucene::LuceneVersion::LUCENE_CURRENT,
                 L"contents",
                 analyzer);
-
-        parser->setAllowLeadingWildcard(true);
 
         m_keywords.clear();
         if (query.type() == SearchQuery::Type::Boolean) {
