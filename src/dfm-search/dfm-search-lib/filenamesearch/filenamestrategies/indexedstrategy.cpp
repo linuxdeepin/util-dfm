@@ -13,6 +13,8 @@
 #include <QDebug>
 #include <QElapsedTimer>
 
+#include "3rdparty/fulltext/chineseanalyzer.h"
+
 DFM_SEARCH_BEGIN_NS
 
 //--------------------------------------------------------------------
@@ -76,60 +78,37 @@ Lucene::QueryPtr QueryBuilder::buildPinyinQuery(const QStringList &pinyins, Sear
     return pinyinQuery;
 }
 
-Lucene::QueryPtr QueryBuilder::buildFuzzyQuery(const QString &keyword, bool caseSensitive) const
+Lucene::QueryPtr QueryBuilder::buildCommonQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer, bool allowWildcard) const
 {
-    if (keyword.isEmpty()) {
+    if (keyword.isEmpty() || !analyzer) {
         return nullptr;
     }
 
-    BooleanQueryPtr booleanQuery = newLucene<BooleanQuery>();
-    booleanQuery->setMaxClauseCount(1024);
+    Lucene::QueryParserPtr parser = newLucene<Lucene::QueryParser>(
+            Lucene::LuceneVersion::LUCENE_CURRENT,
+            L"file_name",
+            analyzer);
 
-    QStringList terms = keyword.split(' ', Qt::SkipEmptyParts);
-    for (const QString &term : terms) {
-        if (term.isEmpty()) continue;
-
-        BooleanQueryPtr termQuery = newLucene<BooleanQuery>();
-        String exactTerm = processString(term, caseSensitive);
-
-        // 精确匹配
-        QueryPtr exactQuery = newLucene<TermQuery>(newLucene<Term>(L"file_name", exactTerm));
-        exactQuery->setBoost(3.0);
-        termQuery->add(exactQuery, BooleanClause::SHOULD);
-
-        // 前缀匹配
-        if (term.length() > 2) {
-            QueryPtr prefixQuery = newLucene<PrefixQuery>(newLucene<Term>(L"file_name", exactTerm));
-            prefixQuery->setBoost(2.0);
-            termQuery->add(prefixQuery, BooleanClause::SHOULD);
-        }
-
-        // 通配符匹配
-        if (term.length() > 3) {
-            for (int i = 1; i < term.length() - 1; i++) {
-                QString fuzzyPattern = term.left(i) + "*" + term.mid(i + 1);
-                String wildcardTerm = processString(fuzzyPattern, caseSensitive);
-                QueryPtr wildcardQuery = newLucene<WildcardQuery>(newLucene<Term>(L"file_name", wildcardTerm));
-                wildcardQuery->setBoost(1.0);
-                termQuery->add(wildcardQuery, BooleanClause::SHOULD);
-            }
-        }
-
-        // 包含匹配
-        String containsTerm = L"*" + exactTerm + L"*";
-        QueryPtr containsQuery = newLucene<WildcardQuery>(newLucene<Term>(L"file_name", containsTerm));
-        containsQuery->setBoost(1.5);
-        termQuery->add(containsQuery, BooleanClause::SHOULD);
-
-        booleanQuery->add(termQuery, BooleanClause::MUST);
+    if (allowWildcard) {
+        parser->setAllowLeadingWildcard(true);
     }
 
-    return booleanQuery;
+    return parser->parse(processString(keyword, caseSensitive));
 }
 
-Lucene::QueryPtr QueryBuilder::buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op) const
+Lucene::QueryPtr QueryBuilder::buildSimpleQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const
 {
-    if (terms.isEmpty()) {
+    return buildCommonQuery(keyword, caseSensitive, analyzer, false);
+}
+
+Lucene::QueryPtr QueryBuilder::buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const
+{
+    return buildCommonQuery(keyword, caseSensitive, analyzer, true);
+}
+
+Lucene::QueryPtr QueryBuilder::buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op, const Lucene::AnalyzerPtr &analyzer) const
+{
+    if (terms.isEmpty() || !analyzer) {
         return nullptr;
     }
 
@@ -138,35 +117,14 @@ Lucene::QueryPtr QueryBuilder::buildBooleanQuery(const QStringList &terms, bool 
 
     for (const QString &term : terms) {
         if (!term.isEmpty()) {
-            String termStr = L"*" + processString(term, caseSensitive) + L"*";
-            TermPtr termObj = newLucene<Term>(L"file_name", termStr);
-            QueryPtr termQuery = newLucene<WildcardQuery>(termObj);
-            booleanQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
+            QueryPtr termQuery = buildCommonQuery(term, caseSensitive, analyzer, false);
+            if (termQuery) {
+                booleanQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
+            }
         }
     }
 
     return booleanQuery;
-}
-
-Lucene::QueryPtr QueryBuilder::buildWildcardQuery(const QString &keyword, bool caseSensitive) const
-{
-    if (keyword.isEmpty()) {
-        return nullptr;
-    }
-
-    return newLucene<WildcardQuery>(
-            newLucene<Term>(L"file_name",
-                            processString(keyword, caseSensitive)));
-}
-
-Lucene::QueryPtr QueryBuilder::buildSimpleQuery(const QString &keyword, bool caseSensitive) const
-{
-    if (keyword.isEmpty()) {
-        return nullptr;
-    }
-
-    String queryString = L"*" + processString(keyword, caseSensitive) + L"*";
-    return newLucene<WildcardQuery>(newLucene<Term>(L"file_name", queryString));
 }
 
 //--------------------------------------------------------------------
@@ -516,11 +474,12 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
 {
     BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
     bool hasValidQuery = false;
+    AnalyzerPtr analyzer = newLucene<ChineseAnalyzer>();
 
     switch (query.type) {
     case SearchType::Simple:
         if (!query.terms.isEmpty()) {
-            QueryPtr simpleQuery = m_queryBuilder->buildSimpleQuery(query.terms.first(), query.caseSensitive);
+            QueryPtr simpleQuery = m_queryBuilder->buildSimpleQuery(query.terms.first(), query.caseSensitive, analyzer);
             if (simpleQuery) {
                 finalQuery->add(simpleQuery, BooleanClause::MUST);
                 hasValidQuery = true;
@@ -529,7 +488,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         break;
     case SearchType::Wildcard:
         if (!query.terms.isEmpty()) {
-            QueryPtr wildcardQuery = m_queryBuilder->buildWildcardQuery(query.terms.first(), query.caseSensitive);
+            QueryPtr wildcardQuery = m_queryBuilder->buildWildcardQuery(query.terms.first(), query.caseSensitive, analyzer);
             if (wildcardQuery) {
                 finalQuery->add(wildcardQuery, BooleanClause::MUST);
                 hasValidQuery = true;
@@ -538,7 +497,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         break;
     case SearchType::Boolean:
         if (!query.terms.isEmpty()) {
-            QueryPtr booleanQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive, query.booleanOp);
+            QueryPtr booleanQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive, query.booleanOp, analyzer);
             if (booleanQuery) {
                 finalQuery->add(booleanQuery, BooleanClause::MUST);
                 hasValidQuery = true;
@@ -559,7 +518,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
             }
 
             // 添加普通关键词查询
-            QueryPtr simpleQuery = m_queryBuilder->buildSimpleQuery(query.terms.first(), query.caseSensitive);
+            QueryPtr simpleQuery = m_queryBuilder->buildSimpleQuery(query.terms.first(), query.caseSensitive, analyzer);
             if (simpleQuery) {
                 combinedQuery->add(simpleQuery, BooleanClause::SHOULD);
                 hasValidQuery = true;
@@ -584,7 +543,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
             BooleanQueryPtr combinedQuery = newLucene<BooleanQuery>();
 
             // 构建布尔关键词查询
-            QueryPtr keywordQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive, query.booleanOp);
+            QueryPtr keywordQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive, query.booleanOp, analyzer);
             if (keywordQuery) {
                 combinedQuery->add(keywordQuery, BooleanClause::SHOULD);
                 hasValidQuery = true;

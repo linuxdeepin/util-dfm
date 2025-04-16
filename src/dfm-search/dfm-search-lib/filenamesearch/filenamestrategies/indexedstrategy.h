@@ -104,13 +104,16 @@ public:
     // 构建各种类型的查询
     QueryPtr buildTypeQuery(const QStringList &types) const;
     QueryPtr buildPinyinQuery(const QStringList &pinyins, SearchQuery::BooleanOperator op = SearchQuery::BooleanOperator::AND) const;
-    QueryPtr buildFuzzyQuery(const QString &keyword, bool caseSensitive) const;
-    QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op) const;
-    QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive) const;
-    QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive) const;
+    QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op, const Lucene::AnalyzerPtr &analyzer) const;
+    QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
+    QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
 
     // 处理字符串大小写
     String processString(const QString &str, bool caseSensitive) const;
+
+private:
+    // 通用的查询构建方法
+    QueryPtr buildCommonQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer, bool allowWildcard = false) const;
 };
 
 /**
