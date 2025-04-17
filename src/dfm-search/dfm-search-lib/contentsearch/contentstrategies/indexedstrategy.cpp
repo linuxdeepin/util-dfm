@@ -125,11 +125,10 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                 continue;
             }
 
-#ifdef DFM_SEARCH_INDEXED_HIDDEN_ENABLE
-            if (Q_LIKELY(!m_options.includeHidden()) && SearchUtility::isHiddenPathOrInHiddenDir(path)) {
-                continue;
+            if (Q_LIKELY(!m_options.includeHidden())) {
+                if (QString::fromStdWString(doc->get(L"is_hidden")).toLower() == "y")
+                    continue;
             }
-#endif
 
             // 创建搜索结果
             SearchResult result(path);
