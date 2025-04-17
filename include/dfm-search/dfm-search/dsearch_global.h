@@ -26,6 +26,18 @@ inline constexpr int kMinContentSearchKeywordLength = 2;
 bool isPinyinSequence(const QString &input);
 
 /**
+ * Determines if the given absolute path represents a hidden file/directory
+ * or is contained within a hidden directory.
+ *
+ * A path is considered hidden if any component (except root) starts with '.'
+ * and is not the special "." (current) or ".." (parent) directory.
+ *
+ * @param absolutePath The absolute filesystem path to check (must be normalized)
+ * @return true if the path is hidden or inside hidden directories, false otherwise
+ */
+bool isHiddenPathOrInHiddenDir(const QString &absolutePath);
+
+/**
  * @brief Check if the given file extension is supported for full-text search.
  * This function checks if the specified file extension is included in the list of supported extensions
  * for performing full-text searches within the application.
