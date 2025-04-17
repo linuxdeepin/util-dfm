@@ -244,7 +244,7 @@ SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
     QEventLoop eventLoop;
     QTimer timeoutTimer;
     timeoutTimer.setSingleShot(true);
-    timeoutTimer.setInterval(10000);   // 10秒超时
+    timeoutTimer.setInterval(30000);   // 30秒超时
 
     // 连接信号到事件循环
     connect(this, &GenericSearchEngine::searchFinished, &eventLoop, &QEventLoop::quit);
