@@ -59,6 +59,20 @@ public:
      */
     QStringList fileTypes() const;
 
+    /**
+     * @brief Set file extension filters
+     * @param extensions List of file extensions to include in search
+     * 
+     * Example: "txt", "pdf", "docx"
+     */
+    void setFileExtensions(const QStringList &extensions);
+
+    /**
+     * @brief Get the current file extension filters
+     * @return List of file extensions
+     */
+    QStringList fileExtensions() const;
+
 private:
     SearchOptions &m_options;
 };

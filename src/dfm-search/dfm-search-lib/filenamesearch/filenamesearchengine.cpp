@@ -40,6 +40,7 @@ SearchError FileNameSearchEngine::validateSearchConditions()
 
     FileNameOptionsAPI api(m_options);
     const auto &fileTypes = api.fileTypes();
+    const auto &fileExts = api.fileExtensions();
 
     // Validate each file type in fileTypes against deepinAnythingFileTypes using std algorithms
     if (!fileTypes.isEmpty()) {
@@ -54,8 +55,8 @@ SearchError FileNameSearchEngine::validateSearchConditions()
 
     // 文件名搜索特定验证
     if (m_currentQuery.type() == SearchQuery::Type::Simple) {
-        // 允许对一个类型进行搜索，获取类型下所有文件
-        if (m_currentQuery.keyword().isEmpty() && fileTypes.isEmpty()) {
+        // 允许对一个类型, 后缀进行搜索，获取类型下所有文件
+        if (m_currentQuery.keyword().isEmpty() && fileTypes.isEmpty() && fileExts.isEmpty()) {
             return SearchError(FileNameSearchErrorCode::KeywordIsEmpty);
         }
 
