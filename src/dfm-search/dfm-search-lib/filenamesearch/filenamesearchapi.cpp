@@ -30,6 +30,16 @@ QStringList FileNameOptionsAPI::fileTypes() const
     return m_options.customOption("fileTypes").toStringList();
 }
 
+void FileNameOptionsAPI::setFileExtensions(const QStringList &extensions)
+{
+    m_options.setCustomOption("fileExtensions", extensions);
+}
+
+QStringList FileNameOptionsAPI::fileExtensions() const
+{
+    return m_options.customOption("fileExtensions").toStringList();
+}
+
 //////////
 
 FileNameResultAPI::FileNameResultAPI(SearchResult &result)

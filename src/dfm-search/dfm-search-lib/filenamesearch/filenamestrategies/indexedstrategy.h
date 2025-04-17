@@ -35,7 +35,8 @@ public:
         Boolean,   // 布尔多关键词搜索
         Pinyin,   // 拼音搜索
         FileType,   // 文件类型搜索
-        Combined   // 组合搜索(关键词+文件类型/拼音)
+        FileExt,    // 文件后缀搜索
+        Combined   // 组合搜索(关键词+文件类型/拼音/文件后缀)
     };
 
     // 索引查询结构
@@ -44,10 +45,12 @@ public:
         SearchType type = SearchType::Simple;
         QStringList terms;
         QStringList fileTypes;
+        QStringList fileExtensions;
         bool caseSensitive = false;
         bool usePinyin = false;
         SearchQuery::BooleanOperator booleanOp = SearchQuery::BooleanOperator::AND;
         bool combineWithFileType = false;   // 是否与文件类型组合
+        bool combineWithFileExt = false;    // 是否与文件后缀组合
     };
 
     explicit FileNameIndexedStrategy(const SearchOptions &options, QObject *parent = nullptr);
@@ -66,14 +69,16 @@ private:
     // 确定搜索类型
     SearchType determineSearchType(const SearchQuery &query,
                                    bool pinyinEnabled,
-                                   const QStringList &fileTypes) const;
+                                   const QStringList &fileTypes,
+                                   const QStringList &fileExtensions) const;
 
     // 构建索引查询
     IndexQuery buildIndexQuery(const SearchQuery &query,
                                SearchType searchType,
                                bool caseSensitive,
                                bool pinyinEnabled,
-                               const QStringList &fileTypes);
+                               const QStringList &fileTypes,
+                               const QStringList &fileExtensions);
 
     // 执行索引查询并处理结果
     void executeIndexQuery(const IndexQuery &query, const QString &searchPath, const QStringList &searchExcludedPaths);
@@ -103,6 +108,7 @@ public:
 
     // 构建各种类型的查询
     QueryPtr buildTypeQuery(const QStringList &types) const;
+    QueryPtr buildExtQuery(const QStringList &extensions) const;
     QueryPtr buildPinyinQuery(const QStringList &pinyins, SearchQuery::BooleanOperator op = SearchQuery::BooleanOperator::AND) const;
     QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op, const Lucene::AnalyzerPtr &analyzer) const;
     QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;

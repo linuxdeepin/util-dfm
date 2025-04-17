@@ -37,6 +37,12 @@ using namespace dfmsearch;
 // # 文件类型过滤
 // dfm6-search-client --file-types=doc,pic "" /home/user
 
+// # 文件后缀过滤
+// dfm6-search-client --file-extensions=txt,pdf "" /home/user
+
+// # 文件类型和后缀组合过滤
+// dfm6-search-client --file-types=doc --file-extensions=docx,odt "report" /home/user
+
 // # 布尔查询
 // dfm6-search-client --query=boolean "meeting,notes,2023" /home/user/Documents
 
@@ -44,6 +50,7 @@ using namespace dfmsearch;
 // dfm6-search-client --file-types="dir,doc" --query=boolean "dde,file" /
 // dfm6-search-client --pinyin --query=boolean "wendang,xinjian" /
 // dfm6-search-client --pinyin --file-types="doc,pic" --query=boolean "wen,dang" /
+// dfm6-search-client --file-extensions="txt,pdf" --query=boolean "report,data" /
 
 void printUsage()
 {
@@ -56,6 +63,7 @@ void printUsage()
     std::cout << "  --include-hidden            Include hidden files" << std::endl;
     std::cout << "  --pinyin                    Enable pinyin search (for filename search)" << std::endl;
     std::cout << "  --file-types=<types>        Filter by file types, comma separated" << std::endl;
+    std::cout << "  --file-extensions=<exts>    Filter by file extensions, comma separated" << std::endl;
     std::cout << "  --max-results=<number>      Maximum number of results" << std::endl;
     std::cout << "  --max-preview=<length>      Max content preview length (for content search)" << std::endl;
     std::cout << "  --help                      Display this help" << std::endl;
@@ -286,6 +294,7 @@ int main(int argc, char *argv[])
     QCommandLineOption includeHiddenOption(QStringList() << "include-hidden", "Include hidden files");
     QCommandLineOption pinyinOption(QStringList() << "pinyin", "Enable pinyin search (for filename search)");
     QCommandLineOption fileTypesOption(QStringList() << "file-types", "Filter by file types, comma separated", "types");
+    QCommandLineOption fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions");
     QCommandLineOption maxResultsOption(QStringList() << "max-results", "Maximum number of results", "number", "100");
     QCommandLineOption maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200");
 
@@ -296,6 +305,7 @@ int main(int argc, char *argv[])
     parser.addOption(includeHiddenOption);
     parser.addOption(pinyinOption);
     parser.addOption(fileTypesOption);
+    parser.addOption(fileExtensionsOption);
     parser.addOption(maxResultsOption);
     parser.addOption(maxPreviewOption);
 
@@ -386,6 +396,11 @@ int main(int argc, char *argv[])
             QStringList types = parser.value(fileTypesOption).split(',', Qt::SkipEmptyParts);
             fileNameOptions.setFileTypes(types);
         }
+
+        if (parser.isSet(fileExtensionsOption)) {
+            QStringList extensions = parser.value(fileExtensionsOption).split(',', Qt::SkipEmptyParts);
+            fileNameOptions.setFileExtensions(extensions);
+        }
     } else if (searchType == SearchType::Content) {
         ContentOptionsAPI contentOptions(options);
 
@@ -455,6 +470,11 @@ int main(int argc, char *argv[])
     std::cout << "In path: " << searchPath.toStdString() << std::endl;
     std::cout << "Search type: " << (searchType == SearchType::FileName ? "Filename" : "Content") << std::endl;
     std::cout << "Search method: " << (searchMethod == SearchMethod::Indexed ? "Indexed" : "Realtime") << std::endl;
+    
+    // Print file extensions if set
+    if (searchType == SearchType::FileName && parser.isSet(fileExtensionsOption)) {
+        std::cout << "File extensions filter: " << parser.value(fileExtensionsOption).toStdString() << std::endl;
+    }
 
     engine->search(query);
 
