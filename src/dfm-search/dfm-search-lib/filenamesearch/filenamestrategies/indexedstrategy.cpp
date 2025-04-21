@@ -297,8 +297,7 @@ FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType
 
     // 检查是否需要组合搜索
     bool combinedWithTypes = (hasKeyword || isBoolean) && (hasFileTypes || hasFileExts);
-    bool combinedWithPinyin = isBoolean && pinyinEnabled;
-    if (combinedWithTypes || combinedWithPinyin) {
+    if (combinedWithTypes) {
         return SearchType::Combined;
     }
 
@@ -323,7 +322,7 @@ FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType
     }
 
     // 启用拼音搜索
-    if (pinyinEnabled) {
+    if (pinyinEnabled && !isBoolean) {
         return SearchType::Pinyin;
     }
 
@@ -531,7 +530,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         break;
     case SearchType::Boolean:
         if (!query.terms.isEmpty()) {
-            QueryPtr booleanQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive, query.booleanOp, analyzer);
+            BooleanQueryPtr booleanQuery = buildBooleanTermsQuery(query, analyzer);
             if (booleanQuery) {
                 finalQuery->add(booleanQuery, BooleanClause::MUST);
                 hasValidQuery = true;
@@ -583,26 +582,10 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         break;
     case SearchType::Combined:
         if (!query.terms.isEmpty()) {
-            BooleanQueryPtr combinedQuery = newLucene<BooleanQuery>();
-
-            // 构建布尔关键词查询
-            QueryPtr keywordQuery = m_queryBuilder->buildBooleanQuery(query.terms, query.caseSensitive, query.booleanOp, analyzer);
-            if (keywordQuery) {
-                combinedQuery->add(keywordQuery, BooleanClause::SHOULD);
-                hasValidQuery = true;
-            }
-
-            // 添加拼音查询
-            if (query.usePinyin) {
-                QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(query.terms, query.booleanOp);
-                if (pinyinQuery) {
-                    combinedQuery->add(pinyinQuery, BooleanClause::SHOULD);
-                    hasValidQuery = true;
-                }
-            }
-
-            if (hasValidQuery) {
+            BooleanQueryPtr combinedQuery = buildBooleanTermsQuery(query, analyzer);
+            if (combinedQuery) {
                 finalQuery->add(combinedQuery, BooleanClause::MUST);
+                hasValidQuery = true;
             }
         }
 
@@ -627,6 +610,44 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     }
 
     return hasValidQuery ? finalQuery : nullptr;
+}
+
+BooleanQueryPtr FileNameIndexedStrategy::buildBooleanTermsQuery(const IndexQuery &query, const AnalyzerPtr &analyzer) const
+{
+    // 创建布尔查询
+    BooleanQueryPtr booleanQuery = newLucene<BooleanQuery>();
+    bool hasValidQuery = false;
+    
+    // 对每个搜索词创建子查询
+    for (const QString &term : query.terms) {
+        BooleanQueryPtr termQuery = newLucene<BooleanQuery>();
+        bool termHasQuery = false;
+        
+        // 添加普通关键词查询
+        QueryPtr keywordQuery = m_queryBuilder->buildSimpleQuery(term, query.caseSensitive, analyzer);
+        if (keywordQuery) {
+            termQuery->add(keywordQuery, BooleanClause::SHOULD);
+            termHasQuery = true;
+        }
+        
+        // 添加拼音查询
+        if (query.usePinyin && Global::isPinyinSequence(term)) {
+            QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(QStringList{term});
+            if (pinyinQuery) {
+                termQuery->add(pinyinQuery, BooleanClause::SHOULD);
+                termHasQuery = true;
+            }
+        }
+        
+        // 将当前词的查询添加到最终查询中，维持原始bool逻辑
+        if (termHasQuery) {
+            booleanQuery->add(termQuery, query.booleanOp == SearchQuery::BooleanOperator::AND ? 
+                            BooleanClause::MUST : BooleanClause::SHOULD);
+            hasValidQuery = true;
+        }
+    }
+    
+    return hasValidQuery ? booleanQuery : nullptr;
 }
 
 void FileNameIndexedStrategy::cancel()
