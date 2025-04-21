@@ -86,6 +86,9 @@ private:
     // 构建 Lucene 查询
     QueryPtr buildLuceneQuery(const IndexQuery &query) const;
 
+    // 构建布尔查询的辅助方法
+    BooleanQueryPtr buildBooleanTermsQuery(const IndexQuery &query, const AnalyzerPtr &analyzer) const;
+
     // 处理搜索结果
     SearchResult processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size);
 
