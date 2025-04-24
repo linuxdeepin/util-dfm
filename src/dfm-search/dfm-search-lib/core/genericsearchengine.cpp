@@ -169,7 +169,7 @@ void GenericSearchEngine::cancel()
     m_cancelled.store(true);
 
     // 通知工作线程取消搜索
-    QMetaObject::invokeMethod(m_worker, "cancelSearch");
+    QMetaObject::invokeMethod(m_worker, "cancelSearch", Qt::DirectConnection);
 
     // 停止批处理定时器
     m_batchTimer.stop();
