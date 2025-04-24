@@ -434,7 +434,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
         return;
     }
 
-    qInfo() << "Search execution time:" << searchTimer.elapsed() << "ms";
+    qInfo() << "Filename search execution time:" << searchTimer.elapsed() << "ms";
 
     // Measure the time taken to process search results
     QElapsedTimer resultTimer;
@@ -444,6 +444,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     // 实时处理搜索结果
     for (int i = 0; i < docsSize; i++) {
         if (m_cancelled.load()) {
+            qInfo() << "Filename search cancelled";
             break;
         }
 
@@ -484,7 +485,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
         }
     }
 
-    qInfo() << "Result processing time:" << resultTimer.elapsed() << "ms";
+    qInfo() << "Filename result processing time:" << resultTimer.elapsed() << "ms";
 }
 
 SearchResult FileNameIndexedStrategy::processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size)
@@ -617,36 +618,35 @@ BooleanQueryPtr FileNameIndexedStrategy::buildBooleanTermsQuery(const IndexQuery
     // 创建布尔查询
     BooleanQueryPtr booleanQuery = newLucene<BooleanQuery>();
     bool hasValidQuery = false;
-    
+
     // 对每个搜索词创建子查询
     for (const QString &term : query.terms) {
         BooleanQueryPtr termQuery = newLucene<BooleanQuery>();
         bool termHasQuery = false;
-        
+
         // 添加普通关键词查询
         QueryPtr keywordQuery = m_queryBuilder->buildSimpleQuery(term, query.caseSensitive, analyzer);
         if (keywordQuery) {
             termQuery->add(keywordQuery, BooleanClause::SHOULD);
             termHasQuery = true;
         }
-        
+
         // 添加拼音查询
         if (query.usePinyin && Global::isPinyinSequence(term)) {
-            QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(QStringList{term});
+            QueryPtr pinyinQuery = m_queryBuilder->buildPinyinQuery(QStringList { term });
             if (pinyinQuery) {
                 termQuery->add(pinyinQuery, BooleanClause::SHOULD);
                 termHasQuery = true;
             }
         }
-        
+
         // 将当前词的查询添加到最终查询中，维持原始bool逻辑
         if (termHasQuery) {
-            booleanQuery->add(termQuery, query.booleanOp == SearchQuery::BooleanOperator::AND ? 
-                            BooleanClause::MUST : BooleanClause::SHOULD);
+            booleanQuery->add(termQuery, query.booleanOp == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
             hasValidQuery = true;
         }
     }
-    
+
     return hasValidQuery ? booleanQuery : nullptr;
 }
 

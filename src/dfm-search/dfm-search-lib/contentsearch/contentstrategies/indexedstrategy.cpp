@@ -108,6 +108,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
     for (int32_t i = 0; i < docsSize; ++i) {
         if (m_cancelled.load()) {
+            qInfo() << "Content search cancelled";
             break;
         }
 
@@ -155,7 +156,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
         }
     }
 
-    qInfo() << "Content Result processing time:" << resultTimer.elapsed() << "ms";
+    qInfo() << "Content result processing time:" << resultTimer.elapsed() << "ms";
     emit searchFinished(m_results);
 }
 
