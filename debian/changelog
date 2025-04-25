@@ -1,3 +1,9 @@
+util-dfm (1.3.17) unstable; urgency=medium
+
+  * fix bug
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Fri, 25 Apr 2025 12:49:54 +0800
+
 util-dfm (1.3.16) unstable; urgency=medium
 
   * feat: Optimize dfm-search
