@@ -8,8 +8,6 @@
 
 DFM_SEARCH_BEGIN_NS
 
-// TODO (search): Impl me
-
 /**
  * @brief 文件名实时搜索策略
  */
