@@ -462,7 +462,6 @@ int main(int argc, char *argv[])
         std::cerr << "[Error]: " << error.code()
                   << "[Name]: " << error.name().toStdString()
                   << "[Message]:" << error.message().toStdString() << std::endl;
-        QCoreApplication::quit();
     });
 
     // Start search
@@ -470,7 +469,7 @@ int main(int argc, char *argv[])
     std::cout << "In path: " << searchPath.toStdString() << std::endl;
     std::cout << "Search type: " << (searchType == SearchType::FileName ? "Filename" : "Content") << std::endl;
     std::cout << "Search method: " << (searchMethod == SearchMethod::Indexed ? "Indexed" : "Realtime") << std::endl;
-    
+
     // Print file extensions if set
     if (searchType == SearchType::FileName && parser.isSet(fileExtensionsOption)) {
         std::cout << "File extensions filter: " << parser.value(fileExtensionsOption).toStdString() << std::endl;
