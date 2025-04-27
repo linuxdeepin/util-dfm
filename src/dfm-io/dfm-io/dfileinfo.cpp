@@ -494,8 +494,10 @@ QVariant DFileInfoPrivate::attributesFromUrl(DFileInfo::AttributeID id)
 void DFileInfoPrivate::checkAndResetCancel()
 {
     if (gcancellable) {
-        g_object_unref(gcancellable);
-        gcancellable = nullptr;
+        if (!g_cancellable_is_cancelled(gcancellable))
+            g_cancellable_cancel(gcancellable);
+        g_cancellable_reset(gcancellable);
+        return;
     }
     gcancellable = g_cancellable_new();
 }

@@ -44,8 +44,10 @@ void DFilePrivate::setErrorFromGError(GError *gerror)
 void DFilePrivate::checkAndResetCancel()
 {
     if (cancellable) {
-        g_object_unref(cancellable);
-        cancellable = nullptr;
+        if (!g_cancellable_is_cancelled(cancellable))
+            g_cancellable_cancel(cancellable);
+        g_cancellable_reset(cancellable);
+        return;
     }
     cancellable = g_cancellable_new();
 }
