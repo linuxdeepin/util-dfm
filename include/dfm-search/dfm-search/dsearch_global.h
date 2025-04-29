@@ -103,6 +103,19 @@ bool isPathInFileNameIndexDirectory(const QString &path);
 bool isFileNameIndexDirectoryAvailable();
 
 /**
+ * @brief Returns the current indexing status of the file name database.
+ *
+ * Possible status values:
+ * - "loading"     : Initial loading of existing index
+ * - "scanning"    : Actively scanning filesystem for changes
+ * - "monitoring"  : Scan complete, now watching for filesystem events
+ * - "closed"      : Normal shutdown state (anything terminated properly)
+ *
+ * @return QString The current status string (lowercase)
+ */
+std::optional<QString> fileNameIndexStatus();
+
+/**
  * @brief Get the filename index directory path.
  * This function provides the path to the directory where the filename index is stored,
  * which is essential for performing searches on indexed filenames.
