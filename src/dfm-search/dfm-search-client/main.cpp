@@ -275,12 +275,56 @@ void testPinyin()
     }
 }
 
+void testAnythingStatus()
+{
+    qDebug() << "=== Starting Anything Status Test ===";
+
+    // 测试状态获取
+    auto status = Global::fileNameIndexStatus();
+
+    // 结果验证
+    if (!status.has_value()) {
+        qWarning() << "Test Failed: Could not retrieve status (file missing/permission error?)";
+        return;
+    }
+
+    // 定义有效状态列表（小写）
+    static const QSet<QString> validStatuses {
+        "loading",
+        "scanning",
+        "monitoring",
+        "closed"
+    };
+
+    // 状态有效性检查
+    const QString currentStatus = status.value();
+    if (!validStatuses.contains(currentStatus)) {
+        qWarning() << "Test Failed: Invalid anything status value:" << currentStatus
+                   << "\nExpected one of:" << validStatuses.values();
+        return;
+    }
+
+    // 成功输出
+    qInfo() << "Test Passed. Current anything status:" << currentStatus;
+
+    // 附加信息：打印时间戳（如果测试需要）
+    /*
+    QString statusFile = QDir(Global::fileNameIndexDirectory()).filePath("status.json");
+    QFile file(statusFile);
+    if (file.open(QIODevice::ReadOnly)) {
+        QJsonObject json = QJsonDocument::fromJson(file.readAll()).object();
+        qDebug() << "Last update:" << json["time"].toString();
+    }
+    */
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
     testGlobal();
     testPinyin();
+    testAnythingStatus();
 
     QCommandLineParser parser;
     parser.setApplicationDescription("DFM Search Client");

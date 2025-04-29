@@ -256,6 +256,53 @@ bool isFileNameIndexDirectoryAvailable()
     return IndexReader::indexExists(FSDirectory::open(fileNameIndexDirectory().toStdWString()));
 }
 
+std::optional<QString> fileNameIndexStatus()
+{
+    if (!isFileNameIndexDirectoryAvailable()) {
+        qWarning() << "Index directory not available";
+        return std::nullopt;
+    }
+
+    const QString &statusFilePath = QDir(fileNameIndexDirectory()).filePath("status.json");
+    QFile statusFile(statusFilePath);
+
+    // 检查文件是否存在和可读
+    if (!statusFile.exists()) {
+        qWarning() << "Status file does not exist:" << statusFilePath;
+        return std::nullopt;
+    }
+    if (!statusFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open status file:" << statusFile.errorString();
+        return std::nullopt;
+    }
+
+    // 读取和解析JSON
+    QJsonParseError jsonError;
+    const QJsonDocument doc = QJsonDocument::fromJson(statusFile.readAll(), &jsonError);
+    statusFile.close();
+
+    if (jsonError.error != QJsonParseError::NoError) {
+        qWarning() << "JSON parse error:" << jsonError.errorString()
+                   << "at offset:" << jsonError.offset;
+        return std::nullopt;
+    }
+
+    // 检查JSON结构
+    if (!doc.isObject()) {
+        qWarning() << "Invalid JSON format: root is not an object";
+        return std::nullopt;
+    }
+
+    const QJsonObject root = doc.object();
+    if (!root.contains("status") || !root["status"].isString()) {
+        qWarning() << "Missing or invalid 'status' field";
+        return std::nullopt;
+    }
+
+    // 返回小写状态
+    return root["status"].toString().toLower();
+}
+
 QString fileNameIndexDirectory()
 {
     return QString("/run/user/%1/deepin-anything-server").arg(getuid());
