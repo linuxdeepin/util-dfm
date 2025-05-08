@@ -27,13 +27,32 @@ QueryBuilder::QueryBuilder()
 
 Lucene::String QueryBuilder::processString(const QString &str, bool caseSensitive) const
 {
-    String unicodeStr = StringUtils::toUnicode(str.toStdString());
-    if (caseSensitive) {
-        return unicodeStr;
-    } else {
-        StringUtils::toLower(unicodeStr);
-        return unicodeStr;
+    // Step 1: 转成 std::wstring
+    std::wstring input = str.toStdWString();
+
+    // Step 2: 需要转义的 Lucene 特殊字符（按 Lucene 语法）
+    static const std::wstring specialChars = L"+-&&||!(){}[]^\"~*?:\\/";
+
+    std::wstring escaped;
+    escaped.reserve(input.size() * 2);   // 预留空间，提高性能
+
+    for (wchar_t ch : input) {
+        // 如果是 Lucene 特殊字符，就在前面加 '\'
+        if (specialChars.find(ch) != std::wstring::npos) {
+            escaped += L'\\';
+        }
+        escaped += ch;
     }
+
+    // Step 3: 转成 Lucene::String（Lucene++ 使用的是 UTF-8）
+    Lucene::String luceneStr = Lucene::StringUtils::toUnicode(std::string(escaped.begin(), escaped.end()));
+
+    // Step 4: 如果不区分大小写就转小写（Lucene::String 是 Unicode）
+    if (!caseSensitive) {
+        Lucene::StringUtils::toLower(luceneStr);
+    }
+
+    return luceneStr;
 }
 
 Lucene::QueryPtr QueryBuilder::buildTypeQuery(const QStringList &types) const
