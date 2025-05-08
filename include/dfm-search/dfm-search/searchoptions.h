@@ -155,6 +155,26 @@ public:
      */
     bool resultFoundEnabled() const;
 
+    /**
+     * @brief Sets the synchronization search timeout period in seconds.
+     *
+     * This timeout controls how long the system waits for search operations to
+     * complete before aborting. Set to 0 to disable timeout (not recommended
+     * for production environments).
+     *
+     * @param seconds Timeout duration in seconds (minimum 1, maximum 300)
+     * @sa syncSearchTimeout()
+     */
+    void setSyncSearchTimeout(int seconds);
+
+    /**
+     * @brief Returns the current synchronization search timeout in seconds.
+     *
+     * @return Timeout duration in seconds (defualt is 60)
+     * @sa setSyncSearchTimeout()
+     */
+    int syncSearchTimeout() const;
+
 private:
     std::unique_ptr<SearchOptionsData> d;   // PIMPL
 };
