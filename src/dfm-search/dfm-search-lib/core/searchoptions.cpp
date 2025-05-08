@@ -140,4 +140,14 @@ bool SearchOptions::resultFoundEnabled() const
     return d->resultFoundEnabled;
 }
 
+void SearchOptions::setSyncSearchTimeout(int seconds)
+{
+    d->syncSearchTimeoutSecs = seconds;
+}
+
+int SearchOptions::syncSearchTimeout() const
+{
+    return d->syncSearchTimeoutSecs;
+}
+
 DFM_SEARCH_END_NS
