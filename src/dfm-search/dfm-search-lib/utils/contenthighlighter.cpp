@@ -180,8 +180,8 @@ QString customHighlight(const QStringList &keywords, const QString &content, int
         return match.keyword;   // Return the keyword as is (original behavior)
     }
 
-    // This is the "80 characters" from the requirement, used for positioning the keyword.
-    const int positioningMaxLength = 80;
+    // This is the "40 characters" from the requirement, used for positioning the keyword.
+    const int positioningMaxLength = 40;
 
     // 1. Calculate the optimal start position.
     //    This start position is determined based on making the keyword visible
