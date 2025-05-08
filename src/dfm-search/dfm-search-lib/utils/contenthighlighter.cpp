@@ -54,35 +54,35 @@ struct KeywordMatch
 int findOptimalStartPosition(const QString &content, int keywordPos, int maxLength)
 {
     if (keywordPos == 0) return 0;
-    
+
     // 计算关键词前后的理想长度
     int idealBeforeLength = maxLength / 2;
     int idealAfterLength = maxLength - idealBeforeLength;
-    
+
     // 如果关键词在文档开头附近，直接返回0
     if (keywordPos <= idealBeforeLength) {
         return 0;
     }
-    
+
     // 如果关键词在文档末尾附近，确保有足够的空间显示关键词前的文本
     if (keywordPos + idealAfterLength >= content.length()) {
         return qMax(0, content.length() - maxLength);
     }
-    
+
     // 尝试找到最近的换行符作为起始点
     int start = keywordPos - idealBeforeLength;
     int lastNewline = content.lastIndexOf('\n', keywordPos);
-    
+
     // 如果找到换行符，并且它在理想起始点之后，则使用换行符作为起始点
     if (lastNewline != -1 && lastNewline > start) {
         start = lastNewline + 1;
     }
-    
+
     // 确保起始位置不会导致文本超出maxLength
     if (keywordPos - start + idealAfterLength > maxLength) {
         start = keywordPos - (maxLength - idealAfterLength);
     }
-    
+
     return qMax(0, start);
 }
 
@@ -91,26 +91,26 @@ int findOptimalEndPosition(const QString &content, int keywordPos, int keywordLe
     // 计算关键词前后的理想长度
     int idealBeforeLength = keywordPos - startPos;
     int idealAfterLength = maxLength - idealBeforeLength;
-    
+
     // 如果关键词在文档末尾，直接返回文档末尾
     if (keywordPos + keywordLength >= content.length()) {
         return content.length();
     }
-    
+
     // 尝试找到下一个换行符作为结束点
     int end = keywordPos + keywordLength + idealAfterLength;
     int nextNewline = content.indexOf('\n', keywordPos + keywordLength);
-    
+
     // 如果找到换行符，并且它在理想结束点之前，则使用换行符作为结束点
     if (nextNewline != -1 && nextNewline < end) {
         end = nextNewline;
     }
-    
+
     // 确保结束位置不会导致文本超出maxLength
     if (end - startPos > maxLength) {
         end = startPos + maxLength;
     }
-    
+
     return qMin(content.length(), end);
 }
 
@@ -146,30 +146,82 @@ KeywordMatch findFirstKeywordMatch(const QString &content, const QStringList &ke
 
 QString customHighlight(const QStringList &keywords, const QString &content, int maxLength, bool enableHtml)
 {
-    if (content.isEmpty() || keywords.isEmpty())
+    if (content.isEmpty() || keywords.isEmpty()) {
         return QString();
-
-    KeywordMatch match = findFirstKeywordMatch(content, keywords);
-    if (match.position == -1)
-        return QString();
-
-    // 如果关键词长度超过maxLength，直接返回关键词
-    if (match.length >= maxLength) {
-        return match.keyword;
     }
 
-    int start = findOptimalStartPosition(content, match.position, maxLength);
-    int end = findOptimalEndPosition(content, match.position, match.length, maxLength, start);
-
-    QString result = content.mid(start, end - start).simplified();
-
-    if (enableHtml) {
-        for (const QString &keyword : keywords) {
-            result = highlightKeyword(result, keyword);
+    // Ensure there's at least one non-empty keyword.
+    // findFirstKeywordMatch handles empty strings in the list, but if all are empty, it's like no keywords.
+    bool hasValidKeyword = false;
+    for (const QString &kw : keywords) {
+        if (!kw.isEmpty()) {
+            hasValidKeyword = true;
+            break;
         }
     }
+    if (!hasValidKeyword) {
+        return QString();
+    }
 
-    return result;
+    KeywordMatch match = findFirstKeywordMatch(content, keywords);
+    if (match.position == -1) {
+        // No keyword found in content.
+        // As per problem, if no keyword, no range to show.
+        // Alternative: return content.left(maxLength).simplified(); if some default text is needed.
+        return QString();
+    }
+
+    // If the keyword itself is longer than or equal to the final desired maxLength
+    if (match.length >= maxLength) {
+        if (enableHtml) {
+            // Highlight the keyword itself if HTML is enabled
+            return highlightKeyword(match.keyword, match.keyword);
+        }
+        return match.keyword;   // Return the keyword as is (original behavior)
+    }
+
+    // This is the "80 characters" from the requirement, used for positioning the keyword.
+    const int positioningMaxLength = 80;
+
+    // 1. Calculate the optimal start position.
+    //    This start position is determined based on making the keyword visible
+    //    and well-positioned within a `positioningMaxLength` (e.g., 80 char) window.
+    int optimalStart = findOptimalStartPosition(content, match.position, positioningMaxLength);
+
+    // 2. Calculate the optimal end position.
+    //    This uses the `optimalStart` calculated above and extends the snippet
+    //    up to the overall `maxLength` (e.g., 200 chars for the final result),
+    //    or the end of the content, whichever is first.
+    int optimalEnd = findOptimalEndPosition(content, match.position, match.length, maxLength, optimalStart);
+
+    // Safeguard: If somehow optimalStart >= optimalEnd, try to at least show the keyword.
+    // This can happen if content is very short or keyword is at the very end and newline logic truncates aggressively.
+    if (optimalStart >= optimalEnd && match.length > 0) {
+        optimalStart = match.position;
+        optimalEnd = qMin(content.length(), match.position + match.length);
+        // If still bad, it means something is wrong, but mid(X,0) or mid(X, negative) is empty string
+    }
+
+    QString resultSnippet = content.mid(optimalStart, optimalEnd - optimalStart);
+
+    // .simplified() removes leading/trailing whitespace and replaces multiple internal whitespaces with one.
+    // This is applied *after* extraction.
+    resultSnippet = resultSnippet.simplified();
+
+    if (enableHtml) {
+        // Highlight all keywords from the list that appear in the *extracted and simplified* snippet.
+        // Create a temporary string for highlighting because highlightKeyword modifies the string it's given,
+        // and we are iterating.
+        QString tempHighlightedSnippet = resultSnippet;
+        for (const QString &kwToHighlight : keywords) {
+            if (!kwToHighlight.isEmpty()) {
+                tempHighlightedSnippet = highlightKeyword(tempHighlightedSnippet, kwToHighlight);
+            }
+        }
+        resultSnippet = tempHighlightedSnippet;
+    }
+
+    return resultSnippet;
 }
 
 QString highlight(const QString &content, const Lucene::QueryPtr &query, int maxLength, bool enableHtml)
