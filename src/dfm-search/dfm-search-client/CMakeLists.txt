@@ -19,3 +19,6 @@ target_link_libraries(
     Qt${QT_VERSION_MAJOR}::Core
     dfm${DFM_VERSION_MAJOR}-search
 ) 
+
+
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})

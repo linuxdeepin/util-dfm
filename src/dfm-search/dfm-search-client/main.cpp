@@ -322,9 +322,11 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
+#if 0
     testGlobal();
     testPinyin();
     testAnythingStatus();
+#endif
 
     QCommandLineParser parser;
     parser.setApplicationDescription("DFM Search Client");
