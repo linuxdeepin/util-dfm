@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-#if 0
+#ifdef QT_DEBUG
     testGlobal();
     testPinyin();
     testAnythingStatus();
