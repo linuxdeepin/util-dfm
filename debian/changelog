@@ -1,3 +1,9 @@
+util-dfm (1.3.21) unstable; urgency=medium
+
+  * Introduce DConfig-based dynamic file handling, enhance Lucene query processing, improve keyword highlighting, and add search timeout configuration. 
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Fri, 09 May 2025 17:15:59 +0800
+
 util-dfm (1.3.20) unstable; urgency=medium
 
   * install dfm6-search-client
