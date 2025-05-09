@@ -5,6 +5,8 @@
 
 #include <unistd.h>
 
+#include <DConfig>
+
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -44,8 +46,102 @@ static bool isPinyinSequenceHelper(const QString &str, int startPos, const QSet<
     return false;
 }
 
-// TODO (search): use dconfig
-static const QSet<QString> &supportedExtensions()
+// This function is internal to this unit (static) and handles the core DConfig loading.
+static std::optional<QStringList> tryLoadStringListFromDConfigInternal(
+        const QString &appId,
+        const QString &schemaId,
+        const QString &keyName)
+{
+    // Dtk::Core::DConfig::create returns a pointer and ideally needs a parent
+    // for memory management. For a short-lived object within a function,
+    // a local QObject can serve as a temporary parent.
+    QObject dconfigParent;   // Temporary parent for the DConfig instance
+    Dtk::Core::DConfig *dconfigPtr = Dtk::Core::DConfig::create(appId, schemaId, "", &dconfigParent);
+
+    // Check if DConfig object was created successfully
+    if (!dconfigPtr) {
+        qWarning() << "DConfig: Failed to create DConfig instance for appId:" << appId << "schemaId:" << schemaId;
+        return std::nullopt;
+    }
+
+    // Check if the created DConfig instance is valid
+    if (!dconfigPtr->isValid()) {
+        qWarning() << "DConfig: Instance is invalid for appId:" << appId << "schemaId:" << schemaId;
+        // No need to delete dconfigPtr, dconfigParent will manage it.
+        return std::nullopt;
+    }
+
+    QVariant value = dconfigPtr->value(keyName);
+
+    if (!value.isValid()) {
+        qDebug() << "DConfig: Key '" << keyName << "' not found in appId:" << appId << "schemaId:" << schemaId;
+        return std::nullopt;   // Key not found
+    }
+
+    if (!value.canConvert<QStringList>()) {
+        qWarning() << "DConfig: Value for key '" << keyName << "' in appId:" << appId << "schemaId:" << schemaId
+                   << "cannot be converted to QStringList. Actual type:" << value.typeName();
+        return std::nullopt;   // Type mismatch
+    }
+    // No need to delete dconfigPtr, dconfigParent will manage it when it goes out of scope.
+    return value.toStringList();
+}
+
+// --- Specific Loader for "supportedFileExtensions" ---
+static std::optional<QSet<QString>> tryLoadSupportedFileExtensionsFromDConfig()
+{
+    const QString appId = "org.deepin.dde.file-manager";   // Assuming this is the correct appId
+    const QString schemaId = "org.deepin.dde.file-manager.textindex";
+    const QString keyName = "supportedFileExtensions";
+
+    std::optional<QStringList> stringListOpt = tryLoadStringListFromDConfigInternal(appId, schemaId, keyName);
+
+    if (!stringListOpt) {
+        return std::nullopt;   // Loading failed at the generic level
+    }
+
+    const QStringList &extensionsFromDConfigList = *stringListOpt;
+    QSet<QString> extensionsSet;
+    for (const QString &ext : extensionsFromDConfigList) {
+        QString cleanedExt = ext.startsWith('.') ? ext.mid(1) : ext;
+        if (!cleanedExt.isEmpty()) {
+            extensionsSet.insert(cleanedExt);
+        }
+    }
+
+    if (extensionsFromDConfigList.isEmpty()) {
+        qDebug() << "DConfig: Key '" << keyName << "' in schema '" << schemaId << "' provided an empty list.";
+    } else if (extensionsSet.isEmpty() && !extensionsFromDConfigList.isEmpty()) {
+        qDebug() << "DConfig: Key '" << keyName << "' in schema '" << schemaId << "' contained only invalid/empty entries after cleaning.";
+    } else if (!extensionsSet.isEmpty()) {
+        qDebug() << "DConfig: Successfully processed" << extensionsSet.size() << "supported extensions from DConfig.";
+    }
+    return extensionsSet;   // Return the processed set (might be empty if DConfig list was empty or all invalid)
+}
+
+// --- Specific Loader for "indexing_paths" ---
+static std::optional<QStringList> tryLoadIndexingNamesFromDConfig()
+{
+    const QString appId = "org.deepin.anything";
+    const QString schemaId = "org.deepin.anything";   // As per your requirement
+    const QString keyName = "indexing_paths";
+
+    std::optional<QStringList> stringListOpt = tryLoadStringListFromDConfigInternal(appId, schemaId, keyName);
+
+    if (!stringListOpt) {
+        return std::nullopt;   // Loading failed
+    }
+
+    const QStringList &namesFromDConfigList = *stringListOpt;
+
+    if (namesFromDConfigList.isEmpty()) {
+        qDebug() << "DConfig: Key '" << keyName << "' in schema '" << schemaId << "' provided an empty list.";
+    }
+    return namesFromDConfigList;   // Return the processed set
+}
+
+// 辅助函数：提供硬编码的默认扩展名集合
+static const QSet<QString> &getDefaultSupportedExtensions()
 {
     static const QSet<QString> kExtensions = {
         "rtf", "odt", "ods", "odp", "odg", "docx",
@@ -57,6 +153,126 @@ static const QSet<QString> &supportedExtensions()
         "uof", "ofd"
     };
     return kExtensions;
+}
+
+// 主接口：获取支持的文件扩展名
+// 优先从 DConfig 获取，如果失败或DConfig中的列表为空，则使用硬编码的默认值。
+static const QSet<QString> &supportedExtensions()
+{
+    // 静态局部变量的初始化只发生一次，并且是线程安全的。
+    // 使用立即调用的lambda表达式来执行初始化逻辑。
+    static const QSet<QString> kResolvedExtensions = []() -> QSet<QString> {
+        std::optional<QSet<QString>> dconfigExtensionsOpt = tryLoadSupportedFileExtensionsFromDConfig();
+
+        // 如果DConfig成功返回了一个【非空】的集合，则使用它
+        if (dconfigExtensionsOpt && !dconfigExtensionsOpt->isEmpty()) {
+            qDebug() << "Using extensions from DConfig.";
+            return *dconfigExtensionsOpt;
+        }
+
+        // 否则 (DConfig读取失败，或DConfig返回了一个空集合)，使用默认值
+        if (dconfigExtensionsOpt && dconfigExtensionsOpt->isEmpty()) {
+            qDebug() << "DConfig provided an empty list of extensions. Using fallback default extensions.";
+        } else if (!dconfigExtensionsOpt) {   // implies dconfigExtensionsOpt is std::nullopt
+            qDebug() << "Failed to load extensions from DConfig. Using fallback default extensions.";
+        }
+        return getDefaultSupportedExtensions();
+    }();   // 注意这里的 ()，立即调用lambda
+
+    return kResolvedExtensions;
+}
+
+static QStringList getResolvedIndexedDirectories()   // Renamed for clarity
+{
+    const QString homePath = QDir::homePath();   // Cache for frequent use
+    const QStringList fallbackResult = { homePath };
+
+    std::optional<QStringList> dconfigNamesOpt = tryLoadIndexingNamesFromDConfig();
+
+    if (!dconfigNamesOpt) {
+        qDebug() << "Failed to load indexing names from DConfig or DConfig instance invalid, using fallback.";
+        return fallbackResult;
+    }
+
+    const QStringList &rawPathsFromDConfig = *dconfigNamesOpt;
+
+    if (rawPathsFromDConfig.isEmpty()) {
+        qDebug() << "DConfig provided an empty list for indexing names, using fallback.";
+        return fallbackResult;
+    }
+
+    QList<QString> processedPaths;   // Use QList to maintain order before final sort
+    QSet<QString> uniquePathsChecker;   // To ensure uniqueness during processing
+
+    // Special handling for homePath if it's intended to be first
+    bool homePathEncounteredAndAdded = false;
+
+    for (const QString &rawPath : rawPathsFromDConfig) {
+        QString currentPath = rawPath.trimmed();   // Remove leading/trailing whitespace
+
+        // 1. Expand environment variables (specifically $HOME and ~)
+        if (currentPath == QLatin1String("$HOME") || currentPath == QLatin1String("~")) {
+            currentPath = homePath;
+        } else if (currentPath.startsWith(QLatin1String("$HOME/"))) {
+            currentPath = QDir(homePath).filePath(currentPath.mid(6));   // Length of "$HOME/"
+        } else if (currentPath.startsWith(QLatin1String("~/"))) {
+            currentPath = QDir(homePath).filePath(currentPath.mid(2));   // Length of "~/"
+        }
+        // Add more generic environment variable expansion here if needed:
+        // e.g., using QProcessEnvironment::systemEnvironment().value("VAR_NAME")
+        // or a regex for ${VAR_NAME} patterns.
+
+        // 2. Normalize and validate path (basic validation: non-empty)
+        if (currentPath.isEmpty()) {
+            qDebug() << "Skipping empty path string after processing raw entry:" << rawPath;
+            continue;
+        }
+
+        currentPath = QDir::cleanPath(currentPath);   // Normalize path separators (e.g. \\ to /)
+
+        // Further validation could be done here, e.g., check if it's an absolute path
+        // QFileInfo fileInfo(currentPath);
+        // if (!fileInfo.isAbsolute()) {
+        //     qWarning() << "Skipping relative path:" << currentPath;
+        //     continue;
+        // }
+        // if (!fileInfo.isDir() || !fileInfo.exists()) { // Stricter: must be an existing directory
+        //     qWarning() << "Skipping non-existent or non-directory path:" << currentPath;
+        //     continue;
+        // }
+
+        // 3. Add to list if unique and handle homePath ordering
+        if (currentPath == homePath) {
+            if (!homePathEncounteredAndAdded) {
+                processedPaths.prepend(currentPath);   // Ensure homePath is first if encountered
+                uniquePathsChecker.insert(currentPath);
+                homePathEncounteredAndAdded = true;
+            }
+            // If homePath was already added (e.g. from a previous "$HOME"), skip subsequent identical entries.
+            // The uniquePathsChecker will also prevent adding it again if it wasn't the first home path encountered.
+        } else {
+            if (!uniquePathsChecker.contains(currentPath)) {
+                processedPaths.append(currentPath);
+                uniquePathsChecker.insert(currentPath);
+            }
+        }
+    }
+
+    // Ensure home path is first if it was added but not via prepend (e.g. if it wasn't the first item processed)
+    // This can happen if DConfig has ["/foo", "$HOME"] and homePath wasn't prepended.
+    // The above loop tries to prepend, but this is a safeguard if the logic changes or has subtle bugs.
+    if (homePathEncounteredAndAdded && !processedPaths.isEmpty() && processedPaths.first() != homePath) {
+        processedPaths.removeAll(homePath);   // Remove from other positions
+        processedPaths.prepend(homePath);   // Add to front
+    }
+
+    if (processedPaths.isEmpty()) {
+        qDebug() << "All paths from DConfig were invalid or empty after processing, using fallback.";
+        return fallbackResult;
+    }
+
+    qDebug() << "Resolved indexed directories:" << processedPaths;
+    return processedPaths;
 }
 
 bool isPinyinSequence(const QString &input)
@@ -188,7 +404,7 @@ QStringList defaultContentSearchExtensions()
 
 QStringList defaultIndexedDirectory()
 {
-    return { QDir::homePath() };
+    return getResolvedIndexedDirectories();
 }
 
 bool isPathInContentIndexDirectory(const QString &path)
