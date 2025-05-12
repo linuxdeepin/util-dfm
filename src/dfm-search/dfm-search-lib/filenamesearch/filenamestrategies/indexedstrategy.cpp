@@ -45,7 +45,12 @@ Lucene::String QueryBuilder::processString(const QString &str, bool caseSensitiv
     }
 
     // Step 3: 转成 Lucene::String（Lucene++ 使用的是 UTF-8）
-    Lucene::String luceneStr = Lucene::StringUtils::toUnicode(std::string(escaped.begin(), escaped.end()));
+    QString tempQString = QString::fromStdWString(escaped);
+    QByteArray utf8Bytes = tempQString.toUtf8();
+    Lucene::String luceneStr = Lucene::StringUtils::toUnicode(std::string(utf8Bytes.constData(), utf8Bytes.length()));
+    if (luceneStr.empty()) {
+        luceneStr = Lucene::StringUtils::toUnicode(str.toStdString());
+    }
 
     // Step 4: 如果不区分大小写就转小写（Lucene::String 是 Unicode）
     if (!caseSensitive) {
