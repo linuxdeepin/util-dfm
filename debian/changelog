@@ -1,3 +1,9 @@
+util-dfm (1.3.22) unstable; urgency=medium
+
+  * fix bugs
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Mon, 12 May 2025 16:50:57 +0800
+
 util-dfm (1.3.21) unstable; urgency=medium
 
   * Introduce DConfig-based dynamic file handling, enhance Lucene query processing, improve keyword highlighting, and add search timeout configuration. 
