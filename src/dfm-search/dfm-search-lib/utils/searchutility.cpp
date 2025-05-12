@@ -404,7 +404,54 @@ QStringList defaultContentSearchExtensions()
 
 QStringList defaultIndexedDirectory()
 {
-    return getResolvedIndexedDirectories();
+    const QStringList &dirs = getResolvedIndexedDirectories();
+
+    if (dirs.isEmpty()) {
+        return QStringList();
+    }
+
+    // 创建一个新列表来存储结果
+    QStringList result;
+
+    // 先将所有路径规范化并排序，以便父目录出现在子目录之前
+    QStringList normalizedDirs;
+    for (const QString &dir : dirs) {
+        QString normalizedPath = QDir(dir).absolutePath();
+        // 确保路径以 '/' 结尾，便于后续比较
+        if (!normalizedPath.endsWith('/')) {
+            normalizedPath += '/';
+        }
+        normalizedDirs.append(normalizedPath);
+    }
+
+    // 排序，确保短路径（潜在的父路径）优先
+    std::sort(normalizedDirs.begin(), normalizedDirs.end(),
+              [](const QString &a, const QString &b) { return a.length() < b.length(); });
+
+    // 检查路径之间的父子关系
+    for (const QString &currentPath : normalizedDirs) {
+        bool isSubdirectory = false;
+
+        // 检查当前路径是否是已添加路径的子目录
+        for (const QString &addedPath : result) {
+            if (currentPath.startsWith(addedPath)) {
+                isSubdirectory = true;
+                break;
+            }
+        }
+
+        // 如果不是子目录，则添加到结果中
+        if (!isSubdirectory) {
+            // 移除末尾的 '/'，除非是根目录 "/"
+            QString pathToAdd = currentPath;
+            if (pathToAdd.length() > 1 && pathToAdd.endsWith('/')) {
+                pathToAdd.chop(1);
+            }
+            result.append(pathToAdd);
+        }
+    }
+
+    return result;
 }
 
 bool isPathInContentIndexDirectory(const QString &path)

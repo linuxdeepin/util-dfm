@@ -55,10 +55,12 @@ bool isSupportedContentSearchExtension(const QString &suffix);
 QStringList defaultContentSearchExtensions();
 
 /**
- * @brief Get the default directory path for indexed files.
- * This function retrieves the default directory where indexed files are stored,
- * allowing the application to access and manage the indexed content efficiently.
- * @return A QString representing the path to the default indexed directory.
+ * @brief Gets the list of default indexed directories with deduplicated parent/child paths.
+ *
+ * If the list contains both a parent directory (e.g. "/home") and its child ("/home/test"),
+ * only the parent directory is kept. Paths are normalized using QDir::cleanPath.
+ *
+ * @return QStringList Deduplicated directory list (sorted alphabetically)
  */
 QStringList defaultIndexedDirectory();
 

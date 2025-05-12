@@ -129,6 +129,12 @@ void testGlobal()
     std::cout << "Filename index directory: "
               << Global::fileNameIndexDirectory().toStdString() << std::endl;
 
+    std::cout << "Default indexed dirs: " << std::endl;
+    const auto &dirs = Global::defaultIndexedDirectory();
+    for (const auto &dir : dirs) {
+        std::cout << dir.toStdString() << std::endl;
+    }
+
     std::cout << "================= test global end =================" << std::endl;
 }
 
