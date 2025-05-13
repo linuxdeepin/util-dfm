@@ -40,6 +40,21 @@ private:
 
     // 构建Lucene查询
     Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer);
+    // Helper for simple queries (original logic for "contents" field)
+    Lucene::QueryPtr buildSimpleContentsQuery(
+            const SearchQuery &query,
+            const Lucene::QueryParserPtr &contentsParser);
+
+    // Helper for "standard" boolean logic (original logic for "contents" field, handles AND/OR)
+    Lucene::QueryPtr buildStandardBooleanContentsQuery(
+            const SearchQuery &query,
+            const Lucene::QueryParserPtr &contentsParser);
+
+    // Helper for "advanced" mixed AND logic (searches "contents" and "filename")
+    Lucene::QueryPtr buildAdvancedAndQuery(
+            const SearchQuery &query,   // Operator is implicitly AND
+            const Lucene::QueryParserPtr &contentsParser,
+            const Lucene::AnalyzerPtr &analyzer);   // Analyzer is needed to create filenameParser
 
     // 处理搜索结果
     void processSearchResults(const Lucene::IndexSearcherPtr &searcher,

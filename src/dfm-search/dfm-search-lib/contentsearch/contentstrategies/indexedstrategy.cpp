@@ -59,35 +59,118 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
 Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer)
 {
     try {
-        // 创建查询解析器
-        Lucene::QueryParserPtr parser = newLucene<Lucene::QueryParser>(
+        m_keywords.clear();
+        ContentOptionsAPI optAPI(m_options);   // Use the member m_options
+        bool mixedAndEnabled = optAPI.isFilenameContentMixedAndSearchEnabled();
+
+        Lucene::QueryParserPtr contentsParser = newLucene<Lucene::QueryParser>(
                 Lucene::LuceneVersion::LUCENE_CURRENT,
                 L"contents",
                 analyzer);
 
-        m_keywords.clear();
-        if (query.type() == SearchQuery::Type::Boolean) {
-            // 处理布尔查询
-            Lucene::BooleanQueryPtr booleanQuery = newLucene<Lucene::BooleanQuery>();
-
-            // 添加所有子查询
-            for (const auto &subQuery : query.subQueries()) {
-                m_keywords.append(subQuery.keyword());
-                Lucene::QueryPtr termQuery = parser->parse(subQuery.keyword().toStdWString());
-                booleanQuery->add(termQuery,
-                                  query.booleanOperator() == SearchQuery::BooleanOperator::AND ? Lucene::BooleanClause::MUST : Lucene::BooleanClause::SHOULD);
+        if (query.type() == SearchQuery::Type::Simple) {
+            return buildSimpleContentsQuery(query, contentsParser);
+        } else if (query.type() == SearchQuery::Type::Boolean) {
+            if (query.subQueries().isEmpty()) {
+                // For an empty boolean query, match nothing.
+                return newLucene<Lucene::BooleanQuery>();
             }
 
-            return booleanQuery;
+            // Determine which logic path to take for boolean queries
+            if (mixedAndEnabled && query.booleanOperator() == SearchQuery::BooleanOperator::AND) {
+                // New "advanced" AND logic for contents/filename
+                return buildAdvancedAndQuery(query, contentsParser, analyzer);
+            } else {
+                // "Standard" contents-only logic for:
+                // 1. OR queries (regardless of mixedAndEnabled value).
+                // 2. AND queries when mixedAndEnabled is false.
+                return buildStandardBooleanContentsQuery(query, contentsParser);
+            }
         } else {
-            // 处理简单查询
-            m_keywords.append(query.keyword());
-            return parser->parse(query.keyword().toStdWString());
+            qWarning() << "Unknown SearchQuery type encountered.";
+            return newLucene<Lucene::BooleanQuery>();   // Should not happen
         }
+
     } catch (const Lucene::LuceneException &e) {
-        qWarning() << "Error building query:" << QString::fromStdWString(e.getError());
+        qWarning() << "Error building Lucene query:" << QString::fromStdWString(e.getError());
+        return nullptr;
+    } catch (const std::exception &e) {
+        qWarning() << "Standard exception building Lucene query:" << e.what();
         return nullptr;
     }
+}
+
+QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query, const Lucene::QueryParserPtr &contentsParser, const Lucene::AnalyzerPtr &analyzer)
+{
+    // This method implements the new "mixed" AND logic.
+    // It requires its own filenameParser.
+    Lucene::QueryParserPtr filenameParser = newLucene<Lucene::QueryParser>(
+            Lucene::LuceneVersion::LUCENE_CURRENT,
+            L"filename",
+            analyzer);
+
+    Lucene::BooleanQueryPtr overallQuery = newLucene<Lucene::BooleanQuery>();
+    Lucene::BooleanQueryPtr mainAndClausesQuery = newLucene<Lucene::BooleanQuery>();
+    Lucene::BooleanQueryPtr allFilenamesQuery = newLucene<Lucene::BooleanQuery>();
+    bool hasValidKeywords = false;
+
+    for (const auto &subQuery : query.subQueries()) {
+        m_keywords.append(subQuery.keyword());
+        std::wstring keywordStd = subQuery.keyword().toStdWString();
+        if (keywordStd.empty()) {
+            continue;   // Skip empty keywords
+        }
+        hasValidKeywords = true;
+
+        Lucene::QueryPtr contentsTermQuery = contentsParser->parse(keywordStd);
+        Lucene::QueryPtr filenameTermQuery = filenameParser->parse(keywordStd);
+
+        // Build (contents:keyword OR filename:keyword)
+        Lucene::BooleanQueryPtr combinedTermQuery = newLucene<Lucene::BooleanQuery>();
+        combinedTermQuery->add(contentsTermQuery, Lucene::BooleanClause::SHOULD);
+        combinedTermQuery->add(filenameTermQuery, Lucene::BooleanClause::SHOULD);
+
+        mainAndClausesQuery->add(combinedTermQuery, Lucene::BooleanClause::MUST);
+        allFilenamesQuery->add(filenameTermQuery, Lucene::BooleanClause::MUST);
+    }
+
+    if (!hasValidKeywords) {   // All subQuery keywords were empty
+        return newLucene<Lucene::BooleanQuery>();   // Matches nothing
+    }
+
+    // Final query: ( (c:k1 OR f:k1) AND ... ) AND NOT (f:k1 AND f:k2 ...)
+    overallQuery->add(mainAndClausesQuery, Lucene::BooleanClause::MUST);
+    overallQuery->add(allFilenamesQuery, Lucene::BooleanClause::MUST_NOT);
+    return overallQuery;
+}
+
+QueryPtr ContentIndexedStrategy::buildStandardBooleanContentsQuery(const SearchQuery &query, const Lucene::QueryParserPtr &contentsParser)
+{
+    // This method implements the "original" boolean logic, searching only "contents".
+    Lucene::BooleanQueryPtr booleanQuery = newLucene<Lucene::BooleanQuery>();
+
+    for (const auto &subQuery : query.subQueries()) {
+        m_keywords.append(subQuery.keyword());
+        std::wstring keywordStd = subQuery.keyword().toStdWString();
+        if (keywordStd.empty()) {
+            continue;   // Skip empty keywords
+        }
+
+        Lucene::QueryPtr termQuery = contentsParser->parse(keywordStd);
+        booleanQuery->add(termQuery,
+                          query.booleanOperator() == SearchQuery::BooleanOperator::AND ? Lucene::BooleanClause::MUST : Lucene::BooleanClause::SHOULD);
+    }
+
+    return booleanQuery;
+}
+
+QueryPtr ContentIndexedStrategy::buildSimpleContentsQuery(const SearchQuery &query, const Lucene::QueryParserPtr &contentsParser)
+{
+    m_keywords.append(query.keyword());
+    if (query.keyword().isEmpty()) {
+        return newLucene<Lucene::BooleanQuery>();   // Match nothing for empty keyword
+    }
+    return contentsParser->parse(query.keyword().toStdWString());
 }
 
 void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr &searcher,

@@ -463,6 +463,7 @@ int main(int argc, char *argv[])
         contentOptions.setMaxPreviewLength(200);
         contentOptions.setFullTextRetrievalEnabled(true);
         contentOptions.setSearchResultHighlightEnabled(true);
+        contentOptions.setFilenameContentMixedAndSearchEnabled(true);
         if (parser.isSet(maxPreviewOption)) {
             bool ok;
             int previewLength = parser.value(maxPreviewOption).toInt(&ok);

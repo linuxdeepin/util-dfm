@@ -47,6 +47,16 @@ bool ContentOptionsAPI::isFullTextRetrievalEnabled() const
     return m_options.customOption("fullTextRetrieval").toBool();
 }
 
+void ContentOptionsAPI::setFilenameContentMixedAndSearchEnabled(bool enabled)
+{
+    m_options.setCustomOption("filenameContentMixedAndSearchEnabled", enabled);
+}
+
+bool ContentOptionsAPI::isFilenameContentMixedAndSearchEnabled() const
+{
+    return m_options.customOption("filenameContentMixedAndSearchEnabled").toBool();
+}
+
 ContentResultAPI::ContentResultAPI(SearchResult &result)
     : m_result(result)
 {

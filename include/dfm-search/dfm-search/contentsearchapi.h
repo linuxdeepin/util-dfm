@@ -74,6 +74,30 @@ public:
      */
     bool isFullTextRetrievalEnabled() const;
 
+    /**
+     * @brief Sets whether the extended AND search behavior across 'contents' and 'filename' fields is enabled.
+     * @param enabled True to enable the feature, false to disable it.
+     * @see isFilenameContentMixedAndSearchEnabled() for a detailed description of the behavior.
+     */
+    void setFilenameContentMixedAndSearchEnabled(bool enabled);
+
+    /**
+     * @brief Checks if the extended AND search behavior across 'contents' and 'filename' fields is enabled.
+     *
+     * When enabled (returns true), boolean AND queries will search for terms such that:
+     * 1. All terms must be present, potentially distributed between the 'contents' and 'filename' fields.
+     *    (e.g., termA in 'contents', termB in 'filename').
+     * 2. A match is explicitly excluded if all search terms are found *only* within the 'filename' field.
+     *    (e.g., termA in 'filename', termB in 'filename' -- this specific case is excluded).
+     * 3. Matches where all terms are in 'contents', or mixed between 'contents' and 'filename' (as in point 1), are included.
+     *
+     * If this option is disabled (returns false), or for boolean OR queries,
+     * the boolean search will be performed exclusively on the 'contents' field, following the original logic.
+     *
+     * @return True if the filename-content mixed AND search is enabled, false otherwise.
+     */
+    bool isFilenameContentMixedAndSearchEnabled() const;
+
 private:
     SearchOptions &m_options;
 };
