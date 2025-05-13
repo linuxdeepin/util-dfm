@@ -1,3 +1,9 @@
+util-dfm (1.3.23) unstable; urgency=medium
+
+  * Implement extended AND search behavior for filename and content fields
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Tue, 13 May 2025 15:41:21 +0800
+
 util-dfm (1.3.22) unstable; urgency=medium
 
   * fix bugs
