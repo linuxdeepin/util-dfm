@@ -1,12 +1,12 @@
+// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef CONTENTHIGHLIGHTER_H
 #define CONTENTHIGHLIGHTER_H
 
 #include <QString>
 #include <QStringList>
 
-// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
-//
-// SPDX-License-Identifier: GPL-3.0-or-later
 #include <lucene++/LuceneHeaders.h>
 
 #include <dfm-search/dsearch_global.h>
