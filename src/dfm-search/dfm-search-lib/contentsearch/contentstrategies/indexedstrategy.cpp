@@ -18,6 +18,7 @@
 
 #include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/contenthighlighter.h"
+#include "utils/lucenequeryutils.h"
 
 using namespace Lucene;
 
@@ -116,14 +117,15 @@ QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query,
 
     for (const auto &subQuery : query.subQueries()) {
         m_keywords.append(subQuery.keyword());
-        std::wstring keywordStd = subQuery.keyword().toStdWString();
-        if (keywordStd.empty()) {
+        if (subQuery.keyword().isEmpty()) {
             continue;   // Skip empty keywords
         }
         hasValidKeywords = true;
 
-        Lucene::QueryPtr contentsTermQuery = contentsParser->parse(keywordStd);
-        Lucene::QueryPtr filenameTermQuery = filenameParser->parse(keywordStd);
+        // 使用 LuceneQueryUtils 处理特殊字符
+        Lucene::String processedKeyword = LuceneQueryUtils::processQueryString(subQuery.keyword(), false);
+        Lucene::QueryPtr contentsTermQuery = contentsParser->parse(processedKeyword);
+        Lucene::QueryPtr filenameTermQuery = filenameParser->parse(processedKeyword);
 
         // Build (contents:keyword OR filename:keyword)
         Lucene::BooleanQueryPtr combinedTermQuery = newLucene<Lucene::BooleanQuery>();
@@ -151,12 +153,12 @@ QueryPtr ContentIndexedStrategy::buildStandardBooleanContentsQuery(const SearchQ
 
     for (const auto &subQuery : query.subQueries()) {
         m_keywords.append(subQuery.keyword());
-        std::wstring keywordStd = subQuery.keyword().toStdWString();
-        if (keywordStd.empty()) {
+        if (subQuery.keyword().isEmpty()) {
             continue;   // Skip empty keywords
         }
 
-        Lucene::QueryPtr termQuery = contentsParser->parse(keywordStd);
+        // 使用 LuceneQueryUtils 处理特殊字符
+        Lucene::QueryPtr termQuery = contentsParser->parse(LuceneQueryUtils::processQueryString(subQuery.keyword(), false));
         booleanQuery->add(termQuery,
                           query.booleanOperator() == SearchQuery::BooleanOperator::AND ? Lucene::BooleanClause::MUST : Lucene::BooleanClause::SHOULD);
     }
@@ -170,7 +172,8 @@ QueryPtr ContentIndexedStrategy::buildSimpleContentsQuery(const SearchQuery &que
     if (query.keyword().isEmpty()) {
         return newLucene<Lucene::BooleanQuery>();   // Match nothing for empty keyword
     }
-    return contentsParser->parse(query.keyword().toStdWString());
+    // 使用 LuceneQueryUtils 处理特殊字符
+    return contentsParser->parse(LuceneQueryUtils::processQueryString(query.keyword(), false));
 }
 
 void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr &searcher,

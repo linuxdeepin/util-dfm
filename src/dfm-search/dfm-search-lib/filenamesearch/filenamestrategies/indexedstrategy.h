@@ -117,9 +117,6 @@ public:
     QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
     QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
 
-    // 处理字符串大小写
-    String processString(const QString &str, bool caseSensitive) const;
-
 private:
     // 通用的查询构建方法
     QueryPtr buildCommonQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer, bool allowWildcard = false) const;
