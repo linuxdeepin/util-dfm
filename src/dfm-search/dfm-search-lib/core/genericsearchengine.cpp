@@ -116,37 +116,8 @@ void GenericSearchEngine::search(const SearchQuery &query)
 void GenericSearchEngine::searchWithCallback(const SearchQuery &query,
                                              SearchEngine::ResultCallback callback)
 {
-    if (m_status.load() == SearchStatus::Searching)
-        return;
-
-    m_cancelled.store(false);
-    setStatus(SearchStatus::Searching);
-    emit searchStarted();
-
-    // 清空结果列表
-    m_results.clear();
-
-    // 清空批处理结果并启动定时器
-    m_batchResults.clear();
-    m_batchTimer.start();
-
-    // 保存当前查询和回调
-    m_currentQuery = query;
     m_callback = callback;
-
-    // 验证搜索条件
-    auto validationResult = validateSearchConditions();
-    if (validationResult.isError()) {
-        reportError(validationResult);
-        setStatus(SearchStatus::Error);
-        return;
-    }
-
-    // 执行异步搜索
-    QMetaObject::invokeMethod(m_worker, "doSearch",
-                              Q_ARG(DFMSEARCH::SearchQuery, query),
-                              Q_ARG(DFMSEARCH::SearchOptions, m_options),
-                              Q_ARG(DFMSEARCH::SearchType, searchType()));
+    searchSync(query);
 }
 
 SearchResultExpected GenericSearchEngine::searchSync(const SearchQuery &query)
