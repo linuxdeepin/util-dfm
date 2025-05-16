@@ -112,6 +112,11 @@ void SearchEngine::search(const SearchQuery &query)
 void SearchEngine::searchWithCallback(const SearchQuery &query, ResultCallback callback)
 {
     if (d_ptr) {
+        // 自动开启 resultFoundEnabled 以确保回调能正常工作
+        SearchOptions options = d_ptr->searchOptions();
+        options.setResultFoundEnabled(true);
+        d_ptr->setSearchOptions(options);
+        
         d_ptr->searchWithCallback(query, callback);
     }
 }
