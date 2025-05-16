@@ -16,7 +16,8 @@ SearchOptionsData::SearchOptionsData()
       searchPath(QDir::homePath()),
       includeHidden(false),
       maxResults(-1),
-      resultFoundEnabled(false)
+      resultFoundEnabled(false),
+      detailedResultsEnabled(false)
 {
 }
 
@@ -138,6 +139,16 @@ void SearchOptions::setResultFoundEnabled(bool enable)
 bool SearchOptions::resultFoundEnabled() const
 {
     return d->resultFoundEnabled;
+}
+
+void SearchOptions::setDetailedResultsEnabled(bool enable)
+{
+    d->detailedResultsEnabled = enable;
+}
+
+bool SearchOptions::detailedResultsEnabled() const
+{
+    return d->detailedResultsEnabled;
 }
 
 void SearchOptions::setSyncSearchTimeout(int seconds)

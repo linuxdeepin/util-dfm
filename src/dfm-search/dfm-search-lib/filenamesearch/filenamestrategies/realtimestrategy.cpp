@@ -34,6 +34,7 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
     // 获取文件类型过滤
     FileNameOptionsAPI optionsApi(const_cast<SearchOptions &>(m_options));
     const QStringList fileExts = optionsApi.fileExtensions();
+    const bool detailedResults = m_options.detailedResultsEnabled();
     const bool resultFoundEnabled = m_options.resultFoundEnabled();
 
     // 检查搜索路径
@@ -137,13 +138,15 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
                 // 创建搜索结果
                 SearchResult result(info.filePath());
 
-                if (resultFoundEnabled) {
+                if (detailedResults) {
                     FileNameResultAPI api(result);
                     api.setModifiedTime(info.lastModified().toString());
                     api.setIsDirectory(info.isDir());
                     api.setFileType(info.suffix().isEmpty() ? (info.isDir() ? "directory" : "unknown") : info.suffix());
+                }
 
-                    // 实时发送结果
+                // 实时发送结果
+                if (resultFoundEnabled) {
                     emit resultFound(result);
                 }
 

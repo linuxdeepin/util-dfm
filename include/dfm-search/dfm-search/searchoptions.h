@@ -156,6 +156,28 @@ public:
     bool resultFoundEnabled() const;
 
     /**
+     * @brief Enables or disables the addition of detailed information to search results.
+     * 
+     * When enabled, search results will include additional metadata such as file size,
+     * modification time, file type, etc. When disabled, only the basic path information
+     * is included, which improves performance and reduces memory usage.
+     *
+     * This is separate from resultFoundEnabled() which controls whether result signals
+     * are emitted during the search process.
+     *
+     * @param enable Set @c true to include detailed information in results, @c false for basic results only.
+     */
+    void setDetailedResultsEnabled(bool enable);
+
+    /**
+     * @brief Returns whether search results include detailed information.
+     *
+     * @return @c true if search results include detailed metadata, @c false if results
+     * only contain basic path information.
+     */
+    bool detailedResultsEnabled() const;
+
+    /**
      * @brief Sets the synchronization search timeout period in seconds.
      *
      * This timeout controls how long the system waits for search operations to
