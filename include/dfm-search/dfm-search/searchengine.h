@@ -31,8 +31,9 @@ public:
     /**
      * @brief Callback function type for search results
      * @param result The search result to process
+     * @return bool If returns `true`, the search iteration will be interrupted
      */
-    using ResultCallback = std::function<void(const SearchResult &)>;
+    using ResultCallback = std::function<bool(const SearchResult &)>;
 
     /**
      * @brief Creates a search engine of the specified type

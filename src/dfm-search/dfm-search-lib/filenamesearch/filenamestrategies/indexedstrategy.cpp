@@ -490,7 +490,7 @@ SearchResult FileNameIndexedStrategy::processSearchResult(const QString &path, c
     api.setIsDirectory(type == "dir");
     api.setFileType(type);
 
-    // perf: resultFound too slow!
+    // 实时发送结果
     emit resultFound(result);
     return result;
 }

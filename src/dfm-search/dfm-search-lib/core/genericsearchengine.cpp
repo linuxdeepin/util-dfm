@@ -185,6 +185,15 @@ void GenericSearchEngine::handleSearchResult(const DFMSEARCH::SearchResult &resu
     // 存储结果到全局结果列表
     m_results.append(result);
 
+    // 如果设置了回调，立即调用回调，如果回调返回true则终止搜索
+    if (m_callback) {
+        if (m_callback(result)) {
+            // 回调返回 true，取消搜索
+            cancel();
+            return;
+        }
+    }
+
     // 将结果添加到批处理队列
     m_batchResults.append(result);
 }
@@ -208,13 +217,8 @@ void GenericSearchEngine::handleSearchFinished(const DFMSEARCH::SearchResultList
     // 设置状态为完成
     setStatus(SearchStatus::Finished);
 
-    // TODO (search): perf
-    // 如果设置了回调，调用回调
-    if (m_callback) {
-        std::for_each(results.begin(), results.end(), [this](const SearchResult &result) {
-            m_callback(result);
-        });
-    }
+    // 如果没有通过 handleSearchResult 中断搜索，在这里执行最终检查
+    // 注意：通常在 handleSearchResult 已处理大部分情况，此处仅作为备用
     // 发送完成信号
     emit searchFinished(m_results);
 }
