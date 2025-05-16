@@ -459,7 +459,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
             }
 
             // 处理搜索结果
-            if (Q_UNLIKELY(m_options.resultFoundEnabled())) {
+            if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
                 QString type = QString::fromStdWString(doc->get(L"file_type"));
                 QString time = QString::fromStdWString(doc->get(L"modify_time_str"));
                 QString size = QString::fromStdWString(doc->get(L"file_size_str"));
@@ -469,6 +469,10 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
                 SearchResult result(path);
                 m_results.append(result);
             }
+
+            // 实时发送结果
+            if (Q_UNLIKELY(m_options.resultFoundEnabled()))
+                emit resultFound(m_results.last());
 
         } catch (const LuceneException &e) {
             qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());
@@ -490,8 +494,6 @@ SearchResult FileNameIndexedStrategy::processSearchResult(const QString &path, c
     api.setIsDirectory(type == "dir");
     api.setFileType(type);
 
-    // 实时发送结果
-    emit resultFound(result);
     return result;
 }
 

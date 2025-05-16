@@ -34,6 +34,7 @@ public:
     int maxResults;   ///< Maximum number of results to return
     QVariantHash customOptions;   ///< Custom search options
     bool resultFoundEnabled;   ///< Whether to enable result found notifications
+    bool detailedResultsEnabled;   ///< Whether to include detailed information in search results
     int syncSearchTimeoutSecs { 60 };
 };
 
