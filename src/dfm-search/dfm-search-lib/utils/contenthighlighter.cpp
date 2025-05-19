@@ -51,6 +51,39 @@ struct KeywordMatch
     QString keyword;
 };
 
+/**
+ * @brief 检查给定位置是否是段落的开头
+ * @param content 原始文本内容
+ * @param position 需要检查的位置
+ * @return 如果是段落开头返回true，否则返回false
+ */
+bool isParagraphStart(const QString &content, int position)
+{
+    // 如果位置为0，则一定是文档开头
+    if (position == 0) {
+        return true;
+    }
+
+    // 如果位置超出内容范围，返回false
+    if (position >= content.length()) {
+        return false;
+    }
+
+    // 向前搜索，跳过所有空白字符
+    int lookBackPos = position - 1;
+    while (lookBackPos >= 0 && content.at(lookBackPos).isSpace() && content.at(lookBackPos) != '\n' && content.at(lookBackPos) != '\r') {
+        lookBackPos--;
+    }
+
+    // 如果找到段落结束符或已到文档开头，则认为是段落开头
+    if (lookBackPos < 0) {
+        return true; // 文档开头
+    }
+    
+    QChar prevChar = content.at(lookBackPos);
+    return (prevChar == '\n' || prevChar == '\r');
+}
+
 int findOptimalStartPosition(const QString &content, int keywordPos, int maxLength)
 {
     if (keywordPos == 0) return 0;
@@ -219,6 +252,13 @@ QString customHighlight(const QStringList &keywords, const QString &content, int
             }
         }
         resultSnippet = tempHighlightedSnippet;
+    }
+
+    // 只有在段落开头被截断时才添加省略号
+    if (optimalStart > 0 && !isParagraphStart(content, optimalStart)) {
+        // Unicode 水平省略号字符 (U+2026)
+        static constexpr QChar kEllipsis(8230);
+        resultSnippet = QString(kEllipsis) + resultSnippet;
     }
 
     return resultSnippet;
