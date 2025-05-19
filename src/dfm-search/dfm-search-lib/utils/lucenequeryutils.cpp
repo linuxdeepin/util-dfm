@@ -10,7 +10,7 @@ namespace LuceneQueryUtils {
 std::wstring getLuceneSpecialChars()
 {
     // Lucene 特殊字符（按 Lucene 语法需要转义）
-    return L"+-&&||!(){}[]^\"~*?:\\/";
+    return L"+-&&||!(){}[]^\"~*?:\\/ ";
 }
 
 Lucene::String processQueryString(const QString &str, bool caseSensitive)
@@ -50,4 +50,4 @@ Lucene::String processQueryString(const QString &str, bool caseSensitive)
 
 }   // namespace LuceneQueryUtils
 
-DFM_SEARCH_END_NS 
+DFM_SEARCH_END_NS
