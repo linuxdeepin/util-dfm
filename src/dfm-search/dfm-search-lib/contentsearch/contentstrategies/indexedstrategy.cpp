@@ -200,8 +200,47 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
         try {
             Lucene::ScoreDocPtr scoreDoc = scoreDocs[i];
-            Lucene::DocumentPtr doc = searcher->doc(scoreDoc->doc);
-            QString path = QString::fromStdWString(doc->get(L"path"));
+            if (!scoreDoc) {
+                qWarning() << "Null ScoreDoc encountered at index" << i;
+                continue;
+            }
+
+            // Defensive check: verify document ID is valid
+            if (scoreDoc->doc < 0) {
+                qWarning() << "Invalid document ID:" << scoreDoc->doc;
+                continue;
+            }
+
+            // Safely retrieve document (could throw if index is corrupted)
+            Lucene::DocumentPtr doc;
+            try {
+                doc = searcher->doc(scoreDoc->doc);
+                if (!doc) {
+                    qWarning() << "Failed to retrieve document at index:" << scoreDoc->doc;
+                    continue;
+                }
+            } catch (const Lucene::LuceneException &e) {
+                qWarning() << "Exception while retrieving document:" << QString::fromStdWString(e.getError());
+                continue;
+            } catch (const std::exception &e) {
+                qWarning() << "Standard exception while retrieving document:" << e.what();
+                continue;
+            }
+
+            // Safely get path
+            Lucene::String pathField;
+            try {
+                pathField = doc->get(L"path");
+                if (pathField.empty()) {
+                    qWarning() << "Document missing path field at index:" << scoreDoc->doc;
+                    continue;
+                }
+            } catch (const std::exception &e) {
+                qWarning() << "Exception retrieving path field:" << e.what();
+                continue;
+            }
+
+            QString path = QString::fromStdWString(pathField);
 
             if (!path.startsWith(searchPath)) {
                 continue;
@@ -212,9 +251,18 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                 continue;
             }
 
+            // Safely check hidden status
+            bool isHidden = false;
             if (Q_LIKELY(!m_options.includeHidden())) {
-                if (QString::fromStdWString(doc->get(L"is_hidden")).toLower() == "y")
-                    continue;
+                try {
+                    Lucene::String hiddenField = doc->get(L"is_hidden");
+                    if (!hiddenField.empty() && QString::fromStdWString(hiddenField).toLower() == "y") {
+                        continue;
+                    }
+                } catch (const std::exception &e) {
+                    qWarning() << "Exception retrieving is_hidden field:" << e.what();
+                    // Default to visible if field can't be read
+                }
             }
 
             // 创建搜索结果
@@ -225,10 +273,23 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
             // 使用ContentHighlighter命名空间进行高亮
             if (enableRetrieval) {
-                const QString &content = QString::fromStdWString(doc->get(L"contents"));
-                const QString &highlightedContent = ContentHighlighter::customHighlight(m_keywords, content, previewLen, enableHTML);
-                resultApi.setHighlightedContent(highlightedContent);
+                try {
+                    // Safely get contents with null check
+                    Lucene::String contentField = doc->get(L"contents");
+                    if (!contentField.empty()) {
+                        const QString content = QString::fromStdWString(contentField);
+                        const QString highlightedContent = ContentHighlighter::customHighlight(m_keywords, content, previewLen, enableHTML);
+                        resultApi.setHighlightedContent(highlightedContent);
+                    }
+                } catch (const Lucene::LuceneException &e) {
+                    qWarning() << "Exception retrieving content field:" << QString::fromStdWString(e.getError());
+                    // Continue without content highlight
+                } catch (const std::exception &e) {
+                    qWarning() << "Standard exception retrieving content field:" << e.what();
+                    // Continue without content highlight
+                }
             }
+            
             // 添加到结果集合
             m_results.append(result);
 
@@ -238,6 +299,12 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
         } catch (const Lucene::LuceneException &e) {
             qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());
+            continue;
+        } catch (const std::exception &e) {
+            qWarning() << "Standard exception:" << e.what();
+            continue;
+        } catch (...) {
+            qWarning() << "Unknown exception during result processing";
             continue;
         }
     }
