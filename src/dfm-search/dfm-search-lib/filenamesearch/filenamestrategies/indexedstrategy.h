@@ -84,10 +84,13 @@ private:
     void executeIndexQuery(const IndexQuery &query, const QString &searchPath, const QStringList &searchExcludedPaths);
 
     // 构建 Lucene 查询
-    QueryPtr buildLuceneQuery(const IndexQuery &query) const;
+    QueryPtr buildLuceneQuery(const IndexQuery &query, const QString &searchPath) const;
 
     // 构建布尔查询的辅助方法
     BooleanQueryPtr buildBooleanTermsQuery(const IndexQuery &query, const AnalyzerPtr &analyzer) const;
+
+    // 判断是否需要使用路径前缀查询
+    bool shouldUsePathPrefixQuery(const QString &searchPath) const;
 
     // 处理搜索结果
     SearchResult processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size);
@@ -116,6 +119,7 @@ public:
     QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op, const Lucene::AnalyzerPtr &analyzer) const;
     QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
     QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
+    QueryPtr buildPathPrefixQuery(const QString &pathPrefix) const;
 
 private:
     // 通用的查询构建方法
