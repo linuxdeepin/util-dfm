@@ -48,6 +48,23 @@ Lucene::String processQueryString(const QString &str, bool caseSensitive)
     return luceneStr;
 }
 
+Lucene::QueryPtr buildPathPrefixQuery(const QString &pathPrefix, const QString &fieldName)
+{
+    if (pathPrefix.isEmpty() || fieldName.isEmpty()) {
+        return nullptr;
+    }
+
+    QString normalizedPath = pathPrefix;
+    // Ensure path ends with '/' to avoid partial path name matches
+    if (!normalizedPath.endsWith('/')) {
+        normalizedPath += '/';
+    }
+
+    return Lucene::newLucene<Lucene::PrefixQuery>(
+            Lucene::newLucene<Lucene::Term>(Lucene::StringUtils::toUnicode(fieldName.toStdString()),
+                                          Lucene::StringUtils::toUnicode(normalizedPath.toStdString())));
+}
+
 }   // namespace LuceneQueryUtils
 
 DFM_SEARCH_END_NS

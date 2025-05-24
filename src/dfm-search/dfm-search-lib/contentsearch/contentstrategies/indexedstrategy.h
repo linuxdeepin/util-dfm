@@ -38,8 +38,8 @@ private:
     // 执行内容搜索
     void performContentSearch(const SearchQuery &query);
 
-    // 构建Lucene查询
-    Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer);
+    // Build Lucene query
+    Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer, const QString &searchPath);
     // Helper for simple queries (original logic for "contents" field)
     Lucene::QueryPtr buildSimpleContentsQuery(
             const SearchQuery &query,
@@ -56,7 +56,7 @@ private:
             const Lucene::QueryParserPtr &contentsParser,
             const Lucene::AnalyzerPtr &analyzer);   // Analyzer is needed to create filenameParser
 
-    // 处理搜索结果
+    // Process search results
     void processSearchResults(const Lucene::IndexSearcherPtr &searcher,
                               const Lucene::Collection<Lucene::ScoreDocPtr> &scoreDocs);
 
