@@ -605,5 +605,27 @@ QStringList deepinAnythingFileTypes()
     return kTypes;
 }
 
+bool shouldUsePathPrefixQuery(const QString &searchPath)
+{
+    // Don't use path prefix query for root directory
+    if (searchPath == "/" || searchPath.isEmpty()) {
+        return false;
+    }
+
+    // Check if it's one of the default indexed directories
+    const QStringList &defaultDirs = Global::defaultIndexedDirectory();
+    for (const QString &defaultDir : defaultDirs) {
+        QString normalizedDefault = QDir::cleanPath(defaultDir);
+        QString normalizedSearch = QDir::cleanPath(searchPath);
+
+        // Don't use path prefix query if search path is one of the default indexed directories
+        if (normalizedSearch == normalizedDefault) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 }   // namespace SearchUtility
 DFM_SEARCH_END_NS

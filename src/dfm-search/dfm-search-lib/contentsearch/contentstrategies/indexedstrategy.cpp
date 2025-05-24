@@ -19,6 +19,7 @@
 #include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
+#include "utils/searchutility.h"
 
 using namespace Lucene;
 
@@ -57,7 +58,7 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
     }
 }
 
-Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer)
+Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer, const QString &searchPath)
 {
     try {
         m_keywords.clear();
@@ -69,28 +70,43 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
                 L"contents",
                 analyzer);
 
+        Lucene::QueryPtr mainQuery;
         if (query.type() == SearchQuery::Type::Simple) {
-            return buildSimpleContentsQuery(query, contentsParser);
+            mainQuery = buildSimpleContentsQuery(query, contentsParser);
         } else if (query.type() == SearchQuery::Type::Boolean) {
             if (query.subQueries().isEmpty()) {
                 // For an empty boolean query, match nothing.
-                return newLucene<Lucene::BooleanQuery>();
-            }
-
-            // Determine which logic path to take for boolean queries
-            if (mixedAndEnabled && query.booleanOperator() == SearchQuery::BooleanOperator::AND) {
-                // New "advanced" AND logic for contents/filename
-                return buildAdvancedAndQuery(query, contentsParser, analyzer);
+                mainQuery = newLucene<Lucene::BooleanQuery>();
             } else {
-                // "Standard" contents-only logic for:
-                // 1. OR queries (regardless of mixedAndEnabled value).
-                // 2. AND queries when mixedAndEnabled is false.
-                return buildStandardBooleanContentsQuery(query, contentsParser);
+                // Determine which logic path to take for boolean queries
+                if (mixedAndEnabled && query.booleanOperator() == SearchQuery::BooleanOperator::AND) {
+                    // New "advanced" AND logic for contents/filename
+                    mainQuery = buildAdvancedAndQuery(query, contentsParser, analyzer);
+                } else {
+                    // "Standard" contents-only logic for:
+                    // 1. OR queries (regardless of mixedAndEnabled value).
+                    // 2. AND queries when mixedAndEnabled is false.
+                    mainQuery = buildStandardBooleanContentsQuery(query, contentsParser);
+                }
             }
         } else {
             qWarning() << "Unknown SearchQuery type encountered.";
-            return newLucene<Lucene::BooleanQuery>();   // Should not happen
+            mainQuery = newLucene<Lucene::BooleanQuery>();   // Should not happen
         }
+
+        // Add path prefix query optimization
+        if (mainQuery && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
+            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath, "path");
+            if (pathPrefixQuery) {
+                BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                finalQuery->add(mainQuery, BooleanClause::MUST);
+                finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
+                qInfo() << "Using path prefix query for content search optimization:" << searchPath;
+                return finalQuery;
+            }
+        }
+
+        return mainQuery;
 
     } catch (const Lucene::LuceneException &e) {
         qWarning() << "Error building Lucene query:" << QString::fromStdWString(e.getError());
@@ -252,7 +268,6 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             }
 
             // Safely check hidden status
-            bool isHidden = false;
             if (Q_LIKELY(!m_options.includeHidden())) {
                 try {
                     Lucene::String hiddenField = doc->get(L"is_hidden");
@@ -289,7 +304,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                     // Continue without content highlight
                 }
             }
-            
+
             // 添加到结果集合
             m_results.append(result);
 
@@ -339,7 +354,7 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
         AnalyzerPtr analyzer = newLucene<ChineseAnalyzer>();
 
         // 构建查询
-        m_currentQuery = buildLuceneQuery(query, analyzer);
+        m_currentQuery = buildLuceneQuery(query, analyzer, m_options.searchPath());
         if (!m_currentQuery) {
             qWarning() << "Failed to build Lucene query";
             emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));

@@ -31,6 +31,14 @@ Lucene::String processQueryString(const QString &str, bool caseSensitive = false
  */
 std::wstring getLuceneSpecialChars();
 
+/**
+ * @brief Build a path prefix query for Lucene
+ * @param pathPrefix The path prefix to search for
+ * @param fieldName The index field name (e.g., "full_path" or "path")
+ * @return Lucene query object, or nullptr if pathPrefix is empty
+ */
+Lucene::QueryPtr buildPathPrefixQuery(const QString &pathPrefix, const QString &fieldName);
+
 }   // namespace LuceneQueryUtils
 
 DFM_SEARCH_END_NS

@@ -35,7 +35,7 @@ public:
         Boolean,   // 布尔多关键词搜索
         Pinyin,   // 拼音搜索
         FileType,   // 文件类型搜索
-        FileExt,    // 文件后缀搜索
+        FileExt,   // 文件后缀搜索
         Combined   // 组合搜索(关键词+文件类型/拼音/文件后缀)
     };
 
@@ -50,7 +50,7 @@ public:
         bool usePinyin = false;
         SearchQuery::BooleanOperator booleanOp = SearchQuery::BooleanOperator::AND;
         bool combineWithFileType = false;   // 是否与文件类型组合
-        bool combineWithFileExt = false;    // 是否与文件后缀组合
+        bool combineWithFileExt = false;   // 是否与文件后缀组合
     };
 
     explicit FileNameIndexedStrategy(const SearchOptions &options, QObject *parent = nullptr);
@@ -89,9 +89,6 @@ private:
     // 构建布尔查询的辅助方法
     BooleanQueryPtr buildBooleanTermsQuery(const IndexQuery &query, const AnalyzerPtr &analyzer) const;
 
-    // 判断是否需要使用路径前缀查询
-    bool shouldUsePathPrefixQuery(const QString &searchPath) const;
-
     // 处理搜索结果
     SearchResult processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size);
 
@@ -119,7 +116,6 @@ public:
     QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op, const Lucene::AnalyzerPtr &analyzer) const;
     QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
     QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
-    QueryPtr buildPathPrefixQuery(const QString &pathPrefix) const;
 
 private:
     // 通用的查询构建方法

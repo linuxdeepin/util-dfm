@@ -33,6 +33,13 @@ QStringList extractBooleanKeywords(const SearchQuery &query);
  */
 QStringList deepinAnythingFileTypes();
 
+/**
+ * @brief Check if path prefix query optimization should be used
+ * @param searchPath The search path
+ * @return true if path prefix query should be used, false otherwise
+ */
+bool shouldUsePathPrefixQuery(const QString &searchPath);
+
 }   // namespace SearchUtility
 DFM_SEARCH_END_NS
 

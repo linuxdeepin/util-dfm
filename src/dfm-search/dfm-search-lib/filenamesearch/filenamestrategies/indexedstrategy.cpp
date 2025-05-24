@@ -112,23 +112,6 @@ Lucene::QueryPtr QueryBuilder::buildSimpleQuery(const QString &keyword, bool cas
     return buildCommonQuery(keyword, caseSensitive, analyzer, false);
 }
 
-Lucene::QueryPtr QueryBuilder::buildPathPrefixQuery(const QString &pathPrefix) const
-{
-    if (pathPrefix.isEmpty()) {
-        return nullptr;
-    }
-
-    QString normalizedPath = pathPrefix;
-    // 确保路径以 '/' 结尾，以避免匹配到部分路径名
-    if (!normalizedPath.endsWith('/')) {
-        normalizedPath += '/';
-    }
-
-    return newLucene<PrefixQuery>(
-            newLucene<Term>(L"full_path",
-                            StringUtils::toUnicode(normalizedPath.toStdString())));
-}
-
 Lucene::QueryPtr QueryBuilder::buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const
 {
     return buildCommonQuery(keyword, caseSensitive, analyzer, true);
@@ -620,9 +603,9 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         break;
     }
 
-    // 添加路径前缀查询优化
-    if (hasValidQuery && shouldUsePathPrefixQuery(searchPath)) {
-        QueryPtr pathPrefixQuery = m_queryBuilder->buildPathPrefixQuery(searchPath);
+    // Add path prefix query optimization
+    if (hasValidQuery && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
+        QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath, "full_path");
         if (pathPrefixQuery) {
             finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
             qInfo() << "Using path prefix query for optimization:" << searchPath;
@@ -672,28 +655,6 @@ BooleanQueryPtr FileNameIndexedStrategy::buildBooleanTermsQuery(const IndexQuery
 void FileNameIndexedStrategy::cancel()
 {
     m_cancelled.store(true);
-}
-
-bool FileNameIndexedStrategy::shouldUsePathPrefixQuery(const QString &searchPath) const
-{
-    // 不对根目录使用路径前缀查询
-    if (searchPath == "/" || searchPath.isEmpty()) {
-        return false;
-    }
-
-    // 检查是否为默认索引目录之一
-    const QStringList &defaultDirs = Global::defaultIndexedDirectory();
-    for (const QString &defaultDir : defaultDirs) {
-        QString normalizedDefault = QDir::cleanPath(defaultDir);
-        QString normalizedSearch = QDir::cleanPath(searchPath);
-
-        // 如果搜索路径是默认索引目录之一，不使用路径前缀查询
-        if (normalizedSearch == normalizedDefault) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 DFM_SEARCH_END_NS
