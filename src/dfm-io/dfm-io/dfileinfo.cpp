@@ -115,9 +115,7 @@ void DFileInfoPrivate::initNormal()
         return;
 
     const QUrl &url = q->uri();
-    const QString &urlStr = url.toString();
-
-    this->gfile = g_file_new_for_uri(urlStr.toLocal8Bit().data());
+    this->gfile = DLocalHelper::createGFile(url);;
 }
 
 void DFileInfoPrivate::attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, DFileInfo::AttributeExtendFuncCallback callback)

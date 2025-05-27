@@ -39,7 +39,7 @@ QString DFMUtils::devicePathFromUrl(const QUrl &url)
     if (!url.isValid())
         return QString();
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(url);
     g_autoptr(GError) gerror = nullptr;
     g_autoptr(GMount) gmount = g_file_find_enclosing_mount(gfile, nullptr, &gerror);
     if (gmount) {
@@ -59,7 +59,7 @@ QString DFMUtils::deviceNameFromUrl(const QUrl &url)
     if (!url.isValid())
         return QString();
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(url);
     g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
     if (mount)
         return QString::fromLocal8Bit(g_unix_mount_get_device_path(mount));
@@ -71,7 +71,7 @@ QString DFMUtils::fsTypeFromUrl(const QUrl &url)
     if (!url.isValid())
         return QString();
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(url);
     g_autofree char *path = g_file_get_path(gfile);
     if (!path)
         return QString();
@@ -86,7 +86,7 @@ QString DFMUtils::mountPathFromUrl(const QUrl &url)
     if (!url.isValid())
         return QString();
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(url);
     g_autofree char *path = g_file_get_path(gfile);
     if (!path)
         return QString();
@@ -108,7 +108,7 @@ QUrl DFMUtils::directParentUrl(const QUrl &url, const bool localFirst /*= true*/
         return QUrl();
     };
 
-    g_autoptr(GFile) file = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GFile) file = DLocalHelper::createGFile(url);
     g_autoptr(GFile) fileParent = g_file_get_parent(file);
     if (fileParent) {
         if (localFirst) {
@@ -128,7 +128,7 @@ bool DFMUtils::fileIsRemovable(const QUrl &url)
 {
     if (!url.isValid())
         return false;
-    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(url);
     g_autoptr(GMount) gmount = g_file_find_enclosing_mount(gfile, nullptr, nullptr);
     if (gmount) {
         g_autoptr(GDrive) gdrive = g_mount_get_drive(gmount);
@@ -323,7 +323,7 @@ bool dfmio::DFMUtils::supportTrash(const QUrl &url)
     if (file_stat.st_dev == home_stat.st_dev)
         return true;
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(url);
     g_autofree char *path1 = g_file_get_path(gfile);
     if (!path1)
         return false;
@@ -345,6 +345,15 @@ bool DFMUtils::isGvfsFile(const QUrl &url)
     QRegularExpression re { gvfsMatch };
     QRegularExpressionMatch match { re.match(path) };
     return match.hasMatch();
+}
+
+bool DFMUtils::isInvalidCodecByPath(const char *path)
+{
+    QTextCodec::ConverterState stat;
+    auto codec = QTextCodec::codecForLocale();
+
+    auto str = codec->toUnicode(path, static_cast<int>(strlen(path)), &stat);
+    return stat.invalidChars;
 }
 
 QMap<QString, QString> DFMUtils::fstabBindInfo()
