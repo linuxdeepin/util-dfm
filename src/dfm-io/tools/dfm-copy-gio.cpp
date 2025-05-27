@@ -24,8 +24,8 @@ static void err_msg(const char *msg)
 
 static void copy(const QString &sourcePath, const QString &destPath)
 {
-    GFile *gfileSource = g_file_new_for_uri(sourcePath.toLocal8Bit().data());
-    GFile *gfileDest = g_file_new_for_uri(destPath.toLocal8Bit().data());
+    GFile *gfileSource = DLocalHelper::createGFile(sourcePath);
+    GFile *gfileDest = DLocalHelper::createGFile(destPath);
 
     GFile *gfileTarget = nullptr;
     if (DLocalHelper::checkGFileType(gfileDest, G_FILE_TYPE_DIRECTORY)) {
@@ -33,7 +33,7 @@ static void copy(const QString &sourcePath, const QString &destPath)
         gfileTarget = g_file_get_child(gfileDest, basename);
         g_free(basename);
     } else {
-        gfileTarget = g_file_new_for_uri(destPath.toLocal8Bit().data());
+        gfileTarget = DLocalHelper::createGFile(destPath);
     }
 
     //预先读取

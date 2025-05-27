@@ -684,7 +684,7 @@ QSet<QString> DLocalHelper::hideListFromUrl(const QUrl &url)
     g_autofree char *contents = nullptr;
     g_autoptr(GError) error = nullptr;
     gsize len = 0;
-    g_autoptr(GFile) hiddenFile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    g_autoptr(GFile) hiddenFile = createGFile(url);
 
     const bool succ = g_file_load_contents(hiddenFile, nullptr, &contents, &len, nullptr, &error);
     if (succ) {
@@ -1072,6 +1072,8 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
     sortPointer->isWriteable = ent->fts_statp->st_mode & S_IWRITE;
     sortPointer->isExecutable = ent->fts_statp->st_mode & S_IEXEC;
     sortPointer->url = QUrl::fromLocalFile(ent->fts_path);
+    if (DFMUtils::isInvalidCodecByPath(ent->fts_path))
+        sortPointer->url.setUserInfo("originPath::" + QString::fromLatin1(ent->fts_path));
     sortPointer->inode = ent->fts_statp->st_ino;
     sortPointer->gid = ent->fts_statp->st_gid;
     sortPointer->uid = ent->fts_statp->st_uid;
@@ -1083,6 +1085,17 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
     sortPointer->createNs = ent->fts_statp->st_ctim.tv_nsec;
 
     return sortPointer;
+}
+
+GFile *DLocalHelper::createGFile(const QUrl &uri)
+{
+    QString path = uri.userInfo().isEmpty() || !uri.userInfo().startsWith("originPath::") ?
+                QString() : uri.userInfo().replace("originPath::", "");
+
+    GFile *gfile = path.isEmpty() ?
+                g_file_new_for_uri(uri.toString().toLocal8Bit().data()) :
+                g_file_new_for_path(path.toLatin1().data());
+    return gfile;
 }
 
 QVariant DLocalHelper::getGFileInfoIcon(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode)

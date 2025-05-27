@@ -42,7 +42,7 @@ void DOperatorPrivate::setErrorFromGError(GError *gerror)
 
 GFile *DOperatorPrivate::makeGFile(const QUrl &url)
 {
-    return g_file_new_for_uri(url.toString().toLocal8Bit().data());
+    return DLocalHelper::createGFile(url);
 }
 
 void DOperatorPrivate::checkAndResetCancel()

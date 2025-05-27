@@ -70,7 +70,7 @@ public:
     static int compareByLastRead(const FTSENT **left, const FTSENT **right);
     static QSharedPointer<DEnumerator::SortFileInfo> createSortFileInfo(const FTSENT *ent,
                                                                         const QSet<QString> hidList);
-
+    static GFile* createGFile(const QUrl &uri);
 private:
     static QVariant getGFileInfoIcon(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
     static QVariant getGFileInfoString(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
