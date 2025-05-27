@@ -53,8 +53,8 @@ static void copy(const QString &url_src, const QString &url_dst)
     int read = 0;
 
     GError *gerror = nullptr;
-    GFile *gfileSource = g_file_new_for_uri(url_src.toLocal8Bit().data());
-    GFile *gfileDest = g_file_new_for_uri(url_dst.toLocal8Bit().data());
+    GFile *gfileSource =DLocalHelper::createGFile(url_src);
+    GFile *gfileDest = DLocalHelper::createGFile(url_dst);
 
     GFile *gfileTarget = nullptr;
     if (DLocalHelper::checkGFileType(gfileDest, G_FILE_TYPE_DIRECTORY)) {
@@ -62,7 +62,7 @@ static void copy(const QString &url_src, const QString &url_dst)
         gfileTarget = g_file_get_child(gfileDest, basename);
         g_free(basename);
     } else {
-        gfileTarget = g_file_new_for_uri(url_dst.toLocal8Bit().data());
+        gfileTarget = DLocalHelper::createGFile(url_dst);
     }
 
     GFileInputStream *inputStream = g_file_read(gfileSource, nullptr, &gerror);
