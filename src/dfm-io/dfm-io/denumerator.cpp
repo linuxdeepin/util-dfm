@@ -609,9 +609,13 @@ bool DEnumerator::hasNext() const
         g_autofree gchar *path = g_file_get_path(gfile);
         if (path) {
             d->nextUrl = QUrl::fromLocalFile(QString::fromLocal8Bit(path));
+            if (DFMUtils::isInvalidCodecByPath(path))
+                d->nextUrl.setUserInfo("originPath::" + QString::fromLatin1(path));
         } else {
             g_autofree gchar *uri = g_file_get_uri(gfile);
             d->nextUrl = QUrl(QString::fromLocal8Bit(uri));
+            if (DFMUtils::isInvalidCodecByPath(uri))
+                d->nextUrl.setUserInfo("originPath::" + QString::fromLatin1(path));
         }
         d->dfileInfoNext = DLocalHelper::createFileInfoByUri(d->nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
                                                              d->enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);

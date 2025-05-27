@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <dfm-io/dwatcher.h>
+#include "utils/dlocalhelper.h"
 
 #include "private/dwatcher_p.h"
 
@@ -184,7 +185,7 @@ bool DWatcher::start(int timeRate)
     if (uri.scheme() == "file" && uri.path() == "/")
         url.append("/");
 
-    d->gfile = g_file_new_for_uri(url.toStdString().c_str());
+    d->gfile = DLocalHelper::createGFile(url);
 
     d->gmonitor = d->createMonitor(d->gfile, d->type);
 

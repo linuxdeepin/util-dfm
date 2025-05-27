@@ -59,6 +59,7 @@ public:
     static qint64 deviceBytesFree(const QUrl &url);
     static bool supportTrash(const QUrl &url);
     static bool isGvfsFile(const QUrl &url);
+    static bool isInvalidCodecByPath(const char *path);
 
 private:
     static QMap<QString, QString>

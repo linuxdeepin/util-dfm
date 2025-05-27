@@ -201,7 +201,7 @@ bool DFilePrivate::doOpen(DFile::OpenFlags mode)
     }
 
     const QUrl &&uri = q->uri();
-    g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(uri);
     g_autoptr(GError) gerror = nullptr;
     checkAndResetCancel();
 
@@ -676,8 +676,7 @@ bool DFile::isOpen() const
 
 qint64 DFile::size() const
 {
-    const QUrl &uri = d->uri;
-    g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
 
     g_autoptr(GError) gerror = nullptr;
     d->checkAndResetCancel();
@@ -696,8 +695,7 @@ qint64 DFile::size() const
 
 bool DFile::exists() const
 {
-    const QUrl &uri = d->uri;
-    g_autoptr(GFile) gfile = g_file_new_for_uri(uri.toString().toLocal8Bit().data());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
     d->checkAndResetCancel();
     return g_file_query_file_type(gfile, G_FILE_QUERY_INFO_NONE, d->cancellable) != G_FILE_TYPE_UNKNOWN;
 }
@@ -749,7 +747,7 @@ DFile::Permissions DFile::permissions() const
 {
     DFile::Permissions retValue = DFile::Permission::kNoPermission;
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(d->uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
 
     g_autoptr(GError) gerror = nullptr;
     d->checkAndResetCancel();
@@ -908,7 +906,7 @@ bool DFile::setPermissions(Permissions permission)
 {
     quint32 stMode = d->buildPermissions(permission);
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(d->uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
     g_autoptr(GError) gerror = nullptr;
     d->checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kUnixMode);
@@ -1252,7 +1250,7 @@ DFileFuture *DFile::sizeAsync(int ioPriority, QObject *parent)
     data->me = d.data();
     data->future = future;
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(d->uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
     d->checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kStandardSize);
     g_file_query_info_async(gfile, attributeKey.c_str(), G_FILE_QUERY_INFO_NONE, ioPriority, d->cancellable, DFilePrivate::sizeAsyncCallback, data);
@@ -1268,7 +1266,7 @@ DFileFuture *DFile::existsAsync(int ioPriority, QObject *parent)
     data->me = d.data();
     data->future = future;
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(d->uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
     d->checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kStandardType);
     g_file_query_info_async(gfile, attributeKey.c_str(), G_FILE_QUERY_INFO_NONE, ioPriority, d->cancellable, d->existsAsyncCallback, data);
@@ -1284,7 +1282,7 @@ DFileFuture *DFile::permissionsAsync(int ioPriority, QObject *parent)
     data->me = d.data();
     data->future = future;
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(d->uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
     d->checkAndResetCancel();
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kUnixMode);
     g_file_query_info_async(gfile, attributeKey.c_str(), G_FILE_QUERY_INFO_NONE, ioPriority, d->cancellable, d->permissionsAsyncCallback, data);
@@ -1299,7 +1297,7 @@ DFileFuture *DFile::setPermissionsAsync(Permissions permission, int ioPriority, 
     DFileFuture *future = new DFileFuture(parent);
 
     quint32 stMode = d->buildPermissions(permission);
-    g_autoptr(GFile) gfile = g_file_new_for_uri(d->uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
     d->checkAndResetCancel();
     g_autoptr(GError) gerror = nullptr;
     const std::string &attributeKey = DLocalHelper::attributeStringById(DFileInfo::AttributeID::kUnixMode);
