@@ -1,3 +1,18 @@
+include(CMakeFindDependencyMacro)
+
+# 添加必要的依赖
+find_dependency(Qt@QT_VERSION_MAJOR@ COMPONENTS Core)
+find_dependency(Dtk@QT_VERSION_MAJOR@ COMPONENTS Core)
+
+# 查找 PkgConfig 和 liblucene++ 依赖
+find_dependency(PkgConfig)
+if(PkgConfig_FOUND)
+    pkg_check_modules(Lucene REQUIRED IMPORTED_TARGET liblucene++ liblucene++-contrib)
+endif()
+
 set(@BIN_NAME@_INCLUDE_DIR @CMAKE_INSTALL_FULL_INCLUDEDIR@/@BIN_NAME@)
 set(@BIN_NAME@_LIBRARIES @BIN_NAME@)
-include_directories("${@BIN_NAME@_INCLUDE_DIR}")
+
+if(NOT TARGET @BIN_NAME@)
+    include("${CMAKE_CURRENT_LIST_DIR}/@BIN_NAME@Targets.cmake")
+endif()
