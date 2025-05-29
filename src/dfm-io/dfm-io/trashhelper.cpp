@@ -72,12 +72,18 @@ bool TrashHelper::getTrashUrls(QList<QUrl> *trashUrls, QString *errorMsg)
         origpath = g_file_info_get_attribute_byte_string(info, G_FILE_ATTRIBUTE_TRASH_ORIG_PATH);
         origfile = g_file_new_for_path(origpath);
 
-        if (!origfile)
+        if (!origfile) {
+            g_object_unref(info);
             continue;
+        }
 
-        auto deleteinfo = deleteInfos.value(QUrl(g_file_get_uri(origfile)));
+        gchar *origfile_uri = g_file_get_uri(origfile);
+        auto deleteinfo = deleteInfos.value(QUrl(origfile_uri));
+        g_free(origfile_uri);
+        
         if (!deleteinfo) {
             g_object_unref(origfile);
+            g_object_unref(info);
             continue;
         }
 
@@ -95,13 +101,20 @@ bool TrashHelper::getTrashUrls(QList<QUrl> *trashUrls, QString *errorMsg)
             item = g_file_get_child(trash, g_file_info_get_name(info));
             if (!item) {
                 g_object_unref(origfile);
+                g_object_unref(info);
                 continue;
             }
 
-            trashUrls->append(QUrl(g_file_get_uri(item)));
+            gchar *item_uri = g_file_get_uri(item);
+            trashUrls->append(QUrl(item_uri));
+            g_free(item_uri);
+            
+            g_object_unref(item);
         }
 
         g_object_unref(origfile);
+        g_object_unref(info);
+        
         if (trashUrls->size() >= deleteInfos.size())
             break;
     }

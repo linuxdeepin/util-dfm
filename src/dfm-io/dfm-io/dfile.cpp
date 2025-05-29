@@ -26,6 +26,29 @@ DFilePrivate::DFilePrivate(DFile *q)
 {
 }
 
+DFilePrivate::~DFilePrivate()
+{
+    // 确保 cancellable 资源被正确清理
+    if (cancellable) {
+        g_object_unref(cancellable);
+        cancellable = nullptr;
+    }
+    
+    // 清理其他 GObject 资源
+    if (iStream) {
+        g_object_unref(iStream);
+        iStream = nullptr;
+    }
+    if (oStream) {
+        g_object_unref(oStream);
+        oStream = nullptr;
+    }
+    if (ioStream) {
+        g_object_unref(ioStream);
+        ioStream = nullptr;
+    }
+}
+
 void DFilePrivate::setError(DFMIOError error)
 {
     this->error = error;
