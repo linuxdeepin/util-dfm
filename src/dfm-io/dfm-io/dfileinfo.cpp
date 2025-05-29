@@ -401,8 +401,12 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         return QVariant(ret);
     }
     case DFileInfo::AttributeID::kOriginalUri:
-        if (gfile)
-            return QUrl(g_file_get_uri(gfile));
+        if (gfile) {
+            gchar *uri_str = g_file_get_uri(gfile);
+            QUrl url = QUrl(QString::fromUtf8(uri_str));
+            g_free(uri_str);
+            return url;
+        }
         return uri;
     default:
         return retValue;

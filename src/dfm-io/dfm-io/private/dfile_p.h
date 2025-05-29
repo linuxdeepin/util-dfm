@@ -61,6 +61,7 @@ public:
 
 public:
     explicit DFilePrivate(DFile *q);
+    ~DFilePrivate();
     void setError(DFMIOError error);
     void setErrorFromGError(GError *gerror);
     void checkAndResetCancel();

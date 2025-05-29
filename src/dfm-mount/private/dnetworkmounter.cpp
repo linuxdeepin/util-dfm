@@ -114,7 +114,7 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
                                                      nullptr, &err);
     while (items) {
         auto item = static_cast<SecretItem *>(items->data);
-        GHashTable_autoptr itemAttrs = secret_item_get_attributes(item);
+        GHashTable *itemAttrs = secret_item_get_attributes(item);
         QVariantMap attr;
         g_hash_table_foreach(
                 itemAttrs,
@@ -131,6 +131,10 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
             passwds.append(attr);
         else
             qInfo() << "got invalid saved keyring, ignore." << attr;
+
+        // 手动释放 GHashTable 以避免内存泄漏
+        if (itemAttrs)
+            g_hash_table_unref(itemAttrs);
 
         items = items->next;
     }

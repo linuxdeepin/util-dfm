@@ -430,6 +430,7 @@ void DEnumeratorPrivate::enumUriAsyncCallBack(GObject *sourceObject, GAsyncResul
     EnumUriData *data = static_cast<EnumUriData *>(userData);
     if (!data || !data->pointer || data->pointer->asyncStoped) {
         qInfo() << "user data error " << data;
+        delete data;  // 修复内存泄漏：在错误情况下删除 data
         return;
     }
 
@@ -444,6 +445,7 @@ void DEnumeratorPrivate::enumUriAsyncCallBack(GObject *sourceObject, GAsyncResul
 
     if (enumerator == nullptr || error) {
         data->pointer->enumUriAsyncOvered(nullptr);
+        delete data;  // 修复内存泄漏：在错误情况下删除 data
     } else {
         data->enumerator = enumerator;
         data->pointer->checkAndResetCancel();
@@ -467,6 +469,7 @@ void DEnumeratorPrivate::moreFilesCallback(GObject *sourceObject, GAsyncResult *
     EnumUriData *data = static_cast<EnumUriData *>(userData);
     if (!data || !data->pointer || data->pointer->asyncStoped) {
         qInfo() << "user data error " << data;
+        delete data;  // 修复内存泄漏：在错误情况下删除 data
         return;
     }
 
@@ -495,6 +498,7 @@ void DEnumeratorPrivate::moreFilesCallback(GObject *sourceObject, GAsyncResult *
         }
         g_object_unref(data->enumerator);
         data->enumerator = nullptr;
+        delete data;  // 修复内存泄漏：在异步操作结束时删除 data
     }
 
     if (error)
