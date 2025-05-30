@@ -55,6 +55,8 @@ public:
     bool hasNext();
     QList<QSharedPointer<DFileInfo>> fileInfoList();
     void setQueryAttributes(const QString &attributes);
+    char *filePath(const QUrl &url);
+    QUrl buildUrl(const QUrl &url, const char *fileName);
 
     static void enumUriAsyncCallBack(GObject *sourceObject,
                                      GAsyncResult *res,
