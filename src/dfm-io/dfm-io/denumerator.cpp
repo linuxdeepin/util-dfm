@@ -235,11 +235,8 @@ bool DEnumeratorPrivate::checkFilter()
 
 bool DEnumeratorPrivate::openDirByfts()
 {
-    QString path = q->uri().path();
-    if (path != "/" && path.endsWith("/"))
-        path = path.left(path.length() - 1);
     char *paths[2] = { nullptr, nullptr };
-    paths[0] = strdup(path.toUtf8().toStdString().data());
+    paths[0] = strdup(filePath(uri));
     int (*compare)(const FTSENT **, const FTSENT **);
     compare = nullptr;
     if (sortRoleFlag == DEnumerator::SortRoleCompareFlag::kSortRoleCompareFileName) {
@@ -304,8 +301,7 @@ void DEnumeratorPrivate::startAsyncIterator()
 {
     qInfo() << "start Async Iterator，uri = " << uri;
     asyncStoped = false;
-    const QString &uriPath = uri.toString();
-    g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(uri);
 
     checkAndResetCancel();
     EnumUriData *userData = new EnumUriData();
@@ -331,10 +327,8 @@ bool DEnumeratorPrivate::hasNext()
 
     if (!gfileInfo)
         return hasNext();
-    auto path = uri.path()  == "/" ?
-                "/" + QString(g_file_info_get_name(gfileInfo)) :
-                uri.path() + "/" + QString(g_file_info_get_name(gfileInfo));
-    nextUrl = QUrl::fromLocalFile(path);
+
+    nextUrl = buildUrl(uri, g_file_info_get_name(gfileInfo));
 
     dfileInfoNext = DLocalHelper::createFileInfoByUri(nextUrl, g_file_info_dup(gfileInfo), queryAttributes.toStdString().c_str(),
                                                       enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
@@ -354,7 +348,7 @@ QList<QSharedPointer<DFileInfo>> DEnumeratorPrivate::fileInfoList()
     for (auto gfileInfo : asyncInfos) {
         if (!gfileInfo)
             continue;
-        auto url = QUrl::fromLocalFile(uri.path() + "/" + QString(g_file_info_get_name(gfileInfo)));
+        auto url = buildUrl(uri, g_file_info_get_name(gfileInfo));
 
         infoList.append(DLocalHelper::createFileInfoByUri(url, g_file_info_dup(gfileInfo), queryAttributes.toStdString().c_str(),
                                                           enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone
@@ -368,6 +362,37 @@ QList<QSharedPointer<DFileInfo>> DEnumeratorPrivate::fileInfoList()
 void DEnumeratorPrivate::setQueryAttributes(const QString &attributes)
 {
     queryAttributes = attributes;
+}
+
+char *DEnumeratorPrivate::filePath(const QUrl &url)
+{
+    if (url.userInfo().startsWith("originPath::"))
+        return url.userInfo().replace("originPath::", "").toLatin1().data();
+
+    QString path = url.path();
+    if (path != "/" && path.endsWith("/"))
+        path = path.left(path.length() - 1);
+    return path.toUtf8().data();
+}
+
+QUrl DEnumeratorPrivate::buildUrl(const QUrl &url, const char *fileName)
+{
+    auto path = url.path()  == "/" ?
+                "/" + QString(fileName) :
+                url.path() + "/" + QString(fileName);
+    QUrl nextUrl = QUrl::fromLocalFile(path);
+
+    if (url.userInfo().startsWith("originPath::")) {
+        nextUrl.setUserInfo(url.userInfo() + QString::fromLatin1("/") + QString::fromLatin1(fileName));
+    } else if (DFMUtils::isInvalidCodecByPath(fileName)) {
+        auto org = url.path()  == "/" ?
+                   QString::fromLatin1("/") + QString::fromLatin1(fileName) :
+                   QString::fromLatin1(url.path().toUtf8()) + QString::fromLatin1("/") +
+                   QString::fromLatin1(fileName);
+        nextUrl.setUserInfo(QString::fromLatin1("originPath::") + org);
+    }
+
+    return nextUrl;
 }
 
 void DEnumeratorPrivate::enumUriAsyncCallBack(GObject *sourceObject, GAsyncResult *res, gpointer userData)
@@ -610,12 +635,12 @@ bool DEnumerator::hasNext() const
         if (path) {
             d->nextUrl = QUrl::fromLocalFile(QString::fromLocal8Bit(path));
             if (DFMUtils::isInvalidCodecByPath(path))
-                d->nextUrl.setUserInfo("originPath::" + QString::fromLatin1(path));
+                d->nextUrl.setUserInfo(QString::fromLatin1("originPath::") + QString::fromLatin1(path));
         } else {
             g_autofree gchar *uri = g_file_get_uri(gfile);
             d->nextUrl = QUrl(QString::fromLocal8Bit(uri));
             if (DFMUtils::isInvalidCodecByPath(uri))
-                d->nextUrl.setUserInfo("originPath::" + QString::fromLatin1(path));
+                d->nextUrl.setUserInfo(QString::fromLatin1("originPath::") + QString::fromLatin1(path));
         }
         d->dfileInfoNext = DLocalHelper::createFileInfoByUri(d->nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
                                                              d->enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
@@ -663,7 +688,7 @@ QList<QSharedPointer<DFileInfo>> DEnumerator::fileInfoList()
     g_autoptr(GFileEnumerator) enumerator = nullptr;
     g_autoptr(GError) gerror = nullptr;
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(d->uri.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(d->uri);
 
     d->checkAndResetCancel();
     enumerator = g_file_enumerate_children(gfile,
@@ -716,8 +741,9 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
     QList<QSharedPointer<DEnumerator::SortFileInfo>> listFile;
     QList<QSharedPointer<DEnumerator::SortFileInfo>> listDir;
     QSet<QString> hideList;
-    const QUrl &urlHidden = QUrl::fromLocalFile(d->uri.path() + "/.hidden");
+    QUrl urlHidden = d->buildUrl(d->uri, ".hidden");
     hideList = DLocalHelper::hideListFromUrl(urlHidden);
+    const char *dirPath = d->filePath(d->uri);
     while (1) {
         FTSENT *ent = fts_read(d->fts);
 
@@ -730,7 +756,7 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
 
         unsigned short flag = ent->fts_info;
 
-        if (QString(ent->fts_path) == d->uri.path() || flag == FTS_DP)
+        if (strcmp(ent->fts_path, dirPath) == 0 || flag == FTS_DP)
             continue;
 
         d->insertSortFileInfoList(listFile, listDir, ent, d->fts, hideList);
