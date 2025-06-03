@@ -128,6 +128,7 @@ QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query,
 
     Lucene::BooleanQueryPtr overallQuery = newLucene<Lucene::BooleanQuery>();
     Lucene::BooleanQueryPtr mainAndClausesQuery = newLucene<Lucene::BooleanQuery>();
+    Lucene::BooleanQueryPtr allContentsQuery = newLucene<Lucene::BooleanQuery>();
     Lucene::BooleanQueryPtr allFilenamesQuery = newLucene<Lucene::BooleanQuery>();
     bool hasValidKeywords = false;
 
@@ -149,16 +150,25 @@ QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query,
         combinedTermQuery->add(filenameTermQuery, Lucene::BooleanClause::SHOULD);
 
         mainAndClausesQuery->add(combinedTermQuery, Lucene::BooleanClause::MUST);
+        allContentsQuery->add(contentsTermQuery, Lucene::BooleanClause::MUST);
         allFilenamesQuery->add(filenameTermQuery, Lucene::BooleanClause::MUST);
     }
 
     if (!hasValidKeywords) {   // All subQuery keywords were empty
+        qWarning() << "No valid keywords found in advanced AND query";
         return newLucene<Lucene::BooleanQuery>();   // Matches nothing
     }
 
-    // Final query: ( (c:k1 OR f:k1) AND ... ) AND NOT (f:k1 AND f:k2 ...)
+    // New logic: Include results that match content OR exclude pure filename-only matches
+    // Final query: ( (c:k1 OR f:k1) AND ... ) AND NOT (f:k1 AND f:k2 ... AND NOT (c:k1 AND c:k2 ...))
+    // This means: exclude documents that match all keywords in filename but don't match all keywords in content
+    Lucene::BooleanQueryPtr pureFilenameQuery = newLucene<Lucene::BooleanQuery>();
+    pureFilenameQuery->add(allFilenamesQuery, Lucene::BooleanClause::MUST);
+    pureFilenameQuery->add(allContentsQuery, Lucene::BooleanClause::MUST_NOT);
+    
     overallQuery->add(mainAndClausesQuery, Lucene::BooleanClause::MUST);
-    overallQuery->add(allFilenamesQuery, Lucene::BooleanClause::MUST_NOT);
+    overallQuery->add(pureFilenameQuery, Lucene::BooleanClause::MUST_NOT);
+    
     return overallQuery;
 }
 
