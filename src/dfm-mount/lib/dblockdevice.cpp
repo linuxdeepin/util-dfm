@@ -12,6 +12,7 @@
 #include <QDebug>
 
 #include <functional>
+#include <sys/statvfs.h>
 
 extern "C" {
 #include <udisks/udisks.h>
@@ -1066,6 +1067,14 @@ qint64 DBlockDevicePrivate::sizeFree() const
         return 0;
     }
     auto mpt = mpts.first();
+
+    struct statvfs fsInfo;
+    int ok = statvfs(mpt.toStdString().c_str(), &fsInfo);
+    if (ok == 0) {
+        const quint64 blksize = quint64(fsInfo.f_bsize);
+        return static_cast<qint64>(fsInfo.f_bavail * blksize);
+    }
+
     QStorageInfo info(mpt);
     return info.bytesAvailable();
 }
