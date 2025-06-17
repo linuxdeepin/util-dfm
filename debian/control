@@ -15,9 +15,7 @@ Build-Depends:
  libudisks2-dev,
  libisoburn-dev,
  libmediainfo-dev,
- libsecret-1-dev,
- liblucene++-dev,
- libboost-filesystem-dev
+ libsecret-1-dev
 Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm
@@ -31,8 +29,8 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends},
  libglibmm-2.4-1v5
-Description: A library about I/O.
- A library that provides I/O interface.
+Description: A libaray about I/O.
+ A libaray that provides I/O interface.
 
 Package: libdfm-io-dev
 Architecture: any
@@ -52,8 +50,8 @@ Multi-Arch: same
 Depends:
  ${shlibs:Depends},
  ${misc:Depends}
-Description: A library about mount and umount.
- A library that provides mount and umount interface.
+Description: A libaray about mount and umount.
+ A libaray that provides mount and umount interface.
 
 Package: libdfm-mount-dev
 Architecture: any
@@ -65,8 +63,8 @@ Depends:
  libdfm-mount,
  libsecret-1-dev,
  libudisks2-dev
-Description: A library about mount and umount dev.
- A library that provides mount and umount interface dev.
+Description: A libaray about mount and umount dev.
+ A libaray that provides mount and umount interface dev.
 
 Package: libdfm-burn
 Architecture: any
@@ -77,8 +75,8 @@ Depends:
  ${misc:Depends}
 Recommends:
  libudfburn
-Description: A library about burning CD.
- A library that provides burning CD interface.
+Description: A libaray about burning CD.
+ A libaray that provides burning CD interface.
 
 Package: libdfm-burn-dev
 Architecture: any
@@ -89,26 +87,5 @@ Depends:
  ${misc:Depends},
  libdfm-burn,
  libisoburn-dev
-Description: A library about mount burning CD.
- A library that provides burning CD interface dev.
-
-Package: libdfm-search
-Architecture: any
-Section: libdevel
-Multi-Arch: same
-Depends:
- ${shlibs:Depends},
- ${misc:Depends}
-Description: A library about searching files.
- A library that provides file searching interface.
-
-Package: libdfm-search-dev
-Architecture: any
-Section: libdevel
-Multi-Arch: same
-Depends:
- ${shlibs:Depends}, 
- ${misc:Depends},
- libdfm-search (=${binary:Version})
-Description: A library about searching files dev.
- A library that provides file searching interface dev.
+Description: A libaray about mount burning CD.
+ A libaray that provides burning CD interface dev.
