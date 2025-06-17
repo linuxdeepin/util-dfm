@@ -12,18 +12,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 set(QT_MINIMUM_VERSION "5.6.3")
 
 include(GNUInstallDirs)
-
-find_package(Qt5 COMPONENTS Core QUIET)
-if (Qt5Core_FOUND)
-    message(STATU "Found Qt5: ${Qt5_VERSION}")
-    set(QT_VERSION_MAJOR 5)
-    set(DFM_VERSION_MAJOR "")
-else()
-    message(WARNING "Qt5 not found!")
-endif()
-
+find_package(Qt5 ${QT_MINIMUM_VERSION} CONFIG REQUIRED Core)
 find_package(PkgConfig REQUIRED)
-
 
 # Install settings
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

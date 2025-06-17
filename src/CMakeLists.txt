@@ -6,6 +6,5 @@ add_compile_definitions(QT_NO_SIGNALS_SLOTS_KEYWORDS)
 add_subdirectory("dfm-io")
 add_subdirectory("dfm-mount")
 add_subdirectory("dfm-burn")
-add_subdirectory("dfm-search")
 
 #add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
