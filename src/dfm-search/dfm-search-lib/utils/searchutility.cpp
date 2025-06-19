@@ -275,6 +275,19 @@ static QStringList getResolvedIndexedDirectories()   // Renamed for clarity
     return processedPaths;
 }
 
+// Internal helper function to check if index exists without status validation
+static bool isFileNameIndexExistsInternal()
+{
+    try {
+        const QString &indexDir = fileNameIndexDirectory();
+        bool exists = IndexReader::indexExists(FSDirectory::open(indexDir.toStdWString()));
+        return exists;
+    } catch (const LuceneException &e) {
+        qWarning() << "Failed to check index existence:" << QString::fromStdWString(e.getError());
+        return false;
+    }
+}
+
 bool isPinyinSequence(const QString &input)
 {
     if (input.isEmpty())
@@ -516,12 +529,32 @@ bool isPathInFileNameIndexDirectory(const QString &path)
 
 bool isFileNameIndexDirectoryAvailable()
 {
-    return IndexReader::indexExists(FSDirectory::open(fileNameIndexDirectory().toStdWString()));
+    // First check if the index physically exists
+    if (!isFileNameIndexExistsInternal()) {
+        qDebug() << "Index directory does not exist physically.";
+        return false;
+    }
+
+    // Then check the status to ensure it's in monitoring state
+    std::optional<QString> currentStatus = fileNameIndexStatus();
+    if (!currentStatus) {
+        qWarning() << "Failed to get file name index status.";
+        return false;
+    }
+
+    const QString &status = currentStatus.value();
+    if (status != "monitoring") {
+        qDebug() << "Index status is '" << status 
+                 << "', expected 'monitoring'. Index not ready for search.";
+        return false;
+    }
+
+    return true;
 }
 
 std::optional<QString> fileNameIndexStatus()
 {
-    if (!isFileNameIndexDirectoryAvailable()) {
+    if (!isFileNameIndexExistsInternal()) {
         qWarning() << "Index directory not available";
         return std::nullopt;
     }
