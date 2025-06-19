@@ -1,0 +1,3 @@
+usr/include/dfm-search/*
+usr/lib/*/pkgconfig/dfm-search.pc
+usr/lib/*/cmake/dfm-search/*.cmake 
