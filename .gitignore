@@ -52,4 +52,5 @@ debian/libdfm-burn-dev/*
 debian/*.log
 debian/*.substvars
 debian/files
+.cursor
 

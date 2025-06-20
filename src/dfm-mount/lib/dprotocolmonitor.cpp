@@ -330,7 +330,7 @@ bool DProtocolMonitorPrivate::isNativeMount(const QString &mpt)
         return false;
 
     std::string s = mpt.toStdString();
-    GUnixMountEntry_autoptr entry = g_unix_mount_for(s.data(), nullptr);
+    g_autoptr(GUnixMountEntry) entry = g_unix_mount_for(s.data(), nullptr);
     if (entry) {
         QString devPath = g_unix_mount_get_device_path(entry);
         if (devPath.startsWith("/dev/"))
