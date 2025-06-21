@@ -26,7 +26,7 @@ public:
     enum class Type {
         Simple,   ///< Simple keyword search
         Boolean,  ///< Boolean query (AND, OR)
-        // TODO: Wildcard search
+        Wildcard  ///< Wildcard search with * and ? patterns
     };
 
     /**

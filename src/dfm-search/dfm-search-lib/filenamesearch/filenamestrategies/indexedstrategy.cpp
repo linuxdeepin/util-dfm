@@ -114,7 +114,17 @@ Lucene::QueryPtr QueryBuilder::buildSimpleQuery(const QString &keyword, bool cas
 
 Lucene::QueryPtr QueryBuilder::buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const
 {
-    return buildCommonQuery(keyword, caseSensitive, analyzer, true);
+    if (keyword.isEmpty()) {
+        return nullptr;
+    }
+    
+    // 对于通配符查询，使用file_name_lower字段（非分词）而非file_name（分词）
+    QString processedKeyword = caseSensitive ? keyword : keyword.toLower();
+    
+    // 直接构建WildcardQuery，不使用QueryParser避免分词干扰
+    return newLucene<WildcardQuery>(
+        newLucene<Term>(L"file_name_lower", 
+                       StringUtils::toUnicode(processedKeyword.toStdString())));
 }
 
 Lucene::QueryPtr QueryBuilder::buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op, const Lucene::AnalyzerPtr &analyzer) const
@@ -301,8 +311,8 @@ FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType
         return SearchType::FileExt;
     }
 
-    // 有通配符的搜索
-    if (hasKeyword && (keyword.contains('*') || keyword.contains('?'))) {
+    // 通配符查询类型（显式指定）
+    if (query.type() == SearchQuery::Type::Wildcard) {
         return SearchType::Wildcard;
     }
 

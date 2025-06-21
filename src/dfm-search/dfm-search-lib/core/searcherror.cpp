@@ -63,6 +63,8 @@ std::string ContentSearchErrorCategory::message(int ev) const
     switch (static_cast<ContentSearchErrorCode>(ev)) {
     case ContentSearchErrorCode::KeywordTooShort:
         return "Keyword too short: The search keyword is too short to perform a search. Please provide a longer keyword.";
+    case ContentSearchErrorCode::WildcardNotSupported:
+        return "Wildcard not supported: Wildcard search is not supported for content search. Please use simple or boolean query instead.";
     case ContentSearchErrorCode::ContentIndexNotFound:
         return "Content index not found: The content index could not be found. Please ensure the index is created.";
     case ContentSearchErrorCode::ContentIndexException:

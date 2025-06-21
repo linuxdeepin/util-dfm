@@ -259,7 +259,8 @@ SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
 
 SearchError GenericSearchEngine::validateSearchConditions()
 {
-    if (m_currentQuery.type() == SearchQuery::Type::Simple) {
+    if (m_currentQuery.type() == SearchQuery::Type::Simple || 
+        m_currentQuery.type() == SearchQuery::Type::Wildcard) {
         if (m_options.searchPath().isEmpty()) {
             return SearchError(SearchErrorCode::PathIsEmpty);
         }

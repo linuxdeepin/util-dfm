@@ -33,6 +33,8 @@ SearchQuery SearchFactory::createQuery(const QString &keyword, SearchQuery::Type
     case SearchQuery::Type::Boolean:
         // NOTE: space
         return SearchQuery::createBooleanQuery(keyword.split(" "));
+    case SearchQuery::Type::Wildcard:
+        return SearchQuery(keyword, SearchQuery::Type::Wildcard);
     }
 
     return SearchQuery(keyword);
