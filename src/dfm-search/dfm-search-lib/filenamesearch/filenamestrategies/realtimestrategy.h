@@ -29,6 +29,9 @@ private:
     // 布尔查询匹配
     bool matchBoolean(const QString &fileName, const SearchQuery &query,
                       bool caseSensitive, bool pinyinEnabled);
+
+    // 通配符匹配
+    bool matchWildcard(const QString &fileName, const QString &pattern, bool caseSensitive);
 };
 
 DFM_SEARCH_END_NS

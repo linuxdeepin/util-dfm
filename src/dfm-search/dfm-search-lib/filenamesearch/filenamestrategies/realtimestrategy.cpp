@@ -9,6 +9,7 @@
 #include <QStack>
 #include <QElapsedTimer>
 #include <QDebug>
+#include <QRegularExpression>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -121,6 +122,10 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
                 matches = fileName.contains(query.keyword(),
                                             caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive);
             }
+            // 通配符查询模式
+            else if (query.type() == SearchQuery::Type::Wildcard) {
+                matches = matchWildcard(fileName, query.keyword(), caseSensitive);
+            }
             // 布尔查询模式
             else if (query.type() == SearchQuery::Type::Boolean) {
                 matches = matchBoolean(fileName, query, caseSensitive, false);
@@ -212,6 +217,16 @@ bool FileNameRealTimeStrategy::matchBoolean(const QString &fileName, const Searc
     }
 
     return false;
+}
+
+bool FileNameRealTimeStrategy::matchWildcard(const QString &fileName, const QString &pattern, bool caseSensitive)
+{
+    // 利用Qt内置的通配符匹配功能
+    QRegularExpression regex = QRegularExpression::fromWildcard(
+        pattern, 
+        caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive
+    );
+    return regex.match(fileName).hasMatch();
 }
 
 void FileNameRealTimeStrategy::cancel()

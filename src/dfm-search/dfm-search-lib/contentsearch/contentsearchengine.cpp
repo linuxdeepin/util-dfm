@@ -36,6 +36,11 @@ SearchError ContentSearchEngine::validateSearchConditions()
         return SearchError(SearchErrorCode::InvalidSerchMethod);
     }
 
+    // 检查是否为不支持的 Wildcard 查询类型
+    if (m_currentQuery.type() == SearchQuery::Type::Wildcard) {
+        return SearchError(ContentSearchErrorCode::WildcardNotSupported);
+    }
+
     if (m_currentQuery.type() == SearchQuery::Type::Simple
         && m_currentQuery.keyword().toUtf8().size() < Global::kMinContentSearchKeywordLength) {
         return SearchError(ContentSearchErrorCode::KeywordTooShort);

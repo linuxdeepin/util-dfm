@@ -58,7 +58,8 @@ void printUsage()
     std::cout << "Options:" << std::endl;
     std::cout << "  --type=<filename|content>   Search type (default: filename)" << std::endl;
     std::cout << "  --method=<indexed|realtime> Search method (default: indexed)" << std::endl;
-    std::cout << "  --query=<simple|boolean>    Query type (default: simple)" << std::endl;
+    std::cout << "  --query=<simple|boolean|wildcard> Query type (default: simple)" << std::endl;
+    std::cout << "  --wildcard                  Enable wildcard search with * and ? patterns" << std::endl;
     std::cout << "  --case-sensitive            Enable case sensitivity" << std::endl;
     std::cout << "  --include-hidden            Include hidden files" << std::endl;
     std::cout << "  --pinyin                    Enable pinyin search (for filename search)" << std::endl;
@@ -349,6 +350,7 @@ int main(int argc, char *argv[])
     QCommandLineOption fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions");
     QCommandLineOption maxResultsOption(QStringList() << "max-results", "Maximum number of results", "number", "100");
     QCommandLineOption maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200");
+    QCommandLineOption wildcardOption(QStringList() << "wildcard", "Enable wildcard search with * and ? patterns");
 
     parser.addOption(typeOption);
     parser.addOption(methodOption);
@@ -360,6 +362,7 @@ int main(int argc, char *argv[])
     parser.addOption(fileExtensionsOption);
     parser.addOption(maxResultsOption);
     parser.addOption(maxPreviewOption);
+    parser.addOption(wildcardOption);
 
     // Setup positional arguments
     parser.addPositionalArgument("keyword", "Search keyword");
@@ -409,8 +412,10 @@ int main(int argc, char *argv[])
     QString queryStr = parser.value(queryOption);
     if (queryStr == "boolean") {
         queryType = SearchQuery::Type::Boolean;
+    } else if (queryStr == "wildcard" || parser.isSet(wildcardOption)) {
+        queryType = SearchQuery::Type::Wildcard;
     } else if (queryStr != "simple") {
-        std::cerr << "Error: Invalid query type. Use 'simple' or 'boolean'" << std::endl;
+        std::cerr << "Error: Invalid query type. Use 'simple', 'boolean', or 'wildcard'" << std::endl;
         return 1;
     }
 
@@ -481,6 +486,8 @@ int main(int argc, char *argv[])
     SearchQuery query;
     if (queryType == SearchQuery::Type::Simple) {
         query = SearchFactory::createQuery(keyword, SearchQuery::Type::Simple);
+    } else if (queryType == SearchQuery::Type::Wildcard) {
+        query = SearchFactory::createQuery(keyword, SearchQuery::Type::Wildcard);
     } else {
         // For boolean query, split keywords by comma and create a boolean query
         QStringList keywords = keyword.split(',', Qt::SkipEmptyParts);

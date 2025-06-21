@@ -50,6 +50,7 @@ enum class FileNameSearchErrorCode {
 // Enumeration for content search specific error codes
 enum class ContentSearchErrorCode {
     KeywordTooShort = 2000,   // The search keyword is too short
+    WildcardNotSupported = 2001,   // Wildcard search is not supported for content search
 
     // Errors related to content indexing
     ContentIndexNotFound = 2200,   // The content index could not be found
