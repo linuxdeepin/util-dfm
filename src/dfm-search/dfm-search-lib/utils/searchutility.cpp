@@ -275,19 +275,6 @@ static QStringList getResolvedIndexedDirectories()   // Renamed for clarity
     return processedPaths;
 }
 
-// Internal helper function to check if index exists without status validation
-static bool isFileNameIndexExistsInternal()
-{
-    try {
-        const QString &indexDir = fileNameIndexDirectory();
-        bool exists = IndexReader::indexExists(FSDirectory::open(indexDir.toStdWString()));
-        return exists;
-    } catch (const LuceneException &e) {
-        qWarning() << "Failed to check index existence:" << QString::fromStdWString(e.getError());
-        return false;
-    }
-}
-
 bool isPinyinSequence(const QString &input)
 {
     if (input.isEmpty())
@@ -529,8 +516,20 @@ bool isPathInFileNameIndexDirectory(const QString &path)
 
 bool isFileNameIndexDirectoryAvailable()
 {
+    try {
+        const QString &indexDir = fileNameIndexDirectory();
+        bool exists = IndexReader::indexExists(FSDirectory::open(indexDir.toStdWString()));
+        return exists;
+    } catch (const LuceneException &e) {
+        qWarning() << "Failed to check index existence:" << QString::fromStdWString(e.getError());
+        return false;
+    }
+}
+
+bool isFileNameIndexReadyForSearch()
+{
     // First check if the index physically exists
-    if (!isFileNameIndexExistsInternal()) {
+    if (!isFileNameIndexDirectoryAvailable()) {
         qDebug() << "Index directory does not exist physically.";
         return false;
     }
@@ -544,7 +543,7 @@ bool isFileNameIndexDirectoryAvailable()
 
     const QString &status = currentStatus.value();
     if (status != "monitoring") {
-        qDebug() << "Index status is '" << status 
+        qDebug() << "Index status is '" << status
                  << "', expected 'monitoring'. Index not ready for search.";
         return false;
     }
@@ -554,7 +553,7 @@ bool isFileNameIndexDirectoryAvailable()
 
 std::optional<QString> fileNameIndexStatus()
 {
-    if (!isFileNameIndexExistsInternal()) {
+    if (!isFileNameIndexDirectoryAvailable()) {
         qWarning() << "Index directory not available";
         return std::nullopt;
     }
