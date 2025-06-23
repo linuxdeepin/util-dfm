@@ -1,3 +1,9 @@
+util-dfm (1.3.30) unstable; urgency=medium
+
+  * Enhance index availability checks and introduce readiness validation 
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Mon, 23 Jun 2025 16:51:02 +0800
+
 util-dfm (1.3.29) unstable; urgency=medium
 
   * feat: Add wildcard search functionality to search query
