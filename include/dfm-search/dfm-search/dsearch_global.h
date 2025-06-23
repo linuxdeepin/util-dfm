@@ -99,10 +99,18 @@ bool isPathInFileNameIndexDirectory(const QString &path);
 
 /**
  * @brief Check if the filename index directory is available.
- * This function checks the status of the filename index directory to determine if it is accessible and ready for search operations.
+ * This function checks if the filename index directory physically exists.
  * @return True if the filename index directory is available, false otherwise.
  */
 bool isFileNameIndexDirectoryAvailable();
+
+/**
+ * @brief Check if the filename index is ready for search operations.
+ * This function checks both the physical existence of the index and its status to ensure
+ * it's in the "monitoring" state and ready for search operations.
+ * @return True if the filename index is ready for search, false otherwise.
+ */
+bool isFileNameIndexReadyForSearch();
 
 /**
  * @brief Returns the current indexing status of the file name database.
