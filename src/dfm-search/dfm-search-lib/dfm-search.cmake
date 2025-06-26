@@ -1,6 +1,8 @@
 # Setup the environment
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 find_package(Dtk${DFM_VERSION_MAJOR} COMPONENTS Core REQUIRED)
+find_package(Threads REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Lucene REQUIRED IMPORTED_TARGET liblucene++ liblucene++-contrib)
@@ -11,10 +13,12 @@ add_library(${BIN_NAME} SHARED
             ${SRCS}
 )
 
-target_link_libraries(${BIN_NAME}
+target_link_libraries(${BIN_NAME} PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
     Dtk${DFM_VERSION_MAJOR}::Core
     PkgConfig::Lucene
+    Threads::Threads
+    Boost::system
 )
 
 target_include_directories(
@@ -43,7 +47,7 @@ set_target_properties(
 )
 
 # Install with export
-install(TARGETS ${BIN_NAME} 
+install(TARGETS ${BIN_NAME}
     EXPORT ${BIN_NAME}Targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -75,4 +79,4 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME}.pc DESTINATION ${CMAKE_INS
 
 # config cmake file
 configure_file(${PROJECT_SOURCE_DIR}/misc/${BASE_NAME}/${BASE_NAME}Config.cmake.in ${BIN_NAME}Config.cmake @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME}Config.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${BIN_NAME}) 
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME}Config.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${BIN_NAME})

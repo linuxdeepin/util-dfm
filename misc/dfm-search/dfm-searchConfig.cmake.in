@@ -3,6 +3,8 @@ include(CMakeFindDependencyMacro)
 # 添加必要的依赖
 find_dependency(Qt@QT_VERSION_MAJOR@ COMPONENTS Core)
 find_dependency(Dtk@DFM_VERSION_MAJOR@ COMPONENTS Core)
+find_dependency(Threads)
+find_dependency(Boost COMPONENTS system)
 
 # 查找 PkgConfig 和 liblucene++ 依赖
 find_dependency(PkgConfig)
