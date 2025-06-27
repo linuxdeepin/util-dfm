@@ -543,11 +543,11 @@ bool isFileNameIndexReadyForSearch()
         return false;
     }
 
+    const QStringList &validStatus = { "scanning", "monitoring" };
     const QString &status = currentStatus.value();
-    if (status != "monitoring") {
+    if (!validStatus.contains(status)) {
         qDebug() << "Index status is '" << status
-                 << "', expected 'monitoring'. Index not ready for search.";
-        return false;
+                 << "', expected 'scanning' or 'monitoring'. Index not ready for search.";
     }
 
     return true;
