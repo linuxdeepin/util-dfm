@@ -18,7 +18,8 @@ Build-Depends:
  libmediainfo-dev,
  libsecret-1-dev,
  liblucene++-dev,
- libboost-filesystem-dev
+ libboost-filesystem-dev,
+ libboost-system-dev
 Standards-Version: 4.3.0
 Homepage: http://www.deepin.org
 #Vcs-Browser: https://salsa.debian.org/debian/util-dfm

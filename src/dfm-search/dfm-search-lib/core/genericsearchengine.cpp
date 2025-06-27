@@ -11,7 +11,7 @@
 DFM_SEARCH_BEGIN_NS
 DCORE_USE_NAMESPACE
 
-constexpr int kDefaultBatchTime = 100;   // 100ms
+constexpr int kDefaultBatchTime = 1000;   // 1000ms
 
 GenericSearchEngine::GenericSearchEngine(QObject *parent)
     : AbstractSearchEngine(parent),
@@ -78,6 +78,8 @@ SearchOptions GenericSearchEngine::searchOptions() const
 void GenericSearchEngine::setSearchOptions(const SearchOptions &options)
 {
     m_options = options;
+    // 更新批处理定时器间隔
+    m_batchTimer.setInterval(m_options.batchTime());
 }
 
 SearchStatus GenericSearchEngine::status() const
@@ -99,6 +101,7 @@ void GenericSearchEngine::search(const SearchQuery &query)
 
     // 清空批处理结果并启动定时器
     m_batchResults.clear();
+    m_batchTimer.setInterval(m_options.batchTime());
     m_batchTimer.start();
 
     // 保存当前查询

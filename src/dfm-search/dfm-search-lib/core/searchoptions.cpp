@@ -161,4 +161,20 @@ int SearchOptions::syncSearchTimeout() const
     return d->syncSearchTimeoutSecs;
 }
 
+void SearchOptions::setBatchTime(int milliseconds)
+{
+    // 限制批处理时间范围在 50ms 到 5000ms 之间
+    if (milliseconds < 50) {
+        milliseconds = 50;
+    } else if (milliseconds > 5000) {
+        milliseconds = 5000;
+    }
+    d->batchTimeMs = milliseconds;
+}
+
+int SearchOptions::batchTime() const
+{
+    return d->batchTimeMs;
+}
+
 DFM_SEARCH_END_NS
