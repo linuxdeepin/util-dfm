@@ -197,6 +197,27 @@ public:
      */
     int syncSearchTimeout() const;
 
+    /**
+     * @brief Sets the batch processing time interval in milliseconds.
+     *
+     * This controls how frequently search results are batched and emitted during
+     * asynchronous search operations. A larger interval reduces the frequency of
+     * signal emissions but may make the UI feel less responsive. A smaller interval
+     * provides more responsive updates but may impact performance with high result volumes.
+     *
+     * @param milliseconds Batch time interval in milliseconds (minimum 50, maximum 5000)
+     * @sa batchTime()
+     */
+    void setBatchTime(int milliseconds);
+
+    /**
+     * @brief Returns the current batch processing time interval in milliseconds.
+     *
+     * @return Batch time interval in milliseconds (default is 1000)
+     * @sa setBatchTime()
+     */
+    int batchTime() const;
+
 private:
     std::unique_ptr<SearchOptionsData> d;   // PIMPL
 };
