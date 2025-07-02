@@ -5,6 +5,7 @@
 #include "dlocalhelper.h"
 
 #include <dfm-io/dfileinfo.h>
+#include <dfm-io/dfmio_utils.h>
 
 #include <QDebug>
 #include <QCollator>
@@ -650,8 +651,8 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::kStandardIcon:
     case DFileInfo::AttributeID::kStandardSymbolicIcon:
     case DFileInfo::AttributeID::kPreviewIcon: {
-        //g_file_info_set_attribute_object(gfileinfo, key, value.object());
-        // TODO(lanxs)
+        // g_file_info_set_attribute_object(gfileinfo, key, value.object());
+        //  TODO(lanxs)
         return true;
     }
 
@@ -736,8 +737,8 @@ bool DLocalHelper::checkGFileType(GFile *file, GFileType type)
 
     return g_file_info_get_file_type(gfileinfo) == type;
 }
-//fix 多线程排序时，该处的全局变量在compareByString函数中可能导致软件崩溃
-//QCollator sortCollator;
+// fix 多线程排序时，该处的全局变量在compareByString函数中可能导致软件崩溃
+// QCollator sortCollator;
 class DCollator : public QCollator
 {
 public:
@@ -829,15 +830,15 @@ bool DLocalHelper::isFullWidthChar(const QChar ch, QChar &normalized)
         { 0xFF1C, '<' },   // ＜
         { 0xFF1E, '>' },   // ＞
         { 0xFF02, '"' },   // ＂
-        { 0xFF07, '\'' },  // ＇
+        { 0xFF07, '\'' },   // ＇
         { 0xFF0B, '+' },   // ＋
         { 0xFF03, '#' },   // ＃
         { 0xFF04, '$' },   // ＄
         { 0xFF05, '%' },   // ％
         { 0xFF20, '@' },   // ＠
         { 0xFF0A, '*' },   // ＊
-        { 0xFF3C, '\\' },  // ＼
-        { 0xFF5E, '~' }    // ～
+        { 0xFF3C, '\\' },   // ＼
+        { 0xFF5E, '~' }   // ～
     };
 
     auto it = punctuationMap.find(unicode);
@@ -875,7 +876,7 @@ QString DLocalHelper::numberStr(const QString &str, int pos)
         const QChar &ch = str.at(pos);
         QChar number;
         if (isFullWidthChar(ch, number)) {
-            tmp += number;  // 将全角数字转换为半角数字
+            tmp += number;   // 将全角数字转换为半角数字
         } else {
             tmp += ch;
         }
@@ -896,7 +897,7 @@ bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2)
 
     bool preIsNum = false;
     bool isSymbol1 = false, isSymbol2 = false, isHanzi1 = false,
-        isHanzi2 = false, isNumb1 = false, isNumb2 = false;
+         isHanzi2 = false, isNumb1 = false, isNumb2 = false;
 
     // 使用迭代器来正确处理代理对字符
     QString::const_iterator it1 = name1.constBegin();
@@ -905,11 +906,11 @@ bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2)
     while (it1 != name1.constEnd() && it2 != name2.constEnd()) {
         // 获取当前完整字符(可能是代理对)
         uint unicode1 = it1->isHighSurrogate() && (it1 + 1) != name1.constEnd()
-                            ? QChar::surrogateToUcs4(*it1, *(it1 + 1))
-                            : it1->unicode();
+                ? QChar::surrogateToUcs4(*it1, *(it1 + 1))
+                : it1->unicode();
         uint unicode2 = it2->isHighSurrogate() && (it2 + 1) != name2.constEnd()
-                            ? QChar::surrogateToUcs4(*it2, *(it2 + 1))
-                            : it2->unicode();
+                ? QChar::surrogateToUcs4(*it2, *(it2 + 1))
+                : it2->unicode();
 
         // 如果字符相同，继续比较下一个
         if (unicode1 == unicode2) {
@@ -1075,10 +1076,9 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
             sortPointer->symlinkUrl = QUrl::fromLocalFile(symlinkTagetPath);
     }
 
-
     if (sortPointer->symlinkUrl.isValid() && !DFMUtils::isGvfsFile(sortPointer->symlinkUrl)) {
         struct stat st;
-        if (stat(sortPointer->symlinkUrl.path().toUtf8().data(),&st) == 0) {
+        if (stat(sortPointer->symlinkUrl.path().toUtf8().data(), &st) == 0) {
             sortPointer->filesize = st.st_size;
             sortPointer->isDir = S_ISDIR(st.st_mode);
         }
@@ -1277,7 +1277,7 @@ bool DLocalHelper::setGFileInfoInt64(GFile *gfile, const char *key, const QVaria
 
 QString DLocalHelper::symlinkTarget(const QUrl &url)
 {
-    char buffer[4096]{0};
+    char buffer[4096] { 0 };
     auto size = readlink(url.path().toStdString().c_str(), buffer, sizeof(buffer));
     if (size > 0)
         return QString::fromUtf8(buffer, static_cast<int>(size));
@@ -1290,7 +1290,7 @@ QString DLocalHelper::resolveSymlink(const QUrl &url)
     QString target = DLocalHelper::symlinkTarget(url);
     while (!target.isEmpty()) {
         if (visited.contains(target))
-            return QString(); // Cycle detected: return empty
+            return QString();   // Cycle detected: return empty
         visited.insert(target);
         QUrl newUrl = QUrl::fromLocalFile(target);
         QString nextTarget = DLocalHelper::symlinkTarget(newUrl);
@@ -1311,7 +1311,7 @@ qint64 DLocalHelper::fileSizeByEnt(const FTSENT **ent)
     QString linkTag = resolveSymlink(QUrl::fromLocalFile(filePath));
     struct stat st;
     qint64 size = (*ent)->fts_statp->st_size;
-    if (linkTag.isEmpty() || DFMUtils::isGvfsFile(QUrl::fromLocalFile(linkTag)) || stat(linkTag.toUtf8().data(),&st) != 0)
+    if (linkTag.isEmpty() || DFMUtils::isGvfsFile(QUrl::fromLocalFile(linkTag)) || stat(linkTag.toUtf8().data(), &st) != 0)
         size = (*ent)->fts_statp->st_size;
     else {
         size = S_ISDIR(st.st_mode) ? -1 : st.st_size;
