@@ -1058,6 +1058,7 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
             sortPointer->symlinkUrl = QUrl::fromLocalFile(symlinkTagetPath);
     }
 
+
     if (sortPointer->symlinkUrl.isValid() && !DFMUtils::isGvfsFile(sortPointer->symlinkUrl)) {
         struct stat st;
         if (stat(sortPointer->symlinkUrl.path().toUtf8().data(), &st) == 0) {
@@ -1299,7 +1300,7 @@ QString DLocalHelper::resolveSymlink(const QUrl &url)
 qint64 DLocalHelper::fileSizeByEnt(const FTSENT **ent)
 {
     if (!S_ISLNK((*ent)->fts_statp->st_mode))
-        return S_ISDIR((*ent)->fts_statp->st_mode) ? -1 : (*ent)->fts_statp->st_size;
+        return (*ent)->fts_statp->st_size;
 
     // 这里很奇怪 fts_name="tt 快捷方式" fts_path="/home/uos/Desktop" 所以重新拼接"/home/ut005319@uos/Desktop/tt 快捷方式"
     auto filePath = QString((*ent)->fts_path) + QDir::separator() + (*ent)->fts_name;
