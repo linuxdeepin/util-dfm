@@ -790,23 +790,24 @@ bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2, c
     int length2 = name2.length();
     auto total = length1 > length2 ? length2 : length1;
 
-    bool preIsNum = false;
+    int preNumPos = -1;
     bool isSybol1 = false, isSybol2 = false, isHanzi1 = false,
          isHanzi2 = false, isNumb1 = false, isNumb2 = false;
 
     for (int i = 0; i < total; ++i) {
         // 判断相等和大小写相等，跳过
         if (str1.at(i) == str2.at(i) || str1.at(i).toLower() == str2.at(i).toLower()) {
-            preIsNum = isNumber(str1.at(i));
+            auto n = isNumber(str1.at(i));
+            preNumPos = preNumPos == -1 && n ? i : (preNumPos != -1 && !n ? -1 : preNumPos);
             continue;
         }
         isNumb1 = isNumber(str1.at(i));
         isNumb2 = isNumber(str2.at(i));
-        if ((preIsNum && (isNumb1 ^ isNumb2)) || (isNumb1 && isNumb2)) {
+        if ((preNumPos != -1 && (isNumb1 ^ isNumb2)) || (isNumb1 && isNumb2)) {
             // 取后面几位的数字作比较后面的数字,先比较位数
             // 位数大的大
-            auto str1n = numberStr(str1, preIsNum ? i - 1 : i).toUInt();
-            auto str2n = numberStr(str2, preIsNum ? i - 1 : i).toUInt();
+            auto str1n = numberStr(str1, preNumPos == -1 ? i : preNumPos);
+            auto str2n = numberStr(str2, preNumPos == -1 ? i : preNumPos);
             if (str1n == str2n)
                 return str1.at(i) < str2.at(i);
             return str1n < str2n;
