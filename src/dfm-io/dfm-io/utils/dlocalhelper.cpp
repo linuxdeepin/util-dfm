@@ -1034,12 +1034,11 @@ int DLocalHelper::compareByName(const FTSENT **left, const FTSENT **right)
 
 int DLocalHelper::compareBySize(const FTSENT **left, const FTSENT **right)
 {
-    // 文件夹不参与按文件大小的排序
-    auto sizeL = S_ISDIR((*left)->fts_statp->st_mode) ? -1 : (*left)->fts_statp->st_size;
-    auto sizeR = S_ISDIR((*right)->fts_statp->st_mode) ? -1 : (*right)->fts_statp->st_size;
-    if (sizeL == sizeR)
+    auto leftSize = fileSizeByEnt(left);
+    auto rightSize = fileSizeByEnt(right);
+    if (leftSize == rightSize)
         return compareByName(left, right);
-    return sizeL > sizeR;
+    return leftSize > rightSize;
 }
 
 int DLocalHelper::compareByLastModifed(const FTSENT **left, const FTSENT **right)
@@ -1069,18 +1068,20 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
     auto name = QString(ent->fts_name);
     sortPointer->filesize = ent->fts_statp->st_size;
     sortPointer->isSymLink = S_ISLNK(ent->fts_statp->st_mode);
+    sortPointer->isDir = S_ISDIR(ent->fts_statp->st_mode);
     if (sortPointer->isSymLink) {
-        char buffer[4096]{0};
-        auto size = readlink(ent->fts_path, buffer, sizeof(buffer));
-        if (size > 0) {
-            QString symlinkTagetPath = QString::fromUtf8(buffer, static_cast<int>(size));
+        QString symlinkTagetPath = resolveSymlink(QUrl::fromLocalFile(ent->fts_path));
+        if (!symlinkTagetPath.isEmpty())
             sortPointer->symlinkUrl = QUrl::fromLocalFile(symlinkTagetPath);
-            struct stat st;
-            if (stat(symlinkTagetPath.toStdString().c_str(),&st) == 0)
-                sortPointer->isDir = S_ISDIR(st.st_mode);
+    }
+
+
+    if (sortPointer->symlinkUrl.isValid() && !DFMUtils::isGvfsFile(sortPointer->symlinkUrl)) {
+        struct stat st;
+        if (stat(sortPointer->symlinkUrl.path().toUtf8().data(),&st) == 0) {
+            sortPointer->filesize = st.st_size;
+            sortPointer->isDir = S_ISDIR(st.st_mode);
         }
-    } else {
-        sortPointer->isDir = S_ISDIR(ent->fts_statp->st_mode);
     }
 
     sortPointer->isFile = !sortPointer->isDir;
@@ -1272,4 +1273,48 @@ bool DLocalHelper::setGFileInfoInt64(GFile *gfile, const char *key, const QVaria
         return false;
     }
     return true;
+}
+
+QString DLocalHelper::symlinkTarget(const QUrl &url)
+{
+    char buffer[4096]{0};
+    auto size = readlink(url.path().toStdString().c_str(), buffer, sizeof(buffer));
+    if (size > 0)
+        return QString::fromUtf8(buffer, static_cast<int>(size));
+    return QString();
+}
+
+QString DLocalHelper::resolveSymlink(const QUrl &url)
+{
+    QSet<QString> visited;
+    QString target = DLocalHelper::symlinkTarget(url);
+    while (!target.isEmpty()) {
+        if (visited.contains(target))
+            return QString(); // Cycle detected: return empty
+        visited.insert(target);
+        QUrl newUrl = QUrl::fromLocalFile(target);
+        QString nextTarget = DLocalHelper::symlinkTarget(newUrl);
+        if (nextTarget.isEmpty())
+            break;
+        target = nextTarget;
+    }
+    return target;
+}
+
+qint64 DLocalHelper::fileSizeByEnt(const FTSENT **ent)
+{
+    if (!S_ISLNK((*ent)->fts_statp->st_mode))
+        return S_ISDIR((*ent)->fts_statp->st_mode) ? -1 : (*ent)->fts_statp->st_size;
+
+    // 这里很奇怪 fts_name="tt 快捷方式" fts_path="/home/uos/Desktop" 所以重新拼接"/home/ut005319@uos/Desktop/tt 快捷方式"
+    auto filePath = QString((*ent)->fts_path) + QDir::separator() + (*ent)->fts_name;
+    QString linkTag = resolveSymlink(QUrl::fromLocalFile(filePath));
+    struct stat st;
+    qint64 size = (*ent)->fts_statp->st_size;
+    if (linkTag.isEmpty() || DFMUtils::isGvfsFile(QUrl::fromLocalFile(linkTag)) || stat(linkTag.toUtf8().data(),&st) != 0)
+        size = (*ent)->fts_statp->st_size;
+    else {
+        size = S_ISDIR(st.st_mode) ? -1 : st.st_size;
+    }
+    return size;
 }

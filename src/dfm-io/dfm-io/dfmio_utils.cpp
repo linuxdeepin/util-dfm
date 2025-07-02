@@ -334,6 +334,19 @@ bool dfmio::DFMUtils::supportTrash(const QUrl &url)
     return true;
 }
 
+bool DFMUtils::isGvfsFile(const QUrl &url)
+{
+    if (!url.isValid())
+        return false;
+
+    const QString &path = url.toLocalFile();
+    static const QString *gvfsMatch = new QString{ "(^/run/user/\\d+/gvfs/|^/root/.gvfs/|^/media/[\\s\\S]*/smbmounts)" };
+    // TODO(xust) /media/$USER/smbmounts might be changed in the future.
+    QRegularExpression re { *gvfsMatch };
+    QRegularExpressionMatch match { re.match(path) };
+    return match.hasMatch();
+}
+
 QMap<QString, QString> DFMUtils::fstabBindInfo()
 {
     static QMutex mutex;

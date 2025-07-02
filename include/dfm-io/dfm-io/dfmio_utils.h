@@ -58,6 +58,7 @@ public:
     static int syncTrashCount();
     static qint64 deviceBytesFree(const QUrl &url);
     static bool supportTrash(const QUrl &url);
+    static bool isGvfsFile(const QUrl &url);
 
 private:
     static QMap<QString, QString>
