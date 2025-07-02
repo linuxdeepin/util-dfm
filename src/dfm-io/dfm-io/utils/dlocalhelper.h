@@ -20,19 +20,19 @@ BEGIN_IO_NAMESPACE
 template<class C, typename Ret, typename... Ts>
 std::function<Ret(Ts...)> bind_field(C *c, Ret (C::*m)(Ts...))
 {
-    return [=](auto &&... args) { return (c->*m)(std::forward<decltype(args)>(args)...); };
+    return [=](auto &&...args) { return (c->*m)(std::forward<decltype(args)>(args)...); };
 }
 
 template<class C, typename Ret, typename... Ts>
 std::function<Ret(Ts...)> bind_field(const C *c, Ret (C::*m)(Ts...) const)
 {
-    return [=](auto &&... args) { return (c->*m)(std::forward<decltype(args)>(args)...); };
+    return [=](auto &&...args) { return (c->*m)(std::forward<decltype(args)>(args)...); };
 }
 
 template<typename Ret, typename... Ts>
 std::function<Ret(Ts...)> bind_field(Ret (*m)(Ts...))
 {
-    return [=](auto &&... args) { return (*m)(std::forward<decltype(args)>(args)...); };
+    return [=](auto &&...args) { return (*m)(std::forward<decltype(args)>(args)...); };
 }
 
 class DLocalHelper
@@ -61,7 +61,6 @@ public:
     static bool isNumber(const QChar ch);
     static bool isSymbol(const QChar ch);
     static bool isFullWidthChar(const QChar ch, QChar &normalized);
-    static QString makeQString(const QString::const_iterator &it, uint unicode);
     static bool compareByStringEx(const QString &str1, const QString &str2);
     static QString numberStr(const QString &str, int pos);
     static bool compareByString(const QString &str1, const QString &str2);
@@ -71,6 +70,7 @@ public:
     static int compareByLastRead(const FTSENT **left, const FTSENT **right);
     static QSharedPointer<DEnumerator::SortFileInfo> createSortFileInfo(const FTSENT *ent,
                                                                         const QSet<QString> hidList);
+
 private:
     static QVariant getGFileInfoIcon(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
     static QVariant getGFileInfoString(GFileInfo *gfileinfo, const char *key, DFMIOErrorCode &errorcode);
