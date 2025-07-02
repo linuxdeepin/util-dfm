@@ -87,6 +87,9 @@ private:
     static bool setGFileInfoInt32(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
     static bool setGFileInfoUint64(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
     static bool setGFileInfoInt64(GFile *gfile, const char *key, const QVariant &value, GError **gerror);
+    static QString symlinkTarget(const QUrl &url);
+    static QString resolveSymlink(const QUrl &url);
+    static qint64 fileSizeByEnt(const FTSENT **ent);
 };
 
 END_IO_NAMESPACE
