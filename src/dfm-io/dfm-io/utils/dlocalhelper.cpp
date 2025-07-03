@@ -650,8 +650,8 @@ bool DLocalHelper::setAttributeByGFile(GFile *gfile, DFileInfo::AttributeID id, 
     case DFileInfo::AttributeID::kStandardIcon:
     case DFileInfo::AttributeID::kStandardSymbolicIcon:
     case DFileInfo::AttributeID::kPreviewIcon: {
-        //g_file_info_set_attribute_object(gfileinfo, key, value.object());
-        // TODO(lanxs)
+        // g_file_info_set_attribute_object(gfileinfo, key, value.object());
+        //  TODO(lanxs)
         return true;
     }
 
@@ -730,8 +730,8 @@ bool DLocalHelper::checkGFileType(GFile *file, GFileType type)
 
     return g_file_info_get_file_type(gfileinfo) == type;
 }
-//fix 多线程排序时，该处的全局变量在compareByString函数中可能导致软件崩溃
-//QCollator sortCollator;
+// fix 多线程排序时，该处的全局变量在compareByString函数中可能导致软件崩溃
+// QCollator sortCollator;
 class DCollator : public QCollator
 {
 public:
@@ -745,33 +745,122 @@ public:
 
 bool DLocalHelper::isNumOrChar(const QChar ch)
 {
-    return (ch >= 48 && ch <= 57) || (ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122);
+    QChar normalized;
+    if (isFullWidthChar(ch, normalized))
+        return isNumOrChar(normalized);
+
+    int chValue = ch.unicode();
+    return (chValue >= 48 && chValue <= 57) || (chValue >= 65 && chValue <= 90) || (chValue >= 97 && chValue <= 122);
 }
 
 bool DLocalHelper::isNumber(const QChar ch)
 {
-    return (ch >= 48 && ch <= 57);
+    QChar number;
+    if (isFullWidthChar(ch, number)) {
+        return (number.unicode() >= '0' && number.unicode() <= '9');
+}
+    return ch.isDigit();
 }
 
 bool DLocalHelper::isSymbol(const QChar ch)
 {
+    // 如果是高代理项，不应该单独判断
+    if (ch.isHighSurrogate() || ch.isLowSurrogate())
+        return false;
+
+    QChar normalized;
+    if (isFullWidthChar(ch, normalized)) {
+        return isSymbol(normalized);
+    }
+
     return ch.script() != QChar::Script_Han && !isNumOrChar(ch);
+}
+
+bool DLocalHelper::isFullWidthChar(const QChar ch, QChar &normalized)
+{
+    // 全角字符的 Unicode 范围
+    ushort unicode = ch.unicode();
+
+    // 处理全角数字 (0xFF10-0xFF19)
+    if (unicode >= 0xFF10 && unicode <= 0xFF19) {
+        normalized = QChar(unicode - 0xFF10 + '0');
+        return true;
+    }
+
+    // 处理全角大写字母 (0xFF21-0xFF3A)
+    if (unicode >= 0xFF21 && unicode <= 0xFF3A) {
+        normalized = QChar(unicode - 0xFF21 + 'A');
+        return true;
+    }
+
+    // 处理全角小写字母 (0xFF41-0xFF5A)
+    if (unicode >= 0xFF41 && unicode <= 0xFF5A) {
+        normalized = QChar(unicode - 0xFF41 + 'a');
+        return true;
+    }
+
+    // 处理全角标点符号
+    static const QHash<ushort, QChar> punctuationMap {
+        { 0xFF01, '!' },   // ！
+        { 0xFF08, '(' },   // （
+        { 0xFF09, ')' },   // ）
+        { 0xFF0C, ',' },   // ，
+        { 0xFF1A, ':' },   // ：
+        { 0xFF1B, ';' },   // ；
+        { 0xFF1F, '?' },   // ？
+        { 0xFF3B, '[' },   // ［
+        { 0xFF3D, ']' },   // ］
+        { 0xFF5B, '{' },   // ｛
+        { 0xFF5D, '}' },   // ｝
+        { 0xFF0E, '.' },   // ．
+        { 0xFF0F, '/' },   // ／
+        { 0xFF3F, '_' },   // ＿
+        { 0xFF0D, '-' },   // －
+        { 0xFF1D, '=' },   // ＝
+        { 0xFF06, '&' },   // ＆
+        { 0xFF5C, '|' },   // ｜
+        { 0xFF1C, '<' },   // ＜
+        { 0xFF1E, '>' },   // ＞
+        { 0xFF02, '"' },   // ＂
+        { 0xFF07, '\'' },   // ＇
+        { 0xFF0B, '+' },   // ＋
+        { 0xFF03, '#' },   // ＃
+        { 0xFF04, '$' },   // ＄
+        { 0xFF05, '%' },   // ％
+        { 0xFF20, '@' },   // ＠
+        { 0xFF0A, '*' },   // ＊
+        { 0xFF3C, '\\' },   // ＼
+        { 0xFF5E, '~' }   // ～
+    };
+
+    auto it = punctuationMap.find(unicode);
+    if (it != punctuationMap.end()) {
+        normalized = it.value();
+        return true;
+    }
+
+    return false;
 }
 
 QString DLocalHelper::numberStr(const QString &str, int pos)
 {
     QString tmp;
-    auto total = str.length();
+    int total = str.length();
 
-    while (pos > 0 && isNumber(str.at(pos))) {
-        pos--;
+    // 从当前'pos'开始向前扫描
+    while (pos < total) {
+        const QChar &ch = str.at(pos);
+        if (!isNumber(ch)) {
+            break;   // 遇到非数字字符，停止提取
     }
 
-    if (!isNumber(str.at(pos)))
-        pos++;
-
-    while (pos < total && isNumber(str.at(pos))) {
-        tmp += str.at(pos);
+        QChar number;
+        // 将全角数字统一转换为半角数字后添加
+        if (isFullWidthChar(ch, number)) {
+            tmp += number;
+        } else {
+            tmp += ch;
+        }
         pos++;
     }
 
@@ -779,77 +868,157 @@ QString DLocalHelper::numberStr(const QString &str, int pos)
 }
 
 // The first is smaller than the second and returns true
-bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2, const bool str1HasSuf, const bool str2HasSuf)
+bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2)
 {
     thread_local static DCollator sortCollator;
-    QString suf1 = str1HasSuf ? str1.right(str1.length() - str1.lastIndexOf(".") - 1) : QString();
-    QString suf2 = str2HasSuf ? str2.right(str2.length() - str2.lastIndexOf(".") - 1) : QString();
-    QString name1 = str1HasSuf ? str1.left(str1.lastIndexOf(".")) : str1;
-    QString name2 = str2HasSuf ? str2.left(str2.lastIndexOf(".")) : str2;
-    int length1 = name1.length();
-    int length2 = name2.length();
-    auto total = length1 > length2 ? length2 : length1;
 
-    bool preIsNum = false;
-    bool isSybol1 = false, isSybol2 = false, isHanzi1 = false,
-         isHanzi2 = false, isNumb1 = false, isNumb2 = false;
+    enum CharType {
+        NumberType = 0,   // 数字
+        LetterType = 1,   // 字母 (非汉字)
+        HanType = 2,   // 汉字
+        SymbolType = 3   // 符号
+    };
 
-    for (int i = 0; i < total; ++i) {
-        // 判断相等和大小写相等，跳过
-        if (str1.at(i) == str2.at(i) || str1.at(i).toLower() == str2.at(i).toLower()) {
-            preIsNum = isNumber(str1.at(i));
-            continue;
+    auto getCharType = [](uint unicode) -> CharType {
+        // 使用静态 QChar 函数，它们可以安全地处理32位Unicode码点
+        if (QChar::isDigit(unicode)) return NumberType;
+        // isNumber() 辅助函数可以处理全角数字，但 QChar::isDigit 更高效
+        // 我们的 isNumber 仍需在 numberStr 中使用
+
+        QChar::Script script = QChar::script(unicode);
+        if (script == QChar::Script_Han) return HanType;
+        if (QChar::isLetter(unicode)) return LetterType;
+        return SymbolType;
+    };
+
+    auto compareUnified = [&](const QString &s1, const QString &s2) -> int {
+        QString::const_iterator it1 = s1.constBegin();
+        QString::const_iterator it2 = s2.constBegin();
+
+        while (it1 != s1.constEnd() && it2 != s2.constEnd()) {
+            int len1 = 1;
+            uint unicode1 = it1->unicode();
+            if (it1->isHighSurrogate() && (it1 + 1) != s1.constEnd()) {
+                unicode1 = QChar::surrogateToUcs4(*it1, *(it1 + 1));
+                len1 = 2;
+            }
+
+            int len2 = 1;
+            uint unicode2 = it2->unicode();
+            if (it2->isHighSurrogate() && (it2 + 1) != s2.constEnd()) {
+                unicode2 = QChar::surrogateToUcs4(*it2, *(it2 + 1));
+                len2 = 2;
+            }
+
+            CharType type1 = getCharType(unicode1);
+            CharType type2 = getCharType(unicode2);
+
+            if (type1 != type2) {
+                return (type1 < type2) ? -1 : 1;
+            }
+
+            switch (type1) {
+            // ============================ FIX START ============================
+            case NumberType: {
+                // 提取从当前位置开始的整个数字块
+                QString numPart1 = numberStr(s1, it1 - s1.constBegin());
+                QString numPart2 = numberStr(s2, it2 - s2.constBegin());
+
+                // 规则1: 使用QCollator按数值大小比较
+                int numCompareResult = sortCollator.compare(numPart1, numPart2);
+                if (numCompareResult != 0) {
+                    return numCompareResult;
+                }
+
+                // 规则2: 数值相同，比较原始长度 (前导零多的排前面)
+                // numberStr返回的是规范化后的半角字符串，其长度可能与原始长度不同。
+                // 我们需要计算原始字符串中数字块的真实长度。
+                int rawLen1 = 0;
+                for (auto temp_it = it1; temp_it != s1.constEnd() && isNumber(*temp_it); ++temp_it)
+                    rawLen1++;
+                int rawLen2 = 0;
+                for (auto temp_it = it2; temp_it != s2.constEnd() && isNumber(*temp_it); ++temp_it)
+                    rawLen2++;
+
+                    if (rawLen1 != rawLen2) {
+                        // 原始字符串更长的排在前面
+                        return (rawLen1 > rawLen2) ? -1 : 1;
+                    }
+
+                    // 数值和原始长度都相同，跳过这个块继续比较
+                    it1 += rawLen1;
+                    it2 += rawLen2;
+                    continue;
+                }
+            // ============================= FIX END =============================
+            case LetterType:
+            case HanType: {
+                // 使用 char32_t* overload to avoid deprecation warning.
+                QString charStr1 = QString::fromUcs4(reinterpret_cast<const char32_t *>(&unicode1), 1);
+                QString charStr2 = QString::fromUcs4(reinterpret_cast<const char32_t *>(&unicode2), 1);
+
+                int result = sortCollator.compare(charStr1, charStr2);
+                if (result != 0) return result;
+
+                // 规则3平局决胜: a A b B
+                if (QChar::isLetter(unicode1) && QChar::isLetter(unicode2)) {
+                    if (QChar::toLower(unicode1) == QChar::toLower(unicode2)) {
+                        // 如果小写形式相同，小写字母排在前面
+                        if (QChar::isLower(unicode1) != QChar::isLower(unicode2)) {
+                            return QChar::isLower(unicode1) ? -1 : 1;
+                        }
+                    }
+                }
+                break;
+            }
+            case SymbolType: {
+                if (unicode1 != unicode2) {
+                    return (unicode1 < unicode2) ? -1 : 1;
+                }
+                break;
+            }
+            }
+            it1 += len1;
+            it2 += len2;
         }
-        isNumb1 = isNumber(str1.at(i));
-        isNumb2 = isNumber(str2.at(i));
-        if ((preIsNum && (isNumb1 ^ isNumb2)) || (isNumb1 && isNumb2)) {
-            // 取后面几位的数字作比较后面的数字,先比较位数
-            // 位数大的大
-            auto str1n = numberStr(str1, preIsNum ? i - 1 : i).toUInt();
-            auto str2n = numberStr(str2, preIsNum ? i - 1 : i).toUInt();
-            if (str1n == str2n)
-                return str1.at(i) < str2.at(i);
-            return str1n < str2n;
-        }
-        // 判断特殊字符就排到最后
-        isSybol1 = isSymbol(str1.at(i));
-        isSybol2 = isSymbol(str2.at(i));
-        if (isSybol1 ^ isSybol2)
-            return !isSybol1;
 
-        if (isSybol1)
-            return str1.at(i) < str2.at(i);
+        if (it1 == s1.constEnd() && it2 != s2.constEnd()) return -1;
+        if (it1 != s1.constEnd() && it2 == s2.constEnd()) return 1;
+        return 0;
+    };
 
-        // 判断汉字
-        isHanzi1 = str1.at(i).script() == QChar::Script_Han;
-        isHanzi2 = str2.at(i).script() == QChar::Script_Han;
-        if (isHanzi2 ^ isHanzi1)
-            return !isHanzi1;
-
-        if (isHanzi1)
-            return sortCollator.compare(str1.at(i), str2.at(i)) < 0;
-
-        // 判断数字或者字符
-        if (!isNumb1 && !isNumb2)
-            return str1.at(i).toLower() < str2.at(i).toLower();
-
-        return isNumb1;
+    // --- 主流程 ---
+    QString name1, suf1;
+    int dotPos1 = str1.lastIndexOf('.');
+    if (dotPos1 <= 0) {
+        name1 = str1;
+    } else {
+        name1 = str1.left(dotPos1);
+        suf1 = str1.mid(dotPos1 + 1);
     }
 
-    if (length1 == length2) {
-        if (suf1.isEmpty() ^ suf2.isEmpty())
-            return suf1.isEmpty();
-
-        if (suf2.startsWith(suf1) ^ suf1.startsWith(suf2))
-            return suf2.startsWith(suf1);
-
-        return suf1 < suf2;
+    QString name2, suf2;
+    int dotPos2 = str2.lastIndexOf('.');
+    if (dotPos2 <= 0) {
+        name2 = str2;
+    } else {
+        name2 = str2.left(dotPos2);
+        suf2 = str2.mid(dotPos2 + 1);
     }
 
-    return length1 < length2;
+    int nameCompareResult = compareUnified(name1, name2);
+    if (nameCompareResult != 0) {
+        return nameCompareResult < 0;
+    }
+
+    // 如果文件名相同，但一个有后缀一个没有，没有后缀的排前面
+    if (suf1.isEmpty() && !suf2.isEmpty()) return true;
+    if (!suf1.isEmpty() && suf2.isEmpty()) return false;
+
+    return compareUnified(suf1, suf2) < 0;
 }
 
-bool DLocalHelper::compareByString(const QString &str1, const QString &str2, const bool str1HasSuf, const bool str2HasSuf)
+bool DLocalHelper::compareByString(const QString &str1, const QString &str2)
 {
     // 处理文件名称为  新建文件a 新建文件夹 排序错误的问题
     //  按名称排序
@@ -857,13 +1026,13 @@ bool DLocalHelper::compareByString(const QString &str1, const QString &str2, con
     //  2、其中数字由小到大排列，字母由a～z、 A~Z排列（例如：a A b B），汉字:按拼音首字母由a～z排列；
     //  3、如果首字母相同看第二位字母，以此类推；
     //  4、其他：特殊字符和乱码排在后面；
-    return compareByStringEx(str1, str2, str1HasSuf, str2HasSuf);
+    return compareByStringEx(str1, str2);
 }
 
 int DLocalHelper::compareByName(const FTSENT **left, const FTSENT **right)
 {
     QString str1 = QString((*left)->fts_name), str2 = QString((*right)->fts_name);
-    auto tt = compareByString(str1, str2, !S_ISDIR((*left)->fts_statp->st_mode), !S_ISDIR((*right)->fts_statp->st_mode));
+    auto tt = compareByString(str1, str2);
     return tt ? -1 : 1;
 }
 
@@ -910,10 +1079,9 @@ QSharedPointer<DEnumerator::SortFileInfo> DLocalHelper::createSortFileInfo(const
             sortPointer->symlinkUrl = QUrl::fromLocalFile(symlinkTagetPath);
     }
 
-
     if (sortPointer->symlinkUrl.isValid() && !DFMUtils::isGvfsFile(sortPointer->symlinkUrl)) {
         struct stat st;
-        if (stat(sortPointer->symlinkUrl.path().toUtf8().data(),&st) == 0) {
+        if (stat(sortPointer->symlinkUrl.path().toUtf8().data(), &st) == 0) {
             sortPointer->filesize = st.st_size;
             sortPointer->isDir = S_ISDIR(st.st_mode);
         }
@@ -1125,7 +1293,7 @@ bool DLocalHelper::setGFileInfoInt64(GFile *gfile, const char *key, const QVaria
 
 QString DLocalHelper::symlinkTarget(const QUrl &url)
 {
-    char buffer[4096]{0};
+    char buffer[4096] { 0 };
     auto size = readlink(url.path().toStdString().c_str(), buffer, sizeof(buffer));
     if (size > 0)
         return QString::fromUtf8(buffer, static_cast<int>(size));
@@ -1138,7 +1306,7 @@ QString DLocalHelper::resolveSymlink(const QUrl &url)
     QString target = DLocalHelper::symlinkTarget(url);
     while (!target.isEmpty()) {
         if (visited.contains(target))
-            return QString(); // Cycle detected: return empty
+            return QString();   // Cycle detected: return empty
         visited.insert(target);
         QUrl newUrl = QUrl::fromLocalFile(target);
         QString nextTarget = DLocalHelper::symlinkTarget(newUrl);
