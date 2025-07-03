@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.7)
 
 project(dfm${DFM_VERSION_MAJOR}-search-client)
 
@@ -18,7 +18,7 @@ target_link_libraries(
     ${PROJECT_NAME}
     Qt${QT_VERSION_MAJOR}::Core
     dfm${DFM_VERSION_MAJOR}-search
-) 
+)
 
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
