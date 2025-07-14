@@ -167,6 +167,7 @@ DProtocolDevicePrivate::DProtocolDevicePrivate(const QString &id, GVolumeMonitor
     : DDevicePrivate(qq), deviceId(id), volumeMonitor(monitor)
 {
     auto vols = g_volume_monitor_get_volumes(monitor);
+    auto vols_head = vols;  // 保存链表头指针
     while (vols) {
         auto vol = reinterpret_cast<GVolume *>(vols->data);
         g_autoptr(GFile) volRoot = g_volume_get_activation_root(vol);
@@ -179,9 +180,10 @@ DProtocolDevicePrivate::DProtocolDevicePrivate(const QString &id, GVolumeMonitor
         }
         vols = vols->next;
     }
-    g_list_free_full(vols, g_object_unref);
+    g_list_free_full(vols_head, g_object_unref);
 
     auto mnts = g_volume_monitor_get_mounts(monitor);
+    auto mnts_head = mnts;  // 保存链表头指针
     while (mnts) {
         auto mnt = reinterpret_cast<GMount *>(mnts->data);
         g_autoptr(GFile) mntRoot = g_mount_get_root(mnt);
@@ -194,7 +196,7 @@ DProtocolDevicePrivate::DProtocolDevicePrivate(const QString &id, GVolumeMonitor
         }
         mnts = mnts->next;
     }
-    g_list_free_full(mnts, g_object_unref);
+    g_list_free_full(mnts_head, g_object_unref);
 }
 
 DProtocolDevicePrivate::~DProtocolDevicePrivate()
@@ -497,7 +499,8 @@ QVariant DProtocolDevicePrivate::getAttr(DProtocolDevicePrivate::FsAttr type) co
         quint64 total = g_file_info_get_attribute_uint64(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_SIZE);
         quint64 free = g_file_info_get_attribute_uint64(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_FREE);
         quint64 used = g_file_info_get_attribute_uint64(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_USED);
-        QString fs = g_file_info_get_attribute_as_string(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_TYPE);
+        g_autofree char *fs_cstr = g_file_info_get_attribute_as_string(sysInfo, G_FILE_ATTRIBUTE_FILESYSTEM_TYPE);
+        QString fs = QString::fromUtf8(fs_cstr ? fs_cstr : "");
 
         fsAttrs.insert(QString::number(FsAttr::Free), free);
         fsAttrs.insert(QString::number(FsAttr::Total), total);

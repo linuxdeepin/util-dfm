@@ -112,6 +112,13 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
     GError_autoptr err { nullptr };
     GList_autoptr items = secret_service_search_sync(nullptr, smbSchema(), query, SECRET_SEARCH_ALL,
                                                      nullptr, &err);
+
+    // 在使用完query后立即释放
+    if (query) {
+        g_hash_table_unref(query);
+        query = nullptr;
+    }
+
     while (items) {
         auto item = static_cast<SecretItem *>(items->data);
         GHashTable *itemAttrs = secret_item_get_attributes(item);
@@ -449,8 +456,6 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
     if (!ok && derr.code == DeviceError::kNoError && err) {
         derr.code = Utils::castFromGError(err);
         derr.message = err->message;
-        g_error_free(err);
-        err = nullptr;
     }
 
     GFile_autoptr srcFile { nullptr };
@@ -460,7 +465,8 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
         file = srcFile;
 
     g_autofree char *mntPath = g_file_get_path(file);
-    GMount_autoptr mount = g_file_find_enclosing_mount(file, nullptr, &err);
+    GError_autoptr mountErr = nullptr;
+    GMount_autoptr mount = g_file_find_enclosing_mount(file, nullptr, &mountErr);
     if (mount) {
         GFile_autoptr defLocation = g_mount_get_default_location(mount);
         if (defLocation) {

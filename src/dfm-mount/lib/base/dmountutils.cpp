@@ -106,7 +106,7 @@ QVariant Utils::castFromGVariant(GVariant *val)
         g_variant_get(val, "a{sv}", &iter);
         char *key = nullptr;
         GVariant *item = nullptr;
-        while (iter && g_variant_iter_next(iter, "{&sv}", &key, &item))
+        while (iter && g_variant_iter_loop(iter, "{&sv}", &key, &item))
             ret.insert(QString(key), castFromGVariant(item));
         g_variant_iter_free(iter);
         return ret;
