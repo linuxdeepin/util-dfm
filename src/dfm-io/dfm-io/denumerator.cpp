@@ -95,11 +95,19 @@ bool DEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DEnumeratorP
                                                              cancellable,
                                                              &gerror);
     if (!me) {
+        // Clean up the enumerator if it was created but the object is no longer valid
+        if (genumerator) {
+            g_object_unref(genumerator);
+        }
         error.setCode(DFMIOErrorCode(DFM_IO_ERROR_NOT_FOUND));
         return false;
     }
     bool ret = true;
     if (!genumerator || gerror) {
+        // Clean up the enumerator if it was created but the object is no longer valid
+        if (genumerator) {
+            g_object_unref(genumerator);
+        }
         if (gerror)
             setErrorFromGError(gerror);
         ret = false;
