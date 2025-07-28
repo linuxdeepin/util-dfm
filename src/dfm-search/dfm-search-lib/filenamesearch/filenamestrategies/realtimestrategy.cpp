@@ -222,7 +222,7 @@ bool FileNameRealTimeStrategy::matchBoolean(const QString &fileName, const Searc
 bool FileNameRealTimeStrategy::matchWildcard(const QString &fileName, const QString &pattern, bool caseSensitive)
 {
     // 利用Qt内置的通配符匹配功能
-    QRegExp regex = QRegExp(pattern, caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive);
+    QRegExp regex = QRegExp(pattern, caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive, QRegExp::Wildcard);
     return regex.exactMatch(fileName);
 }
 
