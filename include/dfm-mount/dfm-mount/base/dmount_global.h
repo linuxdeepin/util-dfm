@@ -337,6 +337,7 @@ enum class DeviceError : int16_t {
     kUserErrorNotMounted,
     kUserErrorNotPoweroffable,
     kUserErrorFailed,
+    kUserErrorAuthenticationFailed
 
 };
 Q_ENUM_NS(DeviceError)
