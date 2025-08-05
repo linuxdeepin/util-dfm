@@ -25,6 +25,7 @@ public:
     static void mountNetworkDev(const QString &, GetMountPassInfo, GetUserChoice, DeviceOperateCallbackWithMessage, int);
     static bool unmountNetworkDev(const QString &);
     static void unmountNetworkDevAsync(const QString &, DeviceOperateCallback);
+    static bool unmountNetworkDevAsyncDetailed(const QString &mpt, int *errCode, QString *errMsg);
 
 private:
     static QList<QVariantMap> loginPasswd(const QString &address);

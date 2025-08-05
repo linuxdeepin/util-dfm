@@ -234,14 +234,52 @@ bool DNetworkMounter::unmountNetworkDev(const QString &mpt)
 
 void DNetworkMounter::unmountNetworkDevAsync(const QString &mpt, DeviceOperateCallback cb)
 {
-    QFutureWatcher<bool> *watcher { new QFutureWatcher<bool>() };
-    QObject::connect(watcher, &QFutureWatcher<bool>::finished, [cb, watcher] {
-        bool ret = watcher->result();
+    struct UnmountResult
+    {
+        bool success;
+        int errnoFromDaemon;
+        QString errMsgFromDaemon;
+    };
+
+    QFutureWatcher<UnmountResult> *watcher { new QFutureWatcher<UnmountResult>() };
+    QObject::connect(watcher, &QFutureWatcher<UnmountResult>::finished, [cb, watcher] {
+        UnmountResult result = watcher->result();
         watcher->deleteLater();
-        if (cb)
-            cb(ret, Utils::genOperateErrorInfo(ret ? DeviceError::kNoError : DeviceError::kUserError));
+        if (cb) {
+            if (result.errnoFromDaemon == -8) {   // service_mountcontrol::MountErrorCode::kAuthenticationFailed
+                cb(result.success, Utils::genOperateErrorInfo(DeviceError::kUserErrorAuthenticationFailed, result.errMsgFromDaemon));
+            } else {
+                cb(result.success,
+                   Utils::genOperateErrorInfo(result.success ? DeviceError::kNoError : DeviceError::kUserError, result.errMsgFromDaemon));
+            }
+        }
     });
-    watcher->setFuture(QtConcurrent::run(unmountNetworkDev, mpt));
+
+    watcher->setFuture(QtConcurrent::run([mpt]() -> UnmountResult {
+        int errnoFromDaemon = 0;
+        QString errMsgFromDaemon;
+        bool success = unmountNetworkDevAsyncDetailed(mpt, &errnoFromDaemon, &errMsgFromDaemon);
+        return { success, errnoFromDaemon, errMsgFromDaemon };
+    }));
+}
+
+bool DNetworkMounter::unmountNetworkDevAsyncDetailed(const QString &mpt, int *errCode, QString *errMsg)
+{
+    QDBusInterface mntCtrl(kDaemonService, kMountControlPath, kMountControlIFace,
+                           QDBusConnection::systemBus());
+    QVariantMap opts { { kMountFsType, "cifs" } };
+    QDBusReply<QVariantMap> ret = mntCtrl.call(kMountControlUnmount, mpt, opts);
+
+    if (!ret.isValid()) {
+        if (errCode) *errCode = EINVAL;
+        if (errMsg) *errMsg = "DBus call failed";
+        return false;
+    }
+
+    auto result = ret.value();
+    if (errCode) *errCode = result.value("errno", 0).toInt();
+    if (errMsg) *errMsg = result.value("errMsg", "").toString();
+    return result.value("result", false).toBool();
 }
 
 /*!
