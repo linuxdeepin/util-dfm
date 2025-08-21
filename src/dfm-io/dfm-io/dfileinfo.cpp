@@ -217,8 +217,7 @@ void DFileInfoPrivate::setErrorFromGError(GError *gerror)
     if (!gerror)
         return;
 
-    if (g_error_matches(gerror, G_IO_ERROR,G_IO_ERROR_FAILED) &&
-            QString(gerror->message).contains(strerror(EHOSTDOWN))) {
+    if (g_error_matches(gerror, G_IO_ERROR, G_IO_ERROR_FAILED) && QString(gerror->message).contains(strerror(EHOSTDOWN))) {
         error.setCode(DFMIOErrorCode::DFM_IO_ERROR_HOST_IS_DOWN);
         error.setMessage(gerror->message);
         return;
@@ -301,12 +300,15 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
             const QUrl &url = q->uri();
+            if (!url.isLocalFile())
+                return QVariant();
             int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
-            if (ret == 0) {
-                return statxBuffer.stx_btime.tv_sec > 0
-                        ? quint64(statxBuffer.stx_btime.tv_sec)
-                        : quint64(statxBuffer.stx_ctime.tv_sec);
-            }
+            if (ret != 0)
+                return QVariant();
+
+            return statxBuffer.stx_btime.tv_sec > 0
+                    ? quint64(statxBuffer.stx_btime.tv_sec)
+                    : quint64(statxBuffer.stx_ctime.tv_sec);
         }
         return qulonglong(ret);
     }
@@ -319,12 +321,15 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
             const QUrl &url = q->uri();
+            if (!url.isLocalFile())
+                return QVariant();
             int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
-            if (ret == 0) {
-                return statxBuffer.stx_btime.tv_nsec > 0
-                        ? statxBuffer.stx_btime.tv_nsec / 1000000
-                        : statxBuffer.stx_ctime.tv_nsec / 1000000;
-            }
+            if (ret != 0)
+                return QVariant();
+
+            return statxBuffer.stx_btime.tv_nsec > 0
+                    ? statxBuffer.stx_btime.tv_nsec / 1000000
+                    : statxBuffer.stx_ctime.tv_nsec / 1000000;
         }
         return QVariant(ret);
     }
@@ -337,12 +342,15 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
             const QUrl &url = q->uri();
+            if (!url.isLocalFile())
+                return QVariant();
             int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
-            if (ret == 0) {
-                return statxBuffer.stx_mtime.tv_sec > 0
-                        ? quint64(statxBuffer.stx_mtime.tv_sec)
-                        : quint64(statxBuffer.stx_ctime.tv_sec);
-            }
+            if (ret != 0)
+                return QVariant();
+
+            return statxBuffer.stx_mtime.tv_sec > 0
+                    ? quint64(statxBuffer.stx_mtime.tv_sec)
+                    : quint64(statxBuffer.stx_ctime.tv_sec);
         }
         return qulonglong(ret);
     }
@@ -355,12 +363,15 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
             const QUrl &url = q->uri();
+            if (!url.isLocalFile())
+                return QVariant();
             int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
-            if (ret == 0) {
-                return statxBuffer.stx_mtime.tv_nsec > 0
-                        ? statxBuffer.stx_mtime.tv_nsec / 1000000
-                        : statxBuffer.stx_ctime.tv_nsec / 1000000;
-            }
+            if (ret != 0)
+                return QVariant();
+
+            return statxBuffer.stx_mtime.tv_nsec > 0
+                    ? statxBuffer.stx_mtime.tv_nsec / 1000000
+                    : statxBuffer.stx_ctime.tv_nsec / 1000000;
         }
         return QVariant(ret);
     }
@@ -373,12 +384,15 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
             const QUrl &url = q->uri();
+            if (!url.isLocalFile())
+                return QVariant();
             int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
-            if (ret == 0) {
-                return statxBuffer.stx_atime.tv_sec > 0
-                        ? quint64(statxBuffer.stx_atime.tv_sec)
-                        : quint64(statxBuffer.stx_ctime.tv_sec);
-            }
+            if (ret != 0)
+                return QVariant();
+
+            return statxBuffer.stx_atime.tv_sec > 0
+                    ? quint64(statxBuffer.stx_atime.tv_sec)
+                    : quint64(statxBuffer.stx_ctime.tv_sec);
         }
         return qulonglong(ret);
     }
@@ -391,12 +405,15 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
             const QUrl &url = q->uri();
+            if (!url.isLocalFile())
+                return QVariant();
             int ret = statx(AT_FDCWD, url.path().toStdString().data(), AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT, mask, &statxBuffer);
-            if (ret == 0) {
-                return statxBuffer.stx_atime.tv_nsec > 0
-                        ? statxBuffer.stx_atime.tv_nsec / 1000000
-                        : statxBuffer.stx_ctime.tv_nsec / 1000000;
-            }
+            if (ret != 0)
+                return QVariant();
+
+            return statxBuffer.stx_atime.tv_nsec > 0
+                    ? statxBuffer.stx_atime.tv_nsec / 1000000
+                    : statxBuffer.stx_ctime.tv_nsec / 1000000;
         }
         return QVariant(ret);
     }
