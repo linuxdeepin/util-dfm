@@ -50,6 +50,12 @@ using namespace dfmsearch;
 // dfm6-search-client --file-types="dir,doc" --query=boolean "dde,file" /
 // dfm6-search-client --pinyin --query=boolean "wendang,xinjian" /
 // dfm6-search-client --pinyin --file-types="doc,pic" --query=boolean "wen,dang" /
+// dfm6-search-client --pinyin-acronym "nh" /home/user  # 搜索"你好"的拼音首字母
+// dfm6-search-client --pinyin-acronym --query=boolean "wd,xj" /  # 搜索"文档,新建"的拼音首字母
+// dfm6-search-client --pinyin --pinyin-acronym "wendang" /  # 智能模式：有效拼音用拼音搜索
+// dfm6-search-client --pinyin --pinyin-acronym "wd" /  # 智能模式：有效首字母用首字母搜索
+// dfm6-search-client --pinyin --pinyin-acronym "nh123" /  # 智能模式：首字母+数字用首字母搜索
+// dfm6-search-client --pinyin --pinyin-acronym "abc@#" /  # 智能模式：无效输入fallback到普通搜索
 // dfm6-search-client --file-extensions="txt,pdf" --query=boolean "report,data" /
 
 void printUsage()
@@ -63,6 +69,7 @@ void printUsage()
     std::cout << "  --case-sensitive            Enable case sensitivity" << std::endl;
     std::cout << "  --include-hidden            Include hidden files" << std::endl;
     std::cout << "  --pinyin                    Enable pinyin search (for filename search)" << std::endl;
+    std::cout << "  --pinyin-acronym            Enable pinyin acronym search (for filename search)" << std::endl;
     std::cout << "  --file-types=<types>        Filter by file types, comma separated" << std::endl;
     std::cout << "  --file-extensions=<exts>    Filter by file extensions, comma separated" << std::endl;
     std::cout << "  --max-results=<number>      Maximum number of results" << std::endl;
@@ -143,6 +150,17 @@ void doTestPinyin(const std::string &caseName, const QString &input, bool expect
 {
     bool actual = Global::isPinyinSequence(input);
     std::cout << "测试用例 [" << caseName << "]\t"
+              << "输入值: " << input.toStdString() << "\t"
+              << "预期结果: " << (expected ? "有效" : "无效") << "\t"
+              << "实际结果: " << (actual ? "有效" : "无效") << "\t"
+              << "状态: " << (actual == expected ? "通过" : "失败") << "\n"
+              << "---------------------------------\n";
+}
+
+void doTestPinyinAcronym(const std::string &caseName, const QString &input, bool expected)
+{
+    bool actual = Global::isPinyinAcronymSequence(input);
+    std::cout << "拼音首字母测试 [" << caseName << "]\t"
               << "输入值: " << input.toStdString() << "\t"
               << "预期结果: " << (expected ? "有效" : "无效") << "\t"
               << "实际结果: " << (actual ? "有效" : "无效") << "\t"
@@ -282,6 +300,59 @@ void testPinyin()
     }
 }
 
+void testPinyinAcronym()
+{
+    std::cout << "====== 开始拼音首字母有效性测试 ======\n";
+
+    // 有效拼音首字母测试集
+    std::vector<std::pair<QString, bool>> validCases = {
+        // 基本有效情况
+        { "n", true },   // 单字符
+        { "nh", true },   // 双字符（你好）
+        { "wd", true },   // 双字符（文档）
+        { "xj", true },   // 双字符（新建）
+        { "zhzw", true },   // 四字符（中文）
+        { "dfm", true },   // 三字符
+        { "ABC", true },   // 大写字母
+        { "AbC", true },   // 大小写混合
+        { "hello", true },   // 英文单词形式
+        { "a", true },   // 单个字母
+        { "z", true },   // 单个字母
+        // 包含数字和符号的有效情况
+        { "nh123", true },   // 拼音首字母+数字（你好123）
+        { "wd_v1", true },   // 拼音首字母+下划线+版本号
+        { "test-file", true },   // 英文+连字符
+        { "config.bak", true },   // 英文+点号
+        { "a1b2c3", true },   // 字母数字混合
+        { "file_2023", true },   // 文件名模式
+    };
+
+    // 无效拼音首字母测试集
+    std::vector<std::pair<QString, bool>> invalidCases = {
+        // 基本无效情况
+        { "", false },   // 空字符串
+        { "你好", false },   // 中文
+        { "n好", false },   // 中文
+        { "123", false },   // 纯数字
+        { "._-", false },   // 纯符号
+        { "n h", false },   // 包含空格
+        { "n@h", false },   // 包含不支持的特殊字符
+        { "n*h", false },   // 包含通配符
+        { "n#h", false },   // 包含井号
+        { "n%h", false },   // 包含百分号
+        { "n&h", false },   // 包含&符号
+        { "n+h", false },   // 包含加号
+    };
+
+    for (const auto &[input, expected] : validCases) {
+        doTestPinyinAcronym("有效首字母验证", input, expected);
+    }
+
+    for (const auto &[input, expected] : invalidCases) {
+        doTestPinyinAcronym("无效首字母检测", input, expected);
+    }
+}
+
 void testAnythingStatus()
 {
     qDebug() << "=== Starting Anything Status Test ===";
@@ -332,6 +403,7 @@ int main(int argc, char *argv[])
 #ifdef QT_DEBUG
     testGlobal();
     testPinyin();
+    testPinyinAcronym();
     testAnythingStatus();
 #endif
 
@@ -346,6 +418,7 @@ int main(int argc, char *argv[])
     QCommandLineOption caseSensitiveOption(QStringList() << "case-sensitive", "Enable case sensitivity");
     QCommandLineOption includeHiddenOption(QStringList() << "include-hidden", "Include hidden files");
     QCommandLineOption pinyinOption(QStringList() << "pinyin", "Enable pinyin search (for filename search)");
+    QCommandLineOption pinyinAcronymOption(QStringList() << "pinyin-acronym", "Enable pinyin acronym search (for filename search)");
     QCommandLineOption fileTypesOption(QStringList() << "file-types", "Filter by file types, comma separated", "types");
     QCommandLineOption fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions");
     QCommandLineOption maxResultsOption(QStringList() << "max-results", "Maximum number of results", "number", "100");
@@ -358,6 +431,7 @@ int main(int argc, char *argv[])
     parser.addOption(caseSensitiveOption);
     parser.addOption(includeHiddenOption);
     parser.addOption(pinyinOption);
+    parser.addOption(pinyinAcronymOption);
     parser.addOption(fileTypesOption);
     parser.addOption(fileExtensionsOption);
     parser.addOption(maxResultsOption);
@@ -450,6 +524,7 @@ int main(int argc, char *argv[])
     if (searchType == SearchType::FileName) {
         FileNameOptionsAPI fileNameOptions(options);
         fileNameOptions.setPinyinEnabled(parser.isSet(pinyinOption));
+        fileNameOptions.setPinyinAcronymEnabled(parser.isSet(pinyinAcronymOption));
 
         if (parser.isSet(fileTypesOption)) {
             QStringList types = parser.value(fileTypesOption).split(',', Qt::SkipEmptyParts);

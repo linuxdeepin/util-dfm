@@ -34,6 +34,7 @@ public:
         Wildcard,   // 通配符搜索
         Boolean,   // 布尔多关键词搜索
         Pinyin,   // 拼音搜索
+        PinyinAcronym,   // 拼音首字母搜索
         FileType,   // 文件类型搜索
         FileExt,   // 文件后缀搜索
         Combined   // 组合搜索(关键词+文件类型/拼音/文件后缀)
@@ -48,6 +49,7 @@ public:
         QStringList fileExtensions;
         bool caseSensitive = false;
         bool usePinyin = false;
+        bool usePinyinAcronym = false;
         SearchQuery::BooleanOperator booleanOp = SearchQuery::BooleanOperator::AND;
         bool combineWithFileType = false;   // 是否与文件类型组合
         bool combineWithFileExt = false;   // 是否与文件后缀组合
@@ -69,6 +71,7 @@ private:
     // 确定搜索类型
     SearchType determineSearchType(const SearchQuery &query,
                                    bool pinyinEnabled,
+                                   bool pinyinAcronymEnabled,
                                    const QStringList &fileTypes,
                                    const QStringList &fileExtensions) const;
 
@@ -77,6 +80,7 @@ private:
                                SearchType searchType,
                                bool caseSensitive,
                                bool pinyinEnabled,
+                               bool pinyinAcronymEnabled,
                                const QStringList &fileTypes,
                                const QStringList &fileExtensions);
 
@@ -113,6 +117,7 @@ public:
     QueryPtr buildTypeQuery(const QStringList &types) const;
     QueryPtr buildExtQuery(const QStringList &extensions) const;
     QueryPtr buildPinyinQuery(const QStringList &pinyins, SearchQuery::BooleanOperator op = SearchQuery::BooleanOperator::AND) const;
+    QueryPtr buildPinyinAcronymQuery(const QStringList &acronyms, SearchQuery::BooleanOperator op = SearchQuery::BooleanOperator::AND) const;
     QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op, const Lucene::AnalyzerPtr &analyzer) const;
     QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
     QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
