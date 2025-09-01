@@ -125,6 +125,7 @@ public:
 private:
     // 通用的查询构建方法
     QueryPtr buildCommonQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer, bool allowWildcard = false) const;
+    QueryPtr buildCommonQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer, const QString &fieldName, bool allowWildcard = false) const;
 };
 
 /**
