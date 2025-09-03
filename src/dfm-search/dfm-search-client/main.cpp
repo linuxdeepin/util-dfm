@@ -49,13 +49,13 @@ using namespace dfmsearch;
 // # Combined
 // dfm6-search-client --file-types="dir,doc" --query=boolean "dde,file" /
 // dfm6-search-client --pinyin --query=boolean "wendang,xinjian" /
+// dfm6-search-client --pinyin --file-types="doc,pic" --query=boolean "wen,dang" /
 // dfm6-search-client --pinyin-acronym "nh" /home/user  # 搜索"你好"的拼音首字母
 // dfm6-search-client --pinyin-acronym --query=boolean "wd,xj" /  # 搜索"文档,新建"的拼音首字母
 // dfm6-search-client --pinyin --pinyin-acronym "wendang" /  # 智能模式：有效拼音用拼音搜索
 // dfm6-search-client --pinyin --pinyin-acronym "wd" /  # 智能模式：有效首字母用首字母搜索
 // dfm6-search-client --pinyin --pinyin-acronym "nh123" /  # 智能模式：首字母+数字用首字母搜索
 // dfm6-search-client --pinyin --pinyin-acronym "abc@#" /  # 智能模式：无效输入fallback到普通搜索
-// dfm6-search-client --pinyin --file-types="doc,pic" --query=boolean "wen,dang" /
 // dfm6-search-client --file-extensions="txt,pdf" --query=boolean "report,data" /
 
 void printUsage()
@@ -69,8 +69,8 @@ void printUsage()
     std::cout << "  --case-sensitive            Enable case sensitivity" << std::endl;
     std::cout << "  --include-hidden            Include hidden files" << std::endl;
     std::cout << "  --pinyin                    Enable pinyin search (for filename search)" << std::endl;
+    std::cout << "  --pinyin-acronym            Enable pinyin acronym search (for filename search)" << std::endl;
     std::cout << "  --file-types=<types>        Filter by file types, comma separated" << std::endl;
-    std::cout << " --pinyin-acronym Enable pinyin acronym search (for filename search)" << std::endl;
     std::cout << "  --file-extensions=<exts>    Filter by file extensions, comma separated" << std::endl;
     std::cout << "  --max-results=<number>      Maximum number of results" << std::endl;
     std::cout << "  --max-preview=<length>      Max content preview length (for content search)" << std::endl;
@@ -524,6 +524,7 @@ int main(int argc, char *argv[])
     if (searchType == SearchType::FileName) {
         FileNameOptionsAPI fileNameOptions(options);
         fileNameOptions.setPinyinEnabled(parser.isSet(pinyinOption));
+        fileNameOptions.setPinyinAcronymEnabled(parser.isSet(pinyinAcronymOption));
 
         if (parser.isSet(fileTypesOption)) {
             QStringList types = parser.value(fileTypesOption).split(',', QString::SkipEmptyParts);
