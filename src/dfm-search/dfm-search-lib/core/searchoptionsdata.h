@@ -36,7 +36,7 @@ public:
     bool resultFoundEnabled;   ///< Whether to enable result found notifications
     bool detailedResultsEnabled;   ///< Whether to include detailed information in search results
     int syncSearchTimeoutSecs { 60 };
-    int batchTimeMs { 1000 }; ///< Batch processing time interval in milliseconds
+    int batchTimeMs { 1000 };   ///< Batch processing time interval in milliseconds
 };
 
 DFM_SEARCH_END_NS

@@ -371,13 +371,13 @@ bool isPinyinAcronymSequence(const QString &input)
     // 1. 必须包含至少一个英文字母（大小写）
     // 2. 可以包含数字和英文符号
     // 3. 长度在1-255之间（合理的文件名长度）
-
+    
     QString str = input.trimmed();
-
+    
     // 长度检查
     if (str.length() == 0 || str.length() > 255)
         return false;
-
+    
     // 必须包含至少一个英文字母
     bool hasLetter = false;
     for (const QChar &ch : str) {
@@ -386,18 +386,17 @@ bool isPinyinAcronymSequence(const QString &input)
             break;
         }
     }
-
+    
     if (!hasLetter)
         return false;
-
+    
     // 字符检查：允许字母、数字和常见符号
     QRegularExpression validCharsRegex("^[a-zA-Z0-9._-]+$");
     if (!validCharsRegex.match(str).hasMatch())
         return false;
-
+    
     return true;
 }
-
 
 bool isHiddenPathOrInHiddenDir(const QString &absolutePath)
 {
@@ -584,7 +583,8 @@ bool isFileNameIndexReadyForSearch()
     const QString &status = currentStatus.value();
     if (!validStatus.contains(status)) {
         qDebug() << "Index status is '" << status
-                 << "', expected 'monitoring'. Index not ready for search.";
+                 << "', expected or 'monitoring'. Index not ready for search.";
+        return false;
     }
 
     return true;

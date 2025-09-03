@@ -77,12 +77,13 @@ Lucene::QueryPtr QueryBuilder::buildPinyinQuery(const QStringList &pinyins, Sear
     BooleanQueryPtr pinyinQuery = newLucene<BooleanQuery>();
 
     for (const QString &pinyin : pinyins) {
-        QString cleanPinyin = pinyin.trimmed().toLower();
+        QString cleanPinyin = pinyin.trimmed();
         if (!cleanPinyin.isEmpty() && Global::isPinyinSequence(cleanPinyin)) {
-            QueryPtr termQuery = newLucene<WildcardQuery>(
-                    newLucene<Term>(L"pinyin",
-                                    StringUtils::toUnicode(QString("*%1*").arg(cleanPinyin).toStdString())));
-            pinyinQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
+            // 复用buildCommonQuery，指定pinyin字段，让分析器自动处理匹配
+            QueryPtr termQuery = buildCommonQuery(cleanPinyin, false, newLucene<ChineseAnalyzer>(), "pinyin", false);
+            if (termQuery) {
+                pinyinQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
+            }
         }
     }
 
@@ -98,21 +99,10 @@ Lucene::QueryPtr QueryBuilder::buildPinyinAcronymQuery(const QStringList &acrony
     BooleanQueryPtr acronymQuery = newLucene<BooleanQuery>();
 
     for (const QString &acronym : acronyms) {
-        QString cleanAcronym = acronym.trimmed().toLower();
+        QString cleanAcronym = acronym.trimmed();
         if (!cleanAcronym.isEmpty()) {
-            QueryPtr termQuery;
-
-            // 关键词只有一个字符，只通过前缀匹配，避免匹配巨量文件
-            if (cleanAcronym.size() == 1) {
-                termQuery = newLucene<WildcardQuery>(
-                        newLucene<Term>(L"pinyin_acronym",
-                                        StringUtils::toUnicode(QString("%1*").arg(cleanAcronym).toStdString())));
-            } else {
-                termQuery = newLucene<WildcardQuery>(
-                        newLucene<Term>(L"pinyin_acronym",
-                                        StringUtils::toUnicode(QString("*%1*").arg(cleanAcronym).toStdString())));
-            }
-
+            // 复用buildCommonQuery，指定pinyin_acronym字段，让分析器自动处理匹配
+            QueryPtr termQuery = buildCommonQuery(cleanAcronym, false, newLucene<ChineseAnalyzer>(), "pinyin_acronym", false);
             if (termQuery) {
                 acronymQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
             }
@@ -140,6 +130,24 @@ Lucene::QueryPtr QueryBuilder::buildCommonQuery(const QString &keyword, bool cas
     return parser->parse(LuceneQueryUtils::processQueryString(keyword, caseSensitive));
 }
 
+Lucene::QueryPtr QueryBuilder::buildCommonQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer, const QString &fieldName, bool allowWildcard) const
+{
+    if (keyword.isEmpty() || !analyzer || fieldName.isEmpty()) {
+        return nullptr;
+    }
+
+    Lucene::QueryParserPtr parser = newLucene<Lucene::QueryParser>(
+            Lucene::LuceneVersion::LUCENE_CURRENT,
+            StringUtils::toUnicode(fieldName.toStdString()),
+            analyzer);
+
+    if (allowWildcard) {
+        parser->setAllowLeadingWildcard(true);
+    }
+
+    return parser->parse(LuceneQueryUtils::processQueryString(keyword, caseSensitive));
+}
+
 Lucene::QueryPtr QueryBuilder::buildSimpleQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const
 {
     return buildCommonQuery(keyword, caseSensitive, analyzer, false);
@@ -150,10 +158,10 @@ Lucene::QueryPtr QueryBuilder::buildWildcardQuery(const QString &keyword, bool c
     if (keyword.isEmpty()) {
         return nullptr;
 }
-    
+
     // 对于通配符查询，使用file_name_lower字段（非分词）而非file_name（分词）
     QString processedKeyword = caseSensitive ? keyword : keyword.toLower();
-    
+
     // 直接构建WildcardQuery，不使用QueryParser避免分词干扰
     return newLucene<WildcardQuery>(
         newLucene<Term>(L"file_name_lower", 
@@ -399,7 +407,7 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
     result.fileTypes = fileTypes;
     result.fileExtensions = fileExtensions;
     result.usePinyin = pinyinEnabled;   // 设置拼音搜索标志
-    result.usePinyinAcronym = pinyinAcronymEnabled; // 设置拼音首字母搜索标志
+    result.usePinyinAcronym = pinyinAcronymEnabled;   // 设置拼音首字母搜索标志
 
     switch (searchType) {
     case SearchType::Simple:
