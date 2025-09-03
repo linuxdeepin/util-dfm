@@ -20,6 +20,16 @@ bool FileNameOptionsAPI::pinyinEnabled() const
     return m_options.customOption("pinyinEnabled").toBool();
 }
 
+void FileNameOptionsAPI::setPinyinAcronymEnabled(bool enabled)
+{
+    m_options.setCustomOption("pinyinAcronymEnabled", enabled);
+}
+
+bool FileNameOptionsAPI::pinyinAcronymEnabled() const
+{
+    return m_options.customOption("pinyinAcronymEnabled").toBool();
+}
+
 void FileNameOptionsAPI::setFileTypes(const QStringList &types)
 {
     m_options.setCustomOption("fileTypes", types);

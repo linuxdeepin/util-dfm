@@ -362,6 +362,43 @@ bool isPinyinSequence(const QString &input)
     return isPinyinSequenceHelper(str, 0, validSyllables);
 }
 
+bool isPinyinAcronymSequence(const QString &input)
+{
+    if (input.isEmpty())
+        return false;
+
+    // 拼音首字母的验证规则：
+    // 1. 必须包含至少一个英文字母（大小写）
+    // 2. 可以包含数字和英文符号
+    // 3. 长度在1-255之间（合理的文件名长度）
+
+    QString str = input.trimmed();
+
+    // 长度检查
+    if (str.length() == 0 || str.length() > 255)
+        return false;
+
+    // 必须包含至少一个英文字母
+    bool hasLetter = false;
+    for (const QChar &ch : str) {
+        if (ch.isLetter()) {
+            hasLetter = true;
+            break;
+        }
+    }
+
+    if (!hasLetter)
+        return false;
+
+    // 字符检查：允许字母、数字和常见符号
+    QRegularExpression validCharsRegex("^[a-zA-Z0-9._-]+$");
+    if (!validCharsRegex.match(str).hasMatch())
+        return false;
+
+    return true;
+}
+
+
 bool isHiddenPathOrInHiddenDir(const QString &absolutePath)
 {
     int start = 0;

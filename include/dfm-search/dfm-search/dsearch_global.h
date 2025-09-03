@@ -26,6 +26,13 @@ inline constexpr int kMinContentSearchKeywordLength = 2;
 bool isPinyinSequence(const QString &input);
 
 /**
+ * @brief Check if a string is a valid pinyin acronym sequence
+ * @param input The string to check
+ * @return true if the string is a valid pinyin acronym, false otherwise
+ */
+bool isPinyinAcronymSequence(const QString &input);
+
+/**
  * Determines if the given absolute path represents a hidden file/directory
  * or is contained within a hidden directory.
  *
