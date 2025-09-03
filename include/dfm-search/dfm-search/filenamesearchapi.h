@@ -38,6 +38,18 @@ public:
     bool pinyinEnabled() const;
 
     /**
+     * @brief Enable or disable pinyin acronym search
+     * @param enabled true to enable pinyin acronym search, false to disable
+     */
+    void setPinyinAcronymEnabled(bool enabled);
+
+    /**
+     * @brief Check if pinyin acronym search is enabled
+     * @return true if pinyin acronym search is enabled, false otherwise
+     */
+    bool pinyinAcronymEnabled() const;
+
+    /**
      * @brief Set file type filters
      * @param types List of file types to include in search
      *
