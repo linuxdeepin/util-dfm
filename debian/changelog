@@ -1,3 +1,9 @@
+util-dfm (1.3.37) unstable; urgency=medium
+
+  * add pinyin acronym search support 
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Thu, 04 Sep 2025 19:05:56 +0800
+
 util-dfm (1.3.36) unstable; urgency=medium
 
   * fix bug
