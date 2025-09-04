@@ -142,6 +142,7 @@ MediaType DXorrisoEngine::mediaTypeProperty() const
         { "DVD-RW", MediaType::kDVD_RW },
         { "DVD+R", MediaType::kDVD_PLUS_R },
         { "DVD+R/DL", MediaType::kDVD_PLUS_R_DL },
+        { "DVD-R/DL", MediaType::kDVD_R_DL },
         { "DVD-RAM", MediaType::kDVD_RAM },
         { "DVD+RW", MediaType::kDVD_PLUS_RW },
         { "BD-ROM", MediaType::kBD_ROM },
