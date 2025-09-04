@@ -36,6 +36,7 @@ enum class MediaType : unsigned int {
     kDVD_RW,
     kDVD_PLUS_R,
     kDVD_PLUS_R_DL,
+    kDVD_R_DL,
     kDVD_RAM,
     kDVD_PLUS_RW,
     kBD_ROM,
