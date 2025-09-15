@@ -7,8 +7,6 @@
 #include <dfm-io/denumeratorfuture.h>
 #include <dfm-io/dfileinfo.h>
 
-#include <stdio.h>
-
 #include <QDebug>
 #include <QUrl>
 #include <QCoreApplication>
