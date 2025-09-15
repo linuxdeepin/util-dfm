@@ -236,7 +236,11 @@ bool DEnumeratorPrivate::checkFilter()
 bool DEnumeratorPrivate::openDirByfts()
 {
     char *paths[2] = { nullptr, nullptr };
-    paths[0] = strdup(filePath(uri));
+    paths[0] = strdup(filePath(uri).constData());
+    if (!paths[0]) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        return false;
+    }
     int (*compare)(const FTSENT **, const FTSENT **);
     compare = nullptr;
     if (sortRoleFlag == DEnumerator::SortRoleCompareFlag::kSortRoleCompareFileName) {
@@ -364,15 +368,15 @@ void DEnumeratorPrivate::setQueryAttributes(const QString &attributes)
     queryAttributes = attributes;
 }
 
-char *DEnumeratorPrivate::filePath(const QUrl &url)
+QByteArray DEnumeratorPrivate::filePath(const QUrl &url)
 {
     if (url.userInfo().startsWith("originPath::"))
-        return url.userInfo().replace("originPath::", "").toLatin1().data();
+        return url.userInfo().replace("originPath::", "").toLatin1();
 
     QString path = url.path();
     if (path != "/" && path.endsWith("/"))
         path = path.left(path.length() - 1);
-    return path.toUtf8().data();
+    return path.toUtf8();
 }
 
 QUrl DEnumeratorPrivate::buildUrl(const QUrl &url, const char *fileName)
@@ -776,7 +780,8 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
     QSet<QString> hideList;
     QUrl urlHidden = d->buildUrl(d->uri, ".hidden");
     hideList = DLocalHelper::hideListFromUrl(urlHidden);
-    const char *dirPath = d->filePath(d->uri);
+    QByteArray dirPathBa = d->filePath(d->uri);
+    const char *dirPath = dirPathBa.constData();
     while (1) {
         FTSENT *ent = fts_read(d->fts);
 

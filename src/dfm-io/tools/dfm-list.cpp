@@ -6,8 +6,6 @@
 #include <dfm-io/denumerator.h>
 #include <dfm-io/denumeratorfuture.h>
 
-#include <stdio.h>
-
 #include <QDebug>
 #include <QUrl>
 #include <QCoreApplication>
