@@ -383,3 +383,8 @@ QMap<QString, QString> DFMUtils::fstabBindInfo()
 
     return table;
 }
+
+bool DFMUtils::compareFileName(const QString &str1, const QString &str2)
+{
+    return DLocalHelper::compareByStringEx(str1, str2);
+}
