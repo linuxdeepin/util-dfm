@@ -22,6 +22,21 @@ Deepin File Manager utilities (libdfm-io, libdfm-mount and libdfm-burn) develope
  libsecret-1-dev
  
 ## Installation
+
+
+``` shell
+$ git clone https://github.com/linuxdeepin/util-dfm
+$ cd util-dfm
+```
+### Install dependeincies 
+
+Make sure you have installed all dependencies.
+The package name may vary between different distros. If util-dfm is available in your distro, it is a better idea to check the packaging script provided by your distro.
+otherwise use this install from project. 
+``` shell
+$ sudo apt build-dep ./
+```
+
 ### Build from source code
 
 1. Build:
