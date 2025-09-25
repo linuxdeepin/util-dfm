@@ -62,7 +62,7 @@ QString DFMUtils::deviceNameFromUrl(const QUrl &url)
     if (!url.isValid())
         return QString();
 
-    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toStdString().c_str());
+    g_autoptr(GFile) gfile = g_file_new_for_uri(url.toString().toLocal8Bit().data());
     g_autoptr(GUnixMountEntry) mount = g_unix_mount_for(g_file_peek_path(gfile), nullptr);
     if (mount)
         return QString::fromLocal8Bit(g_unix_mount_get_device_path(mount));
@@ -376,4 +376,9 @@ QMap<QString, QString> DFMUtils::fstabBindInfo()
     }
 
     return table;
+}
+
+bool DFMUtils::compareFileName(const QString &str1, const QString &str2)
+{
+    return DLocalHelper::compareByStringEx(str1, str2);
 }

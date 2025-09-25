@@ -59,6 +59,9 @@ public:
     static qint64 deviceBytesFree(const QUrl &url);
     static bool supportTrash(const QUrl &url);
     static bool isGvfsFile(const QUrl &url);
+    
+    // String comparison function for file names
+    static bool compareFileName(const QString &str1, const QString &str2);
 
 private:
     static QMap<QString, QString>
