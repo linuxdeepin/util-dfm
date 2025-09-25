@@ -61,6 +61,9 @@ public:
     static bool isGvfsFile(const QUrl &url);
     static bool isInvalidCodecByPath(const char *path);
 
+    // String comparison function for file names
+    static bool compareFileName(const QString &str1, const QString &str2);
+
 private:
     static QMap<QString, QString>
     fstabBindInfo();
