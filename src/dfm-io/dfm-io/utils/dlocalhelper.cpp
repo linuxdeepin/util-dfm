@@ -994,35 +994,7 @@ bool DLocalHelper::compareByStringEx(const QString &str1, const QString &str2)
         return 0;
     };
 
-    // --- 主流程 ---
-    QString name1, suf1;
-    int dotPos1 = str1.lastIndexOf('.');
-    if (dotPos1 <= 0) {
-        name1 = str1;
-    } else {
-        name1 = str1.left(dotPos1);
-        suf1 = str1.mid(dotPos1 + 1);
-    }
-
-    QString name2, suf2;
-    int dotPos2 = str2.lastIndexOf('.');
-    if (dotPos2 <= 0) {
-        name2 = str2;
-    } else {
-        name2 = str2.left(dotPos2);
-        suf2 = str2.mid(dotPos2 + 1);
-    }
-
-    int nameCompareResult = compareUnified(name1, name2);
-    if (nameCompareResult != 0) {
-        return nameCompareResult < 0;
-    }
-
-    // 如果文件名相同，但一个有后缀一个没有，没有后缀的排前面
-    if (suf1.isEmpty() && !suf2.isEmpty()) return true;
-    if (!suf1.isEmpty() && suf2.isEmpty()) return false;
-
-    return compareUnified(suf1, suf2) < 0;
+    return compareUnified(str1, str2) < 0;
 }
 
 bool DLocalHelper::compareByString(const QString &str1, const QString &str2)
