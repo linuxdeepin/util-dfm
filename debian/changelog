@@ -1,3 +1,9 @@
+util-dfm (1.2.29) unstable; urgency=medium
+
+  * update version to 1.2.29
+
+ -- Liu Jinchang <liujinchang@uniontech.com>  Sun, 28 Sep 2025 14:07:39 +0800
+
 util-dfm (1.2.28) unstable; urgency=medium
 
   * fix cifs password save issue.
@@ -13,7 +19,7 @@ util-dfm (1.2.27) unstable; urgency=medium
 util-dfm (1.2.26) unstable; urgency=medium
 
   * update enum
-  * 
+  *
 
  -- XuShitong <xushitong@uniontech.com>  Thu, 25 Jul 2024 15:49:53 +0800
 
@@ -26,7 +32,7 @@ util-dfm (1.2.25) unstable; urgency=medium
 util-dfm (1.2.24) unstable; urgency=medium
 
   * a new attribute is added.
-  * 
+  *
 
  -- xushitong <xushitong@uniontech.com>  Tue, 07 May 2024 16:16:26 +0800
 
@@ -137,7 +143,7 @@ util-dfm (1.2.6) unstable; urgency=medium
 util-dfm (1.2.5) unstable; urgency=medium
 
   * update version.
-  * 
+  *
 
  -- xust <xushitong@uniontech.com>  Mon, 16 Jan 2023 16:58:38 +0800
 
@@ -167,13 +173,13 @@ util-dfm (1.2.0) unstable; urgency=high
 
 util-dfm (1.1.2) unstable; urgency=high
 
-  * update V6 6.0.4 baseline version  
+  * update V6 6.0.4 baseline version
 
  -- lvwujun <lvwujun@uniontech.com>  Wed, 20 Oct 2022 17:39:08 +0800
 
 util-dfm (1.1.1) unstable; urgency=high
 
-  * update V6 6.0.2 baseline version  
+  * update V6 6.0.2 baseline version
 
  -- lvwujun <lvwujun@uniontech.com>  Wed, 14 Sep 2022 14:50:58 +0800
 
