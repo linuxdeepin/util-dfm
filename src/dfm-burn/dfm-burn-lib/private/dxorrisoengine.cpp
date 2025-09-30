@@ -257,7 +257,7 @@ bool DXorrisoEngine::doErase()
     xorrisomsg.clear();
 
     XORRISO_OPT(xorriso, [this]() {
-        return Xorriso_option_abort_on(xorriso, PCHAR("ABORT"), 0);
+        return Xorriso_option_abort_on(xorriso, PCHAR("FAILURE"), 0);
     });
 
     int r = 0;
