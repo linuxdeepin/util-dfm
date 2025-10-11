@@ -43,6 +43,7 @@ public:
     MediaType mediaTypeProperty() const;
     void mediaStorageProperty(quint64 *usedSize, quint64 *availSize, quint64 *blocks) const;
     bool mediaFormattedProperty() const;
+    bool hasISOTree() const;
     QString mediaVolIdProperty() const;
     QStringList mediaSpeedProperty() const;
     QStringList takeInfoMessages();
