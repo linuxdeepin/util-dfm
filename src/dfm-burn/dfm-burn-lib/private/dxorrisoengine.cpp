@@ -9,6 +9,8 @@
 
 #include <functional>
 
+#define FILTER_ISOBURN_WARN "warn_libisoburn"
+
 DFM_BURN_USE_NS
 
 static inline char *PCHAR(const char *c)
@@ -64,6 +66,19 @@ DXorrisoEngine::DXorrisoEngine(QObject *parent)
     }
 
     Xorriso_sieve_big(xorriso, 0);
+
+    int idx[] = { 0 };   // 被 separators 分隔后列表中，要获取的元素序号
+    Xorriso_sieve_add_filter(
+            xorriso,
+            PCHAR(FILTER_ISOBURN_WARN),   // 过滤器名, 后边根据这个名字筛选输出记录
+            2,   // 监听 info channel
+            PCHAR("libisoburn: WARNING : "),   // 匹配前缀
+            PCHAR(" ."),   // 分词符
+            1,   // 保留分隔后列表中的多少项
+            idx,   // 取第 1 号字段
+            5,   // 如果有多行匹配，保留最后的n行
+            1   // 最后一个元素中保留整行剩余部分
+    );
     Xorriso_start_msg_watcher(xorriso, xorrisoResultHandler, this, xorrisoInfoHandler, this, 0);
 }
 
@@ -195,6 +210,22 @@ bool DXorrisoEngine::mediaFormattedProperty() const
     Xorriso__dispose_words(&ac, &av);
 
     return formatted;
+}
+
+bool DXorrisoEngine::hasISOTree() const
+{
+    if (curDev.isEmpty())
+        return false;
+
+    int ac, avail;
+    char **av;
+    Xorriso_sieve_get_result(xorriso, PCHAR(FILTER_ISOBURN_WARN), &ac, &av, &avail, 0);
+    QString msg = ac == 1 ? av[0] : "";
+    Xorriso__dispose_words(&ac, &av);
+
+    if (msg == "No ISO 9660 image at LBA 0. Creating blank image.")
+        return false;
+    return true;
 }
 
 QString DXorrisoEngine::mediaVolIdProperty() const
