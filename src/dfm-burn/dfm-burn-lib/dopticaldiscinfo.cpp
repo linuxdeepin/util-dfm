@@ -91,14 +91,15 @@ void DOpticalDiscInfoPrivate::initData()
     media = isoEngine->mediaTypeProperty();
     isoEngine->mediaStorageProperty(&data, &avail, &datablocks);
     total = data + avail;
-    if (media == MediaType::kDVD_RW) {
-        bool full { data == total };
+
+    // 如果是没有 iso 镜像树的 dvd-rw 光盘，则可能是 udf 文件系统，udf 文件系统无法通过 xorriso 查询容量
+    if (media == MediaType::kDVD_RW && !isoEngine->hasISOTree()) {
         auto capacity { acquireDVDRWCapacity() };
-        if (capacity != 0 && full) {
+        if (capacity != 0) {
             total = capacity;
-            data = capacity;
         }
     }
+
     formatted = isoEngine->mediaFormattedProperty();
     volid = isoEngine->mediaVolIdProperty();
     writespeed = isoEngine->mediaSpeedProperty();
