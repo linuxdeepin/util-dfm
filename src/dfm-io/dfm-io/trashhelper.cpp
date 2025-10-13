@@ -75,7 +75,8 @@ bool TrashHelper::getTrashUrls(QList<QUrl> *trashUrls, QString *errorMsg)
         if (!origfile)
             continue;
 
-        auto deleteinfo = deleteInfos.value(QUrl(g_file_get_uri(origfile)));
+        auto url = QUrl::fromPercentEncoding(g_file_get_uri(origfile));
+        auto deleteinfo = deleteInfos.value(url);
         if (!deleteinfo) {
             g_object_unref(origfile);
             continue;
