@@ -248,7 +248,10 @@ void DNetworkMounter::unmountNetworkDevAsync(const QString &mpt, DeviceOperateCa
         if (cb) {
             if (result.errnoFromDaemon == -8) {   // service_mountcontrol::MountErrorCode::kAuthenticationFailed
                 cb(result.success, Utils::genOperateErrorInfo(DeviceError::kUserErrorAuthenticationFailed, result.errMsgFromDaemon));
-            } else {
+            } else if (result.errnoFromDaemon == static_cast<int>(DeviceError::kGDBusErrorNoReply)) {
+                cb(result.success, Utils::genOperateErrorInfo(DeviceError::kUDisksErrorNotAuthorizedDismissed, result.errMsgFromDaemon));
+            }
+            else {
                 cb(result.success,
                    Utils::genOperateErrorInfo(result.success ? DeviceError::kNoError : DeviceError::kUserError, result.errMsgFromDaemon));
             }
@@ -271,6 +274,15 @@ bool DNetworkMounter::unmountNetworkDevAsyncDetailed(const QString &mpt, int *er
     QDBusReply<QVariantMap> ret = mntCtrl.call(kMountControlUnmount, mpt, opts);
 
     if (!ret.isValid()) {
+        const auto &e = ret.error();
+        const QString name = e.name();
+        if (e.type() == QDBusError::NoReply ||
+            name == QStringLiteral("org.freedesktop.DBus.Error.NoReply")) {
+            if (errCode) *errCode = static_cast<int>(DFMMOUNT::DeviceError::kGDBusErrorNoReply);
+            if (errMsg)  *errMsg  = QStringLiteral("Authorization pending (NoReply)");
+            return false;
+        }
+
         if (errCode) *errCode = EINVAL;
         if (errMsg) *errMsg = "DBus call failed";
         return false;
