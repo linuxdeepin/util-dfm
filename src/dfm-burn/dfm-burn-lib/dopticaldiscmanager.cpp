@@ -68,7 +68,7 @@ bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStri
                     }
                 },
                 Qt::DirectConnection);
-        ret = udfEngine->doBurn(dptr->curDev, dptr->files, volId);
+        ret = udfEngine->doBurn(dptr->curDev, dptr->files, volId, opts);
     } else {
         QScopedPointer<DXorrisoEngine> xorrisoEngine { new DXorrisoEngine };
         connect(xorrisoEngine.data(), &DXorrisoEngine::jobStatusChanged, this,
