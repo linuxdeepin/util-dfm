@@ -1,3 +1,10 @@
+util-dfm (1.2.32) unstable; urgency=medium
+
+  * length of disc filename and paths could be longer.
+  * 
+
+ -- XuShitong <xushitong@uniontech.com>  Tue, 25 Nov 2025 16:30:34 +0800
+
 util-dfm (1.2.31) unstable; urgency=medium
 
   * update version to 1.2.31
