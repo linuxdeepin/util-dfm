@@ -7,6 +7,8 @@
 
 #include <QObject>
 
+#include <optional>
+
 #define DFMSEARCH dfmsearch
 #define DFM_SEARCH_BEGIN_NS namespace DFMSEARCH {
 #define DFM_SEARCH_END_NS }
