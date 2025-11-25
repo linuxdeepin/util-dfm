@@ -30,6 +30,7 @@ extern "C" {
 typedef void (*progress_cb)(const ProgressInfo *);
 typedef void (*uburn_init)();
 typedef int (*uburn_do_burn)(const char *dev, const char *file, const char *lable);
+typedef int (*uburn_do_burn_ex)(const char *dev, const char *file, const char *lable, int finalize);
 typedef void (*uburn_regi_cb)(progress_cb cb);
 typedef char **(*uburn_get_errors)(int *);
 typedef void (*uburn_show_verbose)();
@@ -37,6 +38,7 @@ typedef void (*uburn_redirect_output)(int redir_stdout, int redir_stderr);
 
 static uburn_init ub_init = nullptr;
 static uburn_do_burn ub_do_burn = nullptr;
+static uburn_do_burn_ex ub_do_burn_ex = nullptr;
 static uburn_regi_cb ub_regi_cb = nullptr;
 static uburn_get_errors ub_get_errors = nullptr;
 static uburn_show_verbose ub_show_verbose = nullptr;
@@ -63,6 +65,9 @@ DUDFBurnEngine::DUDFBurnEngine(QObject *parent)
     ub_do_burn = reinterpret_cast<uburn_do_burn>(lib.resolve("burn_burn_to_disc"));
     funcsLoaded &= (ub_do_burn != nullptr);
 
+    ub_do_burn_ex = reinterpret_cast<uburn_do_burn_ex>(lib.resolve("burn_burn_to_disc_ex"));
+    // note: ub_do_burn_ex is optional, we fallback to ub_do_burn if not available
+
     ub_regi_cb = reinterpret_cast<uburn_regi_cb>(lib.resolve("burn_register_progress_callback"));
     funcsLoaded &= (ub_regi_cb != nullptr);
 
@@ -85,7 +90,7 @@ DUDFBurnEngine::~DUDFBurnEngine()
         lib.unload();
 }
 
-bool DUDFBurnEngine::doBurn(const QString &dev, const QPair<QString, QString> files, QString volId)
+bool DUDFBurnEngine::doBurn(const QString &dev, const QPair<QString, QString> files, QString volId, const BurnOptions &opts)
 {
     if (!canSafeUse())
         return false;
@@ -100,8 +105,24 @@ bool DUDFBurnEngine::doBurn(const QString &dev, const QPair<QString, QString> fi
     ub_show_verbose();
     ub_redirect_output(1, 0);
 
-    int ret = ub_do_burn(dev.toStdString().c_str(), files.first.toStdString().c_str(),
+    int ret = 0;
+    // Use new API if available and kKeepAppendable is set
+    if (ub_do_burn_ex != nullptr && opts.testFlag(BurnOption::kKeepAppendable)) {
+        // finalize=0 means keep appendable (multi-session)
+        ret = ub_do_burn_ex(dev.toStdString().c_str(), files.first.toStdString().c_str(),
+                            volId.toStdString().c_str(), 0);
+        qInfo() << "[dfm-burn] UDF: using burn_burn_to_disc_ex with finalize=0 (keep appendable)";
+    } else if (ub_do_burn_ex != nullptr) {
+        // finalize=1 means finalize disc completely
+        ret = ub_do_burn_ex(dev.toStdString().c_str(), files.first.toStdString().c_str(),
+                            volId.toStdString().c_str(), 1);
+        qInfo() << "[dfm-burn] UDF: using burn_burn_to_disc_ex with finalize=1 (finalize disc)";
+    } else {
+        // Fallback to old API (always finalize)
+        ret = ub_do_burn(dev.toStdString().c_str(), files.first.toStdString().c_str(),
                          volId.toStdString().c_str());
+        qInfo() << "[dfm-burn] UDF: using legacy burn_burn_to_disc (always finalize)";
+    }
 
     // burn failed
     if (ret != 0) {
