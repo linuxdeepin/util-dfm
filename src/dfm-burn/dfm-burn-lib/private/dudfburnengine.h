@@ -19,7 +19,7 @@ public:
     explicit DUDFBurnEngine(QObject *parent = nullptr);
     virtual ~DUDFBurnEngine() override;
 
-    bool doBurn(const QString &dev, const QPair<QString, QString> files, QString volId);
+    bool doBurn(const QString &dev, const QPair<QString, QString> files, QString volId, const BurnOptions &opts);
     QStringList lastErrorMessage() const;
 
 Q_SIGNALS:
