@@ -474,6 +474,15 @@ bool DXorrisoEngine::doBurn(const QPair<QString, QString> files, int speed, QStr
     if (JOBFAILED_IF(this, r, xorriso))
         return false;
 
+    // joliet extensions: enable long names and long paths when joliet is enabled
+    if (joliet == JolietSupport::kTrue) {
+        r = XORRISO_OPT(xorriso, [this]() {
+            return Xorriso_option_compliance(xorriso, PCHAR("joliet_long_names:joliet_long_paths"), 0);
+        });
+        if (JOBFAILED_IF(this, r, xorriso))
+            return false;
+    }
+
     // rockridge
     r = XORRISO_OPT(xorriso, [this, rockRage]() {
         return Xorriso_option_rockridge(xorriso, PCHAR(rockRage == RockRageSupport::kTrue ? "on" : "off"), 0);
