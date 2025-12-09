@@ -77,7 +77,7 @@ public:
 
     QSharedPointer<DFMIO::DMediaInfo> mediaInfo { nullptr };
     QList<DFileInfo::AttributeExtendID> extendIDs;
-    DFileFuture *future = nullptr;
+    QPointer<DFileFuture> future;  // 使用 QPointer 自动追踪对象生命周期，防止访问已删除的对象
     DFileInfo::MediaType mediaType = DFileInfo::MediaType::kGeneral;
     DFileInfo::AttributeExtendFuncCallback attributeExtendFuncCallback { nullptr };
 

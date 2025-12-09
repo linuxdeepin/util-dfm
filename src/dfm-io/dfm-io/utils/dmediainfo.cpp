@@ -36,21 +36,23 @@ public:
             // 由于当远程文件夹下存在大量图片文件时，析构mediainfo对象耗时会很长，造成文管卡
             // 所以将对象添加到队列中，开启线程去释放对象
             static QMutex lock;
+            static std::atomic<bool> isRunning { false };
+
             {
                 QMutexLocker locker(&lock);
                 queueDestoryMediaInfo->enqueue(mediaInfo);
             }
 
-            static bool isRunning = false;
-            if (!isRunning) {
-                isRunning = true;
+            bool expected = false;
+            // 使用 compare_exchange_strong 确保只有一个线程能启动清理工作
+            if (isRunning.compare_exchange_strong(expected, true)) {
                 std::thread thread(
                         []() {
                             while (!queueDestoryMediaInfo->isEmpty()) {
                                 QMutexLocker locker(&lock);
                                 queueDestoryMediaInfo->dequeue();
                             }
-                            isRunning = false;
+                            isRunning.store(false);
                         });
                 thread.detach();
             }
@@ -80,7 +82,15 @@ public:
                 if (me->isStopState.load())
                     break;
                 if (me->mediaInfo->State_Get() == kMediaInfoStateFinished) {
-                    me->callback();
+                    // 使用 QMetaObject::invokeMethod 切换到主线程执行 callback
+                    // 避免从后台线程直接调用 Qt 对象方法导致的崩溃
+                    QMetaObject::invokeMethod(
+                            me.data(), [me]() {
+                                if (me && me->callback) {
+                                    me->callback();
+                                }
+                            },
+                            Qt::QueuedConnection);
                     break;
                 }
                 std::chrono::milliseconds dura(200);
