@@ -208,7 +208,7 @@ void DFileInfoPrivate::attributeExtendCallback()
             attributeExtendFuncCallback(true, map);
 
         if (this->future)
-            this->future->infoMedia(uri, map);
+            Q_EMIT this->future->infoMedia(uri, map);
     }
 }
 
