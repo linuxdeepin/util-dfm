@@ -1,3 +1,9 @@
+util-dfm (1.2.33) unstable; urgency=medium
+
+  * feat: implement cancellable search functionality
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Thu, 11 Dec 2025 20:44:41 +0800
+
 util-dfm (1.2.32) unstable; urgency=medium
 
   * length of disc filename and paths could be longer.
