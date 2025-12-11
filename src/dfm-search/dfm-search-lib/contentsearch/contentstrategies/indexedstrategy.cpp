@@ -17,6 +17,7 @@
 #include <lucene++/WildcardQuery.h>
 
 #include "3rdparty/fulltext/chineseanalyzer.h"
+#include "utils/cancellablecollector.h"
 #include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
 #include "utils/searchutility.h"
@@ -377,9 +378,27 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
         searchTimer.start();
 
         int32_t maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : reader->numDocs();
-        TopDocsPtr topDocs = searcher->search(m_currentQuery, maxResults);
-        Collection<ScoreDocPtr> scoreDocs = topDocs->scoreDocs;
-        qInfo() << "Content search execution time:" << searchTimer.elapsed() << "ms";
+
+        // 使用自定义 CancellableCollector 实现可中断搜索
+        Collection<ScoreDocPtr> scoreDocs;
+        try {
+            // 创建可取消的收集器
+            boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(&m_cancelled, maxResults);
+
+            // 执行搜索，使用自定义收集器
+            searcher->search(m_currentQuery, collector);
+
+            // 获取收集到的文档
+            scoreDocs = collector->getScoreDocs();
+
+            qInfo() << "Content search execution time:" << searchTimer.elapsed() << "ms"
+                    << "Total hits:" << collector->getTotalHits()
+                    << "Collected:" << scoreDocs.size();
+        } catch (const SearchCancelledException &e) {
+            qInfo() << "Content search cancelled during execution";
+            emit searchFinished(m_results);
+            return;
+        }
 
         // 处理搜索结果
         processSearchResults(searcher, scoreDocs);
