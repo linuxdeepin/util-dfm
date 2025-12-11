@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "indexedstrategy.h"
+#include "utils/cancellablecollector.h"
 #include "utils/searchutility.h"
 #include "utils/lucenequeryutils.h"
 
@@ -491,22 +492,32 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     searchTimer.start();
 
     // 执行搜索
-    TopDocsPtr searchResults;
+    int32_t maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : reader->numDocs();
+
+    // 使用自定义 CancellableCollector 实现可中断搜索
+    Collection<ScoreDocPtr> scoreDocs;
     try {
-        int32_t maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : reader->numDocs();
-        searchResults = searcher->search(luceneQuery, maxResults);
-    } catch (const LuceneException &e) {
-        qWarning() << "Search execution error:" << QString::fromStdWString(e.getError());
-        emit errorOccurred(SearchError(SearchErrorCode::InternalError));
+        // 创建可取消的收集器
+        boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(&m_cancelled, maxResults);
+
+        // 执行搜索，使用自定义收集器
+        searcher->search(luceneQuery, collector);
+
+        // 获取收集到的文档
+        scoreDocs = collector->getScoreDocs();
+
+        qInfo() << "Filename search execution time:" << searchTimer.elapsed() << "ms"
+                << "Total hits:" << collector->getTotalHits()
+                << "Collected:" << scoreDocs.size();
+    } catch (const SearchCancelledException &e) {
+        qInfo() << "Filename search cancelled during execution";
         return;
     }
-
-    qInfo() << "Filename search execution time:" << searchTimer.elapsed() << "ms";
 
     // Measure the time taken to process search results
     QElapsedTimer resultTimer;
     resultTimer.start();
-    auto docsSize = searchResults->scoreDocs.size();
+    auto docsSize = scoreDocs.size();
     m_results.reserve(docsSize);
 
     // 实时处理搜索结果
@@ -517,7 +528,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
         }
 
         try {
-            ScoreDocPtr scoreDoc = searchResults->scoreDocs[i];
+            ScoreDocPtr scoreDoc = scoreDocs[i];
             DocumentPtr doc = searcher->doc(scoreDoc->doc);
             QString path = QString::fromStdWString(doc->get(L"full_path"));
 
