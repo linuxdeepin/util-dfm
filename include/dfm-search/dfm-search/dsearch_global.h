@@ -140,6 +140,20 @@ std::optional<QString> fileNameIndexStatus();
  */
 QString fileNameIndexDirectory();
 
+/**
+ * @brief Get the version of the filename index from the JSON configuration file.
+ * This function reads the version field from the filename index JSON file and returns it as an integer.
+ * @return The version number of the filename index, or -1 if the version cannot be retrieved.
+ */
+int fileNameIndexVersion();
+
+/**
+ * @brief Get the version of the content index from the JSON configuration file.
+ * This function reads the version field from the content index JSON file and returns it as an integer.
+ * @return The version number of the content index, or -1 if the version cannot be retrieved.
+ */
+int contentIndexVersion();
+
 }   // namespace Global
 
 // Enumeration for different types of search methods

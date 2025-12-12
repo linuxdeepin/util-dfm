@@ -22,6 +22,55 @@ using namespace Lucene;
 
 namespace Global {
 
+// Index version threshold constants
+namespace IndexVersionThresholds {
+constexpr int FILENAME_ANCESTOR_PATHS = 3;
+constexpr int CONTENT_ANCESTOR_PATHS = 1;
+}
+
+/**
+ * @brief Read index version from a JSON status file
+ * @param indexDir The index directory path
+ * @param statusFile The name of the status JSON file
+ * @return The version number, or -1 if reading fails
+ */
+static int readIndexVersion(const QString &indexDir, const QString &statusFile)
+{
+    const QString versionFilePath = QDir(indexDir).filePath(statusFile);
+
+    QFile file(versionFilePath);
+    if (!file.exists()) {
+        qWarning() << "Index version file not found:" << versionFilePath;
+        return -1;
+    }
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open index version file:" << file.errorString();
+        return -1;
+    }
+
+    QByteArray jsonData = file.readAll();
+    file.close();
+
+    QJsonParseError parseError;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
+
+    if (parseError.error != QJsonParseError::NoError) {
+        qWarning() << "Failed to parse index version JSON:" << parseError.errorString();
+        return -1;
+    }
+
+    QJsonObject jsonObj = jsonDoc.object();
+    if (!jsonObj.contains("version")) {
+        qWarning() << "Index version JSON missing 'version' field";
+        return -1;
+    }
+
+    // Handle both numeric and string version values
+    const QJsonValue versionValue = jsonObj.value("version");
+    return versionValue.isDouble() ? versionValue.toInt() : versionValue.toString().toInt();
+}
+
 // 辅助递归函数，尝试所有可能的分割方法
 static bool isPinyinSequenceHelper(const QString &str, int startPos, const QSet<QString> &validSyllables)
 {
@@ -369,13 +418,13 @@ bool isPinyinAcronymSequence(const QString &input)
     // 1. 必须包含至少一个英文字母（大小写）
     // 2. 可以包含数字和英文符号
     // 3. 长度在1-255之间（合理的文件名长度）
-    
+
     QString str = input.trimmed();
-    
+
     // 长度检查
     if (str.length() == 0 || str.length() > 255)
         return false;
-    
+
     // 必须包含至少一个英文字母
     bool hasLetter = false;
     for (const QChar &ch : str) {
@@ -384,15 +433,15 @@ bool isPinyinAcronymSequence(const QString &input)
             break;
         }
     }
-    
+
     if (!hasLetter)
         return false;
-    
+
     // 字符检查：允许字母、数字和常见符号
     QRegularExpression validCharsRegex("^[a-zA-Z0-9._-]+$");
     if (!validCharsRegex.match(str).hasMatch())
         return false;
-    
+
     return true;
 }
 
@@ -640,9 +689,29 @@ QString fileNameIndexDirectory()
     return QString("/run/user/%1/deepin-anything-server").arg(getuid());
 }
 
+int fileNameIndexVersion()
+{
+    return readIndexVersion(fileNameIndexDirectory(), "status.json");
+}
+
+int contentIndexVersion()
+{
+    return readIndexVersion(contentIndexDirectory(), "index_status.json");
+}
+
 }   //  namespace Global
 
 namespace SearchUtility {
+
+bool isFilenameIndexAncestorPathsSupported()
+{
+    return Global::fileNameIndexVersion() > Global::IndexVersionThresholds::FILENAME_ANCESTOR_PATHS;
+}
+
+bool isContentIndexAncestorPathsSupported()
+{
+    return Global::contentIndexVersion() > Global::IndexVersionThresholds::CONTENT_ANCESTOR_PATHS;
+}
 
 QStringList extractBooleanKeywords(const SearchQuery &query)
 {

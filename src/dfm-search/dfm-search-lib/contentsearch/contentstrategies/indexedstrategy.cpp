@@ -96,8 +96,9 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
         }
 
         // Add path prefix query optimization
-        if (mainQuery && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
-            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath, "path");
+        if (mainQuery && SearchUtility::isContentIndexAncestorPathsSupported()
+            && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
+            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath, "ancestor_paths");
             if (pathPrefixQuery) {
                 BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
                 finalQuery->add(mainQuery, BooleanClause::MUST);
