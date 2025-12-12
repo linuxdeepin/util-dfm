@@ -10,10 +10,7 @@ using namespace Lucene;
 DFM_SEARCH_BEGIN_NS
 
 CancellableCollector::CancellableCollector(std::atomic<bool> *cancelled, int32_t maxDocs)
-    : m_cancelled(cancelled)
-    , m_maxDocs(maxDocs)
-    , m_docBase(0)
-    , m_totalHits(0)
+    : m_cancelled(cancelled), m_maxDocs(maxDocs), m_docBase(0), m_totalHits(0)
 {
     // 预分配空间以提高性能
     m_scoreDocs = Collection<ScoreDocPtr>::newInstance();
@@ -21,6 +18,11 @@ CancellableCollector::CancellableCollector(std::atomic<bool> *cancelled, int32_t
 
 void CancellableCollector::setScorer(const ScorerPtr &scorer)
 {
+    if (m_cancelled && m_cancelled->load()) {
+        // 抛出异常中断搜索过程
+        throw SearchCancelledException();
+    }
+
     m_scorer = scorer;
 }
 
@@ -28,7 +30,7 @@ void CancellableCollector::collect(int32_t doc)
 {
     // 关键：每次收集文档时检查取消标志
     // 这是实现搜索可中断的核心机制
-    if (m_cancelled && m_cancelled->load(std::memory_order_relaxed)) {
+    if (m_cancelled && m_cancelled->load()) {
         // 抛出异常中断搜索过程
         throw SearchCancelledException();
     }
@@ -57,6 +59,11 @@ void CancellableCollector::collect(int32_t doc)
 void CancellableCollector::setNextReader(const IndexReaderPtr &reader, int32_t docBase)
 {
     Q_UNUSED(reader);
+    if (m_cancelled && m_cancelled->load()) {
+        // 抛出异常中断搜索过程
+        throw SearchCancelledException();
+    }
+
     // 设置当前段的文档基址，用于计算全局文档 ID
     m_docBase = docBase;
 }

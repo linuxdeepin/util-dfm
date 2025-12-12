@@ -166,10 +166,10 @@ QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query,
     Lucene::BooleanQueryPtr pureFilenameQuery = newLucene<Lucene::BooleanQuery>();
     pureFilenameQuery->add(allFilenamesQuery, Lucene::BooleanClause::MUST);
     pureFilenameQuery->add(allContentsQuery, Lucene::BooleanClause::MUST_NOT);
-    
+
     overallQuery->add(mainAndClausesQuery, Lucene::BooleanClause::MUST);
     overallQuery->add(pureFilenameQuery, Lucene::BooleanClause::MUST_NOT);
-    
+
     return overallQuery;
 }
 
@@ -386,20 +386,21 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
             boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(&m_cancelled, maxResults);
 
             // 执行搜索，使用自定义收集器
+            qInfo() << "Content search execution start:" << query.keyword();
             searcher->search(m_currentQuery, collector);
-
             // 获取收集到的文档
             scoreDocs = collector->getScoreDocs();
 
             qInfo() << "Content search execution time:" << searchTimer.elapsed() << "ms"
                     << "Total hits:" << collector->getTotalHits()
-                    << "Collected:" << scoreDocs.size();
+                    << "Collected:" << scoreDocs.size()
+                    << "Keyword:" << query.keyword()
+                    << "Cancelled" << m_cancelled.load();
         } catch (const SearchCancelledException &e) {
             qInfo() << "Content search cancelled during execution";
             emit searchFinished(m_results);
             return;
         }
-
         // 处理搜索结果
         processSearchResults(searcher, scoreDocs);
 
