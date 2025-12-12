@@ -717,8 +717,9 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     }
 
     // Add path prefix query optimization
-    if (hasValidQuery && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
-        QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath, "full_path");
+    if (hasValidQuery && SearchUtility::isFilenameIndexAncestorPathsSupported()
+        && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
+        QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath, "ancestor_paths");
         if (pathPrefixQuery) {
             finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
             qInfo() << "Using path prefix query for optimization:" << searchPath;

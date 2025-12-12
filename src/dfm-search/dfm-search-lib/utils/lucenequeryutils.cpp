@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "lucenequeryutils.h"
 
+#include <QDir>
+
 DFM_SEARCH_BEGIN_NS
 
 namespace LuceneQueryUtils {
@@ -54,15 +56,13 @@ Lucene::QueryPtr buildPathPrefixQuery(const QString &pathPrefix, const QString &
         return nullptr;
     }
 
-    QString normalizedPath = pathPrefix;
-    // Ensure path ends with '/' to avoid partial path name matches
-    if (!normalizedPath.endsWith('/')) {
-        normalizedPath += '/';
-    }
+    // 标准化路径：去掉多余的斜杠，去掉末尾的斜杠 (例如 "/home/user/" -> "/home/user")
+    const QString normalizedPath = QDir::cleanPath(pathPrefix);
 
-    return Lucene::newLucene<Lucene::PrefixQuery>(
-            Lucene::newLucene<Lucene::Term>(Lucene::StringUtils::toUnicode(fieldName.toStdString()),
-                                          Lucene::StringUtils::toUnicode(normalizedPath.toStdString())));
+    return Lucene::newLucene<Lucene::TermQuery>(
+            Lucene::newLucene<Lucene::Term>(
+                    Lucene::StringUtils::toUnicode(fieldName.toStdString()),
+                    Lucene::StringUtils::toUnicode(normalizedPath.toStdString())));
 }
 
 }   // namespace LuceneQueryUtils
