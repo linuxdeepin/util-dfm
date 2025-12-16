@@ -474,7 +474,9 @@ bool DXorrisoEngine::doBurn(const QPair<QString, QString> files, int speed, QStr
     if (JOBFAILED_IF(this, r, xorriso))
         return false;
 
-    // joliet extensions: enable long names and long paths when joliet is enabled
+    // joliet extensions: enable long names and long paths when joliet is
+    // enabled; 103 char count limits for filename, and very long char count
+    // limits for path (based on filesystem of disc);
     if (joliet == JolietSupport::kTrue) {
         r = XORRISO_OPT(xorriso, [this]() {
             return Xorriso_option_compliance(xorriso, PCHAR("joliet_long_names:joliet_long_paths"), 0);
