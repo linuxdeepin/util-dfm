@@ -21,6 +21,7 @@
 #include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
 #include "utils/searchutility.h"
+#include "utils/lucene_cancellation_compat.h"
 
 using namespace Lucene;
 
@@ -166,10 +167,10 @@ QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query,
     Lucene::BooleanQueryPtr pureFilenameQuery = newLucene<Lucene::BooleanQuery>();
     pureFilenameQuery->add(allFilenamesQuery, Lucene::BooleanClause::MUST);
     pureFilenameQuery->add(allContentsQuery, Lucene::BooleanClause::MUST_NOT);
-    
+
     overallQuery->add(mainAndClausesQuery, Lucene::BooleanClause::MUST);
     overallQuery->add(pureFilenameQuery, Lucene::BooleanClause::MUST_NOT);
-    
+
     return overallQuery;
 }
 
@@ -341,6 +342,10 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
 void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
 {
+    // RAII 守护类：自动管理取消标志的生命周期
+    // 构造时设置标志，析构时自动清理（即使发生异常）
+    SearchCancellationGuard guard(&m_cancelled);
+
     try {
         // 获取索引目录
         FSDirectoryPtr directory = FSDirectory::open(m_indexDir.toStdWString());
@@ -398,6 +403,19 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
             qInfo() << "Content search cancelled during execution";
             emit searchFinished(m_results);
             return;
+        } catch (const RuntimeException &e) {
+#if LUCENE_HAS_SEARCH_CANCELLATION
+            // 仅在支持 SearchCancellation 时检查取消异常
+            // 检查是否是在 ExactPhraseScorer::phraseFreq() 中抛出的取消异常
+            QString errorMsg = QString::fromStdWString(e.getError());
+            if (errorMsg.contains("cancelled", Qt::CaseInsensitive)) {
+                qInfo() << "Content search cancelled in phraseFreq():" << errorMsg;
+                emit searchFinished(m_results);
+                return;
+            }
+#endif
+            // 其他运行时异常，继续抛出
+            throw;
         }
 
         // 处理搜索结果
