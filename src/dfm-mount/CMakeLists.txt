@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.10)
 
 set(BASE_NAME dfm-mount)
 
@@ -17,8 +17,11 @@ FILE (GLOB_RECURSE SRCS CONFIGURE_DEPENDS
     "./*.h"
 )
 
-#include(dfm-mount-qt5.cmake)
-include(dfm-mount-qt6.cmake)
+if (QT_VERSION_MAJOR MATCHES 6)
+    include(dfm-mount-qt6.cmake)
+else()
+    include(dfm-mount-qt5.cmake)
+endif()
 
 #set(CMAKE_CXX_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")
 #set(CMAKE_C_FLAGS "-fsanitize=undefined,address,leak -fno-omit-frame-pointer")

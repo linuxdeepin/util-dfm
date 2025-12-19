@@ -5,6 +5,9 @@
 #ifndef DSEARCH_GLOBAL_H
 #define DSEARCH_GLOBAL_H
 
+#include <optional>
+#include <memory>
+
 #include <QObject>
 
 #define DFMSEARCH dfmsearch
