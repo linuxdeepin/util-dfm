@@ -1,7 +1,32 @@
 #!/usr/bin/make -f
-export QT_SELECT=5
 include /usr/share/dpkg/default.mk
 DEB_BUILD_ARCH ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH)
+
+# 版本检测逻辑 - 读取 /etc/os-version 中的 MajorVersion
+OS_VERSION_FILE := /etc/os-version
+
+# 提取 MajorVersion,如果文件不存在或解析失败则默认为 99 (使用 Qt6)
+MAJOR_VERSION := $(shell if [ -f $(OS_VERSION_FILE) ]; then \
+                          grep "^MajorVersion=" $(OS_VERSION_FILE) 2>/dev/null | cut -d'=' -f2; \
+                        else \
+                          echo 99; \
+                        fi)
+
+# 版本判断: MajorVersion > 20 使用 Qt6, 否则使用 Qt5
+USE_QT6 := $(shell if [ "$(MAJOR_VERSION)" -gt 20 ] 2>/dev/null; then echo yes; else echo no; fi)
+
+# 设置 QT_SELECT 环境变量
+ifeq ($(USE_QT6),yes)
+    export QT_SELECT=6
+    QT_SUFFIX := 6
+else
+    export QT_SELECT=5
+    QT_SUFFIX :=
+endif
+
+# 从 control.in 生成 control 文件
+$(shell sed -e 's/@QT_SUFFIX@/$(QT_SUFFIX)/g' \
+            debian/control.in > debian/control)
 
 %:
 	dh $@ --parallel
