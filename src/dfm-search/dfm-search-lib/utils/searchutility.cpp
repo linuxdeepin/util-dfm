@@ -7,6 +7,7 @@
 
 #include <DConfig>
 
+#include <QDebug>
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>

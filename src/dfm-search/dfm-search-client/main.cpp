@@ -527,12 +527,20 @@ int main(int argc, char *argv[])
         fileNameOptions.setPinyinAcronymEnabled(parser.isSet(pinyinAcronymOption));
 
         if (parser.isSet(fileTypesOption)) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
             QStringList types = parser.value(fileTypesOption).split(',', Qt::SkipEmptyParts);
+#else
+            QStringList types = parser.value(fileTypesOption).split(',', QString::SkipEmptyParts);
+#endif
             fileNameOptions.setFileTypes(types);
         }
 
         if (parser.isSet(fileExtensionsOption)) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
             QStringList extensions = parser.value(fileExtensionsOption).split(',', Qt::SkipEmptyParts);
+#else
+            QStringList extensions = parser.value(fileExtensionsOption).split(',', QString::SkipEmptyParts);
+#endif
             fileNameOptions.setFileExtensions(extensions);
         }
     } else if (searchType == SearchType::Content) {
@@ -565,7 +573,12 @@ int main(int argc, char *argv[])
         query = SearchFactory::createQuery(keyword, SearchQuery::Type::Wildcard);
     } else {
         // For boolean query, split keywords by comma and create a boolean query
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
         QStringList keywords = keyword.split(',', Qt::SkipEmptyParts);
+#else
+        QStringList keywords = keyword.split(',', QString::SkipEmptyParts);
+#endif
+
         query = SearchFactory::createQuery(keywords, SearchQuery::Type::Boolean);
         query.setBooleanOperator(SearchQuery::BooleanOperator::AND);
     }
