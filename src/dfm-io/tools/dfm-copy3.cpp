@@ -53,7 +53,7 @@ static void copy(const QString &url_src, const QString &url_dst)
     int read = 0;
 
     GError *gerror = nullptr;
-    GFile *gfileSource =DLocalHelper::createGFile(url_src);
+    GFile *gfileSource = DLocalHelper::createGFile(url_src);
     GFile *gfileDest = DLocalHelper::createGFile(url_dst);
 
     GFile *gfileTarget = nullptr;
