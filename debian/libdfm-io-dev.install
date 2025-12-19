@@ -1,0 +1,3 @@
+usr/include/dfm-io/*
+usr/lib/*/pkgconfig/dfm-io.pc
+usr/lib/*/cmake/dfm-io/*.cmake
