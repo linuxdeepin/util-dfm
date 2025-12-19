@@ -157,7 +157,7 @@ public:
 
     /**
      * @brief Enables or disables the addition of detailed information to search results.
-     * 
+     *
      * When enabled, search results will include additional metadata such as file size,
      * modification time, file type, etc. When disabled, only the basic path information
      * is included, which improves performance and reduces memory usage.

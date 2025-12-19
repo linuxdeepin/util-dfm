@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.10)
 
 project(dfm${DFM_VERSION_MAJOR}-burn-client)
 

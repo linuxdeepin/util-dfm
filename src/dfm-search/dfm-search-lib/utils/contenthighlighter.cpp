@@ -5,6 +5,7 @@
 
 #include <QRegularExpression>
 #include <QStringList>
+#include <QDebug>
 
 #include <lucene++/LuceneHeaders.h>
 #include <lucene++/Highlighter.h>
@@ -77,9 +78,9 @@ bool isParagraphStart(const QString &content, int position)
 
     // 如果找到段落结束符或已到文档开头，则认为是段落开头
     if (lookBackPos < 0) {
-        return true; // 文档开头
+        return true;   // 文档开头
     }
-    
+
     QChar prevChar = content.at(lookBackPos);
     return (prevChar == '\n' || prevChar == '\r');
 }

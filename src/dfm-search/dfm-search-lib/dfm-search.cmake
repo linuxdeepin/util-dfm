@@ -13,7 +13,7 @@ add_library(${BIN_NAME} SHARED
 
 target_link_libraries(${BIN_NAME}
     Qt${QT_VERSION_MAJOR}::Core
-    Dtk${QT_VERSION_MAJOR}::Core
+    Dtk${DFM_VERSION_MAJOR}::Core
     PkgConfig::Lucene
 )
 
@@ -65,9 +65,9 @@ install(DIRECTORY
 )
 
 # for pc file config - update to include all dependencies
-set(PC_LIBS_PRIVATE Qt${QT_VERSION_MAJOR}Core dtk${QT_VERSION_MAJOR}core)
+set(PC_LIBS_PRIVATE Qt${QT_VERSION_MAJOR}Core dtk${DFM_VERSION_MAJOR}core)
 set(PC_REQ_PRIVATE liblucene++ liblucene++-contrib)
-set(PC_REQ_PUBLIC Qt${QT_VERSION_MAJOR}Core dtk${QT_VERSION_MAJOR}core)
+set(PC_REQ_PUBLIC Qt${QT_VERSION_MAJOR}Core dtk${DFM_VERSION_MAJOR}core)
 
 # config pkgconfig file
 configure_file(${PROJECT_SOURCE_DIR}/misc/${BASE_NAME}/${BASE_NAME}.pc.in ${BIN_NAME}.pc @ONLY)

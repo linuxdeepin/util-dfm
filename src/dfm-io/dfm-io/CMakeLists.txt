@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.10)
 
 set (VERSION "1.0.0" CACHE STRING "define project version")
 set(BASE_NAME dfm-io)
@@ -16,7 +16,10 @@ FILE (GLOB_RECURSE IO_SRCS CONFIGURE_DEPENDS
     "./*.h"
 )
 
-#include(dfm-io-qt5.cmake)
-include(dfm-io-qt6.cmake)
+if (QT_VERSION_MAJOR MATCHES 6)
+    include(dfm-io-qt6.cmake)
+else()
+    include(dfm-io-qt5.cmake)
+endif()
 
 
