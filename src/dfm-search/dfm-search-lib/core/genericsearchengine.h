@@ -85,6 +85,19 @@ public:
      */
     void cancel() override;
 
+Q_SIGNALS:
+    /**
+     * @brief Internal signal to request worker thread to execute search
+     */
+    void requestSearch(const DFMSEARCH::SearchQuery &query,
+                      const DFMSEARCH::SearchOptions &options,
+                      DFMSEARCH::SearchType searchType);
+
+    /**
+     * @brief Internal signal to request worker thread to cancel search
+     */
+    void requestCancel();
+
 protected:
     /**
      * @brief Set up the strategy factory for this search engine
