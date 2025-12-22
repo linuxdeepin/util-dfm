@@ -46,10 +46,16 @@ void GenericSearchEngine::init()
     m_worker = new SearchWorker();
     m_worker->moveToThread(&m_workerThread);
 
-    // 连接信号
+    // 连接线程生命周期信号
     connect(&m_workerThread, &QThread::finished, m_worker, &QObject::deleteLater);
 
-    // 连接工作对象的信号
+    // 连接控制信号（主线程 -> 工作线程）
+    connect(this, &GenericSearchEngine::requestSearch,
+            m_worker, &SearchWorker::doSearch);
+    connect(this, &GenericSearchEngine::requestCancel,
+            m_worker, &SearchWorker::cancelSearch);
+
+    // 连接结果信号（工作线程 -> 主线程）
     connect(m_worker, &SearchWorker::resultFound,
             this, &GenericSearchEngine::handleSearchResult);
     connect(m_worker, &SearchWorker::searchFinished,
@@ -110,11 +116,8 @@ void GenericSearchEngine::search(const SearchQuery &query)
         return;
     }
 
-    // 执行异步搜索
-    QMetaObject::invokeMethod(m_worker, "doSearch",
-                              Q_ARG(DFMSEARCH::SearchQuery, query),
-                              Q_ARG(DFMSEARCH::SearchOptions, m_options),
-                              Q_ARG(DFMSEARCH::SearchType, searchType()));
+    // 发射信号请求工作线程执行搜索
+    emit requestSearch(query, m_options, searchType());
 }
 
 void GenericSearchEngine::searchWithCallback(const SearchQuery &query,
@@ -143,8 +146,8 @@ void GenericSearchEngine::cancel()
 {
     m_cancelled.store(true);
 
-    // 通知工作线程取消搜索
-    QMetaObject::invokeMethod(m_worker, "cancelSearch", Qt::DirectConnection);
+    // 发射信号请求工作线程取消搜索
+    emit requestCancel();
 
     // 停止批处理定时器
     m_batchTimer.stop();
@@ -230,11 +233,8 @@ SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
     connect(this, &GenericSearchEngine::errorOccurred, &eventLoop, &QEventLoop::quit);
     connect(&timeoutTimer, &QTimer::timeout, &eventLoop, &QEventLoop::quit);
 
-    // 启动异步搜索
-    QMetaObject::invokeMethod(m_worker, "doSearch",
-                              Q_ARG(DFMSEARCH::SearchQuery, query),
-                              Q_ARG(DFMSEARCH::SearchOptions, m_options),
-                              Q_ARG(DFMSEARCH::SearchType, searchType()));
+    // 发射信号启动异步搜索
+    emit requestSearch(query, m_options, searchType());
 
     // 启动超时计时器
     timeoutTimer.start();
@@ -244,7 +244,7 @@ SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
 
     // 检查是否超时
     if (!timeoutTimer.isActive()) {
-        QMetaObject::invokeMethod(m_worker, "cancelSearch");
+        emit requestCancel();
         return DUnexpected<DFMSEARCH::SearchError> { SearchError(SearchErrorCode::SearchTimeout) };
     }
 
