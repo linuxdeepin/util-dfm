@@ -224,4 +224,6 @@ private:
 
 DFM_SEARCH_END_NS
 
+Q_DECLARE_METATYPE(DFMSEARCH::SearchOptions);
+
 #endif   // SEARCHOPTIONS_H

@@ -115,5 +115,6 @@ using SearchResultExpected = Dtk::Core::DExpected<QList<SearchResult>, DFMSEARCH
 DFM_SEARCH_END_NS
 
 Q_DECLARE_METATYPE(DFMSEARCH::SearchResult)
+Q_DECLARE_METATYPE(DFMSEARCH::SearchResultList)
 
 #endif   // SEARCHRESULT_H

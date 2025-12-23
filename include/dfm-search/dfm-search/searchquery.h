@@ -161,4 +161,6 @@ private:
 
 DFM_SEARCH_END_NS
 
+Q_DECLARE_METATYPE(DFMSEARCH::SearchQuery);
+
 #endif   // SEARCHQUERY_H
