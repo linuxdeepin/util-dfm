@@ -8,6 +8,11 @@ DFM_SEARCH_BEGIN_NS
 SearchWorker::SearchWorker(QObject *parent)
     : QObject(parent)
 {
+    qRegisterMetaType<SearchQuery>();
+    qRegisterMetaType<SearchOptions>();
+    qRegisterMetaType<SearchType>();
+    qRegisterMetaType<SearchResultList>();
+    qRegisterMetaType<SearchError>();
 }
 
 SearchWorker::~SearchWorker() = default;
