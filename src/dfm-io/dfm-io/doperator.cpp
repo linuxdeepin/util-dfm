@@ -11,6 +11,7 @@
 #include <QDateTime>
 
 #include <glib/gstdio.h>
+#include <errno.h>
 
 USING_IO_NAMESPACE
 
@@ -38,6 +39,54 @@ void DOperatorPrivate::setErrorFromGError(GError *gerror)
             strErr = strErr.left(strErr.indexOf(":")) + strErr.mid(strErr.lastIndexOf(":"));
         error.setMessage(strErr);
     }
+}
+
+void DOperatorPrivate::setErrorFromErrno(int errnoValue)
+{
+    DFMIOErrorCode errorCode;
+    switch (errnoValue) {
+    case EACCES:
+    case EPERM:
+        errorCode = DFM_IO_ERROR_PERMISSION_DENIED;
+        break;
+    case ENOENT:
+        errorCode = DFM_IO_ERROR_NOT_FOUND;
+        break;
+    case EEXIST:
+    case ENOTEMPTY:
+        errorCode = DFM_IO_ERROR_EXISTS;
+        break;
+    case EISDIR:
+        errorCode = DFM_IO_ERROR_IS_DIRECTORY;
+        break;
+    case ENOTDIR:
+        errorCode = DFM_IO_ERROR_NOT_DIRECTORY;
+        break;
+    case EROFS:
+        errorCode = DFM_IO_ERROR_READ_ONLY;
+        break;
+    case ENOSPC:
+        errorCode = DFM_IO_ERROR_NO_SPACE;
+        break;
+    case ENAMETOOLONG:
+        errorCode = DFM_IO_ERROR_FILENAME_TOO_LONG;
+        break;
+    case EINVAL:
+        errorCode = DFM_IO_ERROR_INVALID_ARGUMENT;
+        break;
+    case EBUSY:
+        errorCode = DFM_IO_ERROR_BUSY;
+        break;
+    case EXDEV:
+        // Cross-device rename not supported by g_rename
+        errorCode = DFM_IO_ERROR_NOT_SUPPORTED;
+        break;
+    default:
+        errorCode = DFM_IO_ERROR_FAILED;
+        break;
+    }
+
+    error.setCode(errorCode);
 }
 
 GFile *DOperatorPrivate::makeGFile(const QUrl &url)
@@ -215,9 +264,9 @@ bool DOperator::renameFile(const QUrl &toUrl)
 
     const bool ret = g_rename(fromStr.c_str(), toStr.c_str()) == 0;
 
-    // set error info
+    // set error info based on errno
     if (!ret)
-        d->error.setCode(DFM_IO_ERROR_PERMISSION_DENIED);
+        d->setErrorFromErrno(errno);
 
     return ret;
 }

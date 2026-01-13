@@ -24,6 +24,7 @@ public:
     virtual ~DOperatorPrivate();
 
     void setErrorFromGError(GError *gerror);
+    void setErrorFromErrno(int errnoValue);
     GFile *makeGFile(const QUrl &url);
     void checkAndResetCancel();
 
