@@ -18,12 +18,20 @@
 
 DFM_MOUNT_USE_NS
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 static constexpr char kDaemonService[] { "org.deepin.Filemanager.MountControl" };
 static constexpr char kDaemonPath[] { "/org/deepin/Filemanager" };
-static constexpr char kDaemonIntro[] { "org.freedesktop.DBus.Introspectable" };
-static constexpr char kDaemonIntroMethod[] { "Introspect" };
 static constexpr char kMountControlPath[] { "/org/deepin/Filemanager/MountControl" };
 static constexpr char kMountControlIFace[] { "org.deepin.Filemanager.MountControl" };
+#else
+static constexpr char kDaemonService[] { "com.deepin.filemanager.daemon" };
+static constexpr char kDaemonPath[] { "/com/deepin/filemanager/daemon" };
+static constexpr char kMountControlPath[] { "/com/deepin/filemanager/daemon/MountControl" };
+static constexpr char kMountControlIFace[] { "com.deepin.filemanager.daemon.MountControl" };
+#endif
+
+static constexpr char kDaemonIntro[] { "org.freedesktop.DBus.Introspectable" };
+static constexpr char kDaemonIntroMethod[] { "Introspect" };
 static constexpr char kMountControlMount[] { "Mount" };
 static constexpr char kMountControlUnmount[] { "Unmount" };
 
@@ -41,7 +49,6 @@ static constexpr char kSmbConfigPath[] { "/etc/samba/smb.conf" };
 
 static constexpr char kDaemonMountRetKeyMpt[] { "mountPoint" };
 static constexpr char kDaemonMountRetKeyErrno[] { "errno" };
-static constexpr char kDaemonMountRetKeyErrMsg[] { "errMsg" };
 
 struct AskPasswdHelper
 {
@@ -250,8 +257,7 @@ void DNetworkMounter::unmountNetworkDevAsync(const QString &mpt, DeviceOperateCa
                 cb(result.success, Utils::genOperateErrorInfo(DeviceError::kUserErrorAuthenticationFailed, result.errMsgFromDaemon));
             } else if (result.errnoFromDaemon == static_cast<int>(DeviceError::kGDBusErrorNoReply)) {
                 cb(result.success, Utils::genOperateErrorInfo(DeviceError::kUDisksErrorNotAuthorizedDismissed, result.errMsgFromDaemon));
-            }
-            else {
+            } else {
                 cb(result.success,
                    Utils::genOperateErrorInfo(result.success ? DeviceError::kNoError : DeviceError::kUserError, result.errMsgFromDaemon));
             }
@@ -276,10 +282,9 @@ bool DNetworkMounter::unmountNetworkDevAsyncDetailed(const QString &mpt, int *er
     if (!ret.isValid()) {
         const auto &e = ret.error();
         const QString name = e.name();
-        if (e.type() == QDBusError::NoReply ||
-            name == QStringLiteral("org.freedesktop.DBus.Error.NoReply")) {
+        if (e.type() == QDBusError::NoReply || name == QStringLiteral("org.freedesktop.DBus.Error.NoReply")) {
             if (errCode) *errCode = static_cast<int>(DFMMOUNT::DeviceError::kGDBusErrorNoReply);
-            if (errMsg)  *errMsg  = QStringLiteral("Authorization pending (NoReply)");
+            if (errMsg) *errMsg = QStringLiteral("Authorization pending (NoReply)");
             return false;
         }
 
