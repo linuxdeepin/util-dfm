@@ -649,9 +649,12 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &ad
         QDBusReply<QVariantMap> ret = mntCtrl.call(kMountControlMount, address, param);
         auto mntRet = ret.value();
         QString mpt = mntRet.value(kDaemonMountRetKeyMpt).toString();
-
         if (!mpt.isEmpty())
             return { true, DeviceError::kNoError, mpt };
+
+        int errCode = mntRet.value(kDaemonMountRetKeyErrno).toInt();
+        if (errCode == -8) // service_mountcontrol::MountErrorCode::kAuthenticationFailed
+            return { false, DeviceError::kUserErrorAuthenticationFailed, "", false };
     }
 
     // when all saved login data is tried, get info from user
