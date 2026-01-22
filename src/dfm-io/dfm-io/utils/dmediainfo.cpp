@@ -13,6 +13,7 @@
 #include <QDebug>
 
 #include <thread>
+#include <chrono>
 
 static constexpr size_t kMediaInfoStateFinished { 10000 };   // read finished and no error
 
@@ -76,12 +77,20 @@ public:
 
         QPointer<DMediaInfoPrivate> me = this;
         std::thread thread([me]() {
+            auto startTime = std::chrono::steady_clock::now();
+            const int kTimeoutMs = 3000;  // 3秒超时
+
             while (1) {
                 if (!me)
                     break;
                 if (me->isStopState.load())
                     break;
-                if (me->mediaInfo->State_Get() == kMediaInfoStateFinished) {
+
+                auto currentTime = std::chrono::steady_clock::now();
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
+
+                // 达到完成状态或超时
+                if (me->mediaInfo->State_Get() == kMediaInfoStateFinished || elapsed > kTimeoutMs) {
                     // 使用 QMetaObject::invokeMethod 切换到主线程执行 callback
                     // 避免从后台线程直接调用 Qt 对象方法导致的崩溃
                     QMetaObject::invokeMethod(
