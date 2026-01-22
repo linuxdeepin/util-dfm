@@ -324,13 +324,38 @@ bool DProtocolMonitorPrivate::hasDrive(GVolume *volume)
     return drv ? true : false;
 }
 
+static GUnixMountEntry* find_unix_mount_for(const gchar *path)
+{
+    if (!path)
+        return NULL;
+
+    GUnixMountEntry *found_mount = NULL;
+    g_autofree gchar *current_path = g_strdup(path);
+
+    while (TRUE) {
+        found_mount = g_unix_mount_at(current_path, NULL);
+
+        if (found_mount)
+            break;
+
+        if (g_strcmp0(current_path, "/") == 0)
+            break;
+
+        gchar *parent_path = g_path_get_dirname(current_path);
+        g_free(current_path);
+        current_path = parent_path;
+    }
+
+    return found_mount;
+}
+
 bool DProtocolMonitorPrivate::isNativeMount(const QString &mpt)
 {
     if (mpt.isEmpty())
         return false;
 
     std::string s = mpt.toStdString();
-    g_autoptr(GUnixMountEntry) entry = g_unix_mount_for(s.data(), nullptr);
+    g_autoptr(GUnixMountEntry) entry = find_unix_mount_for(s.data());
     if (entry) {
         QString devPath = g_unix_mount_get_device_path(entry);
         if (devPath.startsWith("/dev/"))
