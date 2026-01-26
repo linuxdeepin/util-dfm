@@ -54,16 +54,16 @@ SearchError FileNameSearchEngine::validateSearchConditions()
     }
 
     // 文件名搜索特定验证
-    if (m_currentQuery.type() == SearchQuery::Type::Simple || 
-        m_currentQuery.type() == SearchQuery::Type::Wildcard) {
+    if (m_currentQuery.type() == SearchQuery::Type::Simple
+        || m_currentQuery.type() == SearchQuery::Type::Wildcard) {
         // 允许对一个类型, 后缀进行搜索，获取类型下所有文件
         if (m_currentQuery.keyword().isEmpty() && fileTypes.isEmpty() && fileExts.isEmpty()) {
             return SearchError(FileNameSearchErrorCode::KeywordIsEmpty);
         }
 
         // pinyin (wildcard类型不支持拼音搜索)
-        if (m_currentQuery.type() == SearchQuery::Type::Simple && 
-            api.pinyinEnabled() && !Global::isPinyinSequence(m_currentQuery.keyword())) {
+        if (m_currentQuery.type() == SearchQuery::Type::Simple
+            && api.pinyinEnabled() && !Global::isPinyinSequence(m_currentQuery.keyword())) {
             qWarning() << SearchError(FileNameSearchErrorCode::InvalidPinyinFormat).message() << "key: " << m_currentQuery.keyword();
         }
     }

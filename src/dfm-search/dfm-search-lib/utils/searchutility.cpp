@@ -330,6 +330,13 @@ bool isPinyinSequence(const QString &input)
     if (input.isEmpty())
         return false;
 
+    // 清洗输入：移除所有非字母字符，只保留字母用于拼音检验
+    QString cleanedInput = input;
+    cleanedInput.remove(QRegularExpression("[^a-zA-Z]"));
+
+    if (cleanedInput.isEmpty())
+        return false;
+
     // 合法的拼音音节表（预先定义所有可能的拼音音节组合）
     static const QSet<QString> validSyllables = {
         // 单韵母音节 - 只有 a, o, e 可以单独成音节
@@ -383,18 +390,18 @@ bool isPinyinSequence(const QString &input)
     };
 
     // 特殊处理规则：单个字母'i', 'u', 'v', 'ü'不能单独成音节
-    if (input.length() == 1) {
-        QChar ch = input.toLower()[0];
+    if (cleanedInput.length() == 1) {
+        QChar ch = cleanedInput.toLower()[0];
         if (ch == 'i' || ch == 'u' || ch == 'v' || ch == QChar(0x00FC))   // 0x00FC是ü的Unicode编码
             return false;
     }
 
     // 特殊处理规则：检查重复字母如'vvv'
-    if (input.length() >= 3) {
+    if (cleanedInput.length() >= 3) {
         bool allSame = true;
-        QChar firstChar = input.toLower()[0];
-        for (int i = 1; i < input.length(); i++) {
-            if (input.toLower()[i] != firstChar) {
+        QChar firstChar = cleanedInput.toLower()[0];
+        for (int i = 1; i < cleanedInput.length(); i++) {
+            if (cleanedInput.toLower()[i] != firstChar) {
                 allSame = false;
                 break;
             }
@@ -403,7 +410,7 @@ bool isPinyinSequence(const QString &input)
             return false;
     }
 
-    QString str = input.toLower();
+    QString str = cleanedInput.toLower();
     str.replace("ü", "v");   // 统一处理 ü
 
     // 尝试所有可能的分割方式
