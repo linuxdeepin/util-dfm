@@ -422,35 +422,29 @@ bool isPinyinAcronymSequence(const QString &input)
     if (input.isEmpty())
         return false;
 
-    // 拼音首字母的验证规则：
-    // 1. 必须包含至少一个英文字母（大小写）
-    // 2. 可以包含数字和英文符号
-    // 3. 长度在1-255之间（合理的文件名长度）
-
     QString str = input.trimmed();
 
     // 长度检查
     if (str.length() == 0 || str.length() > 255)
         return false;
 
-    // 必须包含至少一个英文字母
+    // 核心验证：
+    // 1. 必须包含至少一个英文字母
+    // 2. 不能包含中文字符
+    // 3. 允许数字、符号等其他任意字符
+
     bool hasLetter = false;
     for (const QChar &ch : str) {
-        if (ch.isLetter()) {
+        // 检查是否为中文（拼音缩写不应包含中文）
+        if (ch.script() == QChar::Script_Han)
+            return false;
+
+        // 检查是否为英文字母（拉丁字母）
+        if (ch.isLetter() && ch.script() == QChar::Script_Latin)
             hasLetter = true;
-            break;
-        }
     }
 
-    if (!hasLetter)
-        return false;
-
-    // 字符检查：允许字母、数字和常见符号
-    QRegularExpression validCharsRegex("^[a-zA-Z0-9._-]+$");
-    if (!validCharsRegex.match(str).hasMatch())
-        return false;
-
-    return true;
+    return hasLetter;
 }
 
 bool isHiddenPathOrInHiddenDir(const QString &absolutePath)
