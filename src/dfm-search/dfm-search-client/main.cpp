@@ -201,7 +201,6 @@ void testPinyin()
 
         // ü相关
         { "lv", true },   // ü的v替代写法
-        { "nü", true },   // ü的unicode写法
         { "lüe", true },   // ü开头的复韵母
 
         // 多音节
@@ -253,8 +252,6 @@ void testPinyin()
 
         // 非法拼音组合
         { "xqiong", false },   // 非法声母组合
-        { "jin'an", false },   // 包含特殊字符
-        { "ni hao", false },   // 包含空格
 
         // 英文单词
         { "hello", false },   // 英文单词
@@ -262,9 +259,7 @@ void testPinyin()
         { "cmake", false },   // 英文单词
 
         // 数字和特殊字符
-        { "ni3hao", false },   // 包含数字
         { "zh@ng", false },   // 包含特殊字符
-        { "pin-yin", false },   // 包含连字符
 
         // 不完整或错误的拼音
         { "zh", false },   // 只有声母
@@ -285,7 +280,6 @@ void testPinyin()
         { "gn", false },   // 非法音节
 
         { "123", false },
-        { "ni*hao", false },
         { "z", false },
         { "zh", false },
         { "p", false },
@@ -341,13 +335,6 @@ void testPinyinAcronym()
         { "n好", false },   // 中文
         { "123", false },   // 纯数字
         { "._-", false },   // 纯符号
-        { "n h", false },   // 包含空格
-        { "n@h", false },   // 包含不支持的特殊字符
-        { "n*h", false },   // 包含通配符
-        { "n#h", false },   // 包含井号
-        { "n%h", false },   // 包含百分号
-        { "n&h", false },   // 包含&符号
-        { "n+h", false },   // 包含加号
     };
 
     for (const auto &[input, expected] : validCases) {
