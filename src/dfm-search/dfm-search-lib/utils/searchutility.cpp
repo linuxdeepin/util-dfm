@@ -190,6 +190,27 @@ static std::optional<QStringList> tryLoadIndexingNamesFromDConfig()
     return namesFromDConfigList;   // Return the processed set
 }
 
+// --- Specific Loader for "blacklist_paths" ---
+static std::optional<QStringList> tryLoadBlacklistPathsFromDConfig()
+{
+    const QString appId = "org.deepin.anything";
+    const QString schemaId = "org.deepin.anything";
+    const QString keyName = "blacklist_paths";
+
+    std::optional<QStringList> stringListOpt = tryLoadStringListFromDConfigInternal(appId, schemaId, keyName);
+
+    if (!stringListOpt) {
+        return std::nullopt;   // Loading failed
+    }
+
+    const QStringList &pathsFromDConfigList = *stringListOpt;
+
+    if (pathsFromDConfigList.isEmpty()) {
+        qDebug() << "DConfig: Key '" << keyName << "' in schema '" << schemaId << "' provided an empty list.";
+    }
+    return pathsFromDConfigList;   // Return the processed list
+}
+
 // 辅助函数：提供硬编码的默认扩展名集合
 static const QSet<QString> &getDefaultSupportedExtensions()
 {
@@ -235,7 +256,7 @@ static const QSet<QString> &supportedExtensions()
 static QStringList getResolvedIndexedDirectories()   // Renamed for clarity
 {
     const QString homePath = QDir::homePath();   // Cache for frequent use
-    const QStringList fallbackResult = { homePath };
+    const QStringList fallbackResult { homePath };
 
     std::optional<QStringList> dconfigNamesOpt = tryLoadIndexingNamesFromDConfig();
 
@@ -539,6 +560,20 @@ QStringList defaultIndexedDirectory()
     }
 
     return result;
+}
+
+QStringList defaultBlacklistPaths()
+{
+    std::optional<QStringList> dconfigPathsOpt = tryLoadBlacklistPathsFromDConfig();
+
+    if (!dconfigPathsOpt) {
+        qDebug() << "Failed to load blacklist paths from DConfig or DConfig instance invalid, returning empty list.";
+        return QStringList();
+    }
+
+    const QStringList &pathsFromDConfig = *dconfigPathsOpt;
+    qDebug() << "Resolved blacklist paths:" << pathsFromDConfig;
+    return pathsFromDConfig;
 }
 
 bool isPathInContentIndexDirectory(const QString &path)

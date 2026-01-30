@@ -75,6 +75,14 @@ QStringList defaultContentSearchExtensions();
 QStringList defaultIndexedDirectory();
 
 /**
+ * @brief Get the list of blacklist paths from DConfig.
+ * This function reads the blacklist_paths configuration from the anything DConfig
+ * and returns it as-is without additional processing.
+ * @return A QStringList containing the blacklist paths, or empty list if reading fails.
+ */
+QStringList defaultBlacklistPaths();
+
+/**
  * @brief Check if the specified path is within the content index directory.
  * This function verifies whether a given file path is located within the designated content index directory,
  * which is important for ensuring that only relevant files are included in search operations.

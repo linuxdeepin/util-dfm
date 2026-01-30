@@ -143,6 +143,12 @@ void testGlobal()
         std::cout << dir.toStdString() << std::endl;
     }
 
+    std::cout << "Default blacklist paths: " << std::endl;
+    const auto &blacklistPaths = Global::defaultBlacklistPaths();
+    for (const auto &path : blacklistPaths) {
+        std::cout << "  " << path.toStdString() << std::endl;
+    }
+
     std::cout << "================= test global end =================" << std::endl;
 }
 
