@@ -4,7 +4,12 @@ include(CMakeFindDependencyMacro)
 find_dependency(Qt@QT_VERSION_MAJOR@ COMPONENTS Core)
 find_dependency(Dtk@DFM_VERSION_MAJOR@ COMPONENTS Core)
 find_dependency(Threads)
-find_dependency(Boost COMPONENTS system)
+find_package(Boost REQUIRED)
+
+if (Boost_VERSION_STRING VERSION_LESS "1.89.0")
+    message(STATUS "Boost < 1.89 → using Boost::system")
+    find_package(Boost REQUIRED COMPONENTS system)
+endif()
 
 # 查找 PkgConfig 和 liblucene++ 依赖
 find_dependency(PkgConfig)
