@@ -2,7 +2,12 @@
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 find_package(Dtk${DFM_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED)
+
+if (Boost_VERSION_STRING VERSION_LESS "1.89.0")
+    message(STATUS "Boost < 1.89 → using Boost::system")
+    find_package(Boost REQUIRED COMPONENTS system)
+endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Lucene REQUIRED IMPORTED_TARGET liblucene++ liblucene++-contrib)
@@ -18,8 +23,11 @@ target_link_libraries(${BIN_NAME} PUBLIC
     Dtk${DFM_VERSION_MAJOR}::Core
     PkgConfig::Lucene
     Threads::Threads
-    Boost::system
 )
+
+if (Boost_VERSION_STRING VERSION_LESS "1.89.0")
+    target_link_libraries(${BIN_NAME} PUBLIC Boost::system)
+endif()
 
 target_include_directories(
     ${BIN_NAME}
