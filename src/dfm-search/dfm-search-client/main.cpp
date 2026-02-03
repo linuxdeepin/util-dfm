@@ -11,6 +11,11 @@
 #include <QStringList>
 #include <QFileInfo>
 #include <QDir>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QDateTime>
+#include <QTimer>
 
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search/searchengine.h>
@@ -74,6 +79,7 @@ void printUsage()
     std::cout << "  --file-extensions=<exts>    Filter by file extensions, comma separated" << std::endl;
     std::cout << "  --max-results=<number>      Maximum number of results" << std::endl;
     std::cout << "  --max-preview=<length>      Max content preview length (for content search)" << std::endl;
+    std::cout << "  --json, -j                  Output results in JSON format" << std::endl;
     std::cout << "  --help                      Display this help" << std::endl;
 }
 
@@ -98,6 +104,133 @@ void printSearchResult(const SearchResult &result, SearchType searchType)
     }
 
     std::cout << std::endl;
+}
+
+//--------------------------------------------------------------------
+// JSON Output Helpers
+//--------------------------------------------------------------------
+
+QJsonValue resultToJson(const SearchResult &result, SearchType searchType)
+{
+    if (searchType == SearchType::FileName) {
+        // 文件名搜索：直接返回路径字符串
+        return result.path();
+    } else if (searchType == SearchType::Content) {
+        // 内容搜索：返回包含路径和内容匹配的对象
+        QJsonObject obj;
+        obj["path"] = result.path();
+        ContentResultAPI contentResult(const_cast<SearchResult &>(result));
+        obj["contentMatch"] = contentResult.highlightedContent();
+        return obj;
+    }
+    return result.path();
+}
+
+void printJsonLine(const QJsonObject &obj)
+{
+    QJsonDocument doc(obj);
+    std::cout << doc.toJson(QJsonDocument::Compact).constData() << std::endl;
+}
+
+// 流式模式：输出搜索开始
+void printJsonSearchStart(const QString &keyword, const QString &searchPath,
+                          SearchType searchType, SearchMethod searchMethod,
+                          const SearchOptions &options)
+{
+    QJsonObject startObj;
+    startObj["type"] = "search_started";
+
+    QJsonObject searchInfo;
+    searchInfo["keyword"] = keyword;
+    searchInfo["searchPath"] = searchPath;
+    searchInfo["searchType"] = (searchType == SearchType::FileName ? "filename" : "content");
+    searchInfo["searchMethod"] = (searchMethod == SearchMethod::Indexed ? "indexed" : "realtime");
+    searchInfo["caseSensitive"] = options.caseSensitive();
+    searchInfo["includeHidden"] = options.includeHidden();
+
+    startObj["search"] = searchInfo;
+    startObj["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+
+    printJsonLine(startObj);
+}
+
+// 流式模式：输出单个结果
+void printJsonResult(const SearchResult &result, SearchType searchType)
+{
+    QJsonObject resultObj;
+    resultObj["type"] = "result";
+    resultObj["data"] = resultToJson(result, searchType);
+    printJsonLine(resultObj);
+}
+
+// 流式模式：输出搜索结束
+void printJsonSearchEnd(int totalResults, qint64 elapsedMs)
+{
+    QJsonObject endObj;
+    endObj["type"] = "search_finished";
+
+    QJsonObject status;
+    status["state"] = "success";
+    status["totalResults"] = totalResults;
+
+    endObj["status"] = status;
+
+    QJsonObject timestamps;
+    timestamps["finished"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    timestamps["duration"] = elapsedMs;
+
+    endObj["timestamps"] = timestamps;
+    printJsonLine(endObj);
+}
+
+// 完整 JSON 输出（非流式）
+struct JsonOutputContext
+{
+    QString keyword;
+    QString searchPath;
+    SearchType searchType;
+    SearchMethod searchMethod;
+    SearchOptions options;
+    QDateTime startTime;
+    QJsonArray results;
+};
+
+void printJsonComplete(const JsonOutputContext &ctx)
+{
+    QJsonObject root;
+
+    // 搜索信息
+    QJsonObject searchInfo;
+    searchInfo["keyword"] = ctx.keyword;
+    searchInfo["searchPath"] = ctx.searchPath;
+    searchInfo["searchType"] = (ctx.searchType == SearchType::FileName ? "filename" : "content");
+    searchInfo["searchMethod"] = (ctx.searchMethod == SearchMethod::Indexed ? "indexed" : "realtime");
+    searchInfo["caseSensitive"] = ctx.options.caseSensitive();
+    searchInfo["includeHidden"] = ctx.options.includeHidden();
+    root["search"] = searchInfo;
+
+    // 时间戳
+    QDateTime endTime = QDateTime::currentDateTime();
+    qint64 duration = ctx.startTime.msecsTo(endTime);
+
+    QJsonObject timestamps;
+    timestamps["started"] = ctx.startTime.toString(Qt::ISODate);
+    timestamps["finished"] = endTime.toString(Qt::ISODate);
+    timestamps["duration"] = duration;
+    root["timestamps"] = timestamps;
+
+    // 状态
+    QJsonObject status;
+    status["state"] = "success";
+    status["totalResults"] = ctx.results.size();
+    root["status"] = status;
+
+    // 结果数组
+    root["results"] = ctx.results;
+
+    // 输出完整 JSON
+    QJsonDocument doc(root);
+    std::cout << doc.toJson(QJsonDocument::Indented).constData() << std::endl;
 }
 
 void testGlobal()
@@ -417,6 +550,9 @@ int main(int argc, char *argv[])
     QCommandLineOption maxResultsOption(QStringList() << "max-results", "Maximum number of results", "number", "100");
     QCommandLineOption maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200");
     QCommandLineOption wildcardOption(QStringList() << "wildcard", "Enable wildcard search with * and ? patterns");
+    QCommandLineOption jsonOption(QStringList() << "json"
+                                                << "j",
+                                  "Output results in JSON format");
 
     parser.addOption(typeOption);
     parser.addOption(methodOption);
@@ -430,6 +566,7 @@ int main(int argc, char *argv[])
     parser.addOption(maxResultsOption);
     parser.addOption(maxPreviewOption);
     parser.addOption(wildcardOption);
+    parser.addOption(jsonOption);
 
     // Setup positional arguments
     parser.addPositionalArgument("keyword", "Search keyword");
@@ -576,46 +713,143 @@ int main(int argc, char *argv[])
         query.setBooleanOperator(SearchQuery::BooleanOperator::AND);
     }
 
+    // 检测是否使用 JSON 输出模式
+    bool useJsonOutput = parser.isSet(jsonOption);
+
+    // JSON 模式上下文（用于非流式模式）
+    JsonOutputContext jsonContext;
+    if (useJsonOutput && searchMethod == SearchMethod::Indexed) {
+        // 非流式模式：收集所有结果后统一输出
+        jsonContext.keyword = keyword;
+        jsonContext.searchPath = searchPath;
+        jsonContext.searchType = searchType;
+        jsonContext.searchMethod = searchMethod;
+        jsonContext.options = options;
+        jsonContext.startTime = QDateTime::currentDateTime();
+    }
+
     // Connect signals
-    QObject::connect(engine, &SearchEngine::searchStarted, [] {
-        std::cout << "Search started..." << std::endl;
-    });
+    if (useJsonOutput) {
+        // JSON 输出模式
+        if (searchMethod == SearchMethod::Realtime) {
+            // 流式 JSON 输出（实时搜索）
+            QObject::connect(engine, &SearchEngine::searchStarted, [keyword, searchPath, searchType, searchMethod, &options]() {
+                printJsonSearchStart(keyword, searchPath, searchType, searchMethod, options);
+            });
 
-    QObject::connect(engine, &SearchEngine::resultsFound, [searchType](const SearchResultList &results) {
-        for (const auto &result : results)
-            printSearchResult(result, searchType);
-    });
+            QObject::connect(engine, &SearchEngine::resultsFound, [searchType](const SearchResultList &results) {
+                for (const auto &result : results)
+                    printJsonResult(result, searchType);
+            });
 
-    QObject::connect(engine, &SearchEngine::searchFinished, [options, searchType](const QList<SearchResult> &results) {
-        std::cout << "Search finished. Total results: " << results.size() << std::endl;
-        if (!options.resultFoundEnabled()) {
-            std::for_each(results.begin(), results.end(), [searchType](const SearchResult &result) {
-                printSearchResult(result, searchType);
+            // 记录搜索开始时间
+            QDateTime searchStartTime = QDateTime::currentDateTime();
+
+            QObject::connect(engine, &SearchEngine::searchFinished, [searchStartTime](const QList<SearchResult> &results) {
+                qint64 elapsedMs = searchStartTime.msecsTo(QDateTime::currentDateTime());
+                printJsonSearchEnd(results.size(), elapsedMs);
+                QCoreApplication::quit();
+            });
+
+            QObject::connect(engine, &SearchEngine::searchCancelled, [] {
+                QJsonObject cancelObj;
+                cancelObj["type"] = "search_cancelled";
+                cancelObj["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+                printJsonLine(cancelObj);
+                QCoreApplication::quit();
+            });
+
+            QObject::connect(engine, &SearchEngine::errorOccurred, [](const DFMSEARCH::SearchError &error) {
+                QJsonObject errorObj;
+                errorObj["type"] = "error";
+                errorObj["name"] = error.name();
+                errorObj["message"] = error.message();
+                errorObj["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+                printJsonLine(errorObj);
+            });
+
+        } else {
+            // 完整 JSON 输出（索引搜索）
+            QObject::connect(engine, &SearchEngine::searchStarted, []() {
+                // 非流式模式：开始时不输出
+            });
+
+            QObject::connect(engine, &SearchEngine::resultsFound, [&jsonContext, searchType](const SearchResultList &results) {
+                for (const auto &result : results) {
+                    jsonContext.results.append(resultToJson(result, searchType));
+                }
+            });
+
+            QObject::connect(engine, &SearchEngine::searchFinished, [&jsonContext, searchType](const QList<SearchResult> &results) {
+                // 如果结果没有被 resultsFound 收集（禁用了 resultFoundEnabled），则在这里转换
+                if (jsonContext.results.isEmpty() && !results.isEmpty()) {
+                    for (const auto &result : results) {
+                        jsonContext.results.append(resultToJson(result, searchType));
+                    }
+                }
+                printJsonComplete(jsonContext);
+                QCoreApplication::quit();
+            });
+
+            QObject::connect(engine, &SearchEngine::searchCancelled, [] {
+                QJsonObject cancelObj;
+                cancelObj["type"] = "search_cancelled";
+                cancelObj["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+                printJsonLine(cancelObj);
+                QCoreApplication::quit();
+            });
+
+            QObject::connect(engine, &SearchEngine::errorOccurred, [](const DFMSEARCH::SearchError &error) {
+                QJsonObject errorObj;
+                errorObj["type"] = "error";
+                errorObj["name"] = error.name();
+                errorObj["message"] = error.message();
+                errorObj["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+                printJsonLine(errorObj);
             });
         }
-        QCoreApplication::quit();
-    });
+    } else {
+        // 文本输出模式（原有逻辑）
+        QObject::connect(engine, &SearchEngine::searchStarted, [] {
+            std::cout << "Search started..." << std::endl;
+        });
 
-    QObject::connect(engine, &SearchEngine::searchCancelled, [] {
-        std::cout << "Search cancelled" << std::endl;
-        QCoreApplication::quit();
-    });
+        QObject::connect(engine, &SearchEngine::resultsFound, [searchType](const SearchResultList &results) {
+            for (const auto &result : results)
+                printSearchResult(result, searchType);
+        });
 
-    QObject::connect(engine, &SearchEngine::errorOccurred, [](const DFMSEARCH::SearchError &error) {
-        std::cerr << "[Error]: " << error.code()
-                  << "[Name]: " << error.name().toStdString()
-                  << "[Message]:" << error.message().toStdString() << std::endl;
-    });
+        QObject::connect(engine, &SearchEngine::searchFinished, [options, searchType](const QList<SearchResult> &results) {
+            std::cout << "Search finished. Total results: " << results.size() << std::endl;
+            if (!options.resultFoundEnabled()) {
+                std::for_each(results.begin(), results.end(), [searchType](const SearchResult &result) {
+                    printSearchResult(result, searchType);
+                });
+            }
+            QCoreApplication::quit();
+        });
 
-    // Start search
-    std::cout << "Searching for: " << keyword.toStdString() << std::endl;
-    std::cout << "In path: " << searchPath.toStdString() << std::endl;
-    std::cout << "Search type: " << (searchType == SearchType::FileName ? "Filename" : "Content") << std::endl;
-    std::cout << "Search method: " << (searchMethod == SearchMethod::Indexed ? "Indexed" : "Realtime") << std::endl;
+        QObject::connect(engine, &SearchEngine::searchCancelled, [] {
+            std::cout << "Search cancelled" << std::endl;
+            QCoreApplication::quit();
+        });
 
-    // Print file extensions if set
-    if (searchType == SearchType::FileName && parser.isSet(fileExtensionsOption)) {
-        std::cout << "File extensions filter: " << parser.value(fileExtensionsOption).toStdString() << std::endl;
+        QObject::connect(engine, &SearchEngine::errorOccurred, [](const DFMSEARCH::SearchError &error) {
+            std::cerr << "[Error]: " << error.code()
+                      << "[Name]: " << error.name().toStdString()
+                      << "[Message]:" << error.message().toStdString() << std::endl;
+        });
+
+        // Start search
+        std::cout << "Searching for: " << keyword.toStdString() << std::endl;
+        std::cout << "In path: " << searchPath.toStdString() << std::endl;
+        std::cout << "Search type: " << (searchType == SearchType::FileName ? "Filename" : "Content") << std::endl;
+        std::cout << "Search method: " << (searchMethod == SearchMethod::Indexed ? "Indexed" : "Realtime") << std::endl;
+
+        // Print file extensions if set
+        if (searchType == SearchType::FileName && parser.isSet(fileExtensionsOption)) {
+            std::cout << "File extensions filter: " << parser.value(fileExtensionsOption).toStdString() << std::endl;
+        }
     }
 
     engine->search(query);
