@@ -381,9 +381,14 @@ char *DEnumeratorPrivate::filePath(const QUrl &url)
 
 QUrl DEnumeratorPrivate::buildUrl(const QUrl &url, const char *fileName)
 {
-    auto path = url.path()  == "/" ?
-                "/" + QString(fileName) :
-                url.path() + "/" + QString(fileName);
+    QString path;
+    if (url.path() == "/") {
+        path = "/" + QString(fileName);
+    } else {
+        QString dirPath = url.path();
+        path = dirPath.endsWith('/') ? dirPath + QString(fileName) : dirPath + "/" + QString(fileName);
+    }
+
     QUrl nextUrl = QUrl::fromLocalFile(path);
 
     if (url.userInfo().startsWith("originPath::")) {
@@ -622,32 +627,26 @@ bool DEnumerator::hasNext() const
 
     GFileEnumerator *enumerator = d->stackEnumerator.top();
 
-    GFileInfo *gfileInfo = nullptr;
-    GFile *gfile = nullptr;
-
     g_autoptr(GError) gerror = nullptr;
     d->checkAndResetCancel();
-    bool hasNext = g_file_enumerator_iterate(enumerator, &gfileInfo, &gfile, d->cancellable, &gerror);
-    if (hasNext) {
-        if (!gfileInfo || !gfile) {
-            GFileEnumerator *enumeratorPop = d->stackEnumerator.pop();
-            g_object_unref(enumeratorPop);
-            return this->hasNext();
-        }
 
-        g_autofree gchar *path = g_file_get_path(gfile);
-        if (path) {
-            d->nextUrl = QUrl::fromLocalFile(QString::fromLocal8Bit(path));
-            if (DFMUtils::isInvalidCodecByPath(path))
-                d->nextUrl.setUserInfo(QString::fromLatin1("originPath::") + QString::fromLatin1(path));
-        } else {
-            g_autofree gchar *uri = g_file_get_uri(gfile);
-            d->nextUrl = QUrl(QString::fromLocal8Bit(uri));
-            if (DFMUtils::isInvalidCodecByPath(uri))
-                d->nextUrl.setUserInfo(QString::fromLatin1("originPath::") + QString::fromLatin1(path));
-        }
-        d->dfileInfoNext = DLocalHelper::createFileInfoByUri(d->nextUrl, g_file_info_dup(gfileInfo), FILE_DEFAULT_ATTRIBUTES,
+    // Use g_file_enumerator_next_file() which returns a GFileInfo* for the next
+    // entry (or NULL). This avoids ambiguous iterate() behavior across backends.
+    GFileInfo *nextInfo = g_file_enumerator_next_file(enumerator, d->cancellable, &gerror);
+    if (nextInfo) {
+        // Build URL from the name field (nextInfo may not include a GFile)
+        d->nextUrl = d->buildUrl(d->uri, g_file_info_get_name(nextInfo));
+
+        d->dfileInfoNext = DLocalHelper::createFileInfoByUri(d->nextUrl, g_file_info_dup(nextInfo), FILE_DEFAULT_ATTRIBUTES,
                                                              d->enumLinks ? DFileInfo::FileQueryInfoFlags::kTypeNone : DFileInfo::FileQueryInfoFlags::kTypeNoFollowSymlinks);
+
+        g_object_unref(nextInfo);
+
+        if (gerror) {
+            d->setErrorFromGError(gerror);
+            g_error_free(gerror);
+            gerror = nullptr;
+        }
 
         if (!d->checkFilter())
             return this->hasNext();
@@ -655,8 +654,11 @@ bool DEnumerator::hasNext() const
         return true;
     }
 
-    if (gerror)
+    // nextInfo == NULL: either finished or an error occurred
+    if (gerror) {
         d->setErrorFromGError(gerror);
+        return true;
+    }
 
     return false;
 }
