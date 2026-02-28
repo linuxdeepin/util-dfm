@@ -24,6 +24,7 @@
 #include <dfm-search/searchoptions.h>
 #include <dfm-search/filenamesearchapi.h>
 #include <dfm-search/contentsearchapi.h>
+#include "../dfm-search-lib/utils/filenameblacklistmatcher.h"
 
 using namespace dfmsearch;
 
@@ -522,6 +523,56 @@ void testAnythingStatus()
     */
 }
 
+void doFileNameBlacklistMatchTest(const std::string &caseName,
+                                  const QString &inputPath,
+                                  const QStringList &blacklistEntries,
+                                  bool expected)
+{
+    const bool actual = Global::BlacklistMatcher::isPathBlacklisted(inputPath, blacklistEntries);
+    std::cout << "文件名黑名单测试 [" << caseName << "]\t"
+              << "输入路径: " << inputPath.toStdString() << "\t"
+              << "黑名单: " << blacklistEntries.join(", ").toStdString() << "\t"
+              << "预期结果: " << (expected ? "命中" : "不命中") << "\t"
+              << "实际结果: " << (actual ? "命中" : "不命中") << "\t"
+              << "状态: " << (actual == expected ? "通过" : "失败") << "\n"
+              << "---------------------------------\n";
+}
+
+void testFileNameBlacklistMatcher()
+{
+    std::cout << "====== 开始文件名黑名单规则测试 ======\n";
+
+    doFileNameBlacklistMatchTest("绝对路径-自身命中",
+                                 "/home/test/workspace",
+                                 { "/home/test/workspace" },
+                                 true);
+
+    doFileNameBlacklistMatchTest("绝对路径-子路径命中",
+                                 "/home/test/workspace/a.txt",
+                                 { "/home/test/workspace" },
+                                 true);
+
+    doFileNameBlacklistMatchTest("绝对路径-边界不误匹配",
+                                 "/home/test/workspace2",
+                                 { "/home/test/workspace" },
+                                 false);
+
+    doFileNameBlacklistMatchTest("目录名-直接命中",
+                                 "/home/test/workspace",
+                                 { "workspace" },
+                                 true);
+
+    doFileNameBlacklistMatchTest("目录名-深层命中",
+                                 "/home/test/aa/bb/workspace",
+                                 { "workspace" },
+                                 true);
+
+    doFileNameBlacklistMatchTest("目录名-不命中相似名称",
+                                 "/home/test/aa/bb/myworkspace",
+                                 { "workspace" },
+                                 false);
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -531,6 +582,7 @@ int main(int argc, char *argv[])
     testPinyin();
     testPinyinAcronym();
     testAnythingStatus();
+    testFileNameBlacklistMatcher();
 #endif
 
     QCommandLineParser parser;

@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "searchutility.h"
+#include "filenameblacklistmatcher.h"
 
 #include <unistd.h>
 
@@ -629,6 +630,9 @@ QString contentIndexDirectory()
 bool isPathInFileNameIndexDirectory(const QString &path)
 {
     if (!isFileNameIndexDirectoryAvailable())
+        return false;
+
+    if (BlacklistMatcher::isPathBlacklisted(path, defaultBlacklistPaths()))
         return false;
 
     const QStringList &dirs = defaultIndexedDirectory();
