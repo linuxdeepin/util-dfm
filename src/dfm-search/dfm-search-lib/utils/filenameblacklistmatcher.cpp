@@ -31,8 +31,11 @@ static bool isAbsolutePathMatch(const QString &normalizedPath, const QString &bl
 bool isPathBlacklisted(const QString &inputPath, const QStringList &blacklistEntries)
 {
     const QString normalizedPath = normalizePathForBlacklistMatch(inputPath);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     const QStringList pathSegments = normalizedPath.split('/', Qt::SkipEmptyParts);
-
+#else
+    const QStringList pathSegments = normalizedPath.split('/', QString::SkipEmptyParts);
+#endif
     for (const QString &entry : blacklistEntries) {
         const QString trimmedEntry = entry.trimmed();
         if (trimmedEntry.isEmpty()) {
