@@ -385,7 +385,9 @@ QUrl DEnumeratorPrivate::buildUrl(const QUrl &url, const char *fileName)
         path = dirPath.endsWith('/') ? dirPath + QString(fileName) : dirPath + "/" + QString(fileName);
     }
 
-    QUrl nextUrl = QUrl::fromLocalFile(path);
+    // 保留原始 URL 的 scheme 和 host，而不是假定为本地文件
+    QUrl nextUrl = url;
+    nextUrl.setPath(path);
 
     if (url.userInfo().startsWith("originPath::")) {
         nextUrl.setUserInfo(url.userInfo() + QString::fromLatin1("/") + QString::fromLatin1(fileName));
