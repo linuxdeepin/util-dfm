@@ -13,7 +13,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
 option(OPT_ENABLE_QT6 "Use Qt6" ON)
 set(DFM_BUILD_WITH_QT6 FALSE)
 
-include(GNUInstallDirs)
 
 if(OPT_ENABLE_QT6)
     find_package(Qt6 QUIET)
@@ -38,5 +37,6 @@ find_package(PkgConfig REQUIRED)
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX /usr)
 endif ()
+include(GNUInstallDirs)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
