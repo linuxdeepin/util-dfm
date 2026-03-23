@@ -40,3 +40,10 @@ endif ()
 include(GNUInstallDirs)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
+
+# Unit tests (requires Qt Test, enabled by default)
+# option(BUILD_UNIT_TESTS is defined in autotests/CMakeLists.txt)
+add_subdirectory(${PROJECT_SOURCE_DIR}/autotests)
+
+# Legacy tests (temporarily disabled)
+# add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
