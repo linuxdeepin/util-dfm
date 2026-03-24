@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -8,7 +8,7 @@ class tst_DfmSearch : public QObject
 {
     Q_OBJECT
 
-private Q_SLOTS:
+public Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void initialization_test();
@@ -30,5 +30,9 @@ void tst_DfmSearch::initialization_test()
     QVERIFY(true);
 }
 
-QTEST_MAIN(tst_DfmSearch)
+QObject *create_tst_DfmSearch()
+{
+    return new tst_DfmSearch();
+}
+
 #include "tst_dfm_search.moc"
