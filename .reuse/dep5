@@ -38,16 +38,6 @@ Files: misc/dfm-*/dfm-*Config.cmake.in
 Copyright: UnionTech Software Technology Co., Ltd.
 License: GPL-3.0-or-later
 
-# cpp-stub
-Files: tests/3rdparty/utils/cpp-stub/*
-Copyright: 2019 coolxv
-License: MIT
-
-# stub-ext
-Files: tests/3rdparty/utils/stub-ext/*
-Copyright: 2020 Zhang Yu
-License: MIT
-
 # udfclient
 Files: src/dfm-burn/3rdparty/udfclient/*
 Copyright: Reinoud Zandijk <reinoud@netbsd.org>
