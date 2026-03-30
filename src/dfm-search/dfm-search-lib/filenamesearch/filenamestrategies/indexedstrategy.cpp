@@ -726,6 +726,15 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         }
     }
 
+    // Filter hidden files at query level to avoid losing results due to maxResults limit
+    if (hasValidQuery && Q_LIKELY(!m_options.includeHidden())) {
+        QueryPtr hiddenQuery = Lucene::newLucene<Lucene::TermQuery>(
+                Lucene::newLucene<Lucene::Term>(
+                        Lucene::StringUtils::toUnicode("is_hidden"),
+                        Lucene::StringUtils::toUnicode("Y")));
+        finalQuery->add(hiddenQuery, Lucene::BooleanClause::MUST_NOT);
+    }
+
     return hasValidQuery ? finalQuery : nullptr;
 }
 
