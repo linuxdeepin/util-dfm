@@ -22,6 +22,7 @@
 #include "utils/lucenequeryutils.h"
 #include "utils/searchutility.h"
 #include "utils/lucene_cancellation_compat.h"
+#include "utils/lucene_field_names.h"
 
 using namespace Lucene;
 
@@ -69,7 +70,7 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
 
         Lucene::QueryParserPtr contentsParser = newLucene<Lucene::QueryParser>(
                 Lucene::LuceneVersion::LUCENE_CURRENT,
-                L"contents",
+                LuceneFieldNames::Content::kContents,
                 analyzer);
 
         Lucene::QueryPtr mainQuery;
@@ -99,7 +100,8 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
         // Add path prefix query optimization
         if (mainQuery && SearchUtility::isContentIndexAncestorPathsSupported()
             && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
-            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath, "ancestor_paths");
+            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath,
+                                                                              QString::fromWCharArray(LuceneFieldNames::Content::kAncestorPaths));
             if (pathPrefixQuery) {
                 BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
                 finalQuery->add(mainQuery, BooleanClause::MUST);
@@ -126,7 +128,7 @@ QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query,
     // It requires its own filenameParser.
     Lucene::QueryParserPtr filenameParser = newLucene<Lucene::QueryParser>(
             Lucene::LuceneVersion::LUCENE_CURRENT,
-            L"filename",
+            LuceneFieldNames::Content::kFilename,
             analyzer);
 
     Lucene::BooleanQueryPtr overallQuery = newLucene<Lucene::BooleanQuery>();
@@ -259,7 +261,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             // Safely get path
             Lucene::String pathField;
             try {
-                pathField = doc->get(L"path");
+                pathField = doc->get(LuceneFieldNames::Content::kPath);
                 if (pathField.empty()) {
                     qWarning() << "Document missing path field at index:" << scoreDoc->doc;
                     continue;
@@ -283,7 +285,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             // Safely check hidden status
             if (Q_LIKELY(!m_options.includeHidden())) {
                 try {
-                    Lucene::String hiddenField = doc->get(L"is_hidden");
+                    Lucene::String hiddenField = doc->get(LuceneFieldNames::Content::kIsHidden);
                     if (!hiddenField.empty() && QString::fromStdWString(hiddenField).toLower() == "y") {
                         continue;
                     }
@@ -303,7 +305,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             if (enableRetrieval) {
                 try {
                     // Safely get contents with null check
-                    Lucene::String contentField = doc->get(L"contents");
+                    Lucene::String contentField = doc->get(LuceneFieldNames::Content::kContents);
                     if (!contentField.empty()) {
                         const QString content = QString::fromStdWString(contentField);
                         const QString highlightedContent = ContentHighlighter::customHighlight(m_keywords, content, previewLen, enableHTML);

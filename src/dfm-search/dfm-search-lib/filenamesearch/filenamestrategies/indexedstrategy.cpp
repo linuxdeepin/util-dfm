@@ -5,6 +5,7 @@
 #include "utils/cancellablecollector.h"
 #include "utils/searchutility.h"
 #include "utils/lucenequeryutils.h"
+#include "utils/lucene_field_names.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -39,7 +40,7 @@ Lucene::QueryPtr QueryBuilder::buildTypeQuery(const QStringList &types) const
         QString cleanType = type.trimmed().toLower();
         if (!cleanType.isEmpty()) {
             QueryPtr termQuery = newLucene<TermQuery>(
-                    newLucene<Term>(L"file_type",
+                    newLucene<Term>(LuceneFieldNames::FileName::kFileType,
                                     StringUtils::toUnicode(cleanType.toStdString())));
             typeQuery->add(termQuery, BooleanClause::SHOULD);
         }
@@ -60,7 +61,7 @@ Lucene::QueryPtr QueryBuilder::buildExtQuery(const QStringList &extensions) cons
         QString cleanExt = ext.trimmed().toLower();
         if (!cleanExt.isEmpty()) {
             QueryPtr termQuery = newLucene<TermQuery>(
-                    newLucene<Term>(L"file_ext",
+                    newLucene<Term>(LuceneFieldNames::FileName::kFileExt,
                                     StringUtils::toUnicode(cleanExt.toStdString())));
             extQuery->add(termQuery, BooleanClause::SHOULD);
         }
@@ -81,7 +82,8 @@ Lucene::QueryPtr QueryBuilder::buildPinyinQuery(const QStringList &pinyins, Sear
         QString cleanPinyin = pinyin.trimmed();
         if (!cleanPinyin.isEmpty() && Global::isPinyinSequence(cleanPinyin)) {
             // 复用buildCommonQuery，指定pinyin字段，让分析器自动处理匹配
-            QueryPtr termQuery = buildCommonQuery(cleanPinyin, false, newLucene<ChineseAnalyzer>(), "pinyin", false);
+            QueryPtr termQuery = buildCommonQuery(cleanPinyin, false, newLucene<ChineseAnalyzer>(),
+                                                  QString::fromWCharArray(LuceneFieldNames::FileName::kPinyin), false);
             if (termQuery) {
                 pinyinQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
             }
@@ -103,7 +105,9 @@ Lucene::QueryPtr QueryBuilder::buildPinyinAcronymQuery(const QStringList &acrony
         QString cleanAcronym = acronym.trimmed();
         if (!cleanAcronym.isEmpty()) {
             // 复用buildCommonQuery，指定pinyin_acronym字段，让分析器自动处理匹配
-            QueryPtr termQuery = buildCommonQuery(cleanAcronym, false, newLucene<ChineseAnalyzer>(), "pinyin_acronym", false);
+            QueryPtr termQuery = buildCommonQuery(cleanAcronym, false,
+                                                  newLucene<ChineseAnalyzer>(),
+                                                  QString::fromWCharArray(LuceneFieldNames::FileName::kPinyinAcronym), false);
             if (termQuery) {
                 acronymQuery->add(termQuery, op == SearchQuery::BooleanOperator::AND ? BooleanClause::MUST : BooleanClause::SHOULD);
             }
@@ -121,7 +125,7 @@ Lucene::QueryPtr QueryBuilder::buildCommonQuery(const QString &keyword, bool cas
 
     Lucene::QueryParserPtr parser = newLucene<Lucene::QueryParser>(
             Lucene::LuceneVersion::LUCENE_CURRENT,
-            L"file_name",
+            LuceneFieldNames::FileName::kFileName,
             analyzer);
 
     if (allowWildcard) {
@@ -160,12 +164,12 @@ Lucene::QueryPtr QueryBuilder::buildWildcardQuery(const QString &keyword, bool c
         return nullptr;
     }
 
-    // 对于通配符查询，使用file_name_lower字段（非分词）而非file_name（分词）
+    // 对于通配符查询，使用 file_name_lower 字段（非分词）而非 file_name（分词）
     QString processedKeyword = caseSensitive ? keyword : keyword.toLower();
 
     // 直接构建WildcardQuery，不使用QueryParser避免分词干扰
     return newLucene<WildcardQuery>(
-            newLucene<Term>(L"file_name_lower",
+            newLucene<Term>(LuceneFieldNames::FileName::kFileNameLower,
                             StringUtils::toUnicode(processedKeyword.toStdString())));
 }
 
@@ -530,7 +534,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
         try {
             ScoreDocPtr scoreDoc = scoreDocs[i];
             DocumentPtr doc = searcher->doc(scoreDoc->doc);
-            QString path = QString::fromStdWString(doc->get(L"full_path"));
+            QString path = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFullPath));
 
             if (!path.startsWith(searchPath)) {
                 continue;
@@ -542,15 +546,15 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
             }
 
             if (Q_LIKELY(!m_options.includeHidden())) {
-                if (QString::fromStdWString(doc->get(L"is_hidden")).toLower() == "y")
+                if (QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kIsHidden)).toLower() == "y")
                     continue;
             }
 
             // 处理搜索结果
             if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
-                QString type = QString::fromStdWString(doc->get(L"file_type"));
-                QString time = QString::fromStdWString(doc->get(L"modify_time_str"));
-                QString size = QString::fromStdWString(doc->get(L"file_size_str"));
+                QString type = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileType));
+                QString time = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kModifyTimeStr));
+                QString size = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileSizeStr));
                 m_results.append(processSearchResult(path, type, time, size));
             } else {
                 // perf: quickly
@@ -719,7 +723,8 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     // Add path prefix query optimization
     if (hasValidQuery && SearchUtility::isFilenameIndexAncestorPathsSupported()
         && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
-        QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath, "ancestor_paths");
+        QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath,
+                                                                          QString::fromWCharArray(LuceneFieldNames::FileName::kAncestorPaths));
         if (pathPrefixQuery) {
             finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
             qInfo() << "Using path prefix query for optimization:" << searchPath;
@@ -730,7 +735,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     if (hasValidQuery && Q_LIKELY(!m_options.includeHidden())) {
         QueryPtr hiddenQuery = Lucene::newLucene<Lucene::TermQuery>(
                 Lucene::newLucene<Lucene::Term>(
-                        Lucene::StringUtils::toUnicode("is_hidden"),
+                        LuceneFieldNames::FileName::kIsHidden,
                         Lucene::StringUtils::toUnicode("Y")));
         finalQuery->add(hiddenQuery, Lucene::BooleanClause::MUST_NOT);
     }
