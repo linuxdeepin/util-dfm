@@ -621,9 +621,9 @@ bool isContentIndexAvailable()
 
 QString contentIndexDirectory()
 {
-    QString configDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
-    QDir deepinDir(configDir);
-    QString indexPath = deepinDir.filePath("deepin/dde-file-manager/index");
+    QString dataDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    QDir deepinDir(dataDir);
+    QString indexPath = deepinDir.filePath("deepin/dde-file-manager/fulltext-index");
     return indexPath;
 }
 
