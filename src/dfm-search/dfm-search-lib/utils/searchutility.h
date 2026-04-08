@@ -54,6 +54,13 @@ bool isFilenameIndexAncestorPathsSupported();
  */
 bool isContentIndexAncestorPathsSupported();
 
+/**
+ * @brief Check if the OCR text index supports the ancestor_paths field.
+ * This function checks the OCR text index version and returns true if the version supports ancestor_paths.
+ * @return true if the OCR text index supports ancestor_paths, false otherwise.
+ */
+bool isOcrTextIndexAncestorPathsSupported();
+
 }   // namespace SearchUtility
 DFM_SEARCH_END_NS
 

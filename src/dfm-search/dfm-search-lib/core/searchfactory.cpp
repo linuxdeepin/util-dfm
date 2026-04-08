@@ -17,8 +17,11 @@ SearchEngine *SearchFactory::createEngine(SearchType type, QObject *parent)
     case SearchType::Content:
         engine = new SearchEngine(type, parent);
         break;
+    case SearchType::Ocr:
+        engine = new SearchEngine(type, parent);
+        break;
     case SearchType::Custom:
-        // TODO: 由应用程序基于provider自行创建
+        // TODO: Created by application based on provider
         break;
     }
 

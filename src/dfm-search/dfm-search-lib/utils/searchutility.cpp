@@ -28,6 +28,7 @@ namespace Global {
 namespace IndexVersionThresholds {
 constexpr int FILENAME_ANCESTOR_PATHS = 3;
 constexpr int CONTENT_ANCESTOR_PATHS = 1;
+constexpr int OCRTEXT_ANCESTOR_PATHS = 1;
 }
 
 /**
@@ -627,6 +628,57 @@ QString contentIndexDirectory()
     return indexPath;
 }
 
+QString ocrTextIndexDirectory()
+{
+    QString dataDir =
+            QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    QDir deepinDir(dataDir);
+    QString indexPath = deepinDir.filePath("deepin/dde-file-manager/ocrtext-index");
+    return indexPath;
+}
+
+bool isPathInOcrTextIndexDirectory(const QString &path)
+{
+    if (!isOcrTextIndexAvailable())
+        return false;
+
+    const QStringList &dirs = defaultIndexedDirectory();
+    return std::any_of(dirs.cbegin(), dirs.cend(),
+                       [&path](const QString &dir) { return path.startsWith(dir); });
+}
+
+bool isOcrTextIndexAvailable()
+{
+    const QString &dir = ocrTextIndexDirectory();
+    if (!IndexReader::indexExists(FSDirectory::open(dir.toStdWString())))
+        return false;
+
+    const QString &statusFile = dir + "/index_status.json";
+
+    // 1. 尝试打开文件
+    QFile file(statusFile);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return false;   // 文件无法打开
+    }
+
+    // 2. 读取并解析 JSON
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    if (doc.isNull() || !doc.isObject()) {
+        return false;   // JSON 格式无效
+    }
+
+    // 3. 检查 lastUpdateTime 字段
+    QJsonObject obj = doc.object();
+    if (!obj.contains("lastUpdateTime")) {
+        return false;   // 字段不存在
+    }
+
+    const QString lastUpdateTime = obj["lastUpdateTime"].toString();
+    return !lastUpdateTime.isEmpty();   // 字段值非空则为有效
+}
+
 bool isPathInFileNameIndexDirectory(const QString &path)
 {
     if (!isFileNameIndexDirectoryAvailable())
@@ -740,6 +792,11 @@ int contentIndexVersion()
     return readIndexVersion(contentIndexDirectory(), "index_status.json");
 }
 
+int ocrTextIndexVersion()
+{
+    return readIndexVersion(ocrTextIndexDirectory(), "index_status.json");
+}
+
 }   //  namespace Global
 
 namespace SearchUtility {
@@ -752,6 +809,11 @@ bool isFilenameIndexAncestorPathsSupported()
 bool isContentIndexAncestorPathsSupported()
 {
     return Global::contentIndexVersion() > Global::IndexVersionThresholds::CONTENT_ANCESTOR_PATHS;
+}
+
+bool isOcrTextIndexAncestorPathsSupported()
+{
+    return Global::ocrTextIndexVersion() > Global::IndexVersionThresholds::OCRTEXT_ANCESTOR_PATHS;
 }
 
 QStringList extractBooleanKeywords(const SearchQuery &query)
