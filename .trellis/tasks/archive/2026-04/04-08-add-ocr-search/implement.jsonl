@@ -1,0 +1,5 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/dfm-search/error-handling.md", "reason": "错误处理规范"}
+{"file": ".trellis/spec/dfm-search/naming-conventions.md", "reason": "命名规范"}
+{"file": ".trellis/spec/shared/cpp-conventions.md", "reason": "C++编码约定"}
