@@ -52,5 +52,12 @@ debian/libdfm-burn-dev/*
 debian/*.log
 debian/*.substvars
 debian/files
+
+# ai
+CLAUDE.md
+AGENTS.md
 .cursor
+.trellis
+.claude
+.agents
 
