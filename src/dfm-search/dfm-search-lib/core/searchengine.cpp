@@ -9,6 +9,7 @@
 
 #include "contentsearch/contentsearchengine.h"
 #include "filenamesearch/filenamesearchengine.h"
+#include "ocrtextsearch/ocrtextsearchengine.h"
 
 DFM_SEARCH_BEGIN_NS
 
@@ -56,6 +57,9 @@ void SearchEngine::setSearchType(SearchType type)
         break;
     case SearchType::Content:
         d_ptr = std::make_unique<ContentSearchEngine>();
+        break;
+    case SearchType::Ocr:
+        d_ptr = std::make_unique<OcrTextSearchEngine>();
         break;
     default:
         qWarning("Unsupported search type: %d", static_cast<int>(type));

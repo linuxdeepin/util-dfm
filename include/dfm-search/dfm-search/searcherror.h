@@ -57,6 +57,16 @@ enum class ContentSearchErrorCode {
     ContentIndexException   // An exception occurred with the content index
 };
 
+// Enumeration for OCR text search specific error codes
+enum class OcrTextSearchErrorCode {
+    KeywordTooShort = 3000,   // The search keyword is too short
+    WildcardNotSupported = 3001,   // Wildcard search is not supported for OCR text search
+
+    // Errors related to OCR text indexing
+    OcrTextIndexNotFound = 3200,   // The OCR text index could not be found
+    OcrTextIndexException   // An exception occurred with the OCR text index
+};
+
 // Base class for search error categories
 class SearchErrorCategory : public std::error_category
 {
@@ -82,10 +92,19 @@ public:
     std::string message(int ev) const override;   // Returns a message corresponding to the content search error code
 };
 
+// Class for OCR text search error categories
+class OcrTextSearchErrorCategory : public SearchErrorCategory
+{
+public:
+    const char *name() const noexcept override { return "ocrtext_search_error"; }   // Returns the name of the OCR text search error category
+    std::string message(int ev) const override;   // Returns a message corresponding to the OCR text search error code
+};
+
 // Functions to get singleton instances of error categories
 const SearchErrorCategory &search_category();   // Returns the singleton instance of the search error category
 const FileNameSearchErrorCategory &filename_search_category();   // Returns the singleton instance of the file name search error category
 const ContentSearchErrorCategory &content_search_category();   // Returns the singleton instance of the content search error category
+const OcrTextSearchErrorCategory &ocrtext_search_category();   // Returns the singleton instance of the OCR text search error category
 
 // Function to create an error code from a SearchErrorCode
 inline std::error_code make_error_code(SearchErrorCode ec)
@@ -105,6 +124,12 @@ inline std::error_code make_error_code(ContentSearchErrorCode ec)
     return std::error_code((int)ec, content_search_category());
 }
 
+// Function to create an error code from a OcrTextSearchErrorCode
+inline std::error_code make_error_code(OcrTextSearchErrorCode ec)
+{
+    return std::error_code((int)ec, ocrtext_search_category());
+}
+
 // Class to wrap search error conditions
 class SearchError
 {
@@ -117,6 +142,8 @@ public:
         : m_code(make_error_code(code)) { }   // Constructor initializes with a FileNameSearchErrorCode
     SearchError(ContentSearchErrorCode code)
         : m_code(make_error_code(code)) { }   // Constructor initializes with a ContentSearchErrorCode
+    SearchError(OcrTextSearchErrorCode code)
+        : m_code(make_error_code(code)) { }   // Constructor initializes with a OcrTextSearchErrorCode
 
     bool isError() const { return m_code.value() != static_cast<int>(SearchErrorCode::Success); }   // Checks if there is an error
     const std::error_code &code() const { return m_code; }   // Returns the error code

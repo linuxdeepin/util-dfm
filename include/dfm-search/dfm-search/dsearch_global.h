@@ -107,6 +107,30 @@ bool isContentIndexAvailable();
 QString contentIndexDirectory();
 
 /**
+ * @brief Check if the specified path is within the OCR text index directory.
+ * This function verifies whether a given file path is located within the designated OCR text index directory,
+ * which is important for ensuring that only relevant files are included in OCR text search operations.
+ * @param path The file path to check.
+ * @return True if the path is within the OCR text index directory, false otherwise.
+ */
+bool isPathInOcrTextIndexDirectory(const QString &path);
+
+/**
+ * @brief Check if the OCR text index is available.
+ * This function checks the status of the OCR text index to determine if it is accessible and ready for search operations.
+ * @return True if the OCR text index is available, false otherwise.
+ */
+bool isOcrTextIndexAvailable();
+
+/**
+ * @brief Get the OCR text index directory path.
+ * This function provides the path to the directory where the OCR text index is stored,
+ * which is essential for performing searches on indexed OCR-extracted text from images.
+ * @return The path to the OCR text index directory.
+ */
+QString ocrTextIndexDirectory();
+
+/**
  * @brief Check if the specified path is within the filename index directory.
  * This function verifies whether a given file path is located within the designated filename index directory,
  * ensuring that only relevant files are included in filename search operations.
@@ -165,12 +189,20 @@ int fileNameIndexVersion();
  */
 int contentIndexVersion();
 
+/**
+ * @brief Get the version of the OCR text index from the JSON configuration file.
+ * This function reads the version field from the OCR text index JSON file and returns it as an integer.
+ * @return The version number of the OCR text index, or -1 if the version cannot be retrieved.
+ */
+int ocrTextIndexVersion();
+
 }   // namespace Global
 
 // Enumeration for different types of search methods
 enum SearchType {
     FileName,   // Search by file name
     Content,   // Search by content within files
+    Ocr,   // Search by OCR-extracted text from images
     Custom = 50   // User-defined search type
 };
 Q_ENUM_NS(SearchType)

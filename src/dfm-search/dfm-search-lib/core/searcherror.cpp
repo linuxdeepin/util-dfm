@@ -75,6 +75,22 @@ std::string ContentSearchErrorCategory::message(int ev) const
     }
 }
 
+std::string OcrTextSearchErrorCategory::message(int ev) const
+{
+    switch (static_cast<OcrTextSearchErrorCode>(ev)) {
+    case OcrTextSearchErrorCode::KeywordTooShort:
+        return "Keyword too short: The search keyword is too short to perform an OCR text search. Please provide a longer keyword.";
+    case OcrTextSearchErrorCode::WildcardNotSupported:
+        return "Wildcard not supported: Wildcard search is not supported for OCR text search. Please use simple or boolean query instead.";
+    case OcrTextSearchErrorCode::OcrTextIndexNotFound:
+        return "OCR text index not found: The OCR text index could not be found. Please ensure the index is created.";
+    case OcrTextSearchErrorCode::OcrTextIndexException:
+        return "OCR text index exception: An error occurred while accessing the OCR text index. Please check the index integrity.";
+    default:
+        return "Unknown OCR text search error: An unknown error occurred related to OCR text search. Please contact support.";
+    }
+}
+
 // ... 实现其他错误分类的消息方法 ...
 
 // 获取错误分类单例
@@ -93,6 +109,12 @@ const FileNameSearchErrorCategory &filename_search_category()
 const ContentSearchErrorCategory &content_search_category()
 {
     static ContentSearchErrorCategory c;
+    return c;
+}
+
+const OcrTextSearchErrorCategory &ocrtext_search_category()
+{
+    static OcrTextSearchErrorCategory c;
     return c;
 }
 

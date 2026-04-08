@@ -2,10 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "indexedstrategy.h"
-#include "utils/cancellablecollector.h"
-#include "utils/searchutility.h"
-#include "utils/lucenequeryutils.h"
-#include "utils/lucene_field_names.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -16,7 +12,12 @@
 #include <QDebug>
 #include <QElapsedTimer>
 
+#include <dfm-search/field_names.h>
+
 #include "3rdparty/fulltext/chineseanalyzer.h"
+#include "utils/cancellablecollector.h"
+#include "utils/searchutility.h"
+#include "utils/lucenequeryutils.h"
 
 DFM_SEARCH_BEGIN_NS
 

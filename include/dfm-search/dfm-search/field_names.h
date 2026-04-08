@@ -35,6 +35,15 @@ constexpr const wchar_t kIsHidden[] = L"is_hidden";
 constexpr const wchar_t kAncestorPaths[] = L"ancestor_paths";
 }   // namespace Content
 
+// OCR text index field names
+namespace OcrText {
+constexpr const wchar_t kOcrContents[] = L"ocr_contents";
+constexpr const wchar_t kFilename[] = L"filename";
+constexpr const wchar_t kPath[] = L"path";
+constexpr const wchar_t kIsHidden[] = L"is_hidden";
+constexpr const wchar_t kAncestorPaths[] = L"ancestor_paths";
+}   // namespace OcrText
+
 }   // namespace LuceneFieldNames
 
 DFM_SEARCH_END_NS

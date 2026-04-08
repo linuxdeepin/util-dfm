@@ -22,6 +22,7 @@
 #include <dfm-search/searchoptions.h>
 #include <dfm-search/filenamesearchapi.h>
 #include <dfm-search/contentsearchapi.h>
+#include <dfm-search/ocrtextsearchapi.h>
 #include "../dfm-search-lib/utils/filenameblacklistmatcher.h"
 
 #include <iostream>
@@ -69,20 +70,20 @@ void printUsage()
 {
     std::cout << "Usage: dfm6-search-client [options] <keyword> <search_path>" << std::endl;
     std::cout << "Options:" << std::endl;
-    std::cout << "  --type=<filename|content>   Search type (default: filename)" << std::endl;
-    std::cout << "  --method=<indexed|realtime> Search method (default: indexed)" << std::endl;
+    std::cout << "  --type=<filename|content|ocr>  Search type (default: filename)" << std::endl;
+    std::cout << "  --method=<indexed|realtime>    Search method (default: indexed)" << std::endl;
     std::cout << "  --query=<simple|boolean|wildcard> Query type (default: simple)" << std::endl;
-    std::cout << "  --wildcard                  Enable wildcard search with * and ? patterns" << std::endl;
-    std::cout << "  --case-sensitive            Enable case sensitivity" << std::endl;
-    std::cout << "  --include-hidden            Include hidden files" << std::endl;
-    std::cout << "  --pinyin                    Enable pinyin search (for filename search)" << std::endl;
-    std::cout << "  --pinyin-acronym            Enable pinyin acronym search (for filename search)" << std::endl;
-    std::cout << "  --file-types=<types>        Filter by file types, comma separated" << std::endl;
-    std::cout << "  --file-extensions=<exts>    Filter by file extensions, comma separated" << std::endl;
-    std::cout << "  --max-results=<number>      Maximum number of results" << std::endl;
-    std::cout << "  --max-preview=<length>      Max content preview length (for content search)" << std::endl;
-    std::cout << "  --json, -j                  Output results in JSON format" << std::endl;
-    std::cout << "  --help                      Display this help" << std::endl;
+    std::cout << "  --wildcard                     Enable wildcard search with * and ? patterns" << std::endl;
+    std::cout << "  --case-sensitive               Enable case sensitivity" << std::endl;
+    std::cout << "  --include-hidden               Include hidden files" << std::endl;
+    std::cout << "  --pinyin                       Enable pinyin search (for filename search)" << std::endl;
+    std::cout << "  --pinyin-acronym               Enable pinyin acronym search (for filename search)" << std::endl;
+    std::cout << "  --file-types=<types>           Filter by file types, comma separated" << std::endl;
+    std::cout << "  --file-extensions=<exts>       Filter by file extensions, comma separated" << std::endl;
+    std::cout << "  --max-results=<number>         Maximum number of results" << std::endl;
+    std::cout << "  --max-preview=<length>         Max content preview length (for content search)" << std::endl;
+    std::cout << "  --json, -j                     Output results in JSON format" << std::endl;
+    std::cout << "  --help                         Display this help" << std::endl;
 }
 
 void printSearchResult(const SearchResult &result, SearchType searchType)
@@ -103,6 +104,9 @@ void printSearchResult(const SearchResult &result, SearchType searchType)
     } else if (searchType == SearchType::Content) {
         ContentResultAPI contentResult(const_cast<SearchResult &>(result));
         std::cout << "  Content match: " << contentResult.highlightedContent().toStdString() << std::endl;
+    } else if (searchType == SearchType::Ocr) {
+        OcrTextResultAPI ocrResult(const_cast<SearchResult &>(result));
+        std::cout << "  OCR text match" << std::endl;
     }
 
     std::cout << std::endl;
@@ -124,6 +128,11 @@ QJsonValue resultToJson(const SearchResult &result, SearchType searchType)
         ContentResultAPI contentResult(const_cast<SearchResult &>(result));
         obj["contentMatch"] = contentResult.highlightedContent();
         return obj;
+    } else if (searchType == SearchType::Ocr) {
+        // OCR 搜索：返回路径
+        QJsonObject obj;
+        obj["path"] = result.path();
+        return obj;
     }
     return result.path();
 }
@@ -142,10 +151,25 @@ void printJsonSearchStart(const QString &keyword, const QString &searchPath,
     QJsonObject startObj;
     startObj["type"] = "search_started";
 
+    QString searchTypeStr;
+    switch (searchType) {
+    case SearchType::FileName:
+        searchTypeStr = "filename";
+        break;
+    case SearchType::Content:
+        searchTypeStr = "content";
+        break;
+    case SearchType::Ocr:
+        searchTypeStr = "ocr";
+        break;
+    default:
+        searchTypeStr = "unknown";
+    }
+
     QJsonObject searchInfo;
     searchInfo["keyword"] = keyword;
     searchInfo["searchPath"] = searchPath;
-    searchInfo["searchType"] = (searchType == SearchType::FileName ? "filename" : "content");
+    searchInfo["searchType"] = searchTypeStr;
     searchInfo["searchMethod"] = (searchMethod == SearchMethod::Indexed ? "indexed" : "realtime");
     searchInfo["caseSensitive"] = options.caseSensitive();
     searchInfo["includeHidden"] = options.includeHidden();
@@ -205,7 +229,22 @@ void printJsonComplete(const JsonOutputContext &ctx)
     QJsonObject searchInfo;
     searchInfo["keyword"] = ctx.keyword;
     searchInfo["searchPath"] = ctx.searchPath;
-    searchInfo["searchType"] = (ctx.searchType == SearchType::FileName ? "filename" : "content");
+
+    QString searchTypeStr;
+    switch (ctx.searchType) {
+    case SearchType::FileName:
+        searchTypeStr = "filename";
+        break;
+    case SearchType::Content:
+        searchTypeStr = "content";
+        break;
+    case SearchType::Ocr:
+        searchTypeStr = "ocr";
+        break;
+    default:
+        searchTypeStr = "unknown";
+    }
+    searchInfo["searchType"] = searchTypeStr;
     searchInfo["searchMethod"] = (ctx.searchMethod == SearchMethod::Indexed ? "indexed" : "realtime");
     searchInfo["caseSensitive"] = ctx.options.caseSensitive();
     searchInfo["includeHidden"] = ctx.options.includeHidden();
@@ -302,8 +341,10 @@ int main(int argc, char *argv[])
     QString typeStr = parser.value(typeOption);
     if (typeStr == "content") {
         searchType = SearchType::Content;
+    } else if (typeStr == "ocr") {
+        searchType = SearchType::Ocr;
     } else if (typeStr != "filename") {
-        std::cerr << "Error: Invalid search type. Use 'filename' or 'content'" << std::endl;
+        std::cerr << "Error: Invalid search type. Use 'filename', 'content', or 'ocr'" << std::endl;
         return 1;
     }
 
@@ -397,6 +438,9 @@ int main(int argc, char *argv[])
                 contentOptions.setMaxPreviewLength(previewLength);
             }
         }
+    } else if (searchType == SearchType::Ocr) {
+        OcrTextOptionsAPI ocrTextOptions(options);
+        ocrTextOptions.setFilenameOcrContentMixedAndSearchEnabled(true);
     }
 
     engine->setSearchOptions(options);
@@ -549,7 +593,13 @@ int main(int argc, char *argv[])
         // Start search
         std::cout << "Searching for: " << keyword.toStdString() << std::endl;
         std::cout << "In path: " << searchPath.toStdString() << std::endl;
-        std::cout << "Search type: " << (searchType == SearchType::FileName ? "Filename" : "Content") << std::endl;
+
+        QString typeStr = "Filename";
+        if (searchType == SearchType::Content)
+            typeStr = "Content";
+        else if (searchType == SearchType::Ocr)
+            typeStr = "Ocr";
+        std::cout << "Search type: " << typeStr.toStdString() << std::endl;
         std::cout << "Search method: " << (searchMethod == SearchMethod::Indexed ? "Indexed" : "Realtime") << std::endl;
 
         // Print file extensions if set
