@@ -578,14 +578,44 @@ QStringList defaultBlacklistPaths()
     return pathsFromDConfig;
 }
 
+/**
+ * @brief Check if a path is within any of the specified directories.
+ * @param path The path to check
+ * @param dirs The directories to check against
+ * @return true if the path is within any of the directories, false otherwise
+ */
+static bool isPathInAnyDirectory(const QString &path, const QStringList &dirs)
+{
+    // Normalize the path once (it doesn't change during iteration)
+    QString normalizedPath = path;
+    if (normalizedPath.endsWith('/') && normalizedPath.length() > 1) {
+        normalizedPath.chop(1);
+    }
+
+    return std::any_of(dirs.cbegin(), dirs.cend(), [&normalizedPath](const QString &dir) {
+        QString normalizedDir = dir;
+
+        if (normalizedDir.endsWith('/') && normalizedDir.length() > 1) {
+            normalizedDir.chop(1);
+        }
+
+        // Exact match - the path is the indexed directory itself
+        if (normalizedPath == normalizedDir) {
+            return true;
+        }
+
+        // Check if path is within the directory by ensuring proper path separation
+        const QString dirWithSeparator = normalizedDir + '/';
+        return normalizedPath.startsWith(dirWithSeparator);
+    });
+}
+
 bool isPathInContentIndexDirectory(const QString &path)
 {
     if (!isContentIndexAvailable())
         return false;
 
-    const QStringList &dirs = defaultIndexedDirectory();
-    return std::any_of(dirs.cbegin(), dirs.cend(),
-                       [&path](const QString &dir) { return path.startsWith(dir); });
+    return isPathInAnyDirectory(path, defaultIndexedDirectory());
 }
 
 bool isContentIndexAvailable()
@@ -642,9 +672,7 @@ bool isPathInOcrTextIndexDirectory(const QString &path)
     if (!isOcrTextIndexAvailable())
         return false;
 
-    const QStringList &dirs = defaultIndexedDirectory();
-    return std::any_of(dirs.cbegin(), dirs.cend(),
-                       [&path](const QString &dir) { return path.startsWith(dir); });
+    return isPathInAnyDirectory(path, defaultIndexedDirectory());
 }
 
 bool isOcrTextIndexAvailable()
@@ -687,9 +715,7 @@ bool isPathInFileNameIndexDirectory(const QString &path)
     if (BlacklistMatcher::isPathBlacklisted(path, defaultBlacklistPaths()))
         return false;
 
-    const QStringList &dirs = defaultIndexedDirectory();
-    return std::any_of(dirs.cbegin(), dirs.cend(),
-                       [&path](const QString &dir) { return path.startsWith(dir); });
+    return isPathInAnyDirectory(path, defaultIndexedDirectory());
 }
 
 bool isFileNameIndexDirectoryAvailable()
