@@ -87,7 +87,6 @@ public:
     GFileInfo *gfileinfo { nullptr };
     std::atomic_bool initFinished { false };
     std::atomic_bool infoReseted { false };
-    std::atomic_bool isQuquerying { false };
     GCancellable *gcancellable { nullptr };
 
     QFuture<void> futureRefresh;
@@ -96,7 +95,7 @@ public:
     QMap<DFileInfo::AttributeID, QVariant> caches;
     std::atomic_bool cacheing { false };
     std::atomic_bool refreshing { false };
-    QMutex mutex;
+    mutable QMutex mutex;
 
     DFMIOError error;
 };
