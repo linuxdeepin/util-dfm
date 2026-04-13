@@ -615,7 +615,8 @@ bool isPathInContentIndexDirectory(const QString &path)
     if (!isContentIndexAvailable())
         return false;
 
-    return isPathInAnyDirectory(path, defaultIndexedDirectory());
+    static const QStringList &kDirs = DFMSEARCH::Global::defaultIndexedDirectory();
+    return isPathInAnyDirectory(path, kDirs);
 }
 
 bool isContentIndexAvailable()
@@ -672,7 +673,8 @@ bool isPathInOcrTextIndexDirectory(const QString &path)
     if (!isOcrTextIndexAvailable())
         return false;
 
-    return isPathInAnyDirectory(path, defaultIndexedDirectory());
+    static const QStringList &kDirs = DFMSEARCH::Global::defaultIndexedDirectory();
+    return isPathInAnyDirectory(path, kDirs);
 }
 
 bool isOcrTextIndexAvailable()
@@ -712,10 +714,12 @@ bool isPathInFileNameIndexDirectory(const QString &path)
     if (!isFileNameIndexDirectoryAvailable())
         return false;
 
-    if (BlacklistMatcher::isPathBlacklisted(path, defaultBlacklistPaths()))
+    static const QStringList &kBlackPaths = defaultBlacklistPaths();
+    if (BlacklistMatcher::isPathBlacklisted(path, kBlackPaths))
         return false;
 
-    return isPathInAnyDirectory(path, defaultIndexedDirectory());
+    static const QStringList &kIndexedDirs = DFMSEARCH::Global::defaultIndexedDirectory();
+    return isPathInAnyDirectory(path, kIndexedDirs);
 }
 
 bool isFileNameIndexDirectoryAvailable()
