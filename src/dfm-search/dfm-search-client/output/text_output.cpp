@@ -59,6 +59,13 @@ void TextOutput::outputSearchStarted()
 
 void TextOutput::printSearchResult(const SearchResult &result)
 {
+    // 非详细模式下只输出路径
+    if (!m_verbose) {
+        std::cout << result.path().toStdString() << std::endl;
+        return;
+    }
+
+    // 详细模式下输出所有信息
     std::cout << "Found: " << result.path().toStdString() << std::endl;
 
     if (m_searchType == SearchType::FileName) {
@@ -71,13 +78,89 @@ void TextOutput::printSearchResult(const SearchResult &result)
             std::cout << "  Size: " << resultAPI.size().toStdString() << " bytes" << std::endl;
         }
 
-        std::cout << "  Modified: " << resultAPI.modifiedTime().toStdString() << std::endl;
+        // 文件名和扩展名
+        QString filename = resultAPI.filename();
+        if (!filename.isEmpty()) {
+            std::cout << "  Filename: " << filename.toStdString() << std::endl;
+        }
+        QString ext = resultAPI.fileExtension();
+        if (!ext.isEmpty()) {
+            std::cout << "  Extension: " << ext.toStdString() << std::endl;
+        }
+
+        // 隐藏状态
+        std::cout << "  Hidden: " << (resultAPI.isHidden() ? "Yes" : "No") << std::endl;
+
+        // 修改时间（同时输出时间戳和时间字符串）
+        qint64 modifyTs = resultAPI.modifyTimestamp();
+        if (modifyTs > 0) {
+            std::cout << "  Modified: " << resultAPI.modifyTimeString().toStdString()
+                      << " (timestamp: " << modifyTs << ")" << std::endl;
+        }
+
+        // 创建时间（同时输出时间戳和时间字符串）
+        qint64 birthTs = resultAPI.birthTimestamp();
+        if (birthTs > 0) {
+            std::cout << "  Created: " << resultAPI.birthTimeString().toStdString()
+                      << " (timestamp: " << birthTs << ")" << std::endl;
+        }
     } else if (m_searchType == SearchType::Content) {
-        ContentResultAPI contentResult(const_cast<SearchResult &>(result));
-        std::cout << "  Content match: " << contentResult.highlightedContent().toStdString() << std::endl;
+        ContentResultAPI resultAPI(const_cast<SearchResult &>(result));
+
+        std::cout << "  Content match: " << resultAPI.highlightedContent().toStdString() << std::endl;
+
+        // 文件名
+        QString filename = resultAPI.filename();
+        if (!filename.isEmpty()) {
+            std::cout << "  Filename: " << filename.toStdString() << std::endl;
+        }
+
+        // 隐藏状态
+        std::cout << "  Hidden: " << (resultAPI.isHidden() ? "Yes" : "No") << std::endl;
+
+        // 修改时间
+        qint64 modifyTs = resultAPI.modifyTimestamp();
+        if (modifyTs > 0) {
+            std::cout << "  Modified: " << resultAPI.modifyTimeString().toStdString()
+                      << " (timestamp: " << modifyTs << ")" << std::endl;
+        }
+
+        // 创建时间
+        qint64 birthTs = resultAPI.birthTimestamp();
+        if (birthTs > 0) {
+            std::cout << "  Created: " << resultAPI.birthTimeString().toStdString()
+                      << " (timestamp: " << birthTs << ")" << std::endl;
+        }
     } else if (m_searchType == SearchType::Ocr) {
-        OcrTextResultAPI ocrResult(const_cast<SearchResult &>(result));
-        std::cout << "  OCR text match" << std::endl;
+        OcrTextResultAPI resultAPI(const_cast<SearchResult &>(result));
+
+        QString ocrContent = resultAPI.ocrContent();
+        if (!ocrContent.isEmpty()) {
+            std::cout << "  OCR content: " << ocrContent.toStdString() << std::endl;
+        }
+
+        // 文件名
+        QString filename = resultAPI.filename();
+        if (!filename.isEmpty()) {
+            std::cout << "  Filename: " << filename.toStdString() << std::endl;
+        }
+
+        // 隐藏状态
+        std::cout << "  Hidden: " << (resultAPI.isHidden() ? "Yes" : "No") << std::endl;
+
+        // 修改时间
+        qint64 modifyTs = resultAPI.modifyTimestamp();
+        if (modifyTs > 0) {
+            std::cout << "  Modified: " << resultAPI.modifyTimeString().toStdString()
+                      << " (timestamp: " << modifyTs << ")" << std::endl;
+        }
+
+        // 创建时间
+        qint64 birthTs = resultAPI.birthTimestamp();
+        if (birthTs > 0) {
+            std::cout << "  Created: " << resultAPI.birthTimeString().toStdString()
+                      << " (timestamp: " << birthTs << ")" << std::endl;
+        }
     }
 
     std::cout << std::endl;

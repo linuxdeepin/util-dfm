@@ -28,6 +28,9 @@ CliOptions::CliOptions()
     , m_jsonOption(QStringList() << "json"
                                  << "j",
                     "Output results in JSON format")
+    , m_verboseOption(QStringList() << "verbose"
+                                    << "v",
+                      "Enable verbose output with detailed result information")
     , m_timeFieldOption(QStringList() << "time-field", "Time field to filter (birth or modify)", "field", "modify")
     , m_timeLastOption(QStringList() << "time-last", "Rolling time window (e.g., 3d, 2h, 30m)", "duration")
     , m_timeTodayOption(QStringList() << "time-today", "Filter files from today")
@@ -62,6 +65,7 @@ void CliOptions::setupOptions()
     m_parser.addOption(m_maxPreviewOption);
     m_parser.addOption(m_wildcardOption);
     m_parser.addOption(m_jsonOption);
+    m_parser.addOption(m_verboseOption);
 
     // 时间范围过滤选项
     m_parser.addOption(m_timeFieldOption);
@@ -122,6 +126,7 @@ void CliOptions::printHelp() const
     std::cout << std::endl;
     std::cout << "Output Options:" << std::endl;
     std::cout << "  --json, -j                     Output results in JSON format" << std::endl;
+    std::cout << "  --verbose, -v                  Enable verbose output with detailed result information" << std::endl;
     std::cout << "  --help                         Display this help" << std::endl;
     std::cout << std::endl;
     std::cout << "Examples:" << std::endl;
@@ -195,6 +200,7 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
     config.pinyinEnabled = m_parser.isSet(m_pinyinOption);
     config.pinyinAcronymEnabled = m_parser.isSet(m_pinyinAcronymOption);
     config.jsonOutput = m_parser.isSet(m_jsonOption);
+    config.verbose = m_parser.isSet(m_verboseOption);
 
     // 解析过滤选项
     if (m_parser.isSet(m_fileTypesOption)) {

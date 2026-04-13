@@ -93,8 +93,8 @@ private:
     // 构建布尔查询的辅助方法
     BooleanQueryPtr buildBooleanTermsQuery(const IndexQuery &query, const AnalyzerPtr &analyzer) const;
 
-    // 处理搜索结果
-    SearchResult processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size);
+    // 处理详细搜索结果（读取所有索引字段）
+    SearchResult processDetailedSearchResult(const QString &path, const Lucene::DocumentPtr &doc);
 
     // 成员变量
     QString m_indexDir;   // 索引目录路径

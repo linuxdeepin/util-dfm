@@ -55,6 +55,12 @@ public:
     virtual void outputSearchCancelled() = 0;
 
     /**
+     * @brief 设置是否启用详细输出模式
+     * @param verbose true 启用详细输出， false 只禁用简易输出
+     */
+    virtual void setVerbose(bool verbose) = 0;
+
+    /**
      * @brief 输出错误
      */
     virtual void outputError(const DFMSEARCH::SearchError &error) = 0;

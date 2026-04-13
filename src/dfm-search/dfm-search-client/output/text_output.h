@@ -47,6 +47,12 @@ public:
      */
     void setSearchOptions(const SearchOptions &options) { m_options = options; }
 
+    /**
+     * @brief 设置是否启用详细输出模式
+     * @param verbose true 启用详细输出， false 只输出路径
+     */
+    void setVerbose(bool verbose) { m_verbose = verbose; }
+
 private:
     void printSearchResult(const SearchResult &result);
 
@@ -59,6 +65,7 @@ private:
     QString m_fileExtensionsFilter;
     bool m_hasTimeFilter = false;
     DFMSEARCH::TimeRangeFilter m_timeFilter;
+    bool m_verbose = false;
 };
 
 }   // namespace dfmsearch

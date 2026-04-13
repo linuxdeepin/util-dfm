@@ -36,6 +36,7 @@ struct SearchCliConfig
     bool pinyinAcronymEnabled = false;
     bool wildcardEnabled = false;
     bool jsonOutput = false;
+    bool verbose = false;   // 详细输出模式
 
     // 过滤选项
     QStringList fileTypes;
@@ -94,6 +95,7 @@ private:
     QCommandLineOption m_maxPreviewOption;
     QCommandLineOption m_wildcardOption;
     QCommandLineOption m_jsonOption;
+    QCommandLineOption m_verboseOption;
 
     // 时间范围过滤选项
     QCommandLineOption m_timeFieldOption;

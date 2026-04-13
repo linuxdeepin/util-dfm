@@ -107,6 +107,9 @@ private:
  *
  * This class extends the base SearchResult with content search specific features,
  * such as highlighted content preview.
+ *
+ * When detailed results are enabled, this API provides access to additional
+ * metadata including filename, hidden status, and time information.
  */
 class ContentResultAPI
 {
@@ -116,6 +119,8 @@ public:
      * @param result The SearchResult object to operate on
      */
     ContentResultAPI(SearchResult &result);
+
+    // ==================== Content Attributes ====================
 
     /**
      * @brief Get the highlighted content preview
@@ -128,6 +133,72 @@ public:
      * @param content The highlighted content to set
      */
     void setHighlightedContent(const QString &content);
+
+    // ==================== Extended Attributes ====================
+
+    /**
+     * @brief Get the file name (without path)
+     * @return The file name
+     */
+    QString filename() const;
+
+    /**
+     * @brief Set the file name
+     * @param name The file name to set
+     */
+    void setFilename(const QString &name);
+
+    /**
+     * @brief Check if the file is hidden
+     * @return true if the file is hidden, false otherwise
+     */
+    bool isHidden() const;
+
+    /**
+     * @brief Set whether the file is hidden
+     * @param hidden true if the file is hidden, false otherwise
+     */
+    void setIsHidden(bool hidden);
+
+    // ==================== Modification Time ====================
+
+    /**
+     * @brief Set the modification time timestamp
+     * @param timestamp Unix timestamp in seconds
+     */
+    void setModifyTimestamp(qint64 timestamp);
+
+    /**
+     * @brief Get the modification time timestamp
+     * @return Unix timestamp in seconds, 0 if not set
+     */
+    qint64 modifyTimestamp() const;
+
+    /**
+     * @brief Get the modification time as a formatted string
+     * @return Formatted time string (yyyy-MM-dd HH:mm:ss)
+     */
+    QString modifyTimeString() const;
+
+    // ==================== Birth/Creation Time ====================
+
+    /**
+     * @brief Set the birth/creation time timestamp
+     * @param timestamp Unix timestamp in seconds
+     */
+    void setBirthTimestamp(qint64 timestamp);
+
+    /**
+     * @brief Get the birth/creation time timestamp
+     * @return Unix timestamp in seconds, 0 if not set
+     */
+    qint64 birthTimestamp() const;
+
+    /**
+     * @brief Get the birth/creation time as a formatted string
+     * @return Formatted time string (yyyy-MM-dd HH:mm:ss)
+     */
+    QString birthTimeString() const;
 
 private:
     SearchResult &m_result;

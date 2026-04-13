@@ -24,20 +24,126 @@ void JsonOutput::setSearchContext(const QString &keyword, const QString &searchP
 
 QJsonValue JsonOutput::resultToJson(const SearchResult &result)
 {
-    if (m_searchType == SearchType::FileName) {
-        // 文件名搜索：直接返回路径字符串
+    // 如果不启用详细结果，只返回路径
+    if (!m_options.detailedResultsEnabled()) {
         return result.path();
+    }
+
+    if (m_searchType == SearchType::FileName) {
+        // 文件名搜索：返回详细对象
+        QJsonObject obj;
+        obj["path"] = result.path();
+
+        FileNameResultAPI resultAPI(const_cast<SearchResult &>(result));
+        obj["isDirectory"] = resultAPI.isDirectory();
+
+        if (!resultAPI.isDirectory()) {
+            obj["fileType"] = resultAPI.fileType();
+            obj["size"] = resultAPI.size();
+        }
+
+        QString filename = resultAPI.filename();
+        if (!filename.isEmpty()) {
+            obj["filename"] = filename;
+        }
+
+        QString ext = resultAPI.fileExtension();
+        if (!ext.isEmpty()) {
+            obj["extension"] = ext;
+        }
+
+        obj["isHidden"] = resultAPI.isHidden();
+
+        // 修改时间（包含时间戳和时间字符串）
+        qint64 modifyTs = resultAPI.modifyTimestamp();
+        if (modifyTs > 0) {
+            QJsonObject modifyTimeObj;
+            modifyTimeObj["timestamp"] = modifyTs;
+            modifyTimeObj["formatted"] = resultAPI.modifyTimeString();
+            obj["modifyTime"] = modifyTimeObj;
+        }
+
+        // 创建时间（包含时间戳和时间字符串）
+        qint64 birthTs = resultAPI.birthTimestamp();
+        if (birthTs > 0) {
+            QJsonObject birthTimeObj;
+            birthTimeObj["timestamp"] = birthTs;
+            birthTimeObj["formatted"] = resultAPI.birthTimeString();
+            obj["birthTime"] = birthTimeObj;
+        }
+
+        return obj;
     } else if (m_searchType == SearchType::Content) {
         // 内容搜索：返回包含路径和内容匹配的对象
         QJsonObject obj;
         obj["path"] = result.path();
-        ContentResultAPI contentResult(const_cast<SearchResult &>(result));
-        obj["contentMatch"] = contentResult.highlightedContent();
+
+        ContentResultAPI resultAPI(const_cast<SearchResult &>(result));
+        obj["contentMatch"] = resultAPI.highlightedContent();
+
+        QString filename = resultAPI.filename();
+        if (!filename.isEmpty()) {
+            obj["filename"] = filename;
+        }
+
+        obj["isHidden"] = resultAPI.isHidden();
+
+        // 修改时间
+        qint64 modifyTs = resultAPI.modifyTimestamp();
+        if (modifyTs > 0) {
+            QJsonObject modifyTimeObj;
+            modifyTimeObj["timestamp"] = modifyTs;
+            modifyTimeObj["formatted"] = resultAPI.modifyTimeString();
+            obj["modifyTime"] = modifyTimeObj;
+        }
+
+        // 创建时间
+        qint64 birthTs = resultAPI.birthTimestamp();
+        if (birthTs > 0) {
+            QJsonObject birthTimeObj;
+            birthTimeObj["timestamp"] = birthTs;
+            birthTimeObj["formatted"] = resultAPI.birthTimeString();
+            obj["birthTime"] = birthTimeObj;
+        }
+
         return obj;
     } else if (m_searchType == SearchType::Ocr) {
-        // OCR 搜索：返回路径
+        // OCR 搜索：返回详细对象
         QJsonObject obj;
         obj["path"] = result.path();
+
+        OcrTextResultAPI resultAPI(const_cast<SearchResult &>(result));
+
+        QString ocrContent = resultAPI.ocrContent();
+        if (!ocrContent.isEmpty()) {
+            obj["ocrContent"] = ocrContent;
+        }
+
+        QString filename = resultAPI.filename();
+        if (!filename.isEmpty()) {
+            obj["filename"] = filename;
+        }
+
+        obj["isHidden"] = resultAPI.isHidden();
+
+        // 修改时间
+        qint64 modifyTs = resultAPI.modifyTimestamp();
+        if (modifyTs > 0) {
+            QJsonObject modifyTimeObj;
+            modifyTimeObj["timestamp"] = modifyTs;
+            modifyTimeObj["formatted"] = resultAPI.modifyTimeString();
+            obj["modifyTime"] = modifyTimeObj;
+        }
+
+        // 创建时间
+        qint64 birthTs = resultAPI.birthTimestamp();
+        if (birthTs > 0) {
+            QJsonObject birthTimeObj;
+            birthTimeObj["timestamp"] = birthTs;
+            birthTimeObj["formatted"] = resultAPI.birthTimeString();
+            obj["birthTime"] = birthTimeObj;
+        }
+
         return obj;
     }
     return result.path();

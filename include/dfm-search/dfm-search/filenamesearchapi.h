@@ -94,6 +94,9 @@ private:
  *
  * This class extends the base SearchResult with file name search specific features,
  * such as file size, modification time, and file type information.
+ *
+ * When detailed results are enabled, this API provides access to all indexed fields
+ * including filename, extension, hidden status, and both modification and birth times.
  */
 class FileNameResultAPI
 {
@@ -103,6 +106,8 @@ public:
      * @param result The SearchResult object to operate on
      */
     explicit FileNameResultAPI(SearchResult &result);
+
+    // ==================== Basic Attributes ====================
 
     /**
      * @brief Get the file size
@@ -117,14 +122,16 @@ public:
     void setSize(const QString &size);
 
     /**
-     * @brief Get the file modification time
+     * @brief Get the file modification time (legacy, use modifyTimeString instead)
      * @return The modification time as formatted string
+     * @deprecated Use modifyTimeString() for formatted string or modifyTimestamp() for raw timestamp
      */
     QString modifiedTime() const;
 
     /**
-     * @brief Set the file modification time
+     * @brief Set the file modification time (legacy)
      * @param time The modification time as formatted string
+     * @deprecated Use setModifyTimestamp() instead
      */
     void setModifiedTime(const QString &time);
 
@@ -151,6 +158,84 @@ public:
      * @param type The file type to set
      */
     void setFileType(const QString &type) const;
+
+    // ==================== Extended Attributes ====================
+
+    /**
+     * @brief Get the file name (without path)
+     * @return The file name
+     */
+    QString filename() const;
+
+    /**
+     * @brief Set the file name
+     * @param name The file name to set
+     */
+    void setFilename(const QString &name);
+
+    /**
+     * @brief Get the file extension
+     * @return The file extension (lowercase, without dot)
+     */
+    QString fileExtension() const;
+
+    /**
+     * @brief Set the file extension
+     * @param ext The file extension to set
+     */
+    void setFileExtension(const QString &ext);
+
+    /**
+     * @brief Check if the file is hidden
+     * @return true if the file is hidden, false otherwise
+     */
+    bool isHidden() const;
+
+    /**
+     * @brief Set whether the file is hidden
+     * @param hidden true if the file is hidden, false otherwise
+     */
+    void setIsHidden(bool hidden);
+
+    // ==================== Modification Time ====================
+
+    /**
+     * @brief Set the modification time timestamp
+     * @param timestamp Unix timestamp in seconds
+     */
+    void setModifyTimestamp(qint64 timestamp);
+
+    /**
+     * @brief Get the modification time timestamp
+     * @return Unix timestamp in seconds, 0 if not set
+     */
+    qint64 modifyTimestamp() const;
+
+    /**
+     * @brief Get the modification time as a formatted string
+     * @return Formatted time string (yyyy-MM-dd HH:mm:ss)
+     */
+    QString modifyTimeString() const;
+
+    // ==================== Birth/Creation Time ====================
+
+    /**
+     * @brief Set the birth/creation time timestamp
+     * @param timestamp Unix timestamp in seconds
+     */
+    void setBirthTimestamp(qint64 timestamp);
+
+    /**
+     * @brief Get the birth/creation time timestamp
+     * @return Unix timestamp in seconds, 0 if not set
+     */
+    qint64 birthTimestamp() const;
+
+    /**
+     * @brief Get the birth/creation time as a formatted string
+     * @return Formatted time string (yyyy-MM-dd HH:mm:ss)
+     */
+    QString birthTimeString() const;
 
 private:
     SearchResult &m_result;
