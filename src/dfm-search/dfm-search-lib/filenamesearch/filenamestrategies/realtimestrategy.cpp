@@ -180,9 +180,27 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
 
                 if (detailedResults) {
                     FileNameResultAPI api(result);
-                    api.setModifiedTime(info.lastModified().toString());
                     api.setIsDirectory(info.isDir());
-                    api.setFileType(info.suffix().isEmpty() ? (info.isDir() ? "directory" : "unknown") : info.suffix());
+
+                    if (!info.isDir()) {
+                        api.setFileType(info.suffix().isEmpty() ? "unknown" : info.suffix().toLower());
+                        api.setFileExtension(info.suffix().toLower());
+                        api.setSize(QString::number(info.size()));
+                    } else {
+                        api.setFileType("dir");
+                    }
+
+                    api.setFilename(info.fileName());
+                    api.setIsHidden(info.isHidden());
+
+                    // 设置修改时间戳
+                    api.setModifyTimestamp(info.lastModified().toSecsSinceEpoch());
+
+                    // 设置创建时间戳
+                    QDateTime birthTime = info.birthTime();
+                    if (birthTime.isValid()) {
+                        api.setBirthTimestamp(birthTime.toSecsSinceEpoch());
+                    }
                 }
 
                 // 实时发送结果

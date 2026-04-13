@@ -16,6 +16,7 @@
 
 #include <dfm-search/field_names.h>
 #include <dfm-search/timerangefilter.h>
+#include <dfm-search/ocrtextsearchapi.h>
 
 #include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/cancellablecollector.h"
@@ -318,6 +319,49 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
             // Create search result
             SearchResult result(path);
+
+            // 设置详细结果（如果启用）
+            if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
+                OcrTextResultAPI resultApi(result);
+
+                // OCR 内容
+                Lucene::String ocrContentField = doc->get(LuceneFieldNames::OcrText::kOcrContents);
+                if (!ocrContentField.empty()) {
+                    resultApi.setOcrContent(QString::fromStdWString(ocrContentField));
+                }
+
+                // 文件名
+                Lucene::String filenameField = doc->get(LuceneFieldNames::OcrText::kFilename);
+                if (!filenameField.empty()) {
+                    resultApi.setFilename(QString::fromStdWString(filenameField));
+                }
+
+                // 隐藏状态
+                Lucene::String hiddenField = doc->get(LuceneFieldNames::OcrText::kIsHidden);
+                if (!hiddenField.empty()) {
+                    resultApi.setIsHidden(QString::fromStdWString(hiddenField).toLower() == "y");
+                }
+
+                // 修改时间
+                Lucene::String modifyTimeField = doc->get(LuceneFieldNames::OcrText::kModifyTime);
+                if (!modifyTimeField.empty()) {
+                    bool ok = false;
+                    qint64 timestamp = QString::fromStdWString(modifyTimeField).toLongLong(&ok);
+                    if (ok && timestamp > 0) {
+                        resultApi.setModifyTimestamp(timestamp);
+                    }
+                }
+
+                // 创建时间
+                Lucene::String birthTimeField = doc->get(LuceneFieldNames::OcrText::kBirthTime);
+                if (!birthTimeField.empty()) {
+                    bool ok = false;
+                    qint64 timestamp = QString::fromStdWString(birthTimeField).toLongLong(&ok);
+                    if (ok && timestamp > 0) {
+                        resultApi.setBirthTimestamp(timestamp);
+                    }
+                }
+            }
 
             // Add to result collection
             m_results.append(result);

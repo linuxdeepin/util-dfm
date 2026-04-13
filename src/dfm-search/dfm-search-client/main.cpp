@@ -29,7 +29,7 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
     options.setIncludeHidden(config.includeHidden);
     options.setSearchPath(config.searchPath);
     options.setMaxResults(config.maxResults);
-    options.setDetailedResultsEnabled(true);
+    options.setDetailedResultsEnabled(config.verbose);   // 使用 verbose 选项控制详细输出
 
     if (config.searchMethod == SearchMethod::Realtime) {
         options.setResultFoundEnabled(true);
@@ -171,6 +171,7 @@ int main(int argc, char *argv[])
     if (textOutput) {
         textOutput->setSearchOptions(options);
         textOutput->setTimeFilterInfo(config.hasTimeFilter, config.timeFilter);
+        textOutput->setVerbose(config.verbose);
         if (!config.fileExtensions.isEmpty()) {
             textOutput->setFileExtensionsFilter(config.fileExtensions.join(','));
         }

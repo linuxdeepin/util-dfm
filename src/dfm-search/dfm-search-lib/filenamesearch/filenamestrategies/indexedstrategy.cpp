@@ -555,10 +555,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
 
             // 处理搜索结果
             if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
-                QString type = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileType));
-                QString time = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kModifyTimeStr));
-                QString size = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileSizeStr));
-                m_results.append(processSearchResult(path, type, time, size));
+                m_results.append(processDetailedSearchResult(path, doc));
             } else {
                 // perf: quickly
                 SearchResult result(path);
@@ -578,16 +575,54 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     qInfo() << "Filename result processing time:" << resultTimer.elapsed() << "ms";
 }
 
-SearchResult FileNameIndexedStrategy::processSearchResult(const QString &path, const QString &type, const QString &time, const QString &size)
+SearchResult FileNameIndexedStrategy::processDetailedSearchResult(
+        const QString &path,
+        const Lucene::DocumentPtr &doc)
 {
     // 创建搜索结果
     SearchResult result(path);
 
     FileNameResultAPI api(result);
-    api.setSize(size);
-    api.setModifiedTime(time);
-    api.setIsDirectory(type == "dir");
+
+    // 文件类型
+    QString type = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileType));
     api.setFileType(type);
+    api.setIsDirectory(type == "dir");
+
+    // 文件名和扩展名
+    QString fileName = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileName));
+    api.setFilename(fileName);
+
+    QString fileExt = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileExt));
+    api.setFileExtension(fileExt);
+
+    // 文件大小
+    QString size = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileSizeStr));
+    api.setSize(size);
+
+    // 隐藏状态
+    QString isHiddenStr = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kIsHidden)).toLower();
+    api.setIsHidden(isHiddenStr == "y");
+
+    // 修改时间
+    QString modifyTimeStr = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kModifyTime));
+    if (!modifyTimeStr.isEmpty()) {
+        bool ok = false;
+        qint64 modifyTimestamp = modifyTimeStr.toLongLong(&ok);
+        if (ok && modifyTimestamp > 0) {
+            api.setModifyTimestamp(modifyTimestamp);
+        }
+    }
+
+    // 创建时间
+    QString birthTimeStr = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kBirthTime));
+    if (!birthTimeStr.isEmpty()) {
+        bool ok = false;
+        qint64 birthTimestamp = birthTimeStr.toLongLong(&ok);
+        if (ok && birthTimestamp > 0) {
+            api.setBirthTimestamp(birthTimestamp);
+        }
+    }
 
     return result;
 }

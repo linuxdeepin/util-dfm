@@ -352,6 +352,41 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                 }
             }
 
+            // 设置详细结果（如果启用）
+            if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
+                // 文件名
+                Lucene::String filenameField = doc->get(LuceneFieldNames::Content::kFilename);
+                if (!filenameField.empty()) {
+                    resultApi.setFilename(QString::fromStdWString(filenameField));
+                }
+
+                // 隐藏状态
+                Lucene::String hiddenField = doc->get(LuceneFieldNames::Content::kIsHidden);
+                if (!hiddenField.empty()) {
+                    resultApi.setIsHidden(QString::fromStdWString(hiddenField).toLower() == "y");
+                }
+
+                // 修改时间
+                Lucene::String modifyTimeField = doc->get(LuceneFieldNames::Content::kModifyTime);
+                if (!modifyTimeField.empty()) {
+                    bool ok = false;
+                    qint64 timestamp = QString::fromStdWString(modifyTimeField).toLongLong(&ok);
+                    if (ok && timestamp > 0) {
+                        resultApi.setModifyTimestamp(timestamp);
+                    }
+                }
+
+                // 创建时间
+                Lucene::String birthTimeField = doc->get(LuceneFieldNames::Content::kBirthTime);
+                if (!birthTimeField.empty()) {
+                    bool ok = false;
+                    qint64 timestamp = QString::fromStdWString(birthTimeField).toLongLong(&ok);
+                    if (ok && timestamp > 0) {
+                        resultApi.setBirthTimestamp(timestamp);
+                    }
+                }
+            }
+
             // 添加到结果集合
             m_results.append(result);
 

@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <dfm-search/filenamesearchapi.h>
+#include <dfm-search/timeresultapi.h>
+
+#include <QDateTime>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -95,6 +98,74 @@ QString FileNameResultAPI::fileType() const
 void FileNameResultAPI::setFileType(const QString &type) const
 {
     m_result.setCustomAttribute("fileType", type);
+}
+
+// ==================== Extended Attributes ====================
+
+QString FileNameResultAPI::filename() const
+{
+    return m_result.customAttribute("filename").toString();
+}
+
+void FileNameResultAPI::setFilename(const QString &name)
+{
+    m_result.setCustomAttribute("filename", name);
+}
+
+QString FileNameResultAPI::fileExtension() const
+{
+    return m_result.customAttribute("fileExtension").toString();
+}
+
+void FileNameResultAPI::setFileExtension(const QString &ext)
+{
+    m_result.setCustomAttribute("fileExtension", ext);
+}
+
+bool FileNameResultAPI::isHidden() const
+{
+    return m_result.customAttribute("isHidden").toBool();
+}
+
+void FileNameResultAPI::setIsHidden(bool hidden)
+{
+    m_result.setCustomAttribute("isHidden", hidden);
+}
+
+// ==================== Modification Time ====================
+
+void FileNameResultAPI::setModifyTimestamp(qint64 timestamp)
+{
+    m_result.setCustomAttribute("modifyTimestamp", timestamp);
+}
+
+qint64 FileNameResultAPI::modifyTimestamp() const
+{
+    return m_result.customAttribute("modifyTimestamp").toLongLong();
+}
+
+QString FileNameResultAPI::modifyTimeString() const
+{
+    qint64 ts = modifyTimestamp();
+    return ts > 0 ? TimeResultAPI::formatTimestamp(ts) : QString();
+}
+
+// ==================== Birth/Creation Time ====================
+
+void FileNameResultAPI::setBirthTimestamp(qint64 timestamp)
+{
+    m_result.setCustomAttribute("birthTimestamp", timestamp);
+}
+
+qint64 FileNameResultAPI::birthTimestamp() const
+{
+    return m_result.customAttribute("birthTimestamp").toLongLong();
+}
+
+QString FileNameResultAPI::birthTimeString() const
+{
+    qint64 ts = birthTimestamp();
+    return ts > 0 ? TimeResultAPI::formatTimestamp(ts) : QString();
 }
 
 DFM_SEARCH_END_NS

@@ -41,6 +41,12 @@ public:
      */
     void setSearchOptions(const SearchOptions &options) { m_options = options; }
 
+    /**
+     * @brief 设置是否启用详细输出模式
+     * @param verbose true 启用详细输出
+     */
+    void setVerbose(bool verbose) { m_verbose = verbose; }
+
 private:
     QJsonValue resultToJson(const SearchResult &result);
     void printJsonLine(const QJsonObject &obj);
@@ -62,6 +68,7 @@ private:
     QDateTime m_startTime;
 
     bool m_streaming;
+    bool m_verbose = false;
     QJsonArray m_collectedResults;
 };
 

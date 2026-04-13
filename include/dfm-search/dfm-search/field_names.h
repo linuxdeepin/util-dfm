@@ -20,7 +20,6 @@ constexpr const wchar_t kFileNameLower[] = L"file_name_lower";
 constexpr const wchar_t kFullPath[] = L"full_path";
 constexpr const wchar_t kIsHidden[] = L"is_hidden";
 constexpr const wchar_t kModifyTime[] = L"modify_time";
-constexpr const wchar_t kModifyTimeStr[] = L"modify_time_str";
 constexpr const wchar_t kBirthTime[] = L"birth_time";
 constexpr const wchar_t kFileSizeStr[] = L"file_size_str";
 constexpr const wchar_t kPinyin[] = L"pinyin";
@@ -47,7 +46,7 @@ constexpr const wchar_t kPath[] = L"path";
 constexpr const wchar_t kIsHidden[] = L"is_hidden";
 constexpr const wchar_t kAncestorPaths[] = L"ancestor_paths";
 constexpr const wchar_t kBirthTime[] = L"birth_time";
-constexpr const wchar_t kModifyTime[] = L"modify_time"; 
+constexpr const wchar_t kModifyTime[] = L"modify_time";
 }   // namespace OcrText
 
 }   // namespace LuceneFieldNames
