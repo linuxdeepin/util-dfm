@@ -4,6 +4,15 @@ project(dfm${DFM_VERSION_MAJOR}-search-client)
 
 set(SRCS
     main.cpp
+    cli_options.cpp
+    cli_options.h
+    time_parser.cpp
+    time_parser.h
+    output/output_formatter.h
+    output/text_output.cpp
+    output/text_output.h
+    output/json_output.cpp
+    output/json_output.h
 )
 
 find_package(Qt${QT_VERSION_MAJOR}Core REQUIRED)
