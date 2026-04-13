@@ -8,6 +8,7 @@
 #include <QStringList>
 
 #include <dfm-search/dsearch_global.h>
+#include <dfm-search/timerangefilter.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -37,6 +38,7 @@ public:
     bool detailedResultsEnabled;   ///< Whether to include detailed information in search results
     int syncSearchTimeoutSecs { 60 };
     int batchTimeMs { 1000 };   ///< Batch processing time interval in milliseconds
+    TimeRangeFilter timeRangeFilter;   ///< Time range filter for search
 };
 
 DFM_SEARCH_END_NS

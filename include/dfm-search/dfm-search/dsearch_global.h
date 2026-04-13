@@ -225,6 +225,24 @@ enum SearchMethod {
 };
 Q_ENUM_NS(SearchMethod)
 
+// Enumeration for time field type
+enum class TimeField {
+    BirthTime,   // File creation time
+    ModifyTime   // File modification time
+};
+Q_ENUM_NS(TimeField)
+
+// Enumeration for time unit
+enum class TimeUnit {
+    Minutes,   // Minute unit
+    Hours,     // Hour unit
+    Days,      // Day unit
+    Weeks,     // Week unit
+    Months,    // Month unit
+    Years      // Year unit
+};
+Q_ENUM_NS(TimeUnit)
+
 DFM_SEARCH_END_NS
 
 Q_DECLARE_METATYPE(DFMSEARCH::SearchType);

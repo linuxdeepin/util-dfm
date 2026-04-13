@@ -9,6 +9,7 @@
 #include <QVariant>
 
 #include <dfm-search/dsearch_global.h>
+#include <dfm-search/timerangefilter.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -217,6 +218,41 @@ public:
      * @sa setBatchTime()
      */
     int batchTime() const;
+
+    /**
+     * @brief Sets the time range filter for search operations.
+     *
+     * The time range filter allows filtering search results based on file
+     * creation time or modification time. Both preset ranges (like "Today",
+     * "Last 7 days") and custom datetime ranges are supported.
+     *
+     * @param filter The TimeRangeFilter to apply
+     * @sa timeRangeFilter(), hasTimeRangeFilter(), clearTimeRangeFilter()
+     */
+    void setTimeRangeFilter(const TimeRangeFilter &filter);
+
+    /**
+     * @brief Returns the current time range filter.
+     *
+     * @return The current TimeRangeFilter
+     * @sa setTimeRangeFilter()
+     */
+    TimeRangeFilter timeRangeFilter() const;
+
+    /**
+     * @brief Checks if a time range filter is set.
+     *
+     * @return true if a valid time range filter is set, false otherwise
+     * @sa setTimeRangeFilter(), clearTimeRangeFilter()
+     */
+    bool hasTimeRangeFilter() const;
+
+    /**
+     * @brief Clears the time range filter.
+     *
+     * @sa setTimeRangeFilter(), hasTimeRangeFilter()
+     */
+    void clearTimeRangeFilter();
 
 private:
     std::unique_ptr<SearchOptionsData> d;   // PIMPL

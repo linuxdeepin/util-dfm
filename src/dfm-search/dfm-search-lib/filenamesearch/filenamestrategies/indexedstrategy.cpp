@@ -13,11 +13,13 @@
 #include <QElapsedTimer>
 
 #include <dfm-search/field_names.h>
+#include <dfm-search/timerangefilter.h>
 
 #include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/cancellablecollector.h"
 #include "utils/searchutility.h"
 #include "utils/lucenequeryutils.h"
+#include "utils/timerangeutils.h"
 
 DFM_SEARCH_BEGIN_NS
 
@@ -719,6 +721,28 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
             }
         }
         break;
+    }
+
+    // Add time range filter query
+    if (m_options.hasTimeRangeFilter()) {
+        TimeRangeFilter filter = m_options.timeRangeFilter();
+        auto [start, end] = filter.resolveTimeRange();
+
+        qint64 startEpoch = TimeRangeUtils::toEpochSecs(start);
+        qint64 endEpoch = TimeRangeUtils::toEpochSecs(end);
+
+        const wchar_t *fieldName = (filter.timeField() == TimeField::BirthTime)
+                ? LuceneFieldNames::FileName::kBirthTime
+                : LuceneFieldNames::FileName::kModifyTime;
+
+        QueryPtr timeQuery = TimeRangeUtils::buildNumericRangeQuery(
+                fieldName, startEpoch, endEpoch,
+                filter.includeLower(), filter.includeUpper());
+
+        if (timeQuery) {
+            finalQuery->add(timeQuery, BooleanClause::MUST);
+            hasValidQuery = true;
+        }
     }
 
     // Add path prefix query optimization

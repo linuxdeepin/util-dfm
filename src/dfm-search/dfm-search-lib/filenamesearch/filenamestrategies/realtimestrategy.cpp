@@ -11,6 +11,8 @@
 #include <QDebug>
 #include <QRegularExpression>
 
+#include <dfm-search/timerangefilter.h>
+
 DFM_SEARCH_BEGIN_NS
 
 FileNameRealTimeStrategy::FileNameRealTimeStrategy(const SearchOptions &options, QObject *parent)
@@ -117,8 +119,13 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
             QString fileName = info.fileName();
             bool matches = false;
 
+            // 如果只有时间过滤没有关键词，直接匹配
+            bool hasKeyword = !query.keyword().isEmpty() || query.type() == SearchQuery::Type::Boolean;
+            if (!hasKeyword && m_options.hasTimeRangeFilter()) {
+                matches = true;
+            }
             // 简单查询模式
-            if (query.type() == SearchQuery::Type::Simple) {
+            else if (query.type() == SearchQuery::Type::Simple) {
                 matches = fileName.contains(query.keyword(),
                                             caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive);
             }
@@ -137,6 +144,34 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
                 if (!fileExts.contains(suffix)) {
                     matches = false;
                 }
+            }
+
+            // 时间范围过滤
+            if (matches && m_options.hasTimeRangeFilter()) {
+                TimeRangeFilter filter = m_options.timeRangeFilter();
+                auto [start, end] = filter.resolveTimeRange();
+
+                QDateTime fileTime = (filter.timeField() == TimeField::BirthTime)
+                        ? info.birthTime()
+                        : info.lastModified();
+
+                // 时间范围检查
+                bool timeMatch = true;
+                if (start.isValid()) {
+                    if (filter.includeLower()) {
+                        timeMatch = timeMatch && (fileTime >= start);
+                    } else {
+                        timeMatch = timeMatch && (fileTime > start);
+                    }
+                }
+                if (end.isValid()) {
+                    if (filter.includeUpper()) {
+                        timeMatch = timeMatch && (fileTime <= end);
+                    } else {
+                        timeMatch = timeMatch && (fileTime < end);
+                    }
+                }
+                matches = timeMatch;
             }
 
             if (matches) {
