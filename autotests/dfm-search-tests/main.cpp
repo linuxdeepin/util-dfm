@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
     // Test object creation functions are defined in their respective .cpp files
     extern QObject *create_tst_DfmSearch();
     extern QObject *create_tst_SearchUtils();
+    extern QObject *create_tst_TimeRangeFilter();
 
     // Run all test objects
     QObject *testObj1 = create_tst_DfmSearch();
@@ -20,6 +21,10 @@ int main(int argc, char *argv[])
     QObject *testObj2 = create_tst_SearchUtils();
     result |= QTest::qExec(testObj2, argc, argv);
     delete testObj2;
+
+    QObject *testObj3 = create_tst_TimeRangeFilter();
+    result |= QTest::qExec(testObj3, argc, argv);
+    delete testObj3;
 
     return result;
 }

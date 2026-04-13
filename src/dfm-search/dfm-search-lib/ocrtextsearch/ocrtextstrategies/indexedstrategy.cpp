@@ -15,12 +15,14 @@
 #include <lucene++/WildcardQuery.h>
 
 #include <dfm-search/field_names.h>
+#include <dfm-search/timerangefilter.h>
 
 #include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/cancellablecollector.h"
 #include "utils/lucenequeryutils.h"
 #include "utils/searchutility.h"
 #include "utils/lucene_cancellation_compat.h"
+#include "utils/timerangeutils.h"
 
 using namespace Lucene;
 
@@ -103,7 +105,36 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
                 finalQuery->add(mainQuery, BooleanClause::MUST);
                 finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
                 qInfo() << "Using path prefix query for OCR text search optimization:" << searchPath;
-                return finalQuery;
+                mainQuery = finalQuery;
+            }
+        }
+
+        // Add time range filter query
+        if (m_options.hasTimeRangeFilter()) {
+            TimeRangeFilter filter = m_options.timeRangeFilter();
+            auto [start, end] = filter.resolveTimeRange();
+
+            qint64 startEpoch = TimeRangeUtils::toEpochSecs(start);
+            qint64 endEpoch = TimeRangeUtils::toEpochSecs(end);
+
+            const wchar_t *fieldName = (filter.timeField() == TimeField::BirthTime)
+                    ? LuceneFieldNames::OcrText::kBirthTime
+                    : LuceneFieldNames::OcrText::kModifyTime;
+
+            QueryPtr timeQuery = TimeRangeUtils::buildNumericRangeQuery(
+                    fieldName, startEpoch, endEpoch,
+                    filter.includeLower(), filter.includeUpper());
+
+            if (timeQuery) {
+                if (mainQuery) {
+                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                    finalQuery->add(mainQuery, BooleanClause::MUST);
+                    finalQuery->add(timeQuery, BooleanClause::MUST);
+                    mainQuery = finalQuery;
+                } else {
+                    // Time filter alone is a valid query
+                    mainQuery = timeQuery;
+                }
             }
         }
 

@@ -177,4 +177,24 @@ int SearchOptions::batchTime() const
     return d->batchTimeMs;
 }
 
+void SearchOptions::setTimeRangeFilter(const TimeRangeFilter &filter)
+{
+    d->timeRangeFilter = filter;
+}
+
+TimeRangeFilter SearchOptions::timeRangeFilter() const
+{
+    return d->timeRangeFilter;
+}
+
+bool SearchOptions::hasTimeRangeFilter() const
+{
+    return d->timeRangeFilter.isValid();
+}
+
+void SearchOptions::clearTimeRangeFilter()
+{
+    d->timeRangeFilter.clear();
+}
+
 DFM_SEARCH_END_NS
