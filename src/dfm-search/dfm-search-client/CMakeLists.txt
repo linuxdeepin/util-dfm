@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(dfm${DFM_VERSION_MAJOR}-search-client)
+project(dfm-searcher)
 
 set(SRCS
     main.cpp
@@ -30,4 +30,4 @@ target_link_libraries(
 )
 
 
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})

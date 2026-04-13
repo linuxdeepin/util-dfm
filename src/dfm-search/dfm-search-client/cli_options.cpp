@@ -13,35 +13,36 @@ using namespace dfmsearch;
 using namespace std;
 
 CliOptions::CliOptions()
-    : m_typeOption(QStringList() << "type", "Search type (filename, content or ocr)", "type", "filename")
-    , m_methodOption(QStringList() << "method", "Search method (indexed or realtime)", "method", "indexed")
-    , m_queryOption(QStringList() << "query", "Query type (simple, boolean or wildcard)", "query", "simple")
-    , m_caseSensitiveOption(QStringList() << "case-sensitive", "Enable case sensitivity")
-    , m_includeHiddenOption(QStringList() << "include-hidden", "Include hidden files")
-    , m_pinyinOption(QStringList() << "pinyin", "Enable pinyin search (for filename search)")
-    , m_pinyinAcronymOption(QStringList() << "pinyin-acronym", "Enable pinyin acronym search (for filename search)")
-    , m_fileTypesOption(QStringList() << "file-types", "Filter by file types, comma separated", "types")
-    , m_fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions")
-    , m_maxResultsOption(QStringList() << "max-results", "Maximum number of results", "number", "100")
-    , m_maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200")
-    , m_wildcardOption(QStringList() << "wildcard", "Enable wildcard search with * and ? patterns")
-    , m_jsonOption(QStringList() << "json"
+    : m_typeOption(QStringList() << "type",
+                   "Search type (filename, content or ocr)", "type", "filename"),
+      m_methodOption(QStringList() << "method", "Search method (indexed or realtime)", "method", "indexed"),
+      m_queryOption(QStringList() << "query", "Query type (simple, boolean or wildcard)", "query", "simple"),
+      m_caseSensitiveOption(QStringList() << "case-sensitive", "Enable case sensitivity"),
+      m_includeHiddenOption(QStringList() << "include-hidden", "Include hidden files"),
+      m_pinyinOption(QStringList() << "pinyin", "Enable pinyin search (for filename search)"),
+      m_pinyinAcronymOption(QStringList() << "pinyin-acronym", "Enable pinyin acronym search (for filename search)"),
+      m_fileTypesOption(QStringList() << "file-types", "Filter by file types, comma separated", "types"),
+      m_fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions"),
+      m_maxResultsOption(QStringList() << "max-results", "Maximum number of results", "number", "100"),
+      m_maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200"),
+      m_wildcardOption(QStringList() << "wildcard", "Enable wildcard search with * and ? patterns"),
+      m_jsonOption(QStringList() << "json"
                                  << "j",
-                    "Output results in JSON format")
-    , m_verboseOption(QStringList() << "verbose"
+                   "Output results in JSON format"),
+      m_verboseOption(QStringList() << "verbose"
                                     << "v",
-                      "Enable verbose output with detailed result information")
-    , m_timeFieldOption(QStringList() << "time-field", "Time field to filter (birth or modify)", "field", "modify")
-    , m_timeLastOption(QStringList() << "time-last", "Rolling time window (e.g., 3d, 2h, 30m)", "duration")
-    , m_timeTodayOption(QStringList() << "time-today", "Filter files from today")
-    , m_timeYesterdayOption(QStringList() << "time-yesterday", "Filter files from yesterday")
-    , m_timeThisWeekOption(QStringList() << "time-this-week", "Filter files from this week")
-    , m_timeLastWeekOption(QStringList() << "time-last-week", "Filter files from last week")
-    , m_timeThisMonthOption(QStringList() << "time-this-month", "Filter files from this month")
-    , m_timeLastMonthOption(QStringList() << "time-last-month", "Filter files from last month")
-    , m_timeThisYearOption(QStringList() << "time-this-year", "Filter files from this year")
-    , m_timeLastYearOption(QStringList() << "time-last-year", "Filter files from last year")
-    , m_timeRangeOption(QStringList() << "time-range", "Custom time range (start,end)", "range")
+                      "Enable verbose output with detailed result information"),
+      m_timeFieldOption(QStringList() << "time-field", "Time field to filter (birth or modify)", "field", "modify"),
+      m_timeLastOption(QStringList() << "time-last", "Rolling time window (e.g., 3d, 2h, 30m)", "duration"),
+      m_timeTodayOption(QStringList() << "time-today", "Filter files from today"),
+      m_timeYesterdayOption(QStringList() << "time-yesterday", "Filter files from yesterday"),
+      m_timeThisWeekOption(QStringList() << "time-this-week", "Filter files from this week"),
+      m_timeLastWeekOption(QStringList() << "time-last-week", "Filter files from last week"),
+      m_timeThisMonthOption(QStringList() << "time-this-month", "Filter files from this month"),
+      m_timeLastMonthOption(QStringList() << "time-last-month", "Filter files from last month"),
+      m_timeThisYearOption(QStringList() << "time-this-year", "Filter files from this year"),
+      m_timeLastYearOption(QStringList() << "time-last-year", "Filter files from last year"),
+      m_timeRangeOption(QStringList() << "time-range", "Custom time range (start,end)", "range")
 {
     setupOptions();
 }
@@ -87,7 +88,7 @@ void CliOptions::setupOptions()
 
 void CliOptions::printHelp() const
 {
-    std::cout << "Usage: dfm6-search-client [options] <keyword> <search_path>" << std::endl;
+    std::cout << "Usage: dfm-searcher [options] <keyword> <search_path>" << std::endl;
     std::cout << std::endl;
     std::cout << "Search Types:" << std::endl;
     std::cout << "  --type=<filename|content|ocr>  Search type (default: filename)" << std::endl;
@@ -131,16 +132,16 @@ void CliOptions::printHelp() const
     std::cout << std::endl;
     std::cout << "Examples:" << std::endl;
     std::cout << "  # Basic filename search" << std::endl;
-    std::cout << "  dfm6-search-client \"document\" /home/user" << std::endl;
+    std::cout << "  dfm-searcher \"document\" /home/user" << std::endl;
     std::cout << std::endl;
     std::cout << "  # Content search" << std::endl;
-    std::cout << "  dfm6-search-client --type=content \"hello world\" /home/user/Documents" << std::endl;
+    std::cout << "  dfm-searcher --type=content \"hello world\" /home/user/Documents" << std::endl;
     std::cout << std::endl;
     std::cout << "  # OCR search in images" << std::endl;
-    std::cout << "  dfm6-search-client --type=ocr \"screenshot\" /home/user/Pictures" << std::endl;
+    std::cout << "  dfm-searcher --type=ocr \"screenshot\" /home/user/Pictures" << std::endl;
     std::cout << std::endl;
     std::cout << "  # Realtime search with time filter" << std::endl;
-    std::cout << "  dfm6-search-client --method=realtime --time-last=7d \"report\" /home/user" << std::endl;
+    std::cout << "  dfm-searcher --method=realtime --time-last=7d \"report\" /home/user" << std::endl;
 }
 
 bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)

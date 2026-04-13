@@ -1,2 +1,2 @@
-usr/lib/*/libdfm6-search*.so* 
-usr/libexec/dfm6-search-client
+usr/lib/*/libdfm6-search*.so*
+usr/bin/dfm-searcher
