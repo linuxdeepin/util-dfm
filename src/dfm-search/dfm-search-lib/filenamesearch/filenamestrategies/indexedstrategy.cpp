@@ -346,20 +346,15 @@ FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType
     bool hasFileExts = !fileExtensions.isEmpty();
     bool isBoolean = (query.type() == SearchQuery::Type::Boolean);
 
-    // 检查是否需要组合搜索
+    // 检查是否需要组合搜索（关键词 + 文件类型/后缀）
     bool combinedWithTypes = (hasKeyword || isBoolean) && (hasFileTypes || hasFileExts);
     if (combinedWithTypes) {
         return SearchType::Combined;
     }
 
-    // 空关键词但有文件类型，使用文件类型搜索
-    if (!hasKeyword && hasFileTypes) {
-        return SearchType::FileType;
-    }
-
-    // 空关键词但有文件后缀，使用文件后缀搜索
-    if (!hasKeyword && hasFileExts) {
-        return SearchType::FileExt;
+    // 无关键词时，文件类型和后缀组合搜索
+    if (!hasKeyword && (hasFileTypes || hasFileExts)) {
+        return SearchType::Combined;
     }
 
     // 通配符查询类型（显式指定）
@@ -434,15 +429,14 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
     case SearchType::PinyinAcronym:
         result.terms.append(query.keyword());
         break;
-    case SearchType::FileType:
-        result.fileTypes = fileTypes;
-        break;
-    case SearchType::FileExt:
-        result.fileExtensions = fileExtensions;
-        break;
     case SearchType::Combined:
-        result.terms = query.type() == SearchQuery::Type::Boolean ? SearchUtility::extractBooleanKeywords(query) : QStringList { query.keyword() };
-        result.booleanOp = query.type() == SearchQuery::Type::Boolean ? query.booleanOperator() : SearchQuery::BooleanOperator::AND;
+        // 只有当有关键词时才设置 terms
+        if (query.type() == SearchQuery::Type::Boolean) {
+            result.terms = SearchUtility::extractBooleanKeywords(query);
+            result.booleanOp = query.booleanOperator();
+        } else if (!query.keyword().isEmpty()) {
+            result.terms = QStringList { query.keyword() };
+        }
         result.combineWithFileType = !fileTypes.isEmpty();
         result.combineWithFileExt = !fileExtensions.isEmpty();
         break;
@@ -708,24 +702,6 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
 
             if (hasValidQuery) {
                 finalQuery->add(combinedQuery, BooleanClause::MUST);
-            }
-        }
-        break;
-    case SearchType::FileType:
-        if (!query.fileTypes.isEmpty()) {
-            QueryPtr typeQuery = m_queryBuilder->buildTypeQuery(query.fileTypes);
-            if (typeQuery) {
-                finalQuery->add(typeQuery, BooleanClause::MUST);
-                hasValidQuery = true;
-            }
-        }
-        break;
-    case SearchType::FileExt:
-        if (!query.fileExtensions.isEmpty()) {
-            QueryPtr extQuery = m_queryBuilder->buildExtQuery(query.fileExtensions);
-            if (extQuery) {
-                finalQuery->add(extQuery, BooleanClause::MUST);
-                hasValidQuery = true;
             }
         }
         break;

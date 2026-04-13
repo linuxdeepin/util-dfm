@@ -35,9 +35,7 @@ public:
         Boolean,   // 布尔多关键词搜索
         Pinyin,   // 拼音搜索
         PinyinAcronym,   // 拼音首字母搜索
-        FileType,   // 文件类型搜索
-        FileExt,   // 文件后缀搜索
-        Combined   // 组合搜索(关键词+文件类型/拼音/文件后缀)
+        Combined   // 组合搜索(关键词+文件类型/拼音/文件后缀/文件类型和后缀)
     };
 
     // 索引查询结构
