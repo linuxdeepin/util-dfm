@@ -6,10 +6,13 @@
 
 #include <QDateTime>
 #include <QPair>
+#include <memory>
 
 #include <dfm-search/dsearch_global.h>
 
 DFM_SEARCH_BEGIN_NS
+
+class TimeRangeFilterData;
 
 /**
  * @brief The TimeRangeFilter class provides time range filtering for search operations.
@@ -43,27 +46,27 @@ public:
     /**
      * @brief Copy constructor
      */
-    TimeRangeFilter(const TimeRangeFilter &other) = default;
+    TimeRangeFilter(const TimeRangeFilter &other);
 
     /**
      * @brief Move constructor
      */
-    TimeRangeFilter(TimeRangeFilter &&other) noexcept = default;
+    TimeRangeFilter(TimeRangeFilter &&other) noexcept;
 
     /**
      * @brief Destructor
      */
-    ~TimeRangeFilter() = default;
+    ~TimeRangeFilter();
 
     /**
      * @brief Assignment operator
      */
-    TimeRangeFilter &operator=(const TimeRangeFilter &other) = default;
+    TimeRangeFilter &operator=(const TimeRangeFilter &other);
 
     /**
      * @brief Move assignment operator
      */
-    TimeRangeFilter &operator=(TimeRangeFilter &&other) noexcept = default;
+    TimeRangeFilter &operator=(TimeRangeFilter &&other) noexcept;
 
     // ---------- Time Field ----------
 
@@ -230,29 +233,7 @@ private:
      */
     static QPair<QDateTime, QDateTime> resolveFixedUnitTimeRange(int value, TimeUnit unit);
 
-    /**
-     * @brief Internal enum for range mode
-     */
-    enum class RangeMode {
-        Invalid,      // No range set
-        Relative,     // Relative time (setLast) - rolling range from N units ago to now
-        FixedUnit,    // Fixed unit range (yesterday, last week, etc.) - complete unit
-        Custom        // Custom start/end
-    };
-
-    TimeField m_field = TimeField::ModifyTime;
-    RangeMode m_mode = RangeMode::Invalid;
-
-    // For relative/fixed mode
-    int m_relativeValue = 0;
-    TimeUnit m_relativeUnit = TimeUnit::Days;
-
-    // For custom mode
-    QDateTime m_startTime;
-    QDateTime m_endTime;
-
-    bool m_includeLower = true;
-    bool m_includeUpper = false;
+    std::unique_ptr<TimeRangeFilterData> d;
 };
 
 DFM_SEARCH_END_NS

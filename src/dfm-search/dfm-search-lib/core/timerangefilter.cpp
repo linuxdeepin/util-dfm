@@ -7,172 +7,245 @@
 
 DFM_SEARCH_BEGIN_NS
 
-TimeRangeFilter::TimeRangeFilter()
-    : m_field(TimeField::ModifyTime)
-    , m_mode(RangeMode::Invalid)
-    , m_relativeValue(0)
-    , m_relativeUnit(TimeUnit::Days)
-    , m_includeLower(true)
-    , m_includeUpper(false)
+/**
+ * @brief Internal enum for range mode
+ */
+enum class RangeMode {
+    Invalid,      // No range set
+    Relative,     // Relative time (setLast) - rolling range from N units ago to now
+    FixedUnit,    // Fixed unit range (yesterday, last week, etc.) - complete unit
+    Custom        // Custom start/end
+};
+
+class TimeRangeFilterData
 {
+public:
+    TimeRangeFilterData()
+        : field(TimeField::ModifyTime)
+        , mode(RangeMode::Invalid)
+        , relativeValue(0)
+        , relativeUnit(TimeUnit::Days)
+        , includeLower(true)
+        , includeUpper(false)
+    {
+    }
+
+    TimeRangeFilterData(const TimeRangeFilterData &other)
+        : field(other.field)
+        , mode(other.mode)
+        , relativeValue(other.relativeValue)
+        , relativeUnit(other.relativeUnit)
+        , startTime(other.startTime)
+        , endTime(other.endTime)
+        , includeLower(other.includeLower)
+        , includeUpper(other.includeUpper)
+    {
+    }
+
+    TimeField field;
+    RangeMode mode;
+
+    // For relative/fixed mode
+    int relativeValue;
+    TimeUnit relativeUnit;
+
+    // For custom mode
+    QDateTime startTime;
+    QDateTime endTime;
+
+    bool includeLower;
+    bool includeUpper;
+};
+
+TimeRangeFilter::TimeRangeFilter()
+    : d(std::make_unique<TimeRangeFilterData>())
+{
+}
+
+TimeRangeFilter::TimeRangeFilter(const TimeRangeFilter &other)
+    : d(std::make_unique<TimeRangeFilterData>(*other.d))
+{
+}
+
+TimeRangeFilter::TimeRangeFilter(TimeRangeFilter &&other) noexcept
+    : d(std::move(other.d))
+{
+}
+
+TimeRangeFilter::~TimeRangeFilter() = default;
+
+TimeRangeFilter &TimeRangeFilter::operator=(const TimeRangeFilter &other)
+{
+    if (this != &other) {
+        d = std::make_unique<TimeRangeFilterData>(*other.d);
+    }
+    return *this;
+}
+
+TimeRangeFilter &TimeRangeFilter::operator=(TimeRangeFilter &&other) noexcept
+{
+    if (this != &other) {
+        d = std::move(other.d);
+    }
+    return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setTimeField(TimeField field)
 {
-    m_field = field;
+    d->field = field;
     return *this;
 }
 
 TimeField TimeRangeFilter::timeField() const
 {
-    return m_field;
+    return d->field;
 }
 
 TimeRangeFilter &TimeRangeFilter::setLast(int value, TimeUnit unit)
 {
-    m_mode = RangeMode::Relative;  // Rolling range from N units ago to now
-    m_relativeValue = value;
-    m_relativeUnit = unit;
-    m_startTime = QDateTime();
-    m_endTime = QDateTime();
+    d->mode = RangeMode::Relative;  // Rolling range from N units ago to now
+    d->relativeValue = value;
+    d->relativeUnit = unit;
+    d->startTime = QDateTime();
+    d->endTime = QDateTime();
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setToday()
 {
-    m_mode = RangeMode::FixedUnit;  // Complete unit (today)
-    m_relativeValue = 0;
-    m_relativeUnit = TimeUnit::Days;
+    d->mode = RangeMode::FixedUnit;  // Complete unit (today)
+    d->relativeValue = 0;
+    d->relativeUnit = TimeUnit::Days;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setYesterday()
 {
-    m_mode = RangeMode::FixedUnit;  // Complete unit (yesterday)
-    m_relativeValue = 1;
-    m_relativeUnit = TimeUnit::Days;
+    d->mode = RangeMode::FixedUnit;  // Complete unit (yesterday)
+    d->relativeValue = 1;
+    d->relativeUnit = TimeUnit::Days;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setThisWeek()
 {
-    m_mode = RangeMode::FixedUnit;
-    m_relativeValue = 0;
-    m_relativeUnit = TimeUnit::Weeks;
+    d->mode = RangeMode::FixedUnit;
+    d->relativeValue = 0;
+    d->relativeUnit = TimeUnit::Weeks;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setLastWeek()
 {
-    m_mode = RangeMode::FixedUnit;
-    m_relativeValue = 1;
-    m_relativeUnit = TimeUnit::Weeks;
+    d->mode = RangeMode::FixedUnit;
+    d->relativeValue = 1;
+    d->relativeUnit = TimeUnit::Weeks;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setThisMonth()
 {
-    m_mode = RangeMode::FixedUnit;
-    m_relativeValue = 0;
-    m_relativeUnit = TimeUnit::Months;
+    d->mode = RangeMode::FixedUnit;
+    d->relativeValue = 0;
+    d->relativeUnit = TimeUnit::Months;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setLastMonth()
 {
-    m_mode = RangeMode::FixedUnit;
-    m_relativeValue = 1;
-    m_relativeUnit = TimeUnit::Months;
+    d->mode = RangeMode::FixedUnit;
+    d->relativeValue = 1;
+    d->relativeUnit = TimeUnit::Months;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setThisYear()
 {
-    m_mode = RangeMode::FixedUnit;
-    m_relativeValue = 0;
-    m_relativeUnit = TimeUnit::Years;
+    d->mode = RangeMode::FixedUnit;
+    d->relativeValue = 0;
+    d->relativeUnit = TimeUnit::Years;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setLastYear()
 {
-    m_mode = RangeMode::FixedUnit;
-    m_relativeValue = 1;
-    m_relativeUnit = TimeUnit::Years;
+    d->mode = RangeMode::FixedUnit;
+    d->relativeValue = 1;
+    d->relativeUnit = TimeUnit::Years;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setRange(const QDateTime &start, const QDateTime &end)
 {
-    m_mode = RangeMode::Custom;
-    m_startTime = start;
-    m_endTime = end;
-    m_relativeValue = 0;
-    m_relativeUnit = TimeUnit::Days;
+    d->mode = RangeMode::Custom;
+    d->startTime = start;
+    d->endTime = end;
+    d->relativeValue = 0;
+    d->relativeUnit = TimeUnit::Days;
     return *this;
 }
 
 QDateTime TimeRangeFilter::startTime() const
 {
-    return m_startTime;
+    return d->startTime;
 }
 
 QDateTime TimeRangeFilter::endTime() const
 {
-    return m_endTime;
+    return d->endTime;
 }
 
 TimeRangeFilter &TimeRangeFilter::setIncludeLower(bool include)
 {
-    m_includeLower = include;
+    d->includeLower = include;
     return *this;
 }
 
 TimeRangeFilter &TimeRangeFilter::setIncludeUpper(bool include)
 {
-    m_includeUpper = include;
+    d->includeUpper = include;
     return *this;
 }
 
 bool TimeRangeFilter::includeLower() const
 {
-    return m_includeLower;
+    return d->includeLower;
 }
 
 bool TimeRangeFilter::includeUpper() const
 {
-    return m_includeUpper;
+    return d->includeUpper;
 }
 
 TimeRangeFilter &TimeRangeFilter::clear()
 {
-    m_mode = RangeMode::Invalid;
-    m_startTime = QDateTime();
-    m_endTime = QDateTime();
-    m_relativeValue = 0;
-    m_relativeUnit = TimeUnit::Days;
-    m_includeLower = true;
-    m_includeUpper = false;
+    d->mode = RangeMode::Invalid;
+    d->startTime = QDateTime();
+    d->endTime = QDateTime();
+    d->relativeValue = 0;
+    d->relativeUnit = TimeUnit::Days;
+    d->includeLower = true;
+    d->includeUpper = false;
     return *this;
 }
 
 bool TimeRangeFilter::isValid() const
 {
-    return m_mode != RangeMode::Invalid;
+    return d->mode != RangeMode::Invalid;
 }
 
 QPair<QDateTime, QDateTime> TimeRangeFilter::resolveTimeRange() const
 {
-    if (m_mode == RangeMode::Custom) {
-        return qMakePair(m_startTime, m_endTime);
+    if (d->mode == RangeMode::Custom) {
+        return qMakePair(d->startTime, d->endTime);
     }
 
-    if (m_mode == RangeMode::Relative) {
-        return resolveRelativeTimeRange(m_relativeValue, m_relativeUnit);
+    if (d->mode == RangeMode::Relative) {
+        return resolveRelativeTimeRange(d->relativeValue, d->relativeUnit);
     }
 
-    if (m_mode == RangeMode::FixedUnit) {
-        return resolveFixedUnitTimeRange(m_relativeValue, m_relativeUnit);
+    if (d->mode == RangeMode::FixedUnit) {
+        return resolveFixedUnitTimeRange(d->relativeValue, d->relativeUnit);
     }
 
     return qMakePair(QDateTime(), QDateTime());
