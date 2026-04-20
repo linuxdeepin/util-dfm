@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 - 2026 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -13,7 +13,7 @@ using namespace dfmsearch;
 using namespace std;
 
 void TextOutput::setSearchContext(const QString &keyword, const QString &searchPath,
-                                   SearchType searchType, SearchMethod searchMethod)
+                                  SearchType searchType, SearchMethod searchMethod)
 {
     m_keyword = keyword;
     m_searchPath = searchPath;

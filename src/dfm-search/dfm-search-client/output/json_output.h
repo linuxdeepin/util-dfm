@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 - 2026 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -24,8 +24,7 @@ class JsonOutput : public OutputFormatter
 
 public:
     explicit JsonOutput(bool streaming = false, QObject *parent = nullptr)
-        : OutputFormatter(parent)
-        , m_streaming(streaming) { }
+        : OutputFormatter(parent), m_streaming(streaming) { }
 
     void setSearchContext(const QString &keyword, const QString &searchPath,
                           SearchType searchType, SearchMethod searchMethod) override;

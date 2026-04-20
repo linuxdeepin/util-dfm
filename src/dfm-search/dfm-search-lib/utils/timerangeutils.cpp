@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 - 2026 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "timerangeutils.h"
@@ -19,11 +19,11 @@ qint64 toEpochSecs(const QDateTime &dt)
 }
 
 Lucene::QueryPtr buildNumericRangeQuery(
-    const wchar_t *fieldName,
-    qint64 startEpoch,
-    qint64 endEpoch,
-    bool includeLower,
-    bool includeUpper)
+        const wchar_t *fieldName,
+        qint64 startEpoch,
+        qint64 endEpoch,
+        bool includeLower,
+        bool includeUpper)
 {
     // Use INT64_MIN and INT64_MAX for unbounded ranges
     int64_t minVal = (startEpoch == 0) ? INT64_MIN : startEpoch;
@@ -31,11 +31,11 @@ Lucene::QueryPtr buildNumericRangeQuery(
 
     // Use the default precisionStep (4)
     return Lucene::NumericRangeQuery::newLongRange(
-        Lucene::String(fieldName),
-        minVal,
-        maxVal,
-        includeLower,
-        includeUpper);
+            Lucene::String(fieldName),
+            minVal,
+            maxVal,
+            includeLower,
+            includeUpper);
 }
 
 }   // namespace TimeRangeUtils
