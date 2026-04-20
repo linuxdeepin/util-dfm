@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 - 2026 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef TIMERANGEUTILS_H
@@ -34,11 +34,11 @@ qint64 toEpochSecs(const QDateTime &dt);
  * @return A NumericRangeQuery pointer, or nullptr if range is invalid
  */
 Lucene::QueryPtr buildNumericRangeQuery(
-    const wchar_t *fieldName,
-    qint64 startEpoch,
-    qint64 endEpoch,
-    bool includeLower,
-    bool includeUpper);
+        const wchar_t *fieldName,
+        qint64 startEpoch,
+        qint64 endEpoch,
+        bool includeLower,
+        bool includeUpper);
 
 }   // namespace TimeRangeUtils
 

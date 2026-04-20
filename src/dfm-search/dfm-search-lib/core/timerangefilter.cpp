@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 - 2026 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <dfm-search/timerangefilter.h>
@@ -11,34 +11,22 @@ DFM_SEARCH_BEGIN_NS
  * @brief Internal enum for range mode
  */
 enum class RangeMode {
-    Invalid,      // No range set
-    Relative,     // Relative time (setLast) - rolling range from N units ago to now
-    FixedUnit,    // Fixed unit range (yesterday, last week, etc.) - complete unit
-    Custom        // Custom start/end
+    Invalid,   // No range set
+    Relative,   // Relative time (setLast) - rolling range from N units ago to now
+    FixedUnit,   // Fixed unit range (yesterday, last week, etc.) - complete unit
+    Custom   // Custom start/end
 };
 
 class TimeRangeFilterData
 {
 public:
     TimeRangeFilterData()
-        : field(TimeField::ModifyTime)
-        , mode(RangeMode::Invalid)
-        , relativeValue(0)
-        , relativeUnit(TimeUnit::Days)
-        , includeLower(true)
-        , includeUpper(false)
+        : field(TimeField::ModifyTime), mode(RangeMode::Invalid), relativeValue(0), relativeUnit(TimeUnit::Days), includeLower(true), includeUpper(false)
     {
     }
 
     TimeRangeFilterData(const TimeRangeFilterData &other)
-        : field(other.field)
-        , mode(other.mode)
-        , relativeValue(other.relativeValue)
-        , relativeUnit(other.relativeUnit)
-        , startTime(other.startTime)
-        , endTime(other.endTime)
-        , includeLower(other.includeLower)
-        , includeUpper(other.includeUpper)
+        : field(other.field), mode(other.mode), relativeValue(other.relativeValue), relativeUnit(other.relativeUnit), startTime(other.startTime), endTime(other.endTime), includeLower(other.includeLower), includeUpper(other.includeUpper)
     {
     }
 
@@ -103,7 +91,7 @@ TimeField TimeRangeFilter::timeField() const
 
 TimeRangeFilter &TimeRangeFilter::setLast(int value, TimeUnit unit)
 {
-    d->mode = RangeMode::Relative;  // Rolling range from N units ago to now
+    d->mode = RangeMode::Relative;   // Rolling range from N units ago to now
     d->relativeValue = value;
     d->relativeUnit = unit;
     d->startTime = QDateTime();
@@ -113,7 +101,7 @@ TimeRangeFilter &TimeRangeFilter::setLast(int value, TimeUnit unit)
 
 TimeRangeFilter &TimeRangeFilter::setToday()
 {
-    d->mode = RangeMode::FixedUnit;  // Complete unit (today)
+    d->mode = RangeMode::FixedUnit;   // Complete unit (today)
     d->relativeValue = 0;
     d->relativeUnit = TimeUnit::Days;
     return *this;
@@ -121,7 +109,7 @@ TimeRangeFilter &TimeRangeFilter::setToday()
 
 TimeRangeFilter &TimeRangeFilter::setYesterday()
 {
-    d->mode = RangeMode::FixedUnit;  // Complete unit (yesterday)
+    d->mode = RangeMode::FixedUnit;   // Complete unit (yesterday)
     d->relativeValue = 1;
     d->relativeUnit = TimeUnit::Days;
     return *this;
