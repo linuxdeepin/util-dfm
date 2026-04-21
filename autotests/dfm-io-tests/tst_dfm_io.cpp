@@ -30,5 +30,10 @@ void tst_DfmIO::initialization_test()
     QVERIFY(true);
 }
 
-QTEST_MAIN(tst_DfmIO)
+int run_tst_DfmIO(int argc, char *argv[])
+{
+    tst_DfmIO tc;
+    return QTest::qExec(&tc, argc, argv);
+}
+
 #include "tst_dfm_io.moc"
