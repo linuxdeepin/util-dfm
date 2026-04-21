@@ -6,8 +6,40 @@
 #include "dsortkeycache.h"
 
 #include <algorithm>
+#include <sys/stat.h>
 
 USING_IO_NAMESPACE
+
+namespace {
+
+// 获取符号链接指向文件的时间信息（用于按时间排序）
+struct SymlinkTimeInfo {
+    qint64 lastModified = 0;
+    qint64 lastModifiedNs = 0;
+    qint64 lastRead = 0;
+    qint64 lastReadNs = 0;
+    bool valid = false;
+};
+
+SymlinkTimeInfo getSymlinkTargetTime(const QUrl &symlinkUrl)
+{
+    SymlinkTimeInfo info;
+    if (!symlinkUrl.isValid() || !symlinkUrl.isLocalFile()) {
+        return info;
+    }
+
+    struct stat st;
+    if (stat(symlinkUrl.path().toUtf8().constData(), &st) == 0) {
+        info.lastModified = st.st_mtim.tv_sec;
+        info.lastModifiedNs = st.st_mtim.tv_nsec;
+        info.lastRead = st.st_atim.tv_sec;
+        info.lastReadNs = st.st_atim.tv_nsec;
+        info.valid = true;
+    }
+    return info;
+}
+
+}   // namespace
 
 DFileSorter::DFileSorter(const SortConfig &config)
     : m_config(config)
@@ -15,7 +47,7 @@ DFileSorter::DFileSorter(const SortConfig &config)
 }
 
 QList<QSharedPointer<DEnumerator::SortFileInfo>> DFileSorter::sort(
-    QList<QSharedPointer<DEnumerator::SortFileInfo>> &&files)
+        QList<QSharedPointer<DEnumerator::SortFileInfo>> &&files)
 {
     if (files.isEmpty()) {
         return files;
@@ -50,7 +82,7 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DFileSorter::sort(
 }
 
 QList<QSharedPointer<DEnumerator::SortFileInfo>> DFileSorter::sort(
-    const QList<QSharedPointer<DEnumerator::SortFileInfo>> &files)
+        const QList<QSharedPointer<DEnumerator::SortFileInfo>> &files)
 {
     // 拷贝后排序
     QList<QSharedPointer<DEnumerator::SortFileInfo>> copy = files;
@@ -74,8 +106,8 @@ DFileSorter::CompareFunc DFileSorter::getCompareFunc() const
 }
 
 bool DFileSorter::compareByName(
-    const QSharedPointer<DEnumerator::SortFileInfo> &a,
-    const QSharedPointer<DEnumerator::SortFileInfo> &b) const
+        const QSharedPointer<DEnumerator::SortFileInfo> &a,
+        const QSharedPointer<DEnumerator::SortFileInfo> &b) const
 {
     // 使用预缓存的排序键进行比较
     QString nameA = a->url.fileName();
@@ -88,56 +120,102 @@ bool DFileSorter::compareByName(
 }
 
 bool DFileSorter::compareBySize(
-    const QSharedPointer<DEnumerator::SortFileInfo> &a,
-    const QSharedPointer<DEnumerator::SortFileInfo> &b) const
+        const QSharedPointer<DEnumerator::SortFileInfo> &a,
+        const QSharedPointer<DEnumerator::SortFileInfo> &b) const
 {
-    // 先按大小比较，大小相同时按名称排序
-    if (a->filesize != b->filesize) {
-        return a->filesize < b->filesize;
+    // 获取有效大小：目录返回 -1，确保目录始终排在前面
+    // 这与原 DLocalHelper::fileSizeByEnt 的行为一致
+    auto getEffectiveSize =
+            [](const QSharedPointer<DEnumerator::SortFileInfo> &info) -> qint64 {
+        // 目录返回 -1
+        if (info->isDir) {
+            return -1;
+        }
+        return info->filesize;
+    };
+
+    qint64 sizeA = getEffectiveSize(a);
+    qint64 sizeB = getEffectiveSize(b);
+
+    // 先按有效大小比较，大小相同时按名称排序
+    if (sizeA != sizeB) {
+        return sizeA < sizeB;
     }
     return compareByName(a, b);
 }
 
 bool DFileSorter::compareByLastModified(
-    const QSharedPointer<DEnumerator::SortFileInfo> &a,
-    const QSharedPointer<DEnumerator::SortFileInfo> &b) const
+        const QSharedPointer<DEnumerator::SortFileInfo> &a,
+        const QSharedPointer<DEnumerator::SortFileInfo> &b) const
 {
+    // 获取用于排序的修改时间：符号链接使用指向文件的时间
+    auto getEffectiveModifiedTime = [](const QSharedPointer<DEnumerator::SortFileInfo> &info)
+        -> std::pair<qint64, qint64> {
+        // 如果是符号链接且有目标 URL，使用目标文件的时间
+        if (info->isSymLink && info->symlinkUrl.isValid()) {
+            auto targetTime = getSymlinkTargetTime(info->symlinkUrl);
+            if (targetTime.valid) {
+                return { targetTime.lastModified, targetTime.lastModifiedNs };
+            }
+        }
+        return { info->lastModifed, info->lastModifedNs };
+    };
+
+    auto [timeA, nsA] = getEffectiveModifiedTime(a);
+    auto [timeB, nsB] = getEffectiveModifiedTime(b);
+
     // 先比较秒，再比较纳秒
-    if (a->lastModifed != b->lastModifed) {
-        return a->lastModifed < b->lastModifed;
+    if (timeA != timeB) {
+        return timeA < timeB;
     }
-    if (a->lastModifedNs != b->lastModifedNs) {
-        return a->lastModifedNs < b->lastModifedNs;
+    if (nsA != nsB) {
+        return nsA < nsB;
     }
     // 时间相同，按名称排序
     return compareByName(a, b);
 }
 
 bool DFileSorter::compareByLastRead(
-    const QSharedPointer<DEnumerator::SortFileInfo> &a,
-    const QSharedPointer<DEnumerator::SortFileInfo> &b) const
+        const QSharedPointer<DEnumerator::SortFileInfo> &a,
+        const QSharedPointer<DEnumerator::SortFileInfo> &b) const
 {
+    // 获取用于排序的访问时间：符号链接使用指向文件的时间
+    auto getEffectiveReadTime = [](const QSharedPointer<DEnumerator::SortFileInfo> &info)
+        -> std::pair<qint64, qint64> {
+        // 如果是符号链接且有目标 URL，使用目标文件的时间
+        if (info->isSymLink && info->symlinkUrl.isValid()) {
+            auto targetTime = getSymlinkTargetTime(info->symlinkUrl);
+            if (targetTime.valid) {
+                return { targetTime.lastRead, targetTime.lastReadNs };
+            }
+        }
+        return { info->lastRead, info->lastReadNs };
+    };
+
+    auto [timeA, nsA] = getEffectiveReadTime(a);
+    auto [timeB, nsB] = getEffectiveReadTime(b);
+
     // 先比较秒，再比较纳秒
-    if (a->lastRead != b->lastRead) {
-        return a->lastRead < b->lastRead;
+    if (timeA != timeB) {
+        return timeA < timeB;
     }
-    if (a->lastReadNs != b->lastReadNs) {
-        return a->lastReadNs < b->lastReadNs;
+    if (nsA != nsB) {
+        return nsA < nsB;
     }
     // 时间相同，按名称排序
     return compareByName(a, b);
 }
 
 void DFileSorter::separateDirAndFile(
-    QList<QSharedPointer<DEnumerator::SortFileInfo>> &&files,
-    QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirs,
-    QList<QSharedPointer<DEnumerator::SortFileInfo>> &regularFiles) const
+        QList<QSharedPointer<DEnumerator::SortFileInfo>> &&files,
+        QList<QSharedPointer<DEnumerator::SortFileInfo>> &dirs,
+        QList<QSharedPointer<DEnumerator::SortFileInfo>> &regularFiles) const
 {
     dirs.reserve(files.size());
     regularFiles.reserve(files.size());
 
     for (auto &file : files) {
-        if (file->isDir && !file->isSymLink) {
+        if (file->isDir) {
             dirs.append(std::move(file));
         } else {
             regularFiles.append(std::move(file));
