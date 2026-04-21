@@ -76,6 +76,20 @@ public:
     qint64 doWrite(const char *data, qint64 maxSize);
     qint64 doWrite(const char *data);
     qint64 doWrite(const QByteArray &data);
+    qint64 read(char *data, qint64 maxSize);
+    QByteArray read(qint64 maxSize);
+    qint64 pos() const;
+    bool seek(qint64 pos, DFile::SeekType type = DFile::SeekType::kBegin) const;
+
+    bool doOpenBySys(const int model, const int permissions);
+    bool doCloseBySys();
+    qint64 doWriteBySys(const char *data, const qint64 maxSize);
+    qint64 doWriteBySys(const char *data);
+    qint64 doWriteBySys(const QByteArray &data);
+    qint64 readBySys(char *data, qint64 maxSize);
+    QByteArray readBySys(qint64 maxSize);
+    qint64 posBySys() const;
+    bool seekBySys(const qint64 pos, const DFile::SeekType type = DFile::SeekType::kBegin) const;
 
     static void readAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
     static void readQAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData);
@@ -97,7 +111,10 @@ public:
     DFMIOError error;
     QByteArray readAllAsyncRet;
     QUrl uri;
+    DFile::FileCopyType fileCopyType { DFile::FileCopyType::kCopyTypeByGioStream };
+    DFile::FileCopySyncType fileSyncType { DFile::FileCopySyncType::kSyncByGioStream };
     bool isOpen { false };
+    int fileFd { -1 };
 };
 
 END_IO_NAMESPACE

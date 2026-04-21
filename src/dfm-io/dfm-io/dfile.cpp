@@ -14,6 +14,7 @@
 #include <gio/gio.h>
 
 #include <sys/stat.h>
+#include <fcntl.h>
 
 USING_IO_NAMESPACE
 
@@ -189,9 +190,8 @@ quint32 DFilePrivate::buildPermissions(DFile::Permissions permission)
 
 bool DFilePrivate::doOpen(DFile::OpenFlags mode)
 {
-    if (q->isOpen()) {
-        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
-        return false;
+    if (isOpen) {
+        return true;
     }
 
     // check mode
@@ -309,7 +309,7 @@ bool DFilePrivate::doClose()
         cancellable = nullptr;
     }
 
-    return true;
+    return doCloseBySys();
 }
 
 QByteArray DFilePrivate::doReadAll()
@@ -405,6 +405,345 @@ qint64 DFilePrivate::doWrite(const char *data)
 qint64 DFilePrivate::doWrite(const QByteArray &data)
 {
     return doWrite(data.data(), data.length());
+}
+
+qint64 DFilePrivate::read(char *data, qint64 maxSize)
+{
+    GInputStream *inputStream = this->inputStream();
+    if (!inputStream) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        return -1;
+    }
+
+    g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
+    gssize read = g_input_stream_read(inputStream,
+                                      data,
+                                      static_cast<gsize>(maxSize),
+                                      cancellable,
+                                      &gerror);
+    if (gerror) {
+        setErrorFromGError(gerror);
+        return -1;
+    }
+
+    return read;
+}
+
+QByteArray DFilePrivate::read(qint64 maxSize)
+{
+    GInputStream *inputStream = this->inputStream();
+    if (!inputStream) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        return QByteArray();
+    }
+
+    char data[maxSize + 1];
+    memset(&data, 0, maxSize + 1);
+
+    g_autoptr(GError) gerror = nullptr;
+    checkAndResetCancel();
+    g_input_stream_read(inputStream,
+                        data,
+                        static_cast<gsize>(maxSize),
+                        cancellable,
+                        &gerror);
+    if (gerror) {
+        setErrorFromGError(gerror);
+        return QByteArray();
+    }
+
+    return QByteArray(data);
+}
+
+qint64 DFilePrivate::pos() const
+{
+    GInputStream *inputStream = const_cast<DFilePrivate *>(this)->inputStream();
+    if (inputStream) {
+        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+        gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
+        if (!canSeek) {
+            return -1;
+        }
+
+        GSeekable *seekable = G_SEEKABLE(inputStream);
+        if (!seekable) {
+            return -2;
+        }
+
+        goffset pos = g_seekable_tell(seekable);
+
+        return qint64(pos);
+    }
+
+    GOutputStream *outputStream = const_cast<DFilePrivate *>(this)->outputStream();
+    if (outputStream){
+        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+        gboolean canSeek = G_IS_SEEKABLE(outputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
+        if (!canSeek) {
+            return -3;
+        }
+
+        GSeekable *seekable = G_SEEKABLE(outputStream);
+        if (!seekable) {
+            return -4;
+        }
+
+        goffset pos = g_seekable_tell(seekable);
+
+        return qint64(pos);
+    }
+
+    const_cast<DFilePrivate *>(this)->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+    return -5;
+}
+
+bool DFilePrivate::seek(qint64 pos, DFile::SeekType type) const
+{
+    GInputStream *inputStream = const_cast<DFilePrivate *>(this)->inputStream();
+    if (inputStream) {
+        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+        gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
+        if (!canSeek) {
+            return false;
+        }
+
+        GSeekable *seekable = G_SEEKABLE(inputStream);
+        if (!seekable) {
+            return false;
+        }
+
+        bool ret = false;
+        GError *gerror = nullptr;
+        GSeekType gtype = G_SEEK_CUR;
+        switch (type) {
+        case DFile::SeekType::kBegin:
+            gtype = G_SEEK_SET;
+            break;
+        case DFile::SeekType::kEnd:
+            gtype = G_SEEK_END;
+            break;
+
+        default:
+            break;
+        }
+
+        const_cast<DFilePrivate *>(this)->checkAndResetCancel();
+        ret = g_seekable_seek(seekable, pos, gtype, const_cast<DFilePrivate *>(this)->cancellable, &gerror);
+        if (gerror) {
+            qCritical() << " seek err code = " << gerror->code
+                        << " , seek err msg = " << gerror->message;
+            const_cast<DFilePrivate *>(this)->setErrorFromGError(gerror);
+            g_error_free(gerror);
+        }
+
+        return ret;
+    }
+
+    GOutputStream *out = const_cast<DFilePrivate *>(this)->outputStream();
+    if (out) {
+        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
+        gboolean canSeek = G_IS_SEEKABLE(out) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
+        if (!canSeek) {
+            return false;
+        }
+
+        GSeekable *seekable = G_SEEKABLE(out);
+        if (!seekable) {
+            return false;
+        }
+
+        bool ret = false;
+        GError *gerror = nullptr;
+        GSeekType gtype = G_SEEK_CUR;
+        switch (type) {
+        case DFile::SeekType::kBegin:
+            gtype = G_SEEK_SET;
+            break;
+        case DFile::SeekType::kEnd:
+            gtype = G_SEEK_END;
+            break;
+
+        default:
+            break;
+        }
+
+        const_cast<DFilePrivate *>(this)->checkAndResetCancel();
+        ret = g_seekable_seek(seekable, pos, gtype, const_cast<DFilePrivate *>(this)->cancellable, &gerror);
+        if (gerror) {
+            qCritical() << " seek err code = " << gerror->code
+                        << " , seek err msg = " << gerror->message;
+            const_cast<DFilePrivate *>(this)->setErrorFromGError(gerror);
+            g_error_free(gerror);
+        }
+
+        return ret;
+    }
+
+    const_cast<DFilePrivate *>(this)->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+    return false;
+}
+
+bool DFilePrivate::doOpenBySys(const int model, const int permissions)
+{
+    qDebug() << " DFilePrivate::doOpenBySys " << model << permissions << uri;
+    if (isOpen) {
+        qWarning() << "DFilePrivate::doOpenBySys file is opened!" << uri;
+        return true;
+    }
+
+    if (fileCopyType != DFile::FileCopyType::kCopyTypeBySys) {
+        qWarning() << "DFilePrivate::doOpenBySys file copy type is not system read write";
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        error.setMessage("file copy type is not system read write");
+        return false;
+    }
+
+    if (!uri.isLocalFile()){
+        qWarning() << "DFilePrivate::doOpenBySys file is not local file";
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        error.setMessage("file is not local file, not surport system read write");
+        return false;
+    }
+    fileFd = ::open(uri.path().toUtf8().data(), model, permissions);
+    if (fileFd < 0) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        error.setMessage(strerror(errno));
+        qWarning() << "DFilePrivate::doOpenBySys faild, error : " << error.errorMsg();
+        return false;
+    }
+    isOpen = true;
+    return true;
+}
+
+bool DFilePrivate::doCloseBySys()
+{
+    qDebug() << " DFilePrivate::doCloseBySys " << uri;
+    if (fileFd < 0) {
+        return true;
+    }
+
+    int result = ::close(fileFd);
+    if (result != 0) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        error.setMessage(strerror(errno));
+        qWarning() << "DFilePrivate::doCloseBySys faild, error : " << error.errorMsg();
+        return false;
+    }
+
+    fileFd = -1;
+
+    return true;
+}
+
+qint64 DFilePrivate::doWriteBySys(const char *data, const qint64 maxSize)
+{
+    qDebug() << " DFilePrivate::doWriteBySys " << maxSize << uri;
+    if (fileFd < 0) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        error.setMessage(strerror(errno));
+        qWarning() << "DFilePrivate::doWriteBySys faild, error : " << error.errorMsg();
+        return -1;
+    }
+    qint64 size = static_cast<qint64>(write(fileFd, data, static_cast<size_t>(maxSize)));
+    if (size < 0) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        error.setMessage(strerror(errno));
+        qWarning() << "DFilePrivate::doWriteBySys faild, error : " << error.errorMsg();
+    } else if (size < maxSize) {
+        qWarning() << "DFilePrivate::doWriteBySys realy write size not equire maxSize!";
+    }
+    return size;
+}
+
+qint64 DFilePrivate::doWriteBySys(const char *data)
+{
+    qDebug() << " DFilePrivate::doWriteBySys " << uri;
+    return doWriteBySys(data, static_cast<qint64>(strlen(data)));
+}
+
+qint64 DFilePrivate::doWriteBySys(const QByteArray &data)
+{
+    qDebug() << " DFilePrivate::doWriteBySys " << data.length() << uri;
+    return doWriteBySys(data.data(), data.length());
+}
+
+qint64 DFilePrivate::readBySys(char *data, qint64 maxSize)
+{
+    qDebug() << " DFilePrivate::readBySys " << maxSize << uri;
+    if (fileFd < 0) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        error.setMessage(strerror(errno));
+        qWarning() << "DFilePrivate::readBySys faild, error : " << error.errorMsg();
+        return -1;
+    }
+
+    auto size = ::read(fileFd, data, static_cast<size_t>(maxSize));
+    if (size < 0) {
+        error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        error.setMessage(strerror(errno));
+        qWarning() << "DFilePrivate::readBySys faild, error : " << error.errorMsg();
+    }
+
+    return size;
+}
+
+QByteArray DFilePrivate::readBySys(qint64 maxSize)
+{
+    char data[maxSize + 1];
+    memset(&data, 0, static_cast<size_t>(maxSize + 1));
+    readBySys(data, maxSize);
+    return QByteArray(data);
+}
+
+qint64 DFilePrivate::posBySys() const
+{
+    qDebug() << " DFilePrivate::posBySys " << uri << fileFd;
+    if (fileFd < 0) {
+        const_cast<DFilePrivate *>(this)->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        const_cast<DFilePrivate *>(this)->error.setMessage("file fd is unvalid!");
+        qWarning() << "DFilePrivate::posBySys file fd is unvalid!";
+        return -1;
+    }
+    auto result = ::lseek(fileFd, 0, SEEK_CUR);
+    if (result < 0) {
+        const_cast<DFilePrivate *>(this)->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        const_cast<DFilePrivate *>(this)->error.setMessage(strerror(errno));
+        qWarning() << "DFilePrivate::posBySys faild, error : " << error.errorMsg();
+    }
+    return result;
+}
+
+bool DFilePrivate::seekBySys(const qint64 pos, const DFile::SeekType type) const
+{
+    qDebug() << " DFilePrivate::seekBySys " << uri << pos << int(type) << fileFd;
+    if (fileFd < 0) {
+        const_cast<DFilePrivate *>(this)->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        const_cast<DFilePrivate *>(this)->error.setMessage("file fd is unvalid!");
+        qWarning() << "DFilePrivate::seekBySys file fd is unvalid!";
+        return false;
+    }
+
+    int seekType = SEEK_CUR;
+    switch (type) {
+    case DFile::SeekType::kBegin:
+        seekType = SEEK_SET;
+        break;
+    case DFile::SeekType::kEnd:
+        seekType = SEEK_END;
+        break;
+    default:
+        seekType = SEEK_CUR;
+    }
+    auto result = ::lseek(fileFd, pos, seekType);
+    if (result < 0) {
+        const_cast<DFilePrivate *>(this)->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+        const_cast<DFilePrivate *>(this)->error.setMessage(strerror(errno));
+        qWarning() << "DFilePrivate::seekBySys faild, error : " << error.errorMsg();
+        return false;
+    }
+
+    return true;
 }
 
 void DFilePrivate::readAsyncCallback(GObject *sourceObject, GAsyncResult *res, gpointer userData)
@@ -643,6 +982,7 @@ void DFilePrivate::readAsyncFutureCallback(GObject *sourceObject, GAsyncResult *
     g_free(data);
 }
 
+
 /************************************************
  * DFile
  ***********************************************/
@@ -702,45 +1042,9 @@ bool DFile::exists() const
 
 qint64 DFile::pos() const
 {
-    GInputStream *inputStream = d->inputStream();
-    if (inputStream) {
-        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
-        gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
-        if (!canSeek) {
-            return -1;
-        }
-
-        GSeekable *seekable = G_SEEKABLE(inputStream);
-        if (!seekable) {
-            return -2;
-        }
-
-        goffset pos = g_seekable_tell(seekable);
-
-        return qint64(pos);
-    }
-
-    GOutputStream *outputStream = d->outputStream();
-    if (outputStream){
-        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
-        gboolean canSeek = G_IS_SEEKABLE(outputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
-        if (!canSeek) {
-            return -3;
-        }
-
-        GSeekable *seekable = G_SEEKABLE(outputStream);
-        if (!seekable) {
-            return -4;
-        }
-
-        goffset pos = g_seekable_tell(seekable);
-
-        return qint64(pos);
-    }
-
-    d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
-    return -5;
-
+    if (d->fileCopyType == FileCopyType::kCopyTypeBySys)
+        return d->posBySys();
+    return d->pos();
 }
 
 DFile::Permissions DFile::permissions() const
@@ -770,23 +1074,54 @@ DFMIOError DFile::lastError() const
     return d->error;
 }
 
+void DFile::setCopyType(const DFile::FileCopyType type)
+{
+    d->fileCopyType = type;
+}
+
+void DFile::setSyncType(const DFile::FileCopySyncType type)
+{
+    d->fileSyncType = type;
+}
+
+DFile::FileCopyType DFile::copyFileType() const
+{
+    return d->fileCopyType;
+}
+
+DFile::FileCopySyncType DFile::syncType() const
+{
+    return d->fileSyncType;
+}
+
 bool DFile::open(DFile::OpenFlags mode)
 {
+    if (d->fileCopyType != FileCopyType::kCopyTypeByGioStream) {
+        d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        d->error.setMessage("file copy type is not gio stream!");
+        qWarning() << "DFile::open file copy type is not gio stream!";
+        return false;
+    }
+
     d->isOpen = d->doOpen(mode);
 
     return d->isOpen;
 }
 
+bool DFile::open(const int mode, const int permissions)
+{
+    if (d->fileCopyType != DFile::FileCopyType::kCopyTypeBySys) {
+        d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+        d->error.setMessage("file copy type is not system read write!");
+        qWarning() << "DFile::open current filecopy type != DFile::FileCopyType::kCopyTypeBySys";
+        return false;
+    }
+    return d->doOpenBySys(mode, permissions);
+}
+
 bool DFile::close()
 {
-    if (d->isOpen) {
-        if (d->doClose())
-            d->isOpen = false;
-        else
-            return false;
-    }
-
-    return true;
+    return d->doClose();
 }
 
 bool DFile::cancel()
@@ -798,94 +1133,45 @@ bool DFile::cancel()
 
 bool DFile::seek(qint64 pos, DFile::SeekType type) const
 {
-    GInputStream *inputStream = d->inputStream();
-    if (inputStream) {
-        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
-        gboolean canSeek = G_IS_SEEKABLE(inputStream) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
-        if (!canSeek) {
-            return false;
-        }
+    if (d->fileCopyType == FileCopyType::kCopyTypeBySys)
+        return d->seekBySys(pos, type);
 
-        GSeekable *seekable = G_SEEKABLE(inputStream);
-        if (!seekable) {
-            return false;
-        }
-
-        bool ret = false;
-        GError *gerror = nullptr;
-        GSeekType gtype = G_SEEK_CUR;
-        switch (type) {
-        case DFile::SeekType::kBegin:
-            gtype = G_SEEK_SET;
-            break;
-        case DFile::SeekType::kEnd:
-            gtype = G_SEEK_END;
-            break;
-
-        default:
-            break;
-        }
-
-        d->checkAndResetCancel();
-        ret = g_seekable_seek(seekable, pos, gtype, d->cancellable, &gerror);
-        if (gerror) {
-            qCritical() << " seek err code = " << gerror->code
-                        << " , seek err msg = " << gerror->message;
-            d->setErrorFromGError(gerror);
-            g_error_free(gerror);
-        }
-
-        return ret;
-    }
-
-    GOutputStream *out = d->outputStream();
-    if (out) {
-        // seems g_seekable_can_seek only support local file, survey after. todo lanxs
-        gboolean canSeek = G_IS_SEEKABLE(out) /*&& g_seekable_can_seek(G_SEEKABLE(inputStream))*/;
-        if (!canSeek) {
-            return false;
-        }
-
-        GSeekable *seekable = G_SEEKABLE(out);
-        if (!seekable) {
-            return false;
-        }
-
-        bool ret = false;
-        GError *gerror = nullptr;
-        GSeekType gtype = G_SEEK_CUR;
-        switch (type) {
-        case DFile::SeekType::kBegin:
-            gtype = G_SEEK_SET;
-            break;
-        case DFile::SeekType::kEnd:
-            gtype = G_SEEK_END;
-            break;
-
-        default:
-            break;
-        }
-
-        d->checkAndResetCancel();
-        ret = g_seekable_seek(seekable, pos, gtype, d->cancellable, &gerror);
-        if (gerror) {
-            qCritical() << " seek err code = " << gerror->code
-                        << " , seek err msg = " << gerror->message;
-            d->setErrorFromGError(gerror);
-            g_error_free(gerror);
-        }
-
-        return ret;
-    }
-
-    d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
-    return false;
-
-
+    return d->seek(pos, type);
 }
 
 bool DFile::flush()
 {
+    if (d->fileCopyType == FileCopyType::kCopyTypeBySys) {
+        if (d->fileFd < 0) {
+            d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
+            d->error.setMessage("file is not opened!");
+            return false;
+        }
+        // 使用 fsync 同步单个文件，而不是 syncfs 同步整个文件系统
+        if (fsync(d->fileFd) != 0) {
+            d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FAILED);
+            d->error.setMessage(strerror(errno));
+            return false;
+        }
+        return true;
+    }
+    // ftp or not local file not surport kSyncBySys to sync
+    if (d->fileSyncType == FileCopySyncType::kSyncBySys && d->uri.isLocalFile()) {
+        if (d->fileFd < 0) {
+            d->fileFd = ::open(d->uri.path().toUtf8().data(), O_RDONLY);
+        }
+
+        if (d->fileFd < 0) {
+            qWarning() << "DFile::flush FileCopySyncType::kSyncBySys open file error : " << strerror(errno);
+        } else {
+            if (fsync(d->fileFd) == 0) {
+                return true;
+            }
+        }
+    }
+
+
+
     GOutputStream *outputStream = d->outputStream();
     if (!outputStream) {
         d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
@@ -918,51 +1204,18 @@ bool DFile::setPermissions(Permissions permission)
 
 qint64 DFile::read(char *data, qint64 maxSize)
 {
-    GInputStream *inputStream = d->inputStream();
-    if (!inputStream) {
-        d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
-        return -1;
-    }
+    if (d->fileCopyType == DFile::FileCopyType::kCopyTypeBySys)
+        return d->readBySys(data, maxSize);
 
-    g_autoptr(GError) gerror = nullptr;
-    d->checkAndResetCancel();
-    gssize read = g_input_stream_read(inputStream,
-                                      data,
-                                      static_cast<gsize>(maxSize),
-                                      d->cancellable,
-                                      &gerror);
-    if (gerror) {
-        d->setErrorFromGError(gerror);
-        return -1;
-    }
-
-    return read;
+    return d->read(data, maxSize);
 }
 
 QByteArray DFile::read(qint64 maxSize)
 {
-    GInputStream *inputStream = d->inputStream();
-    if (!inputStream) {
-        d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_OPEN_FAILED);
-        return QByteArray();
-    }
+    if (d->fileCopyType == DFile::FileCopyType::kCopyTypeBySys)
+        return d->readBySys(maxSize);
 
-    char data[maxSize + 1];
-    memset(&data, 0, maxSize + 1);
-
-    g_autoptr(GError) gerror = nullptr;
-    d->checkAndResetCancel();
-    g_input_stream_read(inputStream,
-                        data,
-                        static_cast<gsize>(maxSize),
-                        d->cancellable,
-                        &gerror);
-    if (gerror) {
-        d->setErrorFromGError(gerror);
-        return QByteArray();
-    }
-
-    return QByteArray(data);
+    return d->read(maxSize);
 }
 
 QByteArray DFile::readAll()
@@ -986,6 +1239,9 @@ qint64 DFile::write(const char *data, qint64 len)
         return -1;
     }
 
+    if (d->fileCopyType == FileCopyType::kCopyTypeBySys)
+        return d->doWriteBySys(data, len);
+
     return d->doWrite(data, len);
 }
 
@@ -996,6 +1252,9 @@ qint64 DFile::write(const char *data)
         return -1;
     }
 
+    if (d->fileCopyType == FileCopyType::kCopyTypeBySys)
+        return d->doWriteBySys(data);
+
     return d->doWrite(data);
 }
 
@@ -1005,6 +1264,9 @@ qint64 DFile::write(const QByteArray &byteArray)
         d->setError(DFMIOError(DFM_IO_ERROR_OPEN_FAILED));
         return -1;
     }
+
+    if (d->fileCopyType == FileCopyType::kCopyTypeBySys)
+        return d->doWriteBySys(byteArray);
 
     return d->doWrite(byteArray);
 }
