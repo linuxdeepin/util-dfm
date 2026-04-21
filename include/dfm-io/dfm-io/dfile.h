@@ -77,6 +77,18 @@ public:
     };
     Q_DECLARE_FLAGS(Permissions, Permission)
 
+    enum class FileCopyType  : uint8_t {
+        kCopyTypeByGioStream = 0,   // using gio stream copy
+        kCopyTypeBySys = 1,   // using system open read write
+
+    };
+
+    enum class FileCopySyncType  : uint8_t {
+        kSyncByGioStream = 0,   // using gio stream copy
+        kSyncBySys = 1,   // using system open read write
+
+    };
+
     // callback, use function pointer
     using ReadCallbackFunc = void (*)(qint64, void *);
     using ReadQCallbackFunc = void (*)(QByteArray, void *);
@@ -97,8 +109,13 @@ public:
     qint64 pos() const;
     Permissions permissions() const;
     DFMIOError lastError() const;
+    void setCopyType(const FileCopyType type);
+    void setSyncType(const FileCopySyncType type);
+    FileCopyType copyFileType() const;
+    FileCopySyncType syncType() const;
 
     bool open(OpenFlags mode);
+    bool open(const int mode, const int permissions);
     bool close();
     bool cancel();
     bool seek(qint64 pos, SeekType type = SeekType::kBegin) const;
