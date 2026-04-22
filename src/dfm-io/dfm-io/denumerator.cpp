@@ -5,7 +5,6 @@
 #include "private/denumerator_p.h"
 
 #include "utils/dlocalhelper.h"
-#include "sort/dfilesorter.h"
 
 #include <dfm-io/denumerator.h>
 #include <dfm-io/dfileinfo.h>
@@ -804,29 +803,14 @@ QList<QSharedPointer<DFileInfo>> DEnumerator::fileInfoList()
 
 QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
 {
-    // 使用 FTS 遍历但不预排序（传 nullptr 作为比较函数）
-    if (!d->fts) {
-        char *paths[2] = { nullptr, nullptr };
-        paths[0] = d->filePath(d->uri);
-        if (!paths[0]) {
-            qWarning() << "Failed to get file path for uri:" << d->uri;
-            return {};
-        }
-        d->fts = fts_open(paths, FTS_COMFOLLOW, nullptr);
-        free(paths[0]);
-
-        if (!d->fts) {
-            qWarning() << "fts_open open error : " << QString::fromLocal8Bit(strerror(errno));
-            d->error.setCode(DFMIOErrorCode::DFM_IO_ERROR_FTS_OPEN);
-            return {};
-        }
-    }
+    if (!d->fts)
+        d->openDirByfts();
 
     if (!d->fts)
         return {};
 
-    // 收集所有文件信息
-    QList<QSharedPointer<SortFileInfo>> allFiles;
+    QList<QSharedPointer<DEnumerator::SortFileInfo>> listFile;
+    QList<QSharedPointer<DEnumerator::SortFileInfo>> listDir;
     QSet<QString> hideList;
     QUrl urlHidden = d->buildUrl(d->uri, ".hidden");
     hideList = DLocalHelper::hideListFromUrl(urlHidden);
@@ -835,8 +819,7 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
         qWarning() << "Failed to get file path for uri:" << d->uri;
         return {};
     }
-
-    while (true) {
+    while (1) {
         FTSENT *ent = fts_read(d->fts);
 
         if (ent == nullptr) {
@@ -851,30 +834,20 @@ QList<QSharedPointer<DEnumerator::SortFileInfo>> DEnumerator::sortFileInfoList()
         if (strcmp(ent->fts_path, dirPath) == 0 || flag == FTS_DP)
             continue;
 
-        auto sortInfo = DLocalHelper::createSortFileInfo(ent, hideList);
-        // 跳过子目录遍历
-        if (sortInfo->isDir && !sortInfo->isSymLink) {
-            fts_set(d->fts, ent, FTS_SKIP);
-        }
-        allFiles.append(sortInfo);
+        d->insertSortFileInfoList(listFile, listDir, ent, d->fts, hideList);
     }
 
     fts_close(d->fts);
     d->fts = nullptr;
+
+    // Clean up allocated memory
     free(dirPath);
 
-    // 使用 DFileSorter 进行排序
-    DFileSorter::SortConfig config;
-    // 映射排序角色：kSortRoleCompareFileName(1) -> Name(0), 以此类推
-    // kSortRoleCompareDefault(0) 默认按名称排序
-    config.role = (d->sortRoleFlag == SortRoleCompareFlag::kSortRoleCompareDefault)
-        ? DFileSorter::SortRole::Name
-        : static_cast<DFileSorter::SortRole>(static_cast<uint8_t>(d->sortRoleFlag) - 1);
-    config.order = d->sortOrder;
-    config.mixDirAndFile = d->isMixDirAndFile;
+    if (d->isMixDirAndFile)
+        return listFile;
 
-    DFileSorter sorter(config);
-    return sorter.sort(std::move(allFiles));
+    listDir.append(listFile);
+    return listDir;
 }
 
 DFMIOError DEnumerator::lastError() const

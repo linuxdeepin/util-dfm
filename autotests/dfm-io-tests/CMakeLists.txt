@@ -9,21 +9,15 @@ endif()
 
 message(STATUS "Adding unit tests for ${IO_TEST_LIB}")
 
-# 共享的测试入口点
-set(TEST_COMMON_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_main.cpp
-)
-
-# 各测试类源文件（不含 main）
-set(TEST_CLASS_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/tst_dfm_io.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tst_dfilesorter.cpp
+# Collect test source files
+file(GLOB_RECURSE TEST_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/*.h
 )
 
 # Create the test executable
 add_executable(dfm-io-test
-    ${TEST_COMMON_SRCS}
-    ${TEST_CLASS_SRCS}
+    ${TEST_SRCS}
 )
 
 # Link against the dfm-io library and Qt Test
@@ -33,11 +27,17 @@ target_link_libraries(dfm-io-test
 )
 
 # Add include directories
-target_include_directories(dfm-io-test
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/dfm-io/dfm-io
-    ${CMAKE_SOURCE_DIR}/src/dfm-io/dfm-io/sort
-)
+if(DFM_BUILD_WITH_QT6)
+    target_include_directories(dfm-io-test
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/dfm-io/dfm-io
+    )
+else()
+    target_include_directories(dfm-io-test
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/dfm-io/dfm-io
+    )
+endif()
 
 # Register the test with CTest
 add_test(NAME dfm-io-test COMMAND dfm-io-test)
