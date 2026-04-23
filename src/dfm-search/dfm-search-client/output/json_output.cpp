@@ -114,6 +114,8 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
 
         OcrTextResultAPI resultAPI(const_cast<SearchResult &>(result));
 
+        obj["contentMatch"] = resultAPI.highlightedContent();
+
         QString ocrContent = resultAPI.ocrContent();
         if (!ocrContent.isEmpty()) {
             obj["ocrContent"] = ocrContent;

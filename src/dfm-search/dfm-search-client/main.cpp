@@ -55,6 +55,9 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
         contentOptions.setFilenameContentMixedAndSearchEnabled(true);
     } else if (config.searchType == SearchType::Ocr) {
         OcrTextOptionsAPI ocrTextOptions(options);
+        ocrTextOptions.setMaxPreviewLength(config.maxPreviewLength);
+        ocrTextOptions.setFullTextRetrievalEnabled(true);
+        ocrTextOptions.setSearchResultHighlightEnabled(true);
         ocrTextOptions.setFilenameOcrContentMixedAndSearchEnabled(true);
     }
 

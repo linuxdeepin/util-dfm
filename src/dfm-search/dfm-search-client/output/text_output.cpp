@@ -134,6 +134,8 @@ void TextOutput::printSearchResult(const SearchResult &result)
     } else if (m_searchType == SearchType::Ocr) {
         OcrTextResultAPI resultAPI(const_cast<SearchResult &>(result));
 
+        std::cout << "  Content match: " << resultAPI.highlightedContent().toStdString() << std::endl;
+
         QString ocrContent = resultAPI.ocrContent();
         if (!ocrContent.isEmpty()) {
             std::cout << "  OCR content: " << ocrContent.toStdString() << std::endl;

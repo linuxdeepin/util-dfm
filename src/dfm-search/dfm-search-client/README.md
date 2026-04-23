@@ -18,6 +18,11 @@ A comprehensive file search utility for Deepin File Manager that provides high-p
   - Result highlighting
   - Preview of matching content
 
+- **OCR search**: Search text extracted from images via OCR:
+  - Search text in image files (PNG, JPG, etc.)
+  - Result highlighting
+  - Preview of matching OCR text
+
 ## Search Methods
 
 - **Indexed search**: Fast search using pre-built Lucene indexes
@@ -33,7 +38,7 @@ dfm6-search-client [options] <keyword> <search_path>
 
 ### Options
 
-- `--type=<filename|content>`: Search type (default: filename)
+- `--type=<filename|content|ocr>`: Search type (default: filename)
 - `--method=<indexed|realtime>`: Search method (default: indexed)
 - `--query=<simple|boolean>`: Query type (default: simple)
 - `--case-sensitive`: Enable case sensitivity
@@ -41,8 +46,8 @@ dfm6-search-client [options] <keyword> <search_path>
 - `--pinyin`: Enable pinyin search (for filename search)
 - `--file-types=<types>`: Filter by file types, comma separated
 - `--file-extensions=<exts>`: Filter by file extensions, comma separated
-- `--max-results=<number>`: Maximum number of results
-- `--max-preview=<length>`: Max content preview length (for content search)
+- `--max-results=<number>`: Maximum number of results (0 for unlimited, default: 0)
+- `--max-preview=<length>`: Max content preview length (for content/ocr search)
 
 ### Examples
 

@@ -23,7 +23,7 @@ CliOptions::CliOptions()
       m_pinyinAcronymOption(QStringList() << "pinyin-acronym", "Enable pinyin acronym search (for filename search)"),
       m_fileTypesOption(QStringList() << "file-types", "Filter by file types, comma separated", "types"),
       m_fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions"),
-      m_maxResultsOption(QStringList() << "max-results", "Maximum number of results", "number", "100"),
+      m_maxResultsOption(QStringList() << "max-results", "Maximum number of results (0 for unlimited)", "number", "0"),
       m_maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200"),
       m_wildcardOption(QStringList() << "wildcard", "Enable wildcard search with * and ? patterns"),
       m_jsonOption(QStringList() << "json"
@@ -106,8 +106,8 @@ void CliOptions::printHelp() const
     std::cout << "  --pinyin-acronym               Enable pinyin acronym search (for filename search)" << std::endl;
     std::cout << "  --file-types=<types>           Filter by file types, comma separated" << std::endl;
     std::cout << "  --file-extensions=<exts>       Filter by file extensions, comma separated" << std::endl;
-    std::cout << "  --max-results=<number>         Maximum number of results" << std::endl;
-    std::cout << "  --max-preview=<length>         Max content preview length (for content search)" << std::endl;
+    std::cout << "  --max-results=<number>         Maximum number of results (0 for unlimited)" << std::endl;
+    std::cout << "  --max-preview=<length>         Max content preview length (for content/ocr search)" << std::endl;
     std::cout << std::endl;
     std::cout << "Time Range Filter Options:" << std::endl;
     std::cout << "  --time-field=<birth|modify>    Time field to filter (birth=creation, modify=modification)" << std::endl;
@@ -224,7 +224,7 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
     if (m_parser.isSet(m_maxResultsOption)) {
         bool ok;
         int maxResults = m_parser.value(m_maxResultsOption).toInt(&ok);
-        if (ok && maxResults > 0) {
+        if (ok && maxResults >= 0) {
             config.maxResults = maxResults;
         }
     }
