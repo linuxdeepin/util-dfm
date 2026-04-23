@@ -7,16 +7,16 @@
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search/searchoptions.h>
 #include <dfm-search/searchresult.h>
+#include <dfm-search/textsearchapi.h>
 
 DFM_SEARCH_BEGIN_NS
 
 /**
  * @brief The ContentOptionsAPI class provides content search specific options
  *
- * This class extends the base SearchOptions with content search specific settings,
- * such as file type filters and content preview length.
+ * This class extends TextSearchOptionsAPI with content search specific settings.
  */
-class ContentOptionsAPI
+class ContentOptionsAPI : public TextSearchOptionsAPI
 {
 public:
     /**
@@ -24,55 +24,6 @@ public:
      * @param options The SearchOptions object to operate on
      */
     explicit ContentOptionsAPI(SearchOptions &options);
-
-    /**
-     * @brief Set the maximum length for content preview
-     * @param length The maximum preview length in characters
-     */
-    void setMaxPreviewLength(int length);
-
-    /**
-     * @brief Get the maximum content preview length
-     * @return The maximum preview length in characters
-     */
-    int maxPreviewLength() const;
-
-    /**
-     * @brief Enables or disables HTML highlighting in search results.
-     *
-     * When enabled, matching keywords in search results will be wrapped in HTML tags
-     * (e.g., `<span style="color:red">keyword</span>`) for visual highlighting.
-     * Note: Enabling this feature may incur additional processing overhead.
-     *
-     * @param enable Set to @c true to enable HTML highlighting, @c false to disable.
-     */
-    void setSearchResultHighlightEnabled(bool enable);
-
-    /**
-     * @brief Returns whether HTML highlighting in search results is enabled.
-     *
-     * @return @c true if search results will include HTML highlighting tags,
-     *         @c false otherwise (plaintext results).
-     */
-    bool isSearchResultHighlightEnabled() const;
-
-    /**
-     * @brief Enables or disables full-text content retrieval in search results.
-     *
-     * When enable, search operations will return the complete file content along with metadata.
-     * This provides more detailed results but significantly increases memory usage and processing time.
-     *
-     * @param enable Set to @c true to retrieve full file contents, @c false to return metadata only.
-     */
-    void setFullTextRetrievalEnabled(bool enable);
-
-    /**
-     * @brief Checks if full-text content retrieval is enabled.
-     *
-     * @return @c true if search results will include complete file contents,
-     *         @c false if only file metadata will be returned.
-     */
-    bool isFullTextRetrievalEnabled() const;
 
     /**
      * @brief Sets whether the extended AND search behavior across 'contents' and 'filename' fields is enabled.
@@ -97,112 +48,23 @@ public:
      * @return True if the filename-content mixed AND search is enabled, false otherwise.
      */
     bool isFilenameContentMixedAndSearchEnabled() const;
-
-private:
-    SearchOptions &m_options;
 };
 
 /**
  * @brief The ContentResultAPI class provides content search specific result handling
  *
- * This class extends the base SearchResult with content search specific features,
- * such as highlighted content preview.
- *
- * When detailed results are enabled, this API provides access to additional
- * metadata including filename, hidden status, and time information.
+ * This class extends TextSearchResultAPI for content search results.
  */
-class ContentResultAPI
+class ContentResultAPI : public TextSearchResultAPI
 {
 public:
     /**
      * @brief Constructor
      * @param result The SearchResult object to operate on
      */
-    ContentResultAPI(SearchResult &result);
-
-    // ==================== Content Attributes ====================
-
-    /**
-     * @brief Get the highlighted content preview
-     * @return The highlighted content as QString
-     */
-    QString highlightedContent() const;
-
-    /**
-     * @brief Set the highlighted content preview
-     * @param content The highlighted content to set
-     */
-    void setHighlightedContent(const QString &content);
-
-    // ==================== Extended Attributes ====================
-
-    /**
-     * @brief Get the file name (without path)
-     * @return The file name
-     */
-    QString filename() const;
-
-    /**
-     * @brief Set the file name
-     * @param name The file name to set
-     */
-    void setFilename(const QString &name);
-
-    /**
-     * @brief Check if the file is hidden
-     * @return true if the file is hidden, false otherwise
-     */
-    bool isHidden() const;
-
-    /**
-     * @brief Set whether the file is hidden
-     * @param hidden true if the file is hidden, false otherwise
-     */
-    void setIsHidden(bool hidden);
-
-    // ==================== Modification Time ====================
-
-    /**
-     * @brief Set the modification time timestamp
-     * @param timestamp Unix timestamp in seconds
-     */
-    void setModifyTimestamp(qint64 timestamp);
-
-    /**
-     * @brief Get the modification time timestamp
-     * @return Unix timestamp in seconds, 0 if not set
-     */
-    qint64 modifyTimestamp() const;
-
-    /**
-     * @brief Get the modification time as a formatted string
-     * @return Formatted time string (yyyy-MM-dd HH:mm:ss)
-     */
-    QString modifyTimeString() const;
-
-    // ==================== Birth/Creation Time ====================
-
-    /**
-     * @brief Set the birth/creation time timestamp
-     * @param timestamp Unix timestamp in seconds
-     */
-    void setBirthTimestamp(qint64 timestamp);
-
-    /**
-     * @brief Get the birth/creation time timestamp
-     * @return Unix timestamp in seconds, 0 if not set
-     */
-    qint64 birthTimestamp() const;
-
-    /**
-     * @brief Get the birth/creation time as a formatted string
-     * @return Formatted time string (yyyy-MM-dd HH:mm:ss)
-     */
-    QString birthTimeString() const;
-
-private:
-    SearchResult &m_result;
+    explicit ContentResultAPI(SearchResult &result);
 };
+
 DFM_SEARCH_END_NS
 
 #endif   // CONTENTSEARCHAPI_H
