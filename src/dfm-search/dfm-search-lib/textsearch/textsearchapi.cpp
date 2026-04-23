@@ -27,12 +27,12 @@ int TextSearchOptionsAPI::maxPreviewLength() const
 
 void TextSearchOptionsAPI::setSearchResultHighlightEnabled(bool enable)
 {
-    m_options.setCustomOption("searchResultHighligh", enable);
+    m_options.setCustomOption("searchResultHighlight", enable);
 }
 
 bool TextSearchOptionsAPI::isSearchResultHighlightEnabled() const
 {
-    return m_options.customOption("searchResultHighligh").toBool();
+    return m_options.customOption("searchResultHighlight").toBool();
 }
 
 void TextSearchOptionsAPI::setFullTextRetrievalEnabled(bool enable)
