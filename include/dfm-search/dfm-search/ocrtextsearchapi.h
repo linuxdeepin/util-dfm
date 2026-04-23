@@ -14,7 +14,6 @@ DFM_SEARCH_BEGIN_NS
  * @brief The OcrTextOptionsAPI class provides OCR text search specific options
  *
  * This class extends the base SearchOptions with OCR text search specific settings.
- * OCR text search is a simplified version of content search without highlighting support.
  */
 class OcrTextOptionsAPI
 {
@@ -24,6 +23,58 @@ public:
      * @param options The SearchOptions object to operate on
      */
     explicit OcrTextOptionsAPI(SearchOptions &options);
+
+    // ==================== Preview and Highlight Settings ====================
+
+    /**
+     * @brief Sets the maximum length for content preview in search results.
+     * @param length The maximum preview length in characters.
+     */
+    void setMaxPreviewLength(int length);
+
+    /**
+     * @brief Gets the maximum length for content preview in search results.
+     * @return The maximum preview length in characters.
+     */
+    int maxPreviewLength() const;
+
+    /**
+     * @brief Enables or disables HTML highlighting in search results.
+     *
+     * When enabled, matching keywords in search results will be wrapped in HTML tags
+     * (e.g., `<span style="color:red">keyword</span>`) for visual highlighting.
+     * Note: Enabling this feature may incur additional processing overhead.
+     *
+     * @param enable Set to @c true to enable HTML highlighting, @c false to disable.
+     */
+    void setSearchResultHighlightEnabled(bool enable);
+
+    /**
+     * @brief Returns whether HTML highlighting in search results is enabled.
+     *
+     * @return @c true if search results will include HTML highlighting tags,
+     *         @c false otherwise (plaintext results).
+     */
+    bool isSearchResultHighlightEnabled() const;
+
+    /**
+     * @brief Enables or disables full-text content retrieval in search results.
+     *
+     * When enabled, search operations will return the complete OCR text content along with metadata.
+     * This provides more detailed results but significantly increases memory usage and processing time.
+     *
+     * @param enable Set to @c true to retrieve full OCR text contents, @c false to return metadata only.
+     */
+    void setFullTextRetrievalEnabled(bool enable);
+
+    /**
+     * @brief Returns whether full-text content retrieval is enabled.
+     *
+     * @return @c true if full-text content retrieval is enabled, @c false otherwise.
+     */
+    bool isFullTextRetrievalEnabled() const;
+
+    // ==================== Mixed Search Settings ====================
 
     /**
      * @brief Sets whether the extended AND search behavior across 'ocr_contents' and 'filename' fields is enabled.
@@ -57,7 +108,6 @@ private:
  * @brief The OcrTextResultAPI class provides OCR text search specific result handling
  *
  * This class extends the base SearchResult with OCR text search specific features.
- * Note: OCR text search does not support content highlighting like content search.
  *
  * When detailed results are enabled, this API provides access to additional
  * metadata including filename, hidden status, and time information.
@@ -84,6 +134,18 @@ public:
      * @param content The OCR extracted text to set
      */
     void setOcrContent(const QString &content);
+
+    /**
+     * @brief Get the highlighted OCR content preview
+     * @return The highlighted content as QString
+     */
+    QString highlightedContent() const;
+
+    /**
+     * @brief Set the highlighted OCR content preview
+     * @param content The highlighted content to set
+     */
+    void setHighlightedContent(const QString &content);
 
     // ==================== Extended Attributes ====================
 

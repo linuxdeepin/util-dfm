@@ -14,7 +14,7 @@ ContentOptionsAPI::ContentOptionsAPI(SearchOptions &options)
     // init default
     if (!m_options.hasCustomOption("maxPreviewLength"))
         setMaxPreviewLength(50);
-    if (!m_options.hasCustomOption("searchResultHighligh"))
+    if (!m_options.hasCustomOption("searchResultHighlight"))
         setSearchResultHighlightEnabled(false);
     if (!m_options.hasCustomOption("fullTextRetrieval"))
         setFullTextRetrievalEnabled(true);
@@ -32,12 +32,12 @@ int ContentOptionsAPI::maxPreviewLength() const
 
 void ContentOptionsAPI::setSearchResultHighlightEnabled(bool enable)
 {
-    m_options.setCustomOption("searchResultHighligh", enable);
+    m_options.setCustomOption("searchResultHighlight", enable);
 }
 
 bool ContentOptionsAPI::isSearchResultHighlightEnabled() const
 {
-    return m_options.customOption("searchResultHighligh").toBool();
+    return m_options.customOption("searchResultHighlight").toBool();
 }
 
 void ContentOptionsAPI::setFullTextRetrievalEnabled(bool enable)

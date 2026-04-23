@@ -20,6 +20,7 @@
 
 #include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/cancellablecollector.h"
+#include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
 #include "utils/searchutility.h"
 #include "utils/lucene_cancellation_compat.h"
@@ -245,6 +246,11 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     const QStringList &searchExcludedPaths = m_options.searchExcludedPaths();
     auto docsSize = scoreDocs.size();
 
+    OcrTextOptionsAPI optAPI(m_options);
+    bool enableHTML = optAPI.isSearchResultHighlightEnabled();
+    int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
+    bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
+
     for (int32_t i = 0; i < docsSize; ++i) {
         if (m_cancelled.load()) {
             qInfo() << "OCR text search cancelled";
@@ -320,16 +326,34 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             // Create search result
             SearchResult result(path);
 
+            // 设置 OCR 内容结果
+            OcrTextResultAPI resultApi(result);
+
+            // 使用ContentHighlighter命名空间进行高亮
+            if (enableRetrieval) {
+                try {
+                    // Safely get OCR contents with null check
+                    Lucene::String ocrContentField = doc->get(LuceneFieldNames::OcrText::kOcrContents);
+                    if (!ocrContentField.empty()) {
+                        const QString content = QString::fromStdWString(ocrContentField);
+                        // 设置原始 OCR 内容
+                        resultApi.setOcrContent(content);
+                        // 设置高亮内容
+                        const QString highlightedContent = ContentHighlighter::customHighlight(
+                            m_keywords, content, previewLen, enableHTML);
+                        resultApi.setHighlightedContent(highlightedContent);
+                    }
+                } catch (const Lucene::LuceneException &e) {
+                    qWarning() << "Exception retrieving OCR content field:" << QString::fromStdWString(e.getError());
+                    // Continue without content highlight
+                } catch (const std::exception &e) {
+                    qWarning() << "Standard exception retrieving OCR content field:" << e.what();
+                    // Continue without content highlight
+                }
+            }
+
             // 设置详细结果（如果启用）
             if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
-                OcrTextResultAPI resultApi(result);
-
-                // OCR 内容
-                Lucene::String ocrContentField = doc->get(LuceneFieldNames::OcrText::kOcrContents);
-                if (!ocrContentField.empty()) {
-                    resultApi.setOcrContent(QString::fromStdWString(ocrContentField));
-                }
-
                 // 文件名
                 Lucene::String filenameField = doc->get(LuceneFieldNames::OcrText::kFilename);
                 if (!filenameField.empty()) {

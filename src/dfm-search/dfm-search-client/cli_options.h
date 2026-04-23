@@ -41,7 +41,7 @@ struct SearchCliConfig
     // 过滤选项
     QStringList fileTypes;
     QStringList fileExtensions;
-    int maxResults = 100;
+    int maxResults = 0;   // 0 表示不限制
     int maxPreviewLength = 200;
 
     // 时间范围过滤

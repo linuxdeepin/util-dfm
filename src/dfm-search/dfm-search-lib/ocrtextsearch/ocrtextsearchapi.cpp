@@ -12,9 +12,49 @@ OcrTextOptionsAPI::OcrTextOptionsAPI(SearchOptions &options)
     : m_options(options)
 {
     // init default
+    if (!m_options.hasCustomOption("maxPreviewLength"))
+        setMaxPreviewLength(50);
+    if (!m_options.hasCustomOption("searchResultHighlight"))
+        setSearchResultHighlightEnabled(false);
+    if (!m_options.hasCustomOption("fullTextRetrieval"))
+        setFullTextRetrievalEnabled(true);
     if (!m_options.hasCustomOption("filenameOcrContentMixedAndSearchEnabled"))
         setFilenameOcrContentMixedAndSearchEnabled(false);
 }
+
+// ==================== Preview and Highlight Settings ====================
+
+void OcrTextOptionsAPI::setMaxPreviewLength(int length)
+{
+    m_options.setCustomOption("maxPreviewLength", length);
+}
+
+int OcrTextOptionsAPI::maxPreviewLength() const
+{
+    return m_options.customOption("maxPreviewLength").toInt();
+}
+
+void OcrTextOptionsAPI::setSearchResultHighlightEnabled(bool enable)
+{
+    m_options.setCustomOption("searchResultHighlight", enable);
+}
+
+bool OcrTextOptionsAPI::isSearchResultHighlightEnabled() const
+{
+    return m_options.customOption("searchResultHighlight").toBool();
+}
+
+void OcrTextOptionsAPI::setFullTextRetrievalEnabled(bool enable)
+{
+    m_options.setCustomOption("fullTextRetrieval", enable);
+}
+
+bool OcrTextOptionsAPI::isFullTextRetrievalEnabled() const
+{
+    return m_options.customOption("fullTextRetrieval").toBool();
+}
+
+// ==================== Mixed Search Settings ====================
 
 void OcrTextOptionsAPI::setFilenameOcrContentMixedAndSearchEnabled(bool enabled)
 {
@@ -39,6 +79,16 @@ QString OcrTextResultAPI::ocrContent() const
 void OcrTextResultAPI::setOcrContent(const QString &content)
 {
     m_result.setCustomAttribute("ocrContent", content);
+}
+
+QString OcrTextResultAPI::highlightedContent() const
+{
+    return m_result.customAttribute("highlightedContent").toString();
+}
+
+void OcrTextResultAPI::setHighlightedContent(const QString &content)
+{
+    m_result.setCustomAttribute("highlightedContent", content);
 }
 
 // ==================== Extended Attributes ====================
