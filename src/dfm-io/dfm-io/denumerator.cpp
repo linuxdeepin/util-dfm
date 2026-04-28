@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020 - 2023 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2020 - 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -652,6 +652,15 @@ bool DEnumerator::hasNext() const
         d->nextUrl = QUrl();
         d->dfileInfoNext.reset();
         return true;
+    }
+
+    // 枚举完成，关闭并释放当前枚举器，释放 fd
+    if (!d->stackEnumerator.isEmpty()) {
+        GFileEnumerator *enumerator = d->stackEnumerator.pop();
+        if (enumerator) {
+            g_file_enumerator_close(enumerator, nullptr, nullptr);
+            g_object_unref(enumerator);
+        }
     }
 
     return false;
