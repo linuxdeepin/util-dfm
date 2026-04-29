@@ -111,8 +111,14 @@ DFileInfoPrivate::~DFileInfoPrivate()
 
 void DFileInfoPrivate::initNormal()
 {
-    if (this->gfile)
-        return;
+    if (this->gfile) {
+        try {
+            g_object_unref(this->gfileinfo);
+        } catch (...) {
+            qWarning() << "DFileInfoPrivate::queryInfoSync - Exception during g_object_unref, continuing...";
+        }
+        this->gfileinfo = nullptr;
+    }
 
     const QUrl &url = q->uri();
     this->gfile = DLocalHelper::createGFile(url);;
@@ -230,48 +236,80 @@ void DFileInfoPrivate::setErrorFromGError(GError *gerror)
 
 bool DFileInfoPrivate::queryInfoSync()
 {
-    if (isQuquerying)
-        return false;
-
-    isQuquerying = true;
+    QMutexLocker lk(&mutex);
 
     if (!infoReseted && this->gfileinfo) {
         initFinished = true;
-        isQuquerying = false;
         return true;
     }
 
-    g_autoptr(GError) gerror = nullptr;
-    checkAndResetCancel();
-    GFileInfo *fileinfo = g_file_query_info(gfile, attributes, GFileQueryInfoFlags(flag), gcancellable, &gerror);
-    if (gerror)
-        setErrorFromGError(gerror);
+    initNormal();
 
-    if (!fileinfo) {
-        isQuquerying = false;
+    if (!gfile)
+        return false;
+
+    g_autoptr(GError) gerror = nullptr;
+    GFileInfo *fileinfo = nullptr;
+    
+    try {
+        // 记录调用信息，便于调试崩溃
+        qDebug() << "DFileInfoPrivate::queryInfoSync - Attempting g_file_query_info for URI:" << uri.toString()
+                 << "with attributes:" << (attributes ? attributes : "null");
+        
+        checkAndResetCancel();
+        
+        // 关键调用：添加try/catch保护
+        fileinfo = g_file_query_info(gfile, attributes, GFileQueryInfoFlags(flag), gcancellable, &gerror);
+        
+        qDebug() << "DFileInfoPrivate::queryInfoSync - g_file_query_info completed successfully";
+        
+    } catch (const std::exception &e) {
+        // 捕获C++标准异常
+        qCritical() << "DFileInfoPrivate::queryInfoSync - C++ exception caught during g_file_query_info:"
+                   << e.what() << "for URI:" << uri.toString();
+        return false;
+    } catch (...) {
+        // 捕获所有其他异常
+        qCritical() << "DFileInfoPrivate::queryInfoSync - Unknown exception caught during g_file_query_info for URI:"
+                   << uri.toString();
         return false;
     }
 
+    // 处理GIO错误
+    if (gerror) {
+        qWarning() << "DFileInfoPrivate::queryInfoSync - GError occurred: domain=" << gerror->domain
+                   << ", code=" << gerror->code << ", message=" << gerror->message
+                   << "for URI:" << uri.toString();
+        setErrorFromGError(gerror);
+    }
+
+    if (!fileinfo) {
+        qCritical() << "DFileInfoPrivate::queryInfoSync - Failed to query file info for URI:" << uri.toString()
+                   << ", error:" << error.code() << error.errorMsg();
+        return false;
+    }
+
+    // 安全地替换旧的gfileinfo
     if (this->gfileinfo) {
-        g_object_unref(this->gfileinfo);
+        try {
+            g_object_unref(this->gfileinfo);
+        } catch (...) {
+            qWarning() << "DFileInfoPrivate::queryInfoSync - Exception during g_object_unref, continuing...";
+        }
         this->gfileinfo = nullptr;
     }
+    
     this->gfileinfo = fileinfo;
     initFinished = true;
-    isQuquerying = false;
+    
+    qDebug() << "DFileInfoPrivate::queryInfoSync - Successfully queried file info for URI:" << uri.toString();
     return true;
 }
 
 void DFileInfoPrivate::queryInfoAsync(int ioPriority, DFileInfo::InitQuerierAsyncCallback func, void *userData)
 {
-    if (!infoReseted && this->gfileinfo) {
-        initFinished = true;
-
-        if (func)
-            func(true, userData);
-        return;
-    }
-
+    QMutexLocker lk(&mutex);
+    initNormal();
     const char *attributes = q->queryAttributes();
     const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
 
@@ -295,7 +333,11 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         const std::string &key = DLocalHelper::attributeStringById(id);
         if (key.empty())
             return QVariant();
-        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        uint64_t ret = 0;
+        {
+            QMutexLocker lk(&mutex);
+            ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        }
         if (ret == 0) {
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
@@ -316,7 +358,11 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         const std::string &key = DLocalHelper::attributeStringById(id);
         if (key.empty())
             return QVariant();
-        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        uint32_t ret = 0;
+        {
+            QMutexLocker lk(&mutex);
+            ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        }
         if (ret == 0) {
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
@@ -337,7 +383,11 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         const std::string &key = DLocalHelper::attributeStringById(id);
         if (key.empty())
             return QVariant();
-        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        uint64_t ret = 0;
+        {
+            QMutexLocker lk(&mutex);
+            ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        }
         if (ret == 0) {
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
@@ -358,7 +408,11 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         const std::string &key = DLocalHelper::attributeStringById(id);
         if (key.empty())
             return QVariant();
-        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        uint32_t ret = 0;
+        {
+            QMutexLocker lk(&mutex);
+            ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        }
         if (ret == 0) {
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
@@ -379,7 +433,11 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         const std::string &key = DLocalHelper::attributeStringById(id);
         if (key.empty())
             return QVariant();
-        uint64_t ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        uint64_t ret = 0;
+        {
+            QMutexLocker lk(&mutex);
+            ret = g_file_info_get_attribute_uint64(gfileinfo, key.c_str());
+        }
         if (ret == 0) {
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
@@ -400,7 +458,11 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         const std::string &key = DLocalHelper::attributeStringById(id);
         if (key.empty())
             return QVariant();
-        uint32_t ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        uint32_t ret = 0;
+        {
+            QMutexLocker lk(&mutex);
+            ret = g_file_info_get_attribute_uint32(gfileinfo, key.c_str());
+        }
         if (ret == 0) {
             struct statx statxBuffer;
             unsigned mask = STATX_BASIC_STATS | STATX_BTIME;
@@ -417,10 +479,12 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
         }
         return QVariant(ret);
     }
-    case DFileInfo::AttributeID::kOriginalUri:
+    case DFileInfo::AttributeID::kOriginalUri: {
+        QMutexLocker lk(&mutex);
         if (gfile)
             return QUrl(g_file_get_uri(gfile));
         return uri;
+    }
     default:
         return retValue;
     }
@@ -497,6 +561,7 @@ QVariant DFileInfoPrivate::attributesFromUrl(DFileInfo::AttributeID id)
             return fullName.left(pos2);
     }
     case DFileInfo::AttributeID::kOriginalUri: {
+        QMutexLocker lk(&mutex);
         if (gfile)
             return QUrl(g_file_get_uri(gfile));
         return uri;
@@ -521,6 +586,10 @@ void DFileInfoPrivate::checkAndResetCancel()
 
 DFileFuture *DFileInfoPrivate::initQuerierAsync(int ioPriority, QObject *parent) const
 {
+    {
+        QMutexLocker lk(&mutex);
+        const_cast<DFileInfoPrivate *>(this)->initNormal();
+    }
     const char *attributes = q->queryAttributes();
     const DFileInfo::FileQueryInfoFlags flag = q->queryInfoFlag();
 
@@ -550,15 +619,7 @@ QFuture<void> DFileInfoPrivate::refreshAsync()
             refreshing = false;
             return;
         }
-        if (gfile) {
-            g_object_unref(gfile);
-            gfile = nullptr;
-        }
-        initNormal();
-        if (stoped) {
-            refreshing = false;
-            return;
-        }
+
         queryInfoSync();
 
         if (stoped) {
@@ -632,6 +693,7 @@ DFile::Permissions DFileInfoPrivate::permissions() const
 
 bool DFileInfoPrivate::exists() const
 {
+    QMutexLocker lk(&mutex);
     if (!gfileinfo)
         return false;
     return g_file_info_get_file_type(gfileinfo) != G_FILE_TYPE_UNKNOWN;
@@ -645,6 +707,7 @@ void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResul
 
     GFile *file = G_FILE(sourceObject);
     if (!file) {
+        qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback - Source object is not a GFile";
 
         if (data->callback)
             data->callback(false, data->userData);
@@ -654,9 +717,36 @@ void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResul
     }
 
     g_autoptr(GError) gerror = nullptr;
-    GFileInfo *fileinfo = g_file_query_info_finish(file, res, &gerror);
+    GFileInfo *fileinfo = nullptr;
+    
+    try {
+        qDebug() << "DFileInfoPrivate::queryInfoAsyncCallback - Attempting g_file_query_info_finish";
+        
+        // 关键调用：添加try/catch保护
+        fileinfo = g_file_query_info_finish(file, res, &gerror);
+        
+        qDebug() << "DFileInfoPrivate::queryInfoAsyncCallback - g_file_query_info_finish completed";
+        
+    } catch (const std::exception &e) {
+        qCritical() << "DFileInfoPrivate::queryInfoAsyncCallback - C++ exception caught during g_file_query_info_finish:"
+                   << e.what();
+        if (data->callback)
+            data->callback(false, data->userData);
+        freeQueryInfoAsyncOp(data);
+        return;
+    } catch (...) {
+        qCritical() << "DFileInfoPrivate::queryInfoAsyncCallback - Unknown exception caught during g_file_query_info_finish";
+        if (data->callback)
+            data->callback(false, data->userData);
+        freeQueryInfoAsyncOp(data);
+        return;
+    }
 
+    // 处理GIO错误
     if (gerror) {
+        qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback - GError occurred: domain=" << gerror->domain
+                   << ", code=" << gerror->code << ", message=" << gerror->message;
+        
         if (data->me)
             data->me->setErrorFromGError(gerror);
 
@@ -667,13 +757,31 @@ void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResul
         return;
     }
 
-    if (data->me) {
-        data->me->gfileinfo = fileinfo;
-        data->me->initFinished = true;
+    if (!fileinfo) {
+        qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback - fileinfo is null (no error)";
     }
 
-    if (data->callback)
-        data->callback(fileinfo ? true : false, data->userData);
+    if (data->me) {
+        QMutexLocker lk(&data->me->mutex);
+        // 安全地更新gfileinfo
+        if (data->me->gfileinfo) {
+            try {
+                g_object_unref(data->me->gfileinfo);
+            } catch (...) {
+                qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback - Exception during g_object_unref, continuing...";
+            }
+        }
+        data->me->gfileinfo = fileinfo;
+        data->me->initFinished = true;
+        
+        qDebug() << "DFileInfoPrivate::queryInfoAsyncCallback - Successfully updated file info";
+    }
+
+    if (data->callback) {
+        bool success = fileinfo != nullptr;
+        qDebug() << "DFileInfoPrivate::queryInfoAsyncCallback - Calling callback with success:" << success;
+        data->callback(success, data->userData);
+    }
 
     freeQueryInfoAsyncOp(data);
 }
@@ -681,35 +789,84 @@ void DFileInfoPrivate::queryInfoAsyncCallback(GObject *sourceObject, GAsyncResul
 void DFileInfoPrivate::queryInfoAsyncCallback2(GObject *sourceObject, GAsyncResult *res, gpointer userData)
 {
     QueryInfoAsyncOp2 *data = static_cast<QueryInfoAsyncOp2 *>(userData);
-    if (!data)
+    if (!data) {
+        qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback2 - User data is null";
         return;
+    }
 
     DFileFuture *future = data->future;
     if (!future) {
+        qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback2 - Future is null";
         freeQueryInfoAsyncOp2(data);
         return;
     }
 
     GFile *file = G_FILE(sourceObject);
     if (!file) {
+        qCritical() << "DFileInfoPrivate::queryInfoAsyncCallback2 - Source object is not a GFile";
         freeQueryInfoAsyncOp2(data);
         return;
     }
 
     g_autoptr(GError) gerror = nullptr;
-    GFileInfo *fileinfo = g_file_query_info_finish(file, res, &gerror);
-
-    if (gerror) {
-        data->me->setErrorFromGError(gerror);
+    GFileInfo *fileinfo = nullptr;
+    
+    try {
+        qDebug() << "DFileInfoPrivate::queryInfoAsyncCallback2 - Attempting g_file_query_info_finish";
+        
+        // 关键调用：添加try/catch保护
+        fileinfo = g_file_query_info_finish(file, res, &gerror);
+        
+        qDebug() << "DFileInfoPrivate::queryInfoAsyncCallback2 - g_file_query_info_finish completed";
+        
+    } catch (const std::exception &e) {
+        qCritical() << "DFileInfoPrivate::queryInfoAsyncCallback2 - C++ exception caught during g_file_query_info_finish:"
+                   << e.what();
+        freeQueryInfoAsyncOp2(data);
+        return;
+    } catch (...) {
+        qCritical() << "DFileInfoPrivate::queryInfoAsyncCallback2 - Unknown exception caught during g_file_query_info_finish";
         freeQueryInfoAsyncOp2(data);
         return;
     }
 
+    // 处理GIO错误
+    if (gerror) {
+        qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback2 - GError occurred: domain=" << gerror->domain
+                   << ", code=" << gerror->code << ", message=" << gerror->message;
+        
+        if (data->me)
+            data->me->setErrorFromGError(gerror);
+        
+        // 即使有错误，也要标记future为完成
+        future->finished();
+        
+        freeQueryInfoAsyncOp2(data);
+        return;
+    }
+
+    if (!fileinfo) {
+        qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback2 - fileinfo is null (no error)";
+    }
+
     if (data->me) {
+        // 安全地更新gfileinfo
+        QMutexLocker lk(&data->me->mutex);
+        if (data->me->gfileinfo) {
+            try {
+                g_object_unref(data->me->gfileinfo);
+            } catch (...) {
+                qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback2 - Exception during g_object_unref, continuing...";
+            }
+        }
         data->me->gfileinfo = fileinfo;
         data->me->initFinished = true;
-
+        
+        qDebug() << "DFileInfoPrivate::queryInfoAsyncCallback2 - Successfully updated file info";
+        
         future->finished();
+    } else {
+        qWarning() << "DFileInfoPrivate::queryInfoAsyncCallback2 - DFileInfoPrivate instance is null";
     }
 
     freeQueryInfoAsyncOp2(data);
@@ -739,24 +896,59 @@ DFileInfo::DFileInfo(const QUrl &uri, const char *attributes, const FileQueryInf
     d->uri = uri;
     d->attributes = strdup(attributes);
     d->flag = flag;
-
-    d->initNormal();
 }
 
 DFileInfo::DFileInfo(const QUrl &uri, void *fileInfo, const char *attributes, const DFileInfo::FileQueryInfoFlags flag)
     : DFileInfo(uri, attributes, flag)
 {
+    d->initFinished = true;
     d->gfileinfo = static_cast<GFileInfo *>(fileInfo);
 }
 
 DFileInfo::DFileInfo(const DFileInfo &info)
-    : d(info.d)
+    : d(new DFileInfoPrivate(this))
 {
+    d->uri = info.d->uri;
+    d->attributes = strdup(info.d->attributes);
+    d->flag = info.d->flag;
+
+    d->extendIDs = info.d->extendIDs;
+    d->mediaType = DFileInfo::MediaType::kGeneral;
+
+    d->attributesRealizationSelf = info.d->attributesRealizationSelf;
+    d->attributesNoBlockIO = info.d->attributesNoBlockIO;
+    d->gfile = g_file_dup(info.d->gfile);
+    d->gfileinfo = g_file_info_dup(info.d->gfileinfo);
+    d->initFinished = info.d->initFinished.load(std::memory_order_release);
+    d->infoReseted = info.d->infoReseted.load(std::memory_order_release);
+
+    d->stoped = info.d->stoped.load(std::memory_order_release);
+    d->fileExists = info.d->fileExists.load(std::memory_order_release);
+    d->caches = info.d->caches;
+    d->cacheing = info.d->cacheing.load(std::memory_order_release);
 }
 
 DFileInfo &DFileInfo::operator=(const DFileInfo &info)
 {
-    d = info.d;
+    d = new DFileInfoPrivate(this);
+    d->uri = info.d->uri;
+    d->attributes = strdup(info.d->attributes);
+    d->flag = info.d->flag;
+
+    d->extendIDs = info.d->extendIDs;
+    d->mediaType = DFileInfo::MediaType::kGeneral;
+
+    d->attributesRealizationSelf = info.d->attributesRealizationSelf;
+    d->attributesNoBlockIO = info.d->attributesNoBlockIO;
+    d->gfile = g_file_dup(info.d->gfile);
+    d->gfileinfo = g_file_info_dup(info.d->gfileinfo);
+    d->initFinished = info.d->initFinished.load(std::memory_order_release);
+    d->infoReseted = info.d->infoReseted.load(std::memory_order_release);
+
+    d->stoped = info.d->stoped.load(std::memory_order_release);
+    d->fileExists = info.d->fileExists.load(std::memory_order_release);
+    d->caches = info.d->caches;
+    d->cacheing = info.d->cacheing.load(std::memory_order_release);
     return *this;
 }
 
@@ -791,6 +983,7 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
     QVariant retValue;
     if (id > DFileInfo::AttributeID::kCustomStart) {
         const QString &path = d->uri.path();
+        QMutexLocker lk(&d->mutex);
         retValue = DLocalHelper::customAttributeFromPathAndInfo(path, d->gfileinfo, id);
     } else {
         if (d->gfileinfo) {
@@ -815,14 +1008,10 @@ QVariant DFileInfo::attribute(DFileInfo::AttributeID id, bool *success) const
 
 void DFileInfo::initQuerierAsync(int ioPriority, DFileInfo::InitQuerierAsyncCallback func, void *userData)
 {
-    if (!d->infoReseted && d->gfileinfo) {
-        d->initFinished = true;
-
-        if (func)
-            func(true, userData);
-        return;
+    {
+        QMutexLocker lk(&d->mutex);
+        d->initNormal();
     }
-
     const char *attributes = queryAttributes();
     const DFileInfo::FileQueryInfoFlags flag = queryInfoFlag();
 
@@ -855,6 +1044,10 @@ void DFileInfo::attributeAsync(DFileInfo::AttributeID id, bool *success, int ioP
 
 DFileFuture *DFileInfo::initQuerierAsync(int ioPriority, QObject *parent)
 {
+    {
+        QMutexLocker lk(&d->mutex);
+        d->initNormal();
+    }
     const char *attributes = queryAttributes();
     const DFileInfo::FileQueryInfoFlags flag = queryInfoFlag();
 
@@ -953,6 +1146,7 @@ DFileFuture *DFileInfo::permissionsAsync(int ioPriority, QObject *parent)
 
 QFuture<void> DFileInfo::refreshAsync()
 {
+    d->initFinished = false;
     return d->refreshAsync();
 }
 
@@ -964,6 +1158,7 @@ bool DFileInfo::hasAttribute(DFileInfo::AttributeID id) const
             return false;
     }
 
+    QMutexLocker lk(&d->mutex);
     if (d->gfileinfo) {
         const std::string &key = DLocalHelper::attributeStringById(id);
         if (key.empty())
@@ -984,10 +1179,10 @@ bool DFileInfo::exists() const
 
 bool DFileInfo::refresh()
 {
+    d->initFinished = false;
     d->infoReseted = true;
     bool ret = d->queryInfoSync();
     d->infoReseted = false;
-
     return ret;
 }
 
@@ -1001,6 +1196,7 @@ DFile::Permissions DFileInfo::permissions() const
 
 bool DFileInfo::setCustomAttribute(const char *key, const DFileInfo::DFileAttributeType type, const void *value, const DFileInfo::FileQueryInfoFlags flag)
 {
+    QMutexLocker lk(&d->mutex);
     if (d->gfile) {
         g_autoptr(GError) gerror = nullptr;
         bool ret = g_file_set_attribute(d->gfile, key, GFileAttributeType(type), (gpointer)(value), GFileQueryInfoFlags(flag), nullptr, &gerror);
