@@ -21,6 +21,7 @@ if(OPT_ENABLE_QT6)
         set(DFM_BUILD_WITH_QT6 TRUE)
         set(QT_VERSION_MAJOR 6)
         set(DFM_VERSION_MAJOR 6)
+        set(PROJECT_VERSION_MAJOR 1)
     endif()
 endif()
 
@@ -28,6 +29,7 @@ if(NOT DFM_BUILD_WITH_QT6)
    message(WARNING "Qt6 not found, Use Qt5.")
    set(QT_VERSION_MAJOR 5)
    set(DFM_VERSION_MAJOR "")
+   set(PROJECT_VERSION_MAJOR 0)
 endif()
 
 # default
