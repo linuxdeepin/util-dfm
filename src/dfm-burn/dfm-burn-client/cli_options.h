@@ -21,6 +21,8 @@ enum class BurnCommand {
     DumpISO,
     Erase,
     Check,
+    ChecksumGen,
+    ChecksumVerify,
     PwOpen,
     PwClose,
     PwPut,
@@ -55,6 +57,9 @@ struct BurnCliConfig
     QString pwSrcName;
     QString pwDestName;
     QString pwFileName;
+
+    // checksum
+    QString manifestPath;
 };
 
 /**
@@ -87,6 +92,8 @@ private:
     bool parseDumpIsoArgs(const QStringList &args, BurnCliConfig &config) const;
     bool parseEraseArgs(const QStringList &args, BurnCliConfig &config) const;
     bool parseCheckArgs(const QStringList &args, BurnCliConfig &config) const;
+    bool parseChecksumGenArgs(const QStringList &args, BurnCliConfig &config) const;
+    bool parseChecksumVerifyArgs(const QStringList &args, BurnCliConfig &config) const;
     bool parsePwArgs(const QString &pwAction, const QStringList &args, BurnCliConfig &config) const;
 };
 

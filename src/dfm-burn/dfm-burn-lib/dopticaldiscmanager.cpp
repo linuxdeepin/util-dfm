@@ -8,8 +8,15 @@
 #include "private/dopticaldiscmanager_p.h"
 #include "private/dxorrisoengine.h"
 #include "private/dudfburnengine.h"
+#include "private/dsm3hash.h"
 
 #include <QDebug>
+#include <QDir>
+#include <QDirIterator>
+#include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QStandardPaths>
 #include <QUrl>
 #include <QPointer>
 
@@ -210,6 +217,198 @@ bool DOpticalDiscManager::dumpISO(const QString &isoPath)
     engine->releaseDevice();
 
     return ret;
+}
+
+static const QString kExtractCacheSubDir = "discburn";
+
+static QString extractCacheDir(const QString &dev)
+{
+    QString safeDev = dev;
+    safeDev.replace("/", "_");
+    // Remove leading underscore caused by the leading "/" in device path
+    if (safeDev.startsWith("_"))
+        safeDev.remove(0, 1);
+    return QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation)
+            + "/" + kExtractCacheSubDir + "/extract_" + safeDev;
+}
+
+// xorriso extracts files with read-only permissions (dr-xr-xr-x),
+// so we must chmod recursively before removal.
+static void cleanupExtractCache(QDir dir)
+{
+    if (!dir.exists())
+        return;
+    QDirIterator it(dir.absolutePath(), QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
+                     QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        QString path = it.next();
+        QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner
+                                     | QFile::ReadGroup | QFile::ExeGroup
+                                     | QFile::ReadOther | QFile::ExeOther);
+    }
+    dir.removeRecursively();
+}
+
+bool DOpticalDiscManager::generateChecksumManifest(const QString &savePath)
+{
+    QString srcPath = dptr->files.first;
+    if (srcPath.isEmpty()) {
+        dptr->errorMsg = "No staged file for checksum generation";
+        return false;
+    }
+
+    QFileInfo srcInfo(srcPath);
+    if (!srcInfo.exists()) {
+        dptr->errorMsg = QString("Source path does not exist: %1").arg(srcPath);
+        return false;
+    }
+
+    QString isoBase = dptr->files.second;
+    if (isoBase.isEmpty())
+        isoBase = "/";
+
+    // Normalize isoBase: ensure it ends with /
+    if (!isoBase.endsWith("/"))
+        isoBase += "/";
+
+    QJsonObject filesObj;
+
+    if (srcInfo.isDir()) {
+        QDirIterator it(srcPath, QDir::Files, QDirIterator::Subdirectories);
+        while (it.hasNext()) {
+            QString filePath = it.next();
+            QString relPath = QDir(srcPath).relativeFilePath(filePath);
+            QString isoRelPath = isoBase + relPath;
+
+            QString hash = DSM3Hash::sm3File(filePath);
+            if (hash.isEmpty()) {
+                dptr->errorMsg = QString("Failed to compute SM3 for: %1").arg(filePath);
+                return false;
+            }
+            filesObj[isoRelPath] = hash;
+        }
+    } else {
+        QString hash = DSM3Hash::sm3File(srcPath);
+        if (hash.isEmpty()) {
+            dptr->errorMsg = QString("Failed to compute SM3 for: %1").arg(srcPath);
+            return false;
+        }
+        filesObj[isoBase + srcInfo.fileName()] = hash;
+    }
+
+    if (filesObj.isEmpty()) {
+        dptr->errorMsg = "No files found to checksum";
+        return false;
+    }
+
+    QJsonObject root;
+    root["algorithm"] = "sm3";
+    root["device"] = dptr->curDev;
+    root["files"] = filesObj;
+
+    QFile outFile(savePath);
+    if (!outFile.open(QIODevice::WriteOnly)) {
+        dptr->errorMsg = QString("Cannot write manifest to: %1").arg(savePath);
+        return false;
+    }
+
+    outFile.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    return true;
+}
+
+bool DOpticalDiscManager::verifyChecksum(const QString &manifestPath)
+{
+    QFile mf(manifestPath);
+    if (!mf.open(QIODevice::ReadOnly)) {
+        dptr->errorMsg = QString("Cannot read manifest: %1").arg(manifestPath);
+        return false;
+    }
+
+    QJsonParseError parseErr;
+    QJsonObject root = QJsonDocument::fromJson(mf.readAll(), &parseErr).object();
+    if (root.isEmpty()) {
+        dptr->errorMsg = QString("Invalid manifest JSON: %1").arg(parseErr.errorString());
+        return false;
+    }
+
+    QJsonObject filesObj = root["files"].toObject();
+    if (filesObj.isEmpty()) {
+        dptr->errorMsg = "Manifest contains no file entries";
+        return false;
+    }
+
+    // Prepare cache directory for extraction
+    QString cacheBase = extractCacheDir(dptr->curDev);
+    QDir cacheDir(cacheBase);
+    if (cacheDir.exists())
+        cleanupExtractCache(cacheDir);
+    if (!cacheDir.mkpath(".")) {
+        dptr->errorMsg = QString("Cannot create cache directory: %1").arg(cacheBase);
+        return false;
+    }
+
+    // Extract entire disc tree via xorriso osirrox
+    QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
+    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
+            [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
+                if (ptr)
+                    Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
+            },
+            Qt::DirectConnection);
+
+    if (!engine->acquireDevice(dptr->curDev)) {
+        dptr->errorMsg = "Cannot acquire device for verification";
+        cleanupExtractCache(cacheDir);
+        return false;
+    }
+
+    if (!engine->doExtract(cacheBase, "/")) {
+        dptr->errorMsg = QString("Failed to extract disc content: %1").arg(engine->takeInfoMessages().join(" "));
+        engine->releaseDevice();
+        cleanupExtractCache(cacheDir);
+        return false;
+    }
+
+    engine->releaseDevice();
+
+    // Verify each file in manifest against extracted files
+    QStringList isoPaths = filesObj.keys();
+    int total = isoPaths.size();
+    int checked = 0;
+
+    for (const auto &isoPath : isoPaths) {
+        // Map ISO path to local extracted path
+        // ISO path is like "/file.txt" or "/dir/file.txt"
+        // Extracted to cacheBase + isoPath
+        QString localExtracted = cacheBase + isoPath;
+
+        QString expectedHash = filesObj[isoPath].toString();
+        QString actualHash = DSM3Hash::sm3File(localExtracted);
+
+        ++checked;
+        int pct = (total > 0) ? (100 * checked / total) : 0;
+        Q_EMIT jobStatusChanged(JobStatus::kRunning, pct, {}, { isoPath });
+
+        if (actualHash.isEmpty()) {
+            dptr->errorMsg = QString("Checksum mismatch: file not found on disc: %1").arg(isoPath);
+            cleanupExtractCache(cacheDir);
+            return false;
+        }
+
+        if (actualHash != expectedHash) {
+            dptr->errorMsg = QString("Checksum mismatch: %1 (expected %2, got %3)")
+                                     .arg(isoPath, expectedHash, actualHash);
+            cleanupExtractCache(cacheDir);
+            return false;
+        }
+    }
+
+    Q_EMIT jobStatusChanged(JobStatus::kFinished, 100, {}, {});
+
+    // Clean up extracted files
+    cleanupExtractCache(cacheDir);
+
+    return true;
 }
 
 QString DOpticalDiscManager::lastError() const

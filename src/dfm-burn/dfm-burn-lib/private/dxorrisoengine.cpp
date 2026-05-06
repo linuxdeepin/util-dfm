@@ -515,6 +515,33 @@ bool DXorrisoEngine::doBurn(const QPair<QString, QString> files, int speed, QStr
     return true;
 }
 
+bool DXorrisoEngine::doExtract(const QString &diskPath, const QString &isoPath)
+{
+    Q_EMIT jobStatusChanged(JobStatus::kStalled, 0, curspeed);
+    xorrisomsg.clear();
+
+    // Enable osirrox mode: allows copying from ISO filesystem to disk
+    int r = XORRISO_OPT(xorriso, [this]() {
+        return Xorriso_option_osirrox(xorriso, PCHAR("on"), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    // Extract files from disc to local disk path
+    // NOTE: Despite the API parameter naming (disk_path, iso_path), xorriso actually
+    // treats the first argument as the ISO source path and the second as disk destination.
+    // This matches the CLI behavior: -extract <iso_path> <disk_path>
+    r = XORRISO_OPT(xorriso, [this, diskPath, isoPath]() {
+        return Xorriso_option_extract(xorriso,
+                                      PCHAR(isoPath.toUtf8().data()),
+                                      PCHAR(diskPath.toUtf8().data()), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
+    return true;
+}
+
 void DXorrisoEngine::messageReceived(int type, char *text)
 {
     Q_UNUSED(type);

@@ -271,6 +271,65 @@ static int handleCheck(const BurnCliConfig &config, QCoreApplication &app)
     return app.exec();
 }
 
+// ── Command: checksum gen (sync) ────────────────────────────────
+
+static int handleChecksumGen(const BurnCliConfig &config)
+{
+    DOpticalDiscManager manager(config.device);
+
+    if (!manager.setStageFile(config.stageFiles.first())) {
+        cerr << "Error: " << manager.lastError().toStdString() << endl;
+        return 1;
+    }
+
+    if (!manager.generateChecksumManifest(config.manifestPath)) {
+        cerr << "Error: " << manager.lastError().toStdString() << endl;
+        return 1;
+    }
+
+    cout << "Manifest generated: " << config.manifestPath.toStdString() << endl;
+    return 0;
+}
+
+// ── Command: checksum verify (async) ─────────────────────────────
+
+static int handleChecksumVerify(const BurnCliConfig &config, QCoreApplication &app)
+{
+    DOpticalDiscManager manager(config.device);
+    int exitCode = 1;
+
+    QObject::connect(&manager, &DOpticalDiscManager::jobStatusChanged,
+                     [&exitCode, &app](JobStatus status, int progress,
+                                       const QString &speed, const QStringList &message) {
+                         Q_UNUSED(speed);
+                         if (status == JobStatus::kRunning) {
+                             cout << "\rVerifying... " << progress << "%";
+                             if (!message.isEmpty())
+                                 cout << " (" << message.first().toStdString() << ")";
+                             cout << flush;
+                         } else if (status == JobStatus::kStalled) {
+                             cout << "\rVerifying... Stalled (waiting for drive)." << flush;
+                         } else if (status == JobStatus::kFinished) {
+                             cout << "\rVerifying... Done.                    " << endl;
+                             cout << "All checksums matched." << endl;
+                             exitCode = 0;
+                             app.quit();
+                         } else if (status == JobStatus::kFailed) {
+                             cerr << endl
+                                  << "Verification failed: " << message.join(" ").toStdString() << endl;
+                             exitCode = 1;
+                             app.quit();
+                         }
+                     });
+
+    if (!manager.verifyChecksum(config.manifestPath)) {
+        cerr << "Error: " << manager.lastError().toStdString() << endl;
+        return 1;
+    }
+
+    return app.exec();
+}
+
 // ── Packet Writing Commands (sync) ─────────────────────────────
 
 static int handlePwOpen(const BurnCliConfig &config)
@@ -367,6 +426,10 @@ int main(int argc, char *argv[])
         return handleErase(config, app);
     case BurnCommand::Check:
         return handleCheck(config, app);
+    case BurnCommand::ChecksumGen:
+        return handleChecksumGen(config);
+    case BurnCommand::ChecksumVerify:
+        return handleChecksumVerify(config, app);
     case BurnCommand::PwOpen:
         return handlePwOpen(config);
     case BurnCommand::PwClose:

@@ -33,6 +33,8 @@ public:
     bool checkmedia(double *qgood, double *qslow, double *qbad);
     bool writeISO(const QString &isoPath, int speed = 0);
     bool dumpISO(const QString &isoPath);
+    bool generateChecksumManifest(const QString &savePath);
+    bool verifyChecksum(const QString &manifestPath);
     QString lastError() const;
 
 Q_SIGNALS:
