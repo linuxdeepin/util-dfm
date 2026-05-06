@@ -1,6 +1,7 @@
 # Setup the environment
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 pkg_check_modules(isoburn REQUIRED libisoburn-1 IMPORTED_TARGET)
 
 # Build
@@ -13,6 +14,7 @@ add_library(${BIN_NAME} SHARED
 target_link_libraries(${BIN_NAME}
     Qt${QT_VERSION_MAJOR}::Core
     PkgConfig::isoburn
+    OpenSSL::Crypto
 )
 
 target_include_directories(

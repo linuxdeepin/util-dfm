@@ -14,6 +14,7 @@ Build-Depends:
  libglib2.0-dev,
  libudisks2-dev,
  libisoburn-dev,
+ libssl-dev,
  libmediainfo-dev,
  libsecret-1-dev,
  liblucene++-dev,

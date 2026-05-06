@@ -22,6 +22,7 @@ enum class BurnOption : unsigned int {
     kJolietSupport = 1 << 4,   // add joliet extension
     kRockRidgeSupport = 1 << 5,   // add rockridge extension
     kUDF102Supported = 1 << 6,
+    kChecksum = 1 << 7,   // SM3 checksum verification
     kJolietAndRockRidge = kJolietSupport | kRockRidgeSupport   // add both of them, not used yet
 };
 Q_DECLARE_FLAGS(BurnOptions, BurnOption)
