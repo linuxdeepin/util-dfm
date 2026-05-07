@@ -54,6 +54,7 @@ public:
     bool doBurn(const QPair<QString, QString> files, int speed, QString volId,
                 JolietSupport joliet, RockRageSupport rockRage, KeepAppendable appendable);
     bool doExtract(const QString &diskPath, const QString &isoPath);
+    bool doOsirroxOn();
 
 public Q_SLOTS:
     void messageReceived(int type, char *text);

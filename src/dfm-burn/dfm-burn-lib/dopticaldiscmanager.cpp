@@ -337,7 +337,7 @@ bool DOpticalDiscManager::verifyChecksum(const QString &manifestPath)
         return false;
     }
 
-    // Prepare cache directory for extraction
+    // Prepare temp directory for per-file extraction
     QString cacheBase = extractCacheDir(dptr->curDev);
     QDir cacheDir(cacheBase);
     if (cacheDir.exists())
@@ -347,7 +347,7 @@ bool DOpticalDiscManager::verifyChecksum(const QString &manifestPath)
         return false;
     }
 
-    // Extract entire disc tree via xorriso osirrox
+    // Acquire device and enable osirrox once for all per-file extractions
     QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
     connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
@@ -362,28 +362,40 @@ bool DOpticalDiscManager::verifyChecksum(const QString &manifestPath)
         return false;
     }
 
-    if (!engine->doExtract(cacheBase, "/")) {
-        dptr->errorMsg = QString("Failed to extract disc content: %1").arg(engine->takeInfoMessages().join(" "));
+    if (!engine->doOsirroxOn()) {
+        dptr->errorMsg = QString("Failed to enable osirrox: %1").arg(engine->takeInfoMessages().join(" "));
         engine->releaseDevice();
         cleanupExtractCache(cacheDir);
         return false;
     }
 
-    engine->releaseDevice();
-
-    // Verify each file in manifest against extracted files
+    // Extract and verify each file individually:
+    // extract → compute SM3 → delete → next file
+    // This avoids extracting the entire disc (multi-session friendly)
+    // and minimizes disk usage (only one file at a time).
     QStringList isoPaths = filesObj.keys();
     int total = isoPaths.size();
     int checked = 0;
 
     for (const auto &isoPath : isoPaths) {
-        // Map ISO path to local extracted path
-        // ISO path is like "/file.txt" or "/dir/file.txt"
-        // Extracted to cacheBase + isoPath
-        QString localExtracted = cacheBase + isoPath;
+        QString localTmp = cacheBase + isoPath;
+
+        // Ensure parent directory exists
+        QDir().mkpath(QFileInfo(localTmp).absolutePath());
+
+        if (!engine->doExtract(localTmp, isoPath)) {
+            dptr->errorMsg = QString("Failed to extract '%1' from disc: %2")
+                                     .arg(isoPath, engine->takeInfoMessages().join(" "));
+            engine->releaseDevice();
+            cleanupExtractCache(cacheDir);
+            return false;
+        }
 
         QString expectedHash = filesObj[isoPath].toString();
-        QString actualHash = DSM3Hash::sm3File(localExtracted);
+        QString actualHash = DSM3Hash::sm3File(localTmp);
+
+        // Delete immediately to free disk space and avoid permission issues on cleanup
+        QFile::remove(localTmp);
 
         ++checked;
         int pct = (total > 0) ? (100 * checked / total) : 0;
@@ -391,6 +403,7 @@ bool DOpticalDiscManager::verifyChecksum(const QString &manifestPath)
 
         if (actualHash.isEmpty()) {
             dptr->errorMsg = QString("Checksum mismatch: file not found on disc: %1").arg(isoPath);
+            engine->releaseDevice();
             cleanupExtractCache(cacheDir);
             return false;
         }
@@ -398,14 +411,17 @@ bool DOpticalDiscManager::verifyChecksum(const QString &manifestPath)
         if (actualHash != expectedHash) {
             dptr->errorMsg = QString("Checksum mismatch: %1 (expected %2, got %3)")
                                      .arg(isoPath, expectedHash, actualHash);
+            engine->releaseDevice();
             cleanupExtractCache(cacheDir);
             return false;
         }
     }
 
+    engine->releaseDevice();
+
     Q_EMIT jobStatusChanged(JobStatus::kFinished, 100, {}, {});
 
-    // Clean up extracted files
+    // Clean up cache directory structure
     cleanupExtractCache(cacheDir);
 
     return true;
