@@ -22,6 +22,37 @@
 
 DFM_BURN_USE_NS
 
+static const QString kExtractCacheSubDir = "discburn";
+
+static QString extractCacheDir(const QString &dev)
+{
+    QString safeDev = dev;
+    safeDev.replace("/", "_");
+    // Remove leading underscore caused by the leading "/" in device path
+    if (safeDev.startsWith("_"))
+        safeDev.remove(0, 1);
+    return QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation)
+            + "/deepin/" + kExtractCacheSubDir + "/extract_" + safeDev;
+}
+
+// xorriso extracts files with read-only permissions (dr-xr-xr-x),
+// so we must chmod recursively before removal.
+static void cleanupExtractCache(QDir dir)
+{
+    if (!dir.exists())
+        return;
+    QDirIterator it(dir.absolutePath(), QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
+                    QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        QString path = it.next();
+        QFile::setPermissions(path,
+                              QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner
+                                      | QFile::ReadGroup | QFile::ExeGroup | QFile::ReadOther
+                                      | QFile::ExeOther);
+    }
+    dir.removeRecursively();
+}
+
 DOpticalDiscManager::DOpticalDiscManager(const QString &dev, QObject *parent)
     : QObject(parent), dptr(new DOpticalDiscManagerPrivate)
 {
@@ -65,7 +96,8 @@ bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStri
 
     if (opts.testFlag(BurnOption::kUDF102Supported)) {
         QScopedPointer<DUDFBurnEngine> udfEngine { new DUDFBurnEngine };
-        connect(udfEngine.data(), &DUDFBurnEngine::jobStatusChanged, this,
+        connect(
+                udfEngine.data(), &DUDFBurnEngine::jobStatusChanged, this,
                 [this, ptr = QPointer(udfEngine.data())](JobStatus status, int progress) {
                     if (ptr) {
                         if (status == JobStatus::kFailed)
@@ -78,7 +110,8 @@ bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStri
         ret = udfEngine->doBurn(dptr->curDev, dptr->files, volId, opts);
     } else {
         QScopedPointer<DXorrisoEngine> xorrisoEngine { new DXorrisoEngine };
-        connect(xorrisoEngine.data(), &DXorrisoEngine::jobStatusChanged, this,
+        connect(
+                xorrisoEngine.data(), &DXorrisoEngine::jobStatusChanged, this,
                 [this, ptr = QPointer(xorrisoEngine.data())](JobStatus status, int progress, QString speed) {
                     if (ptr)
                         Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -112,7 +145,8 @@ bool DOpticalDiscManager::erase()
 {
     bool ret { false };
     QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
-    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
+    connect(
+            engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
                     Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -141,7 +175,8 @@ bool DOpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
     }
 
     QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
-    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
+    connect(
+            engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
                     Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -162,7 +197,8 @@ bool DOpticalDiscManager::writeISO(const QString &isoPath, int speed)
 {
     bool ret { false };
     QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
-    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
+    connect(
+            engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
                     Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -197,7 +233,8 @@ bool DOpticalDiscManager::dumpISO(const QString &isoPath)
     }
 
     QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
-    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
+    connect(
+            engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
                     emit jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
@@ -217,36 +254,6 @@ bool DOpticalDiscManager::dumpISO(const QString &isoPath)
     engine->releaseDevice();
 
     return ret;
-}
-
-static const QString kExtractCacheSubDir = "discburn";
-
-static QString extractCacheDir(const QString &dev)
-{
-    QString safeDev = dev;
-    safeDev.replace("/", "_");
-    // Remove leading underscore caused by the leading "/" in device path
-    if (safeDev.startsWith("_"))
-        safeDev.remove(0, 1);
-    return QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation)
-            + "/" + kExtractCacheSubDir + "/extract_" + safeDev;
-}
-
-// xorriso extracts files with read-only permissions (dr-xr-xr-x),
-// so we must chmod recursively before removal.
-static void cleanupExtractCache(QDir dir)
-{
-    if (!dir.exists())
-        return;
-    QDirIterator it(dir.absolutePath(), QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
-                     QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        QString path = it.next();
-        QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner
-                                     | QFile::ReadGroup | QFile::ExeGroup
-                                     | QFile::ReadOther | QFile::ExeOther);
-    }
-    dir.removeRecursively();
 }
 
 bool DOpticalDiscManager::generateChecksumManifest(const QString &savePath)
@@ -274,7 +281,7 @@ bool DOpticalDiscManager::generateChecksumManifest(const QString &savePath)
     QJsonObject filesObj;
 
     if (srcInfo.isDir()) {
-        QDirIterator it(srcPath, QDir::Files, QDirIterator::Subdirectories);
+        QDirIterator it(srcPath, QDir::Files | QDir::Hidden, QDirIterator::Subdirectories);
         while (it.hasNext()) {
             QString filePath = it.next();
             QString relPath = QDir(srcPath).relativeFilePath(filePath);
@@ -349,7 +356,8 @@ bool DOpticalDiscManager::verifyChecksum(const QString &manifestPath)
 
     // Acquire device and enable osirrox once for all per-file extractions
     QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
-    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
+    connect(
+            engine.data(), &DXorrisoEngine::jobStatusChanged, this,
             [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
                 if (ptr)
                     Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
