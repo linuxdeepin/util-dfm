@@ -32,5 +32,35 @@ $(shell sed -e 's/@QT_SUFFIX@/$(QT_SUFFIX)/g' \
 	dh $@ --parallel
 
 override_dh_auto_configure:
+	@echo "======= [debian/rules] 打包诊断信息 ======="
+	@echo "  MAJOR_VERSION  = $(MAJOR_VERSION)"
+	@echo "  USE_QT6        = $(USE_QT6)"
+	@echo "  QT_SUFFIX      = $(QT_SUFFIX)"
+	@echo "  QT_SELECT      = $$QT_SELECT"
+	@echo "  DEB_HOST_MULTIARCH = $(DEB_HOST_MULTIARCH)"
+	@echo ""
+	@echo "--- control 中的包名 (QT_SUFFIX=$(QT_SUFFIX)) ---"
+	@grep "^Package:" debian/control | sed 's/^/  /'
+	@echo ""
+	@echo "--- 匹配到的 .install 文件 ---"
+	@for f in debian/libdfm*$(QT_SUFFIX)*.install; do \
+		[ -f "$$f" ] && echo "  [匹配] $$f" || true; \
+	done
+	@for f in debian/libdfm*.install; do \
+		case "$$f" in \
+			*$(QT_SUFFIX)*) ;; \
+			*) echo "  [残留] $$f (QT_SUFFIX=$(QT_SUFFIX) 时不会被 dh_install 使用)";; \
+		esac; \
+	done
+	@echo ""
+	@echo "--- 构建产物 (debian/tmp 中的库文件) ---"
+	@find debian/tmp/usr/lib -name 'libdfm*.so*' 2>/dev/null | sed 's/^/  /' || echo "  (debian/tmp 尚未生成，将在 build 阶段出现)"
+	@echo ""
+	@echo "--- 构建产物 (debian/tmp 中的头文件目录) ---"
+	@find debian/tmp/usr/include -maxdepth 1 -type d 2>/dev/null | sed 's|debian/tmp/usr/include/|  /usr/include/|' || echo "  (debian/tmp 尚未生成)"
+	@echo ""
+	@echo "--- 构建产物 (debian/tmp 中的 pkg-config) ---"
+	@find debian/tmp/usr/lib -name 'dfm*.pc' 2>/dev/null | sed 's/^/  /' || echo "  (debian/tmp 尚未生成)"
+	@echo "==========================================="
 	dh_auto_configure -- \
 	  -DHOST_MULTIARCH="$(DEB_HOST_MULTIARCH)"
