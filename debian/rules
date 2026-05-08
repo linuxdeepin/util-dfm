@@ -15,6 +15,16 @@ MAJOR_VERSION := $(shell if [ -f $(OS_VERSION_FILE) ]; then \
 # 版本判断: MajorVersion > 20 使用 Qt6, 否则使用 Qt5
 USE_QT6 := $(shell if [ "$(MAJOR_VERSION)" -gt 20 ] 2>/dev/null; then echo yes; else echo no; fi)
 
+# MajorVersion 为 99 时（/etc/os-version 不存在），检查 Qt6 是否实际安装
+ifeq ($(MAJOR_VERSION),99)
+HAS_QT6 := $(shell pkg-config --exists Qt6Core 2>/dev/null && echo yes || echo no)
+ifeq ($(HAS_QT6),yes)
+    USE_QT6 := yes
+else
+    USE_QT6 := no
+endif
+endif
+
 # 设置 QT_SELECT 环境变量
 ifeq ($(USE_QT6),yes)
     export QT_SELECT=6
