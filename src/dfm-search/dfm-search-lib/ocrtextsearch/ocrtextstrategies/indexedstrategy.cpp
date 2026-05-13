@@ -140,6 +140,38 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
             }
         }
 
+        // Add filename keyword query
+        QString filenameKw = optAPI.filenameKeyword();
+        if (!filenameKw.isEmpty()) {
+            Lucene::QueryParserPtr filenameParser = newLucene<Lucene::QueryParser>(
+                    Lucene::LuceneVersion::LUCENE_CURRENT,
+                    LuceneFieldNames::OcrText::kFilename,
+                    analyzer);
+            Lucene::QueryPtr filenameQuery = filenameParser->parse(
+                    LuceneQueryUtils::processQueryString(filenameKw, false));
+
+            if (filenameQuery) {
+                // Check if content keywords are effectively empty
+                bool noContentKeywords = (query.type() == SearchQuery::Type::Simple)
+                        ? query.keyword().isEmpty()
+                        : (query.subQueries().isEmpty()
+                           || std::all_of(query.subQueries().cbegin(), query.subQueries().cend(),
+                                          [](const auto &sq) { return sq.keyword().isEmpty(); }));
+
+                if (noContentKeywords) {
+                    // Filename-only search: use filename query directly
+                    mainQuery = filenameQuery;
+                } else if (mainQuery) {
+                    // Both content and filename: AND combination
+                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                    finalQuery->add(mainQuery, BooleanClause::MUST);
+                    finalQuery->add(filenameQuery, BooleanClause::MUST);
+                    mainQuery = finalQuery;
+                }
+                m_keywords.append(filenameKw);
+            }
+        }
+
         return mainQuery;
 
     } catch (const Lucene::LuceneException &e) {

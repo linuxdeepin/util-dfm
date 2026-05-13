@@ -53,12 +53,18 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
         contentOptions.setFullTextRetrievalEnabled(true);
         contentOptions.setSearchResultHighlightEnabled(true);
         contentOptions.setFilenameContentMixedAndSearchEnabled(true);
+        if (!config.filenameKeyword.isEmpty()) {
+            contentOptions.setFilenameKeyword(config.filenameKeyword);
+        }
     } else if (config.searchType == SearchType::Ocr) {
         OcrTextOptionsAPI ocrTextOptions(options);
         ocrTextOptions.setMaxPreviewLength(config.maxPreviewLength);
         ocrTextOptions.setFullTextRetrievalEnabled(true);
         ocrTextOptions.setSearchResultHighlightEnabled(true);
         ocrTextOptions.setFilenameOcrContentMixedAndSearchEnabled(true);
+        if (!config.filenameKeyword.isEmpty()) {
+            ocrTextOptions.setFilenameKeyword(config.filenameKeyword);
+        }
     }
 
     // 应用时间范围过滤

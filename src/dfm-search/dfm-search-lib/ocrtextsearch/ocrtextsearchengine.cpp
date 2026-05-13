@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ocrtextsearchengine.h"
 
+#include <dfm-search/ocrtextsearchapi.h>
+
 #include "ocrtextstrategies/indexedstrategy.h"
 
 DFM_SEARCH_BEGIN_NS
@@ -40,8 +42,10 @@ SearchError OcrTextSearchEngine::validateSearchConditions()
         return SearchError(OcrTextSearchErrorCode::WildcardNotSupported);
     }
 
+    OcrTextOptionsAPI optAPI(m_options);
     if (m_currentQuery.type() == SearchQuery::Type::Simple
-        && m_currentQuery.keyword().toUtf8().size() < Global::kMinContentSearchKeywordLength) {
+        && m_currentQuery.keyword().toUtf8().size() < Global::kMinContentSearchKeywordLength
+        && optAPI.filenameKeyword().isEmpty()) {
         return SearchError(OcrTextSearchErrorCode::KeywordTooShort);
     }
 
