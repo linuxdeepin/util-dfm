@@ -44,6 +44,9 @@ struct SearchCliConfig
     int maxResults = 0;   // 0 表示不限制
     int maxPreviewLength = 200;
 
+    // 文件名搜索选项
+    QString filenameKeyword;
+
     // 时间范围过滤
     bool hasTimeFilter = false;
     DFMSEARCH::TimeRangeFilter timeFilter;
@@ -93,6 +96,7 @@ private:
     QCommandLineOption m_fileExtensionsOption;
     QCommandLineOption m_maxResultsOption;
     QCommandLineOption m_maxPreviewOption;
+    QCommandLineOption m_filenameOption;
     QCommandLineOption m_wildcardOption;
     QCommandLineOption m_jsonOption;
     QCommandLineOption m_verboseOption;

@@ -75,6 +75,25 @@ public:
      */
     bool isFullTextRetrievalEnabled() const;
 
+    // ==================== Filename Search ====================
+
+    /**
+     * @brief Sets a keyword to search on the filename field.
+     *
+     * When set, the search will also match against the indexed filename field
+     * in addition to (or instead of) the content field. If both a content keyword
+     * and a filename keyword are provided, results must match both (AND logic).
+     *
+     * @param keyword The filename keyword to search for.
+     */
+    void setFilenameKeyword(const QString &keyword);
+
+    /**
+     * @brief Gets the filename keyword for search.
+     * @return The filename keyword, or empty string if not set.
+     */
+    QString filenameKeyword() const;
+
 protected:
     SearchOptions &m_options;
 };

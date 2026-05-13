@@ -25,6 +25,7 @@ CliOptions::CliOptions()
       m_fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions"),
       m_maxResultsOption(QStringList() << "max-results", "Maximum number of results (0 for unlimited)", "number", "0"),
       m_maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200"),
+      m_filenameOption(QStringList() << "filename", "Search by filename in content/ocr index", "keyword"),
       m_wildcardOption(QStringList() << "wildcard", "Enable wildcard search with * and ? patterns"),
       m_jsonOption(QStringList() << "json"
                                  << "j",
@@ -64,6 +65,7 @@ void CliOptions::setupOptions()
     m_parser.addOption(m_fileExtensionsOption);
     m_parser.addOption(m_maxResultsOption);
     m_parser.addOption(m_maxPreviewOption);
+    m_parser.addOption(m_filenameOption);
     m_parser.addOption(m_wildcardOption);
     m_parser.addOption(m_jsonOption);
     m_parser.addOption(m_verboseOption);
@@ -108,6 +110,7 @@ void CliOptions::printHelp() const
     std::cout << "  --file-extensions=<exts>       Filter by file extensions, comma separated" << std::endl;
     std::cout << "  --max-results=<number>         Maximum number of results (0 for unlimited)" << std::endl;
     std::cout << "  --max-preview=<length>         Max content preview length (for content/ocr search)" << std::endl;
+    std::cout << "  --filename=<keyword>           Search by filename in content/ocr index" << std::endl;
     std::cout << std::endl;
     std::cout << "Time Range Filter Options:" << std::endl;
     std::cout << "  --time-field=<birth|modify>    Time field to filter (birth=creation, modify=modification)" << std::endl;
@@ -218,6 +221,11 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
 #else
         config.fileExtensions = m_parser.value(m_fileExtensionsOption).split(',', QString::SkipEmptyParts);
 #endif
+    }
+
+    // 解析文件名搜索选项（仅对 content/ocr 搜索有效）
+    if (m_parser.isSet(m_filenameOption)) {
+        config.filenameKeyword = m_parser.value(m_filenameOption);
     }
 
     // 解析数值选项
