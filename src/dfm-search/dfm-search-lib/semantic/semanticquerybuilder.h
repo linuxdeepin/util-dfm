@@ -24,6 +24,7 @@ struct SemanticSearchPlan {
     std::optional<SearchOptions> contentOptions;
     std::optional<SearchQuery> ocrQuery;
     std::optional<SearchOptions> ocrOptions;
+    TimeField timeField = TimeField::ModifyTime;   // BirthTime, ModifyTime, or Both
 };
 
 /**

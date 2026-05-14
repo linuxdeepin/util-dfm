@@ -118,6 +118,15 @@ private Q_SLOTS:
     void timeRelative_aWhileAgo_synonyms();
     void timeRelative_priority_vs_preset();
 
+    // Action behavior tests
+    void action_create_birthTime();
+    void action_create_synonyms();
+    void action_modify_modifyTime();
+    void action_modify_synonyms();
+    void action_default_unspecified();
+    void action_combined_withTime_create();
+    void action_combined_withTime_modify();
+
     // Keyword tests
     void keyword_contains_single();
     void keyword_contains_multi();
@@ -155,13 +164,13 @@ void tst_ChineseNLP::initTestCase()
 
     m_engine = new SemanticRuleEngine(this);
 
-    // Load all 4 rule files
+    // Load all 6 rule files
     const QString dir = rulesDir();
     QVERIFY2(QDir(dir).exists(), qPrintable(QStringLiteral("Rules dir not found: ") + dir));
 
     const QStringList files = { "noise_rules.json", "time_rules.json",
                                 "filetype_rules.json", "keyword_rules.json",
-                                "size_rules.json" };
+                                "size_rules.json", "action_rules.json" };
     for (const QString &f : files) {
         const QString path = dir + QLatin1Char('/') + f;
         bool ok = m_engine->loadRuleFile(path);
@@ -174,18 +183,20 @@ void tst_ChineseNLP::initTestCase()
     QVERIFY(m_engine->hasGroup("keyword"));
     QVERIFY(m_engine->hasGroup("noise"));
     QVERIFY(m_engine->hasGroup("size"));
+    QVERIFY(m_engine->hasGroup("action"));
 
     const QStringList groups = m_engine->groupNames();
-    QCOMPARE(groups.size(), 5);
+    QCOMPARE(groups.size(), 6);
 
     m_parser = new IntentParser(m_engine);
 
     // Verify default extractors are initialized
     QStringList names = m_parser->extractorNames();
-    QCOMPARE(names.size(), 4);
+    QCOMPARE(names.size(), 5);
     QVERIFY(names.contains("time"));
     QVERIFY(names.contains("filetype"));
     QVERIFY(names.contains("size"));
+    QVERIFY(names.contains("action"));
     QVERIFY(names.contains("keyword"));
 }
 
@@ -1245,6 +1256,97 @@ void tst_ChineseNLP::timeRelative_priority_vs_preset()
     m_parser->parse(QStringLiteral("今天之前的文档"), intent);
     QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
     QCOMPARE(intent.timeConstraint.preset, TimePreset::Today);
+}
+
+// ===== Action Behavior Tests =====
+
+void tst_ChineseNLP::action_create_birthTime()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("新建的图片"), intent);
+    QCOMPARE(intent.timeConstraint.timeField, TimeField::BirthTime);
+    // Action word should be consumed
+    bool actionConsumed = false;
+    for (const MatchSpan &span : intent.consumedSpans) {
+        if (span.ruleId == "action_create") {
+            actionConsumed = true;
+            break;
+        }
+    }
+    QVERIFY2(actionConsumed, "action_create should produce a consumed span");
+}
+
+void tst_ChineseNLP::action_create_synonyms()
+{
+    const QStringList inputs = { QStringLiteral("创建的文档"), QStringLiteral("存下来的图片"),
+                                  QStringLiteral("保存的文件"), QStringLiteral("新加的视频") };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input, intent);
+        QCOMPARE(intent.timeConstraint.timeField, TimeField::BirthTime);
+    }
+}
+
+void tst_ChineseNLP::action_modify_modifyTime()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("修改过的图片"), intent);
+    QCOMPARE(intent.timeConstraint.timeField, TimeField::ModifyTime);
+    // Action word should be consumed
+    bool actionConsumed = false;
+    for (const MatchSpan &span : intent.consumedSpans) {
+        if (span.ruleId == "action_modify") {
+            actionConsumed = true;
+            break;
+        }
+    }
+    QVERIFY2(actionConsumed, "action_modify should produce a consumed span");
+}
+
+void tst_ChineseNLP::action_modify_synonyms()
+{
+    const QStringList inputs = { QStringLiteral("编辑过的文档"), QStringLiteral("改过的文件"),
+                                  QStringLiteral("写过的图片"), QStringLiteral("更新的视频") };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input, intent);
+        QCOMPARE(intent.timeConstraint.timeField, TimeField::ModifyTime);
+    }
+}
+
+void tst_ChineseNLP::action_default_unspecified()
+{
+    // Without action words, timeField should remain Unspecified
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("今天的图片"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint.preset, TimePreset::Today);
+    QCOMPARE(intent.timeConstraint.timeField, TimeField::Unspecified);
+}
+
+void tst_ChineseNLP::action_combined_withTime_create()
+{
+    // "新建的今天的文档" — action_create + time today
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("新建的今天的文档"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint.preset, TimePreset::Today);
+    QCOMPARE(intent.timeConstraint.timeField, TimeField::BirthTime);
+    // Both time and action spans consumed
+    int consumedCount = intent.consumedSpans.size();
+    QVERIFY2(consumedCount >= 2,
+             qPrintable(QStringLiteral("Expected >=2 consumed spans, got ") + QString::number(consumedCount)));
+}
+
+void tst_ChineseNLP::action_combined_withTime_modify()
+{
+    // "昨天修改过的图片" — time yesterday + action_modify
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("昨天修改过的图片"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint.preset, TimePreset::Yesterday);
+    QCOMPARE(intent.timeConstraint.timeField, TimeField::ModifyTime);
+    QVERIFY(intent.fileExtensions.contains("jpg"));
 }
 
 QObject *create_tst_ChineseNLP()

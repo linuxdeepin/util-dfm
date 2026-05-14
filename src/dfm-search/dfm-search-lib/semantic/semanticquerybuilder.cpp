@@ -19,6 +19,18 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
 {
     SemanticSearchPlan plan;
 
+    // Determine time field strategy
+    if (intent.timeConstraint.isValid() && intent.timeConstraint.timeField == TimeField::Unspecified) {
+        // Time constraint exists but no action specified → search both birth and modify time
+        plan.timeField = TimeField::Both;
+    } else if (intent.timeConstraint.timeField == TimeField::BirthTime) {
+        plan.timeField = TimeField::BirthTime;
+    } else if (intent.timeConstraint.timeField == TimeField::ModifyTime) {
+        plan.timeField = TimeField::ModifyTime;
+    } else {
+        plan.timeField = TimeField::ModifyTime;
+    }
+
     // Base options shared across all search paths
     SearchOptions baseOpts = buildBaseOptions(intent.timeConstraint, intent.sizeConstraint);
     baseOpts.setSearchMethod(SearchMethod::Indexed);
@@ -170,6 +182,13 @@ TimeRangeFilter SemanticQueryBuilder::buildTimeRangeFilter(const TimeConstraint 
     case TimeConstraintKind::None:
         break;
     }
+
+    // Set time field if explicitly specified by ActionExtractor
+    if (tc.timeField == TimeField::BirthTime || tc.timeField == TimeField::ModifyTime) {
+        filter.setTimeField(tc.timeField);
+    }
+    // When Unspecified or Both: timeField is NOT set on the filter here.
+    // The searcher handles Both by creating duplicate engines with each field.
 
     return filter;
 }
