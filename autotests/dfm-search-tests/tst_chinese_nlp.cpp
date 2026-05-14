@@ -96,6 +96,17 @@ private Q_SLOTS:
     void combined_monthAndType();
     void combined_yearAndType();
 
+    // Size tests
+    void size_fuzzy_large();
+    void size_fuzzy_large_synonyms();
+    void size_fuzzy_small();
+    void size_dynamic_min();
+    void size_dynamic_max();
+    void size_dynamic_between();
+    void size_combined_withTime();
+    void size_combined_withType();
+    void size_combined_full();
+
     // Relative time tests
     void timeRelative_justNow();
     void timeRelative_justNow_synonyms();
@@ -149,7 +160,8 @@ void tst_ChineseNLP::initTestCase()
     QVERIFY2(QDir(dir).exists(), qPrintable(QStringLiteral("Rules dir not found: ") + dir));
 
     const QStringList files = { "noise_rules.json", "time_rules.json",
-                                "filetype_rules.json", "keyword_rules.json" };
+                                "filetype_rules.json", "keyword_rules.json",
+                                "size_rules.json" };
     for (const QString &f : files) {
         const QString path = dir + QLatin1Char('/') + f;
         bool ok = m_engine->loadRuleFile(path);
@@ -161,17 +173,19 @@ void tst_ChineseNLP::initTestCase()
     QVERIFY(m_engine->hasGroup("filetype"));
     QVERIFY(m_engine->hasGroup("keyword"));
     QVERIFY(m_engine->hasGroup("noise"));
+    QVERIFY(m_engine->hasGroup("size"));
 
     const QStringList groups = m_engine->groupNames();
-    QCOMPARE(groups.size(), 4);
+    QCOMPARE(groups.size(), 5);
 
     m_parser = new IntentParser(m_engine);
 
     // Verify default extractors are initialized
     QStringList names = m_parser->extractorNames();
-    QCOMPARE(names.size(), 3);
+    QCOMPARE(names.size(), 4);
     QVERIFY(names.contains("time"));
     QVERIFY(names.contains("filetype"));
+    QVERIFY(names.contains("size"));
     QVERIFY(names.contains("keyword"));
 }
 
@@ -1037,6 +1051,96 @@ void tst_ChineseNLP::combined_yearAndType()
     QCOMPARE(intent.timeConstraint.customEnd.date().year(), 2025);
     QVERIFY(intent.fileExtensions.contains("mp4"));
     QVERIFY(intent.fileExtensions.contains("avi"));
+}
+
+// ===== Size Tests =====
+
+void tst_ChineseNLP::size_fuzzy_large()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("大文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 524288000LL);  // 500MB
+    QCOMPARE(intent.sizeConstraint.maxSize, 0LL);  // no upper bound
+}
+
+void tst_ChineseNLP::size_fuzzy_large_synonyms()
+{
+    const QStringList inputs = { QStringLiteral("很大的"), QStringLiteral("占空间的"),
+                                  QStringLiteral("几个G的") };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input + QStringLiteral("的图片"), intent);
+        QVERIFY2(intent.sizeConstraint.isValid(),
+                 qPrintable(QStringLiteral("Size not valid for: ") + input));
+    }
+}
+
+void tst_ChineseNLP::size_fuzzy_small()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("小文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 0LL);
+    QCOMPARE(intent.sizeConstraint.maxSize, 1048576LL);  // 1MB
+    QCOMPARE(intent.sizeConstraint.includeUpper, false);
+}
+
+void tst_ChineseNLP::size_dynamic_min()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("大于500M的文档"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 524288000LL);  // 500MB
+    QVERIFY(intent.sizeConstraint.includeLower);
+}
+
+void tst_ChineseNLP::size_dynamic_max()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("小于100K的文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.maxSize, 102400LL);  // 100KB
+    QCOMPARE(intent.sizeConstraint.minSize, 0LL);
+}
+
+void tst_ChineseNLP::size_dynamic_between()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("1M-10M的文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 1048576LL);   // 1MB
+    QCOMPARE(intent.sizeConstraint.maxSize, 10485760LL);  // 10MB
+}
+
+void tst_ChineseNLP::size_combined_withTime()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("今天的大文件"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint.preset, TimePreset::Today);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 524288000LL);
+}
+
+void tst_ChineseNLP::size_combined_withType()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("大文件 pdf"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QVERIFY(intent.fileExtensions.contains("pdf"));
+}
+
+void tst_ChineseNLP::size_combined_full()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("昨天大于100M的图片和视频"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint.preset, TimePreset::Yesterday);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 104857600LL);  // 100MB
+    QVERIFY(intent.fileExtensions.contains("jpg"));
+    QVERIFY(intent.fileExtensions.contains("mp4"));
 }
 
 // ===== Relative Time Tests =====

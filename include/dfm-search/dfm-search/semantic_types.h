@@ -67,6 +67,19 @@ struct TimeConstraint
 };
 
 /**
+ * @brief Represents a parsed size constraint from natural language.
+ */
+struct SizeConstraint
+{
+    qint64 minSize = 0;    // Minimum size in bytes (0 = no lower bound)
+    qint64 maxSize = 0;    // Maximum size in bytes (0 = no upper bound)
+    bool includeLower = true;
+    bool includeUpper = true;
+
+    bool isValid() const { return minSize > 0 || maxSize > 0; }
+};
+
+/**
  * @brief Represents the parsed intent from natural language input.
  *
  * This is the intermediate representation between NLP parsing
@@ -76,6 +89,7 @@ struct TimeConstraint
 struct ParsedIntent
 {
     TimeConstraint timeConstraint;
+    SizeConstraint sizeConstraint;
     QStringList fileExtensions;
     QStringList keywords;
     QList<MatchSpan> consumedSpans;

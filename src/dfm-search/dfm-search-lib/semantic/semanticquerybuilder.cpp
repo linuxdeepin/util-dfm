@@ -20,7 +20,7 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
     SemanticSearchPlan plan;
 
     // Base options shared across all search paths
-    SearchOptions baseOpts = buildBaseOptions(intent.timeConstraint);
+    SearchOptions baseOpts = buildBaseOptions(intent.timeConstraint, intent.sizeConstraint);
     baseOpts.setSearchMethod(SearchMethod::Indexed);
 
     // --- File name search (always enabled) ---
@@ -174,12 +174,29 @@ TimeRangeFilter SemanticQueryBuilder::buildTimeRangeFilter(const TimeConstraint 
     return filter;
 }
 
-SearchOptions SemanticQueryBuilder::buildBaseOptions(const TimeConstraint &tc) const
+SizeRangeFilter SemanticQueryBuilder::buildSizeRangeFilter(const SizeConstraint &sc) const
+{
+    SizeRangeFilter filter;
+    if (!sc.isValid()) {
+        return filter;
+    }
+    filter.setMin(sc.minSize);
+    filter.setMax(sc.maxSize);
+    filter.setIncludeLower(sc.includeLower);
+    filter.setIncludeUpper(sc.includeUpper);
+    return filter;
+}
+
+SearchOptions SemanticQueryBuilder::buildBaseOptions(const TimeConstraint &tc, const SizeConstraint &sc) const
 {
     SearchOptions opts;
     const TimeRangeFilter timeFilter = buildTimeRangeFilter(tc);
     if (timeFilter.isValid()) {
         opts.setTimeRangeFilter(timeFilter);
+    }
+    const SizeRangeFilter sizeFilter = buildSizeRangeFilter(sc);
+    if (sizeFilter.isValid()) {
+        opts.setSizeRangeFilter(sizeFilter);
     }
     return opts;
 }
