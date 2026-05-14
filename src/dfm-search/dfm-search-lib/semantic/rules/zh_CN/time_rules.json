@@ -229,6 +229,58 @@
                         },
                         "tens_unit": "十"
                     }
+                },
+                {
+                    "id": "time_just_now",
+                    "pattern": "这会儿|刚才|刚刚|刚",
+                    "description": "Just now (last 2 hours)",
+                    "enabled": true,
+                    "priority": 80,
+                    "metadata": {
+                        "type": "relative",
+                        "relative_id": "just_now",
+                        "ago_start_seconds": 7200,
+                        "ago_end_seconds": 0
+                    }
+                },
+                {
+                    "id": "time_recent_days",
+                    "pattern": "这阵子|近期|最近|这几天",
+                    "description": "Recent days (last 3 days)",
+                    "enabled": true,
+                    "priority": 80,
+                    "metadata": {
+                        "type": "relative",
+                        "relative_id": "recent_days",
+                        "ago_start_seconds": 259200,
+                        "ago_end_seconds": 0
+                    }
+                },
+                {
+                    "id": "time_past_few_days",
+                    "pattern": "那些天|之前几天|前几天",
+                    "description": "Past few days (3-7 days ago)",
+                    "enabled": true,
+                    "priority": 80,
+                    "metadata": {
+                        "type": "relative",
+                        "relative_id": "past_few_days",
+                        "ago_start_seconds": 604800,
+                        "ago_end_seconds": 259200
+                    }
+                },
+                {
+                    "id": "time_a_while_ago",
+                    "pattern": "早些时候|以前|之前",
+                    "description": "A while ago (beyond 30 days)",
+                    "enabled": true,
+                    "priority": 80,
+                    "metadata": {
+                        "type": "relative",
+                        "relative_id": "a_while_ago",
+                        "ago_start_seconds": -1,
+                        "ago_end_seconds": 2592000
+                    }
                 }
             ]
         }

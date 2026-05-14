@@ -4,6 +4,7 @@
 
 #include <QCoreApplication>
 #include <QDate>
+#include <QDateTime>
 #include <QDir>
 #include <QSet>
 #include <QTest>
@@ -94,6 +95,17 @@ private Q_SLOTS:
     void combined_fullDateAndType();
     void combined_monthAndType();
     void combined_yearAndType();
+
+    // Relative time tests
+    void timeRelative_justNow();
+    void timeRelative_justNow_synonyms();
+    void timeRelative_recentDays();
+    void timeRelative_recentDays_synonyms();
+    void timeRelative_pastFewDays();
+    void timeRelative_pastFewDays_synonyms();
+    void timeRelative_aWhileAgo();
+    void timeRelative_aWhileAgo_synonyms();
+    void timeRelative_priority_vs_preset();
 
     // Keyword tests
     void keyword_contains_single();
@@ -1025,6 +1037,110 @@ void tst_ChineseNLP::combined_yearAndType()
     QCOMPARE(intent.timeConstraint.customEnd.date().year(), 2025);
     QVERIFY(intent.fileExtensions.contains("mp4"));
     QVERIFY(intent.fileExtensions.contains("avi"));
+}
+
+// ===== Relative Time Tests =====
+
+void tst_ChineseNLP::timeRelative_justNow()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("刚刚的图片"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    // End should be very close to NOW (within 2 seconds)
+    const qint64 endDelta = qAbs(intent.timeConstraint.customEnd.secsTo(QDateTime::currentDateTime()));
+    QVERIFY2(endDelta < 2, "Relative end should be close to NOW");
+    // Start should be ~2 hours ago
+    const qint64 startDelta = qAbs(intent.timeConstraint.customStart.secsTo(QDateTime::currentDateTime().addSecs(-7200)));
+    QVERIFY2(startDelta < 2, "Relative start should be ~2h ago");
+    QVERIFY(intent.fileExtensions.contains("jpg"));
+}
+
+void tst_ChineseNLP::timeRelative_justNow_synonyms()
+{
+    const QStringList inputs = { QStringLiteral("刚才"), QStringLiteral("刚"),
+                                  QStringLiteral("这会儿") };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input + QStringLiteral("的文档"), intent);
+        QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    }
+}
+
+void tst_ChineseNLP::timeRelative_recentDays()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("最近的图片"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    // End = NOW, Start = NOW - 3 days
+    const qint64 endDelta = qAbs(intent.timeConstraint.customEnd.secsTo(QDateTime::currentDateTime()));
+    QVERIFY2(endDelta < 2, "Recent days end should be NOW");
+    const qint64 startDelta = qAbs(intent.timeConstraint.customStart.secsTo(QDateTime::currentDateTime().addSecs(-259200)));
+    QVERIFY2(startDelta < 2, "Recent days start should be ~3 days ago");
+}
+
+void tst_ChineseNLP::timeRelative_recentDays_synonyms()
+{
+    const QStringList inputs = { QStringLiteral("这几天"), QStringLiteral("近期"),
+                                  QStringLiteral("这阵子") };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input + QStringLiteral("的文件"), intent);
+        QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    }
+}
+
+void tst_ChineseNLP::timeRelative_pastFewDays()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("前几天的文档"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    // End = NOW - 3 days, Start = NOW - 7 days
+    const qint64 endDelta = qAbs(intent.timeConstraint.customEnd.secsTo(QDateTime::currentDateTime().addSecs(-259200)));
+    QVERIFY2(endDelta < 2, "Past few days end should be ~3 days ago");
+    const qint64 startDelta = qAbs(intent.timeConstraint.customStart.secsTo(QDateTime::currentDateTime().addSecs(-604800)));
+    QVERIFY2(startDelta < 2, "Past few days start should be ~7 days ago");
+}
+
+void tst_ChineseNLP::timeRelative_pastFewDays_synonyms()
+{
+    const QStringList inputs = { QStringLiteral("之前几天"), QStringLiteral("那些天") };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input + QStringLiteral("的图片"), intent);
+        QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    }
+}
+
+void tst_ChineseNLP::timeRelative_aWhileAgo()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("之前的文档"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    // End = NOW - 30 days
+    const qint64 endDelta = qAbs(intent.timeConstraint.customEnd.secsTo(QDateTime::currentDateTime().addSecs(-2592000)));
+    QVERIFY2(endDelta < 2, "A while ago end should be ~30 days ago");
+    // Start should be epoch
+    QCOMPARE(intent.timeConstraint.customStart, QDateTime::fromMSecsSinceEpoch(0));
+}
+
+void tst_ChineseNLP::timeRelative_aWhileAgo_synonyms()
+{
+    const QStringList inputs = { QStringLiteral("早些时候"), QStringLiteral("以前") };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input + QStringLiteral("的文件"), intent);
+        QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    }
+}
+
+void tst_ChineseNLP::timeRelative_priority_vs_preset()
+{
+    // When both preset and relative could match, preset should win (higher priority)
+    // "今天之前" — "今天" matches time_today (priority 200), "之前" matches time_a_while_ago (priority 80)
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("今天之前的文档"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint.preset, TimePreset::Today);
 }
 
 QObject *create_tst_ChineseNLP()

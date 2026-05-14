@@ -24,6 +24,7 @@ public:
 
 private:
     void parseCustomTime(const QRegularExpressionMatch &match, const QVariantMap &metadata, TimeConstraint &tc);
+    void parseRelativeTime(const QVariantMap &metadata, TimeConstraint &tc);
 
     /**
      * @brief Convert a string to int using locale-aware digit mapping.
