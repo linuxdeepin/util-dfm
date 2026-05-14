@@ -227,8 +227,10 @@ Q_ENUM_NS(SearchMethod)
 
 // Enumeration for time field type
 enum class TimeField {
-    BirthTime,   // File creation time
-    ModifyTime   // File modification time
+    Unspecified,   // No specific time field (search both BirthTime and ModifyTime)
+    BirthTime,     // File creation time
+    ModifyTime,    // File modification time
+    Both           // Search both BirthTime and ModifyTime (union of results)
 };
 Q_ENUM_NS(TimeField)
 

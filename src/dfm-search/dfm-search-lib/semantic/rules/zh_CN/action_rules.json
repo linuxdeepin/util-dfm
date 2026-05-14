@@ -1,0 +1,32 @@
+{
+    "version": "1.0.0",
+    "groups": [
+        {
+            "name": "action",
+            "version": "1.0.0",
+            "locale": "zh-CN",
+            "rules": [
+                {
+                    "id": "action_create",
+                    "pattern": "新建的|创建的|存下来的|保存的|新加的",
+                    "description": "Action: created files (BirthTime)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "time_field": "birth"
+                    }
+                },
+                {
+                    "id": "action_modify",
+                    "pattern": "修改过的|编辑过的|改过的|写过的|更新的",
+                    "description": "Action: modified files (ModifyTime)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "time_field": "modify"
+                    }
+                }
+            ]
+        }
+    ]
+}

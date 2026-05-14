@@ -5,6 +5,7 @@
 #include "intentparser.h"
 
 #include "semanticruleengine.h"
+#include "extractors/actionextractor.h"
 #include "extractors/filetypeextractor.h"
 #include "extractors/keywordextractor.h"
 #include "extractors/sizeextractor.h"
@@ -48,6 +49,7 @@ void IntentParser::initDefaultExtractors()
     addExtractor(std::make_unique<TimeExtractor>(m_engine));
     addExtractor(std::make_unique<FileTypeExtractor>(m_engine));
     addExtractor(std::make_unique<SizeExtractor>(m_engine));
+    addExtractor(std::make_unique<ActionExtractor>(m_engine));
     addExtractor(std::make_unique<KeywordExtractor>(m_engine));
 }
 

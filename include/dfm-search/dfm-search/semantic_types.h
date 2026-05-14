@@ -62,6 +62,7 @@ struct TimeConstraint
     TimeUnit relativeUnit = TimeUnit::Days;
     QDateTime customStart;
     QDateTime customEnd;
+    TimeField timeField = TimeField::Unspecified;   // Set by ActionExtractor; Unspecified = no action specified
 
     bool isValid() const { return kind != TimeConstraintKind::None; }
 };

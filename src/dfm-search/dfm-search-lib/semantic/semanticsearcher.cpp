@@ -63,7 +63,27 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
     // Step 2: Build search plan
     const SemanticSearchPlan plan = queryBuilder->build(intent);
 
-    // Step 3: Create and launch search engines in parallel
+    // Step 3: Determine time fields to search
+    QList<TimeField> timeFields;
+    if (plan.timeField == TimeField::Both) {
+        timeFields = {TimeField::BirthTime, TimeField::ModifyTime};
+    } else {
+        timeFields = {plan.timeField};
+    }
+
+    // Helper: apply time field to options (clone + setTimeField if time filter present)
+    auto applyTimeField = [](const SearchOptions &opts, TimeField tf) -> SearchOptions {
+        TimeRangeFilter tfCopy = opts.timeRangeFilter();
+        if (tfCopy.isValid()) {
+            tfCopy.setTimeField(tf);
+            SearchOptions result = opts;
+            result.setTimeRangeFilter(tfCopy);
+            return result;
+        }
+        return opts;
+    };
+
+    // Step 4: Create and launch search engines in parallel
     auto onResultsFound = [this](const SearchResultList &results) {
         SearchResultList newResults;
         for (const SearchResult &r : results) {
@@ -104,56 +124,54 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
     pendingFinishCount.store(0);
 
     // Clean up any previous search engines (they have parent q, so Qt deletes them)
-    if (fileNameEngine) {
-        fileNameEngine->deleteLater();
-        fileNameEngine = nullptr;
+    for (SearchEngine *e : engines) {
+        e->deleteLater();
     }
-    if (contentEngine) {
-        contentEngine->deleteLater();
-        contentEngine = nullptr;
-    }
-    if (ocrEngine) {
-        ocrEngine->deleteLater();
-        ocrEngine = nullptr;
-    }
+    engines.clear();
 
-    // File name search (always)
-    if (Global::isFileNameIndexReadyForSearch()) {
-        fileNameEngine = SearchEngine::create(SearchType::FileName, q);
-        fileNameEngine->setSearchOptions(plan.fileNameOptions);
+    // Launch engines for each time field (may be 1 or 2 for Both)
+    for (TimeField tf : timeFields) {
+        // File name search (always)
+        if (Global::isFileNameIndexReadyForSearch()) {
+            SearchEngine *engine = SearchEngine::create(SearchType::FileName, q);
+            engine->setSearchOptions(applyTimeField(plan.fileNameOptions, tf));
 
-        QObject::connect(fileNameEngine, &SearchEngine::resultsFound, q, onResultsFound);
-        QObject::connect(fileNameEngine, &SearchEngine::searchFinished, q, onFinished);
-        QObject::connect(fileNameEngine, &SearchEngine::errorOccurred, q, onError);
+            QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
+            QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
+            QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
 
-        pendingFinishCount.fetch_add(1);
-        fileNameEngine->search(plan.fileNameQuery);
-    }
+            engines.append(engine);
+            pendingFinishCount.fetch_add(1);
+            engine->search(plan.fileNameQuery);
+        }
 
-    // Content search
-    if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
-        contentEngine = SearchEngine::create(SearchType::Content, q);
-        contentEngine->setSearchOptions(*plan.contentOptions);
+        // Content search
+        if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
+            SearchEngine *engine = SearchEngine::create(SearchType::Content, q);
+            engine->setSearchOptions(applyTimeField(*plan.contentOptions, tf));
 
-        QObject::connect(contentEngine, &SearchEngine::resultsFound, q, onResultsFound);
-        QObject::connect(contentEngine, &SearchEngine::searchFinished, q, onFinished);
-        QObject::connect(contentEngine, &SearchEngine::errorOccurred, q, onError);
+            QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
+            QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
+            QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
 
-        pendingFinishCount.fetch_add(1);
-        contentEngine->search(*plan.contentQuery);
-    }
+            engines.append(engine);
+            pendingFinishCount.fetch_add(1);
+            engine->search(*plan.contentQuery);
+        }
 
-    // OCR search
-    if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
-        ocrEngine = SearchEngine::create(SearchType::Ocr, q);
-        ocrEngine->setSearchOptions(*plan.ocrOptions);
+        // OCR search
+        if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
+            SearchEngine *engine = SearchEngine::create(SearchType::Ocr, q);
+            engine->setSearchOptions(applyTimeField(*plan.ocrOptions, tf));
 
-        QObject::connect(ocrEngine, &SearchEngine::resultsFound, q, onResultsFound);
-        QObject::connect(ocrEngine, &SearchEngine::searchFinished, q, onFinished);
-        QObject::connect(ocrEngine, &SearchEngine::errorOccurred, q, onError);
+            QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
+            QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
+            QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
 
-        pendingFinishCount.fetch_add(1);
-        ocrEngine->search(*plan.ocrQuery);
+            engines.append(engine);
+            pendingFinishCount.fetch_add(1);
+            engine->search(*plan.ocrQuery);
+        }
     }
 
     // If no engines were launched (e.g., no indexes available)
@@ -175,14 +193,8 @@ void SemanticSearcherData::doCancel()
     cancelled.store(true);
     timeoutTimer->stop();
 
-    if (fileNameEngine) {
-        fileNameEngine->cancel();
-    }
-    if (contentEngine) {
-        contentEngine->cancel();
-    }
-    if (ocrEngine) {
-        ocrEngine->cancel();
+    for (SearchEngine *e : engines) {
+        e->cancel();
     }
 }
 

@@ -39,10 +39,8 @@ public:
     IntentParser *intentParser = nullptr;
     SemanticQueryBuilder *queryBuilder = nullptr;
 
-    // Sub-engines (owned per search)
-    SearchEngine *fileNameEngine = nullptr;
-    SearchEngine *contentEngine = nullptr;
-    SearchEngine *ocrEngine = nullptr;
+    // Sub-engines (owned per search, parented to q for auto-cleanup)
+    QList<SearchEngine *> engines;
     std::atomic<int> pendingFinishCount{0};
 
     // Result collection
