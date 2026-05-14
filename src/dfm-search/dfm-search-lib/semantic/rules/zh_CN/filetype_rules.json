@@ -1,0 +1,154 @@
+{
+    "version": "1.0.0",
+    "groups": [
+        {
+            "name": "filetype",
+            "version": "1.0.0",
+            "locale": "zh-CN",
+            "rules": [
+                {
+                    "id": "filetype_word",
+                    "pattern": "word|doc|docx",
+                    "description": "Word documents",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "extensions": ["doc", "docx"],
+                        "fileTypes": ["doc"]
+                    }
+                },
+                {
+                    "id": "filetype_pdf",
+                    "pattern": "pdf",
+                    "description": "PDF documents",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "extensions": ["pdf"]
+                    }
+                },
+                {
+                    "id": "filetype_excel",
+                    "pattern": "excel|xls|xlsx",
+                    "description": "Excel spreadsheets",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "extensions": ["xls", "xlsx"],
+                        "fileTypes": ["doc"]
+                    }
+                },
+                {
+                    "id": "filetype_ppt",
+                    "pattern": "ppt|pptx",
+                    "description": "PowerPoint presentations",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "extensions": ["ppt", "pptx"]
+                    }
+                },
+                {
+                    "id": "filetype_document_general",
+                    "pattern": "文档|文件|报告|文章|方案|文本|资料|笔记|稿件",
+                    "description": "Generic documents (fallback)",
+                    "enabled": true,
+                    "priority": 100,
+                    "metadata": {
+                        "extensions": ["doc", "docx", "pdf", "txt", "wps", "rtf", "md", "odt"],
+                        "fileTypes": ["doc"],
+                        "general": true
+                    }
+                },
+                {
+                    "id": "filetype_spreadsheet_general",
+                    "pattern": "表格|统计表|报表|名单|数据表|明细",
+                    "description": "Generic spreadsheets (fallback)",
+                    "enabled": true,
+                    "priority": 100,
+                    "metadata": {
+                        "extensions": ["xls", "xlsx", "csv", "ods", "et"],
+                        "fileTypes": ["doc"],
+                        "general": true
+                    }
+                },
+                {
+                    "id": "filetype_presentation_general",
+                    "pattern": "幻灯片|演示文稿|汇报|课件|宣讲",
+                    "description": "Generic presentations (fallback)",
+                    "enabled": true,
+                    "priority": 100,
+                    "metadata": {
+                        "extensions": ["ppt", "pptx", "dps", "odp"],
+                        "general": true
+                    }
+                },
+                {
+                    "id": "filetype_image",
+                    "pattern": "图片|照片|截图|壁纸|海报|相片|表情包|图",
+                    "description": "Images",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "extensions": ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"],
+                        "fileTypes": ["pic"]
+                    }
+                },
+                {
+                    "id": "filetype_video",
+                    "pattern": "视频|录像|电影|动画|短片|片子",
+                    "description": "Videos",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "extensions": ["mp4", "avi", "mkv", "mov", "flv", "wmv", "webm"],
+                        "fileTypes": ["video"]
+                    }
+                },
+                {
+                    "id": "filetype_audio",
+                    "pattern": "音频|音乐|录音|歌|语音",
+                    "description": "Audio files",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "extensions": ["mp3", "wav", "flac", "aac", "ogg", "m4a"],
+                        "fileTypes": ["audio"]
+                    }
+                },
+                {
+                    "id": "filetype_archive",
+                    "pattern": "压缩包|归档|源码包|打包文件|zip|rar",
+                    "description": "Archive files",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "extensions": ["zip", "tar.gz", "tar", "rar", "7z", "bz2"],
+                        "fileTypes": ["archive"]
+                    }
+                },
+                {
+                    "id": "filetype_application",
+                    "pattern": "安装包|软件|应用|脚本|程序",
+                    "description": "Application packages",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "extensions": ["deb", "AppImage", "sh", "py", "bin", "run"],
+                        "fileTypes": ["app"]
+                    }
+                },
+                {
+                    "id": "filetype_design_source",
+                    "pattern": "源文件|设计稿|矢量图|工程文件|psd|fig|sketch",
+                    "description": "Design source files",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "extensions": ["psd", "ai", "fig", "sketch"]
+                    }
+                }
+            ]
+        }
+    ]
+}

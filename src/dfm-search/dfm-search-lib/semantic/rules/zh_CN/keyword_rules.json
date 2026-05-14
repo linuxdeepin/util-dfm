@@ -1,0 +1,51 @@
+{
+    "version": "1.0.0",
+    "groups": [
+        {
+            "name": "keyword",
+            "version": "1.0.0",
+            "locale": "zh-CN",
+            "rules": [
+                {
+                    "id": "keyword_contains",
+                    "pattern": "包含(.+?)(?:的|$)",
+                    "description": "Contains keyword pattern",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "capture_group": 1,
+                        "multi_keyword": true,
+                        "cleanup_pattern": "[\\s。、\u201c\u201d\uff0c\u3001\u7684\u4e86\u8981\u554a]+",
+                        "split_pattern": "[\u548c\u4e0e\u4ee5\u53ca\u6216\u3001]+"
+                    }
+                },
+                {
+                    "id": "keyword_named",
+                    "pattern": "名为(.+?)(?:的|$)|叫做(.+?)(?:的|$)",
+                    "description": "Named keyword pattern",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "capture_group": 1,
+                        "multi_keyword": false,
+                        "cleanup_pattern": "[\\s。、\u201c\u201d\uff0c\u3001\u7684\u4e86\u8981\u554a]+",
+                        "split_pattern": "[\u548c\u4e0e\u4ee5\u53ca\u6216\u3001]+"
+                    }
+                },
+                {
+                    "id": "keyword_content_has",
+                    "pattern": "内容(?:包含|含有|带有)(.+?)(?:的|$)",
+                    "description": "Content contains keyword pattern",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "capture_group": 1,
+                        "multi_keyword": true,
+                        "cleanup_pattern": "[\\s。、\u201c\u201d\uff0c\u3001\u7684\u4e86\u8981\u554a]+",
+                        "split_pattern": "[\u548c\u4e0e\u4ee5\u53ca\u6216\u3001]+"
+                    }
+                }
+            ]
+        }
+    ]
+}

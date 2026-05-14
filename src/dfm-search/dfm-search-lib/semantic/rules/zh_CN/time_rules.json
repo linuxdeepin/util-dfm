@@ -1,0 +1,236 @@
+{
+    "version": "1.0.0",
+    "groups": [
+        {
+            "name": "time",
+            "version": "1.0.0",
+            "locale": "zh-CN",
+            "rules": [
+                {
+                    "id": "time_today",
+                    "pattern": "今天|今日|今日份",
+                    "description": "Today",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "today"
+                    }
+                },
+                {
+                    "id": "time_yesterday",
+                    "pattern": "昨天上午|昨天下午|昨天晚上|昨天|昨日|昨晚",
+                    "description": "Yesterday",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "yesterday"
+                    }
+                },
+                {
+                    "id": "time_day_before_yesterday",
+                    "pattern": "前天",
+                    "description": "Day before yesterday",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "day_before_yesterday"
+                    }
+                },
+                {
+                    "id": "time_this_week",
+                    "pattern": "本周|这周|这个星期|这一个星期",
+                    "description": "This week",
+                    "enabled": true,
+                    "priority": 190,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "this_week"
+                    }
+                },
+                {
+                    "id": "time_last_week",
+                    "pattern": "上周|上个星期|上星期|上一个星期",
+                    "description": "Last week",
+                    "enabled": true,
+                    "priority": 190,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "last_week"
+                    }
+                },
+                {
+                    "id": "time_this_month",
+                    "pattern": "本月|这个月|当月",
+                    "description": "This month",
+                    "enabled": true,
+                    "priority": 180,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "this_month"
+                    }
+                },
+                {
+                    "id": "time_last_month",
+                    "pattern": "上个月|上月",
+                    "description": "Last month",
+                    "enabled": true,
+                    "priority": 180,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "last_month"
+                    }
+                },
+                {
+                    "id": "time_this_year",
+                    "pattern": "今年|本年|这年",
+                    "description": "This year",
+                    "enabled": true,
+                    "priority": 170,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "this_year"
+                    }
+                },
+                {
+                    "id": "time_last_year",
+                    "pattern": "去年|上一年",
+                    "description": "Last year",
+                    "enabled": true,
+                    "priority": 170,
+                    "metadata": {
+                        "type": "preset",
+                        "preset": "last_year"
+                    }
+                },
+                {
+                    "id": "time_exact_year",
+                    "pattern": "(?<year>\\d{2,4})年",
+                    "description": "Exact year (e.g. 2025年, 25年)",
+                    "enabled": true,
+                    "priority": 120,
+                    "metadata": {
+                        "type": "custom",
+                        "format": "year",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_exact_month_current_year",
+                    "pattern": "(?<month>\\d{1,2})月份?",
+                    "description": "Month this year (e.g. 12月, 5月份)",
+                    "enabled": true,
+                    "priority": 120,
+                    "metadata": {
+                        "type": "custom",
+                        "format": "month",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_exact_year_month",
+                    "pattern": "(?<year>\\d{2,4})[年\\./\\-](?<month>\\d{1,2})月?",
+                    "description": "Exact year-month (e.g. 2025年12月, 2025-12)",
+                    "enabled": true,
+                    "priority": 140,
+                    "metadata": {
+                        "type": "custom",
+                        "format": "year_month",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_exact_date_current_year",
+                    "pattern": "(?<month>\\d{1,2})月(?<day>\\d{1,2})[日号]",
+                    "description": "Exact date this year (e.g. 12月5日, 3月8号)",
+                    "enabled": true,
+                    "priority": 140,
+                    "metadata": {
+                        "type": "custom",
+                        "format": "date",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_exact_full_date",
+                    "pattern": "(?<year>\\d{2,4})[年\\./\\-](?<month>\\d{1,2})[月\\./\\-](?<day>\\d{1,2})[日号]?",
+                    "description": "Exact full date (e.g. 2025年12月5日, 2025-12-05)",
+                    "enabled": true,
+                    "priority": 160,
+                    "metadata": {
+                        "type": "custom",
+                        "format": "full_date",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                }
+            ]
+        }
+    ]
+}
