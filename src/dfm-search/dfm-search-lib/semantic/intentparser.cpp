@@ -7,6 +7,7 @@
 #include "semanticruleengine.h"
 #include "extractors/filetypeextractor.h"
 #include "extractors/keywordextractor.h"
+#include "extractors/sizeextractor.h"
 #include "extractors/timeextractor.h"
 
 DFM_SEARCH_BEGIN_NS
@@ -46,6 +47,7 @@ void IntentParser::initDefaultExtractors()
     // Order matters: keyword MUST be last (depends on consumedSpans)
     addExtractor(std::make_unique<TimeExtractor>(m_engine));
     addExtractor(std::make_unique<FileTypeExtractor>(m_engine));
+    addExtractor(std::make_unique<SizeExtractor>(m_engine));
     addExtractor(std::make_unique<KeywordExtractor>(m_engine));
 }
 

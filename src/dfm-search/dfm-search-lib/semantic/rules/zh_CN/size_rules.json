@@ -1,0 +1,70 @@
+{
+    "version": "1.0.0",
+    "groups": [
+        {
+            "name": "size",
+            "version": "1.0.0",
+            "locale": "zh-CN",
+            "rules": [
+                {
+                    "id": "size_fuzzy_large",
+                    "pattern": "大文件|很大的|占空间的|几个G的|几个g的",
+                    "description": "Fuzzy large files (>500MB)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "type": "preset",
+                        "min_bytes": 524288000,
+                        "max_bytes": 0
+                    }
+                },
+                {
+                    "id": "size_small",
+                    "pattern": "小文件|很小的| tiny的",
+                    "description": "Small files (<1MB)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "type": "preset",
+                        "min_bytes": 0,
+                        "max_bytes": 1048576,
+                        "include_upper": false
+                    }
+                },
+                {
+                    "id": "size_dynamic",
+                    "pattern": "(大于|超过|最少|至少|>)\\s*(?<value>\\d+(?:\\.\\d+)?)\\s*(?<unit>[KkMmGg][Bb]?)以?[上内]?",
+                    "description": "Dynamic precise size (e.g. 大于500M, 1G以上)",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "type": "dynamic",
+                        "direction": "min"
+                    }
+                },
+                {
+                    "id": "size_dynamic_less",
+                    "pattern": "(小于|不超过|不到|最多|<)\\s*(?<value>\\d+(?:\\.\\d+)?)\\s*(?<unit>[KkMmGg][Bb]?)以?[下内]?",
+                    "description": "Dynamic precise size less-than (e.g. 小于100K, 不到1G)",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "type": "dynamic",
+                        "direction": "max"
+                    }
+                },
+                {
+                    "id": "size_dynamic_between",
+                    "pattern": "(?<min_val>\\d+(?:\\.\\d+)?)\\s*(?<min_unit>[KkMmGg][Bb]?)[\\s~\\-到至]+(?<max_val>\\d+(?:\\.\\d+)?)\\s*(?<max_unit>[KkMmGg][Bb]?)",
+                    "description": "Size range (e.g. 1M-10M, 100K到500K)",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "type": "dynamic",
+                        "direction": "range"
+                    }
+                }
+            ]
+        }
+    ]
+}

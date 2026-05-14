@@ -44,7 +44,8 @@ public:
 
 private:
     TimeRangeFilter buildTimeRangeFilter(const TimeConstraint &tc) const;
-    SearchOptions buildBaseOptions(const TimeConstraint &tc) const;
+    SizeRangeFilter buildSizeRangeFilter(const SizeConstraint &sc) const;
+    SearchOptions buildBaseOptions(const TimeConstraint &tc, const SizeConstraint &sc) const;
 };
 
 DFM_SEARCH_END_NS
