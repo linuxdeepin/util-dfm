@@ -8,6 +8,8 @@ set(SRCS
     cli_options.h
     time_parser.cpp
     time_parser.h
+    size_parser.cpp
+    size_parser.h
     output/output_formatter.h
     output/text_output.cpp
     output/text_output.h

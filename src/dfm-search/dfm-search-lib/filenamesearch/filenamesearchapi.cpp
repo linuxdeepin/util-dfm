@@ -168,4 +168,16 @@ QString FileNameResultAPI::birthTimeString() const
     return ts > 0 ? TimeResultAPI::formatTimestamp(ts) : QString();
 }
 
+// ==================== File Size (Numeric) ====================
+
+void FileNameResultAPI::setFileSizeBytes(qint64 bytes)
+{
+    m_result.setCustomAttribute("fileSizeBytes", bytes);
+}
+
+qint64 FileNameResultAPI::fileSizeBytes() const
+{
+    return m_result.customAttribute("fileSizeBytes").toLongLong();
+}
+
 DFM_SEARCH_END_NS

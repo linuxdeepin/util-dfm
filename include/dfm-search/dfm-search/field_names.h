@@ -21,6 +21,7 @@ constexpr const wchar_t kFullPath[] = L"full_path";
 constexpr const wchar_t kIsHidden[] = L"is_hidden";
 constexpr const wchar_t kModifyTime[] = L"modify_time";
 constexpr const wchar_t kBirthTime[] = L"birth_time";
+constexpr const wchar_t kFileSize[] = L"file_size";
 constexpr const wchar_t kFileSizeStr[] = L"file_size_str";
 constexpr const wchar_t kPinyin[] = L"pinyin";
 constexpr const wchar_t kPinyinAcronym[] = L"pinyin_acronym";

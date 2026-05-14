@@ -9,6 +9,7 @@
 
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search/timerangefilter.h>
+#include <dfm-search/sizerangefilter.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -39,6 +40,7 @@ public:
     int syncSearchTimeoutSecs { 60 };
     int batchTimeMs { 1000 };   ///< Batch processing time interval in milliseconds
     TimeRangeFilter timeRangeFilter;   ///< Time range filter for search
+    SizeRangeFilter sizeRangeFilter;   ///< File size range filter for search
 };
 
 DFM_SEARCH_END_NS

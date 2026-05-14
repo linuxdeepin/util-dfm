@@ -15,6 +15,7 @@ extern QObject *create_tst_FileTypeExtraction();
 extern QObject *create_tst_KeywordExtraction();
 extern QObject *create_tst_ParsedIntent();
 extern QObject *create_tst_ChineseNLP();
+extern QObject *create_tst_SizeRangeFilter();
 
 int main(int argc, char *argv[])
 {
@@ -60,6 +61,10 @@ int main(int argc, char *argv[])
     QObject *testObj10 = create_tst_ChineseNLP();
     result |= QTest::qExec(testObj10, argc, argv);
     delete testObj10;
+
+    QObject *testObj11 = create_tst_SizeRangeFilter();
+    result |= QTest::qExec(testObj11, argc, argv);
+    delete testObj11;
 
     return result;
 }

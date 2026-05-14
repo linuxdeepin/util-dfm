@@ -197,4 +197,24 @@ void SearchOptions::clearTimeRangeFilter()
     d->timeRangeFilter.clear();
 }
 
+void SearchOptions::setSizeRangeFilter(const SizeRangeFilter &filter)
+{
+    d->sizeRangeFilter = filter;
+}
+
+SizeRangeFilter SearchOptions::sizeRangeFilter() const
+{
+    return d->sizeRangeFilter;
+}
+
+bool SearchOptions::hasSizeRangeFilter() const
+{
+    return d->sizeRangeFilter.isValid();
+}
+
+void SearchOptions::clearSizeRangeFilter()
+{
+    d->sizeRangeFilter.clear();
+}
+
 DFM_SEARCH_END_NS

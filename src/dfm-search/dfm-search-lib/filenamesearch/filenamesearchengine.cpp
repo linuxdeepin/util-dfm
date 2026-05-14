@@ -56,8 +56,9 @@ SearchError FileNameSearchEngine::validateSearchConditions()
     // 文件名搜索特定验证
     if (m_currentQuery.type() == SearchQuery::Type::Simple
         || m_currentQuery.type() == SearchQuery::Type::Wildcard) {
-        // 允许对一个类型, 后缀进行搜索，获取类型下所有文件
-        if (m_currentQuery.keyword().isEmpty() && fileTypes.isEmpty() && fileExts.isEmpty()) {
+        // 允许对类型/后缀/大小范围/时间范围进行搜索，获取满足条件的所有文件
+        if (m_currentQuery.keyword().isEmpty() && fileTypes.isEmpty() && fileExts.isEmpty()
+            && !m_options.hasSizeRangeFilter() && !m_options.hasTimeRangeFilter()) {
             return SearchError(FileNameSearchErrorCode::KeywordIsEmpty);
         }
 
