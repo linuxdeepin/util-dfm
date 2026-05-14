@@ -72,6 +72,20 @@ public:
     void search(const QString &naturalLanguage);
 
     /**
+     * @brief Check if the input contains semantic intent beyond a plain keyword.
+     *
+     * Returns true if parsing the input reveals time constraints, size constraints,
+     * file type filters, or location constraints. Returns false for plain keyword input.
+     *
+     * This allows callers to avoid unnecessary semantic search overhead when
+     * the user is just typing a simple keyword.
+     *
+     * @param input The natural language query to check
+     * @return true if the input contains semantic intent, false for plain keywords
+     */
+    bool isSemanticQuery(const QString &input) const;
+
+    /**
      * @brief Perform a synchronous semantic search
      *
      * Blocks the calling thread until all search engines complete or timeout.

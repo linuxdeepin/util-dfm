@@ -4,7 +4,7 @@
 
 #include "timeextractor.h"
 
-#include "../semanticruleengine.h"
+#include "semantic/semanticruleengine.h"
 
 #include <QDate>
 #include <QDateTime>
@@ -38,15 +38,15 @@ void TimeExtractor::extract(const QString &input, ParsedIntent &intent)
     if (typeStr == "preset") {
         const QString presetStr = metadata.value("preset").toString();
         static const QMap<QString, TimePreset> kPresetMap = {
-            {"today", TimePreset::Today},
-            {"yesterday", TimePreset::Yesterday},
-            {"day_before_yesterday", TimePreset::DayBeforeYesterday},
-            {"this_week", TimePreset::ThisWeek},
-            {"last_week", TimePreset::LastWeek},
-            {"this_month", TimePreset::ThisMonth},
-            {"last_month", TimePreset::LastMonth},
-            {"this_year", TimePreset::ThisYear},
-            {"last_year", TimePreset::LastYear},
+            { "today", TimePreset::Today },
+            { "yesterday", TimePreset::Yesterday },
+            { "day_before_yesterday", TimePreset::DayBeforeYesterday },
+            { "this_week", TimePreset::ThisWeek },
+            { "last_week", TimePreset::LastWeek },
+            { "this_month", TimePreset::ThisMonth },
+            { "last_month", TimePreset::LastMonth },
+            { "this_year", TimePreset::ThisYear },
+            { "last_year", TimePreset::LastYear },
         };
 
         if (kPresetMap.contains(presetStr)) {
@@ -70,8 +70,8 @@ void TimeExtractor::extract(const QString &input, ParsedIntent &intent)
 }
 
 void TimeExtractor::parseCustomTime(const QRegularExpressionMatch &match,
-                                     const QVariantMap &metadata,
-                                     TimeConstraint &tc)
+                                    const QVariantMap &metadata,
+                                    TimeConstraint &tc)
 {
     Q_UNUSED(metadata);
 

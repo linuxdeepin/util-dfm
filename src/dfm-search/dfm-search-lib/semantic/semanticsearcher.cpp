@@ -9,6 +9,7 @@
 #include "semanticruleengine.h"
 
 #include <dfm-search/dsearch_global.h>
+#include <dfm-search/semantic_types.h>
 
 #include <QDebug>
 #include <QDir>
@@ -18,11 +19,7 @@
 DFM_SEARCH_BEGIN_NS
 
 SemanticSearcherData::SemanticSearcherData(SemanticSearcher *q_ptr)
-    : q(q_ptr)
-    , ruleEngine(new SemanticRuleEngine(q))
-    , intentParser(new IntentParser(ruleEngine))
-    , queryBuilder(new SemanticQueryBuilder())
-    , timeoutTimer(new QTimer(q))
+    : q(q_ptr), ruleEngine(new SemanticRuleEngine(q)), intentParser(new IntentParser(ruleEngine)), queryBuilder(new SemanticQueryBuilder()), timeoutTimer(new QTimer(q))
 {
     timeoutTimer->setSingleShot(true);
     timeoutTimer->setInterval(timeoutSeconds * 1000);
@@ -50,6 +47,7 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
         return;
     }
 
+    // Step 1: Validate + reset state
     cancelled.store(false);
     allResults.clear();
     seenPaths.clear();
@@ -57,39 +55,19 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
     Q_EMIT q->statusChanged(SearchStatus::Searching);
     Q_EMIT q->searchStarted();
 
-    // Step 1: Parse natural language into intent
+    // Step 2: Parse natural language into intent
     ParsedIntent intent;
     intentParser->parse(naturalLanguage, intent);
 
-    // Step 2: Build search plan
+    // Step 3: Build search plan
     const SemanticSearchPlan plan = queryBuilder->build(intent);
 
-    // Step 3: Determine time fields to search
-    QList<TimeField> timeFields;
-    if (plan.timeField == TimeField::Both) {
-        timeFields = {TimeField::BirthTime, TimeField::ModifyTime};
-    } else {
-        timeFields = {plan.timeField};
-    }
-
-    // Step 3b: Determine search directories
+    // Step 4: Determine search directories
     QStringList dirs = plan.searchDirectories.isEmpty()
-        ? QStringList{QDir::homePath()}
-        : plan.searchDirectories;
+            ? QStringList { QDir::homePath() }
+            : plan.searchDirectories;
 
-    // Helper: apply time field to options (clone + setTimeField if time filter present)
-    auto applyTimeField = [](const SearchOptions &opts, TimeField tf) -> SearchOptions {
-        TimeRangeFilter tfCopy = opts.timeRangeFilter();
-        if (tfCopy.isValid()) {
-            tfCopy.setTimeField(tf);
-            SearchOptions result = opts;
-            result.setTimeRangeFilter(tfCopy);
-            return result;
-        }
-        return opts;
-    };
-
-    // Step 4: Create and launch search engines in parallel
+    // Step 5: Set up signal/slot handlers
     auto onResultsFound = [this](const SearchResultList &results) {
         SearchResultList newResults;
         for (const SearchResult &r : results) {
@@ -120,98 +98,85 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
         }
     };
 
-    auto onError = [this](const SearchError &error) {
+    auto onError = [](const SearchError &error) {
         qWarning() << "Search error:" << error.message();
         // Don't propagate individual engine errors to caller
         // The other engines may still produce valid results
     };
 
-    // Count how many engines we'll launch
+    // Step 6: Clean up any previous search engines
     pendingFinishCount.store(0);
-
-    // Clean up any previous search engines (they have parent q, so Qt deletes them)
     for (SearchEngine *e : engines) {
         e->deleteLater();
     }
     engines.clear();
 
-    // Launch engines for each directory and each time field
-    for (const QString &dir : dirs) {
-        for (TimeField tf : timeFields) {
-            // File name search (always)
-            if (Global::isFileNameIndexReadyForSearch()) {
-                SearchOptions fnameOpts = applyTimeField(plan.fileNameOptions, tf);
-                fnameOpts.setSearchPath(dir);
-                if (plan.includeHidden) {
-                    fnameOpts.setIncludeHidden(true);
-                }
-
-                SearchEngine *engine = SearchEngine::create(SearchType::FileName, q);
-                engine->setSearchOptions(fnameOpts);
-
-                QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
-                QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
-                QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
-
-                engines.append(engine);
-                pendingFinishCount.fetch_add(1);
-                engine->search(plan.fileNameQuery);
-            }
-
-            // Content search
-            if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
-                SearchOptions contentOpts = applyTimeField(*plan.contentOptions, tf);
-                contentOpts.setSearchPath(dir);
-                if (plan.includeHidden) {
-                    contentOpts.setIncludeHidden(true);
-                }
-
-                SearchEngine *engine = SearchEngine::create(SearchType::Content, q);
-                engine->setSearchOptions(contentOpts);
-
-                QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
-                QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
-                QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
-
-                engines.append(engine);
-                pendingFinishCount.fetch_add(1);
-                engine->search(*plan.contentQuery);
-            }
-
-            // OCR search
-            if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
-                SearchOptions ocrOpts = applyTimeField(*plan.ocrOptions, tf);
-                ocrOpts.setSearchPath(dir);
-                if (plan.includeHidden) {
-                    ocrOpts.setIncludeHidden(true);
-                }
-
-                SearchEngine *engine = SearchEngine::create(SearchType::Ocr, q);
-                engine->setSearchOptions(ocrOpts);
-
-                QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
-                QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
-                QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
-
-                engines.append(engine);
-                pendingFinishCount.fetch_add(1);
-                engine->search(*plan.ocrQuery);
-            }
+    // Step 7: Helper to prepare options with multi-path and hidden settings
+    auto prepareOptions = [&dirs, &plan](const SearchOptions &baseOpts) -> SearchOptions {
+        SearchOptions opts = baseOpts;
+        opts.setSearchPaths(dirs);
+        if (plan.includeHidden) {
+            opts.setIncludeHidden(true);
         }
+        return opts;
+    };
+
+    // Step 8: Launch up to 3 engines (FileName, Content, OCR)
+    // TimeField::Both is no longer expanded here; it is handled by the Lucene strategy layer.
+    // Multiple directories are passed via setSearchPaths().
+
+    // File name search (always, if index is ready)
+    if (Global::isFileNameIndexReadyForSearch()) {
+        SearchOptions fnameOpts = prepareOptions(plan.fileNameOptions);
+        createAndLaunchEngine(SearchType::FileName, plan.fileNameQuery,
+                              fnameOpts, onResultsFound, onFinished, onError);
     }
 
-    // If no engines were launched (e.g., no indexes available)
+    // Content search
+    if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
+        SearchOptions contentOpts = prepareOptions(*plan.contentOptions);
+        createAndLaunchEngine(SearchType::Content, *plan.contentQuery,
+                              contentOpts, onResultsFound, onFinished, onError);
+    }
+
+    // OCR search
+    if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
+        SearchOptions ocrOpts = prepareOptions(*plan.ocrOptions);
+        createAndLaunchEngine(SearchType::Ocr, *plan.ocrQuery,
+                              ocrOpts, onResultsFound, onFinished, onError);
+    }
+
+    // Step 9: Handle no-engine case
     if (pendingFinishCount.load() == 0) {
         timeoutTimer->stop();
         status.store(SearchStatus::Finished);
         Q_EMIT q->statusChanged(SearchStatus::Finished);
         Q_EMIT q->searchFinished({});
     } else {
-        // Start timeout timer
         if (timeoutSeconds > 0) {
             timeoutTimer->start();
         }
     }
+}
+
+void SemanticSearcherData::createAndLaunchEngine(
+        SearchType type,
+        const SearchQuery &query,
+        const SearchOptions &options,
+        std::function<void(const SearchResultList &)> onResultsFound,
+        std::function<void(const SearchResultList &)> onFinished,
+        std::function<void(const SearchError &)> onError)
+{
+    SearchEngine *engine = SearchEngine::create(type, q);
+    engine->setSearchOptions(options);
+
+    QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
+    QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
+    QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
+
+    engines.append(engine);
+    pendingFinishCount.fetch_add(1);
+    engine->search(query);
 }
 
 void SemanticSearcherData::doCancel()
@@ -227,8 +192,7 @@ void SemanticSearcherData::doCancel()
 // --- SemanticSearcher public API ---
 
 SemanticSearcher::SemanticSearcher(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new SemanticSearcherData(this))
+    : QObject(parent), d_ptr(new SemanticSearcherData(this))
 {
 }
 
@@ -258,6 +222,21 @@ void SemanticSearcher::search(const QString &naturalLanguage)
     }
 
     d_ptr->doSearch(naturalLanguage);
+}
+
+bool SemanticSearcher::isSemanticQuery(const QString &input) const
+{
+    if (input.trimmed().isEmpty()) {
+        return false;
+    }
+
+    ParsedIntent intent;
+    d_ptr->intentParser->parse(input, intent);
+
+    return intent.timeConstraint.isValid()
+            || intent.sizeConstraint.isValid()
+            || !intent.fileExtensions.isEmpty()
+            || !intent.searchDirectories.isEmpty();
 }
 
 void SemanticSearcher::cancel()

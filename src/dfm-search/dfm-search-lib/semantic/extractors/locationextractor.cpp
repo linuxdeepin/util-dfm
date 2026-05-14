@@ -4,7 +4,7 @@
 
 #include "locationextractor.h"
 
-#include "../semanticruleengine.h"
+#include "semantic/semanticruleengine.h"
 
 #include <QDir>
 #include <QStandardPaths>

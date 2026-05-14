@@ -75,13 +75,40 @@ public:
 
     /**
      * @brief Get the starting search path
+     *
+     * Returns the first path from searchPaths(), or an empty string if no paths are set.
+     * @return The primary search path
      */
     QString searchPath() const;
 
     /**
      * @brief Set the starting search path
+     *
+     * This replaces all search paths with a single path.
+     * @param path The search path
      */
     void setSearchPath(const QString &path);
+
+    /**
+     * @brief Get all search paths
+     *
+     * When multiple paths are set, the search engine will search all of them
+     * and combine results. Returns a list containing the single searchPath
+     * if only one path was set via setSearchPath().
+     *
+     * @return List of search paths
+     */
+    QStringList searchPaths() const;
+
+    /**
+     * @brief Set multiple search paths
+     *
+     * When multiple paths are set, search engines that support multi-path
+     * queries will build combined path prefix queries internally.
+     *
+     * @param paths List of search paths
+     */
+    void setSearchPaths(const QStringList &paths);
 
     /**
      * @brief Returns the current list of excluded search paths.

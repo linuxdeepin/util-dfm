@@ -101,34 +101,36 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
         }
 
         // Add path prefix query optimization
-        if (mainQuery && SearchUtility::isContentIndexAncestorPathsSupported()
-            && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
-            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath,
-                                                                              QString::fromWCharArray(LuceneFieldNames::Content::kAncestorPaths));
-            if (pathPrefixQuery) {
-                BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
-                finalQuery->add(mainQuery, BooleanClause::MUST);
-                finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
-                qInfo() << "Using path prefix query for content search optimization:" << searchPath;
-                mainQuery = finalQuery;
+        QStringList searchPathsList = m_options.searchPaths();
+        if (mainQuery && SearchUtility::isContentIndexAncestorPathsSupported()) {
+            bool usePrefixQuery = false;
+            for (const QString &p : searchPathsList) {
+                if (SearchUtility::shouldUsePathPrefixQuery(p)) {
+                    usePrefixQuery = true;
+                    break;
+                }
+            }
+            if (usePrefixQuery) {
+                QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
+                        searchPathsList,
+                        QString::fromWCharArray(LuceneFieldNames::Content::kAncestorPaths));
+                if (pathPrefixQuery) {
+                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                    finalQuery->add(mainQuery, BooleanClause::MUST);
+                    finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
+                    qInfo() << "Using multi-path prefix query for content search optimization:" << searchPathsList;
+                    mainQuery = finalQuery;
+                }
             }
         }
 
         // Add time range filter query
         if (m_options.hasTimeRangeFilter()) {
             TimeRangeFilter filter = m_options.timeRangeFilter();
-            auto [start, end] = filter.resolveTimeRange();
-
-            qint64 startEpoch = TimeRangeUtils::toEpochSecs(start);
-            qint64 endEpoch = TimeRangeUtils::toEpochSecs(end);
-
-            const wchar_t *fieldName = (filter.timeField() == TimeField::BirthTime)
-                    ? LuceneFieldNames::Content::kBirthTime
-                    : LuceneFieldNames::Content::kModifyTime;
-
-            QueryPtr timeQuery = TimeRangeUtils::buildNumericRangeQuery(
-                    fieldName, startEpoch, endEpoch,
-                    filter.includeLower(), filter.includeUpper());
+            QueryPtr timeQuery = TimeRangeUtils::buildTimeRangeFilterQuery(
+                    filter,
+                    LuceneFieldNames::Content::kBirthTime,
+                    LuceneFieldNames::Content::kModifyTime);
 
             if (timeQuery) {
                 if (mainQuery) {
@@ -280,6 +282,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
     QString searchPath = m_options.searchPath();
     const QStringList &searchExcludedPaths = m_options.searchExcludedPaths();
+    QStringList allSearchPaths = m_options.searchPaths();
     auto docsSize = scoreDocs.size();
 
     ContentOptionsAPI optAPI(m_options);
@@ -337,7 +340,9 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
             QString path = QString::fromStdWString(pathField);
 
-            if (!path.startsWith(searchPath)) {
+            // Check against all search paths
+            if (!std::any_of(allSearchPaths.cbegin(), allSearchPaths.cend(),
+                             [&path](const auto &sp) { return path.startsWith(sp); })) {
                 continue;
             }
 

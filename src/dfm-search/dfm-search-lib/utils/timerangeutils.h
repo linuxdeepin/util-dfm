@@ -12,6 +12,8 @@
 
 DFM_SEARCH_BEGIN_NS
 
+class TimeRangeFilter;
+
 /**
  * @brief TimeRangeUtils provides utility functions for time range operations
  */
@@ -39,6 +41,25 @@ Lucene::QueryPtr buildNumericRangeQuery(
         qint64 endEpoch,
         bool includeLower,
         bool includeUpper);
+
+/**
+ * @brief Build a Lucene query for time range filtering, supporting TimeField::Both
+ *
+ * When filter.timeField() is TimeField::Both, this builds a BooleanQuery with SHOULD
+ * clauses for both birth_time and modify_time fields. Otherwise, it builds a single
+ * NumericRangeQuery for the specified field.
+ *
+ * The returned query is designed to be added to an outer query with BooleanClause::MUST.
+ *
+ * @param filter The time range filter containing field selection and range
+ * @param birthTimeField The Lucene field name for birth time
+ * @param modifyTimeField The Lucene field name for modification time
+ * @return A Lucene query (single NumericRangeQuery or BooleanQuery for Both), or nullptr if invalid
+ */
+Lucene::QueryPtr buildTimeRangeFilterQuery(
+        const TimeRangeFilter &filter,
+        const wchar_t *birthTimeField,
+        const wchar_t *modifyTimeField);
 
 }   // namespace TimeRangeUtils
 

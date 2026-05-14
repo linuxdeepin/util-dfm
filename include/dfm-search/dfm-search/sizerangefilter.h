@@ -4,8 +4,6 @@
 #ifndef SIZERANGEFILTER_H
 #define SIZERANGEFILTER_H
 
-#include <cstdint>
-
 #include <dfm-search/dsearch_global.h>
 
 DFM_SEARCH_BEGIN_NS

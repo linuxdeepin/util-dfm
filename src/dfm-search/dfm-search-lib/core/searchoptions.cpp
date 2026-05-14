@@ -78,12 +78,35 @@ void SearchOptions::setCaseSensitive(bool sensitive)
 
 QString SearchOptions::searchPath() const
 {
+    if (!d->searchPathsList.isEmpty()) {
+        return d->searchPathsList.first();
+    }
     return d->searchPath;
 }
 
 void SearchOptions::setSearchPath(const QString &path)
 {
     d->searchPath = path;
+    d->searchPathsList.clear();
+}
+
+QStringList SearchOptions::searchPaths() const
+{
+    if (!d->searchPathsList.isEmpty()) {
+        return d->searchPathsList;
+    }
+    if (!d->searchPath.isEmpty()) {
+        return QStringList { d->searchPath };
+    }
+    return {};
+}
+
+void SearchOptions::setSearchPaths(const QStringList &paths)
+{
+    d->searchPathsList = paths;
+    if (!paths.isEmpty()) {
+        d->searchPath = paths.first();
+    }
 }
 
 QStringList SearchOptions::searchExcludedPaths() const

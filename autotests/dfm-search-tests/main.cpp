@@ -16,6 +16,7 @@ extern QObject *create_tst_KeywordExtraction();
 extern QObject *create_tst_ParsedIntent();
 extern QObject *create_tst_ChineseNLP();
 extern QObject *create_tst_SizeRangeFilter();
+extern QObject *create_tst_IsSemanticQuery();
 
 int main(int argc, char *argv[])
 {
@@ -65,6 +66,10 @@ int main(int argc, char *argv[])
     QObject *testObj11 = create_tst_SizeRangeFilter();
     result |= QTest::qExec(testObj11, argc, argv);
     delete testObj11;
+
+    QObject *testObj12 = create_tst_IsSemanticQuery();
+    result |= QTest::qExec(testObj12, argc, argv);
+    delete testObj12;
 
     return result;
 }

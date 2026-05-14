@@ -39,6 +39,18 @@ std::wstring getLuceneSpecialChars();
  */
 Lucene::QueryPtr buildPathPrefixQuery(const QString &pathPrefix, const QString &fieldName);
 
+/**
+ * @brief Build a multi-path prefix query for Lucene
+ *
+ * When multiple paths are provided, builds a BooleanQuery with SHOULD clauses
+ * for each path. When only one path is provided, returns a simple pathPrefixQuery.
+ *
+ * @param paths List of path prefixes to search for
+ * @param fieldName The index field name (e.g., "ancestor_paths")
+ * @return Lucene query object, or nullptr if paths is empty
+ */
+Lucene::QueryPtr buildMultiPathPrefixQuery(const QStringList &paths, const QString &fieldName);
+
 }   // namespace LuceneQueryUtils
 
 DFM_SEARCH_END_NS

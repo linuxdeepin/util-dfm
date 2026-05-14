@@ -522,6 +522,9 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     auto docsSize = scoreDocs.size();
     m_results.reserve(docsSize);
 
+    // Get all search paths for post-filtering
+    QStringList allSearchPaths = m_options.searchPaths();
+
     // 实时处理搜索结果
     for (int i = 0; i < docsSize; i++) {
         if (m_cancelled.load()) {
@@ -534,7 +537,9 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
             DocumentPtr doc = searcher->doc(scoreDoc->doc);
             QString path = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFullPath));
 
-            if (!path.startsWith(searchPath)) {
+            // Check against all search paths
+            if (!std::any_of(allSearchPaths.cbegin(), allSearchPaths.cend(),
+                             [&path](const auto &sp) { return path.startsWith(sp); })) {
                 continue;
             }
 
@@ -748,18 +753,10 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     // Add time range filter query
     if (m_options.hasTimeRangeFilter()) {
         TimeRangeFilter filter = m_options.timeRangeFilter();
-        auto [start, end] = filter.resolveTimeRange();
-
-        qint64 startEpoch = TimeRangeUtils::toEpochSecs(start);
-        qint64 endEpoch = TimeRangeUtils::toEpochSecs(end);
-
-        const wchar_t *fieldName = (filter.timeField() == TimeField::BirthTime)
-                ? LuceneFieldNames::FileName::kBirthTime
-                : LuceneFieldNames::FileName::kModifyTime;
-
-        QueryPtr timeQuery = TimeRangeUtils::buildNumericRangeQuery(
-                fieldName, startEpoch, endEpoch,
-                filter.includeLower(), filter.includeUpper());
+        QueryPtr timeQuery = TimeRangeUtils::buildTimeRangeFilterQuery(
+                filter,
+                LuceneFieldNames::FileName::kBirthTime,
+                LuceneFieldNames::FileName::kModifyTime);
 
         if (timeQuery) {
             finalQuery->add(timeQuery, BooleanClause::MUST);
@@ -783,13 +780,23 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     }
 
     // Add path prefix query optimization
-    if (hasValidQuery && SearchUtility::isFilenameIndexAncestorPathsSupported()
-        && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
-        QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath,
-                                                                          QString::fromWCharArray(LuceneFieldNames::FileName::kAncestorPaths));
-        if (pathPrefixQuery) {
-            finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
-            qInfo() << "Using path prefix query for optimization:" << searchPath;
+    QStringList searchPathsList = m_options.searchPaths();
+    if (hasValidQuery && SearchUtility::isFilenameIndexAncestorPathsSupported()) {
+        bool usePrefixQuery = false;
+        for (const QString &p : searchPathsList) {
+            if (SearchUtility::shouldUsePathPrefixQuery(p)) {
+                usePrefixQuery = true;
+                break;
+            }
+        }
+        if (usePrefixQuery) {
+            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
+                    searchPathsList,
+                    QString::fromWCharArray(LuceneFieldNames::FileName::kAncestorPaths));
+            if (pathPrefixQuery) {
+                finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
+                qInfo() << "Using multi-path prefix query for optimization:" << searchPathsList;
+            }
         }
     }
 
