@@ -208,6 +208,15 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
         return false;
     }
 
+    // Auto-enable includeHidden when search path contains hidden directory components.
+    // User who explicitly specifies a hidden path (e.g. ~/.local/share/Trash)
+    // expects results without needing --include-hidden.
+    config.includeHidden = m_parser.isSet(m_includeHiddenOption);
+    if (!config.includeHidden && !config.searchPath.isEmpty()
+        && Global::isHiddenPathOrInHiddenDir(config.searchPath)) {
+        config.includeHidden = true;
+    }
+
     // In semantic mode, skip type/method/query parsing
     if (config.semanticMode) {
         config.jsonOutput = m_parser.isSet(m_jsonOption);
@@ -255,7 +264,6 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
 
     // 解析开关选项
     config.caseSensitive = m_parser.isSet(m_caseSensitiveOption);
-    config.includeHidden = m_parser.isSet(m_includeHiddenOption);
     config.pinyinEnabled = m_parser.isSet(m_pinyinOption);
     config.pinyinAcronymEnabled = m_parser.isSet(m_pinyinAcronymOption);
     config.jsonOutput = m_parser.isSet(m_jsonOption);
