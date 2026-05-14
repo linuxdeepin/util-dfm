@@ -7,6 +7,7 @@
 #include "../semanticruleengine.h"
 
 #include <QDate>
+#include <QDateTime>
 #include <QDebug>
 
 DFM_SEARCH_BEGIN_NS
@@ -54,6 +55,8 @@ void TimeExtractor::extract(const QString &input, ParsedIntent &intent)
         }
     } else if (typeStr == "custom") {
         parseCustomTime(match, metadata, tc);
+    } else if (typeStr == "relative") {
+        parseRelativeTime(metadata, tc);
     }
 
     if (tc.isValid()) {
@@ -144,6 +147,23 @@ void TimeExtractor::parseCustomTime(const QRegularExpressionMatch &match,
         tc.kind = TimeConstraintKind::Custom;
         tc.customStart = QDateTime(QDate(year, 1, 1), QTime(0, 0, 0));
         tc.customEnd = QDateTime(QDate(year, 12, 31), QTime(23, 59, 59));
+    }
+}
+
+void TimeExtractor::parseRelativeTime(const QVariantMap &metadata, TimeConstraint &tc)
+{
+    const QDateTime now = QDateTime::currentDateTime();
+    const int agoEndSecs = metadata.value("ago_end_seconds", 0).toInt();
+    const int agoStartSecs = metadata.value("ago_start_seconds", 0).toInt();
+
+    tc.kind = TimeConstraintKind::Relative;
+    tc.customEnd = now.addSecs(-agoEndSecs);
+
+    if (agoStartSecs < 0) {
+        // Sentinel: "from epoch"
+        tc.customStart = QDateTime::fromMSecsSinceEpoch(0);
+    } else {
+        tc.customStart = now.addSecs(-agoStartSecs);
     }
 }
 

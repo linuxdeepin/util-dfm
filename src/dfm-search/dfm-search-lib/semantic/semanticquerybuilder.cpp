@@ -162,7 +162,7 @@ TimeRangeFilter SemanticQueryBuilder::buildTimeRangeFilter(const TimeConstraint 
         }
         break;
     case TimeConstraintKind::Relative:
-        filter.setLast(tc.relativeValue, tc.relativeUnit);
+        filter.setRange(tc.customStart, tc.customEnd);
         break;
     case TimeConstraintKind::Custom:
         filter.setRange(tc.customStart, tc.customEnd);
