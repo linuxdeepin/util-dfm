@@ -19,6 +19,10 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
 {
     SemanticSearchPlan plan;
 
+    // Pass location info through to plan (searcher handles per-directory options)
+    plan.searchDirectories = intent.searchDirectories;
+    plan.includeHidden = intent.includeHidden;
+
     // Determine time field strategy
     if (intent.timeConstraint.isValid() && intent.timeConstraint.timeField == TimeField::Unspecified) {
         // Time constraint exists but no action specified → search both birth and modify time
