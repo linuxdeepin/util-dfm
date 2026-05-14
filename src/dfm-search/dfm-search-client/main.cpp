@@ -72,6 +72,11 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
     if (config.hasTimeFilter) {
         options.setTimeRangeFilter(config.timeFilter);
     }
+
+    // 应用文件大小范围过滤
+    if (config.hasSizeFilter) {
+        options.setSizeRangeFilter(config.sizeFilter);
+    }
 }
 
 /**

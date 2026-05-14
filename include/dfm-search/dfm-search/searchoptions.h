@@ -10,6 +10,7 @@
 
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search/timerangefilter.h>
+#include <dfm-search/sizerangefilter.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -253,6 +254,40 @@ public:
      * @sa setTimeRangeFilter(), hasTimeRangeFilter()
      */
     void clearTimeRangeFilter();
+
+    /**
+     * @brief Sets the file size range filter for search operations.
+     *
+     * The size range filter allows filtering search results based on file size in bytes.
+     * Supports setting minimum and/or maximum file size boundaries.
+     *
+     * @param filter The SizeRangeFilter to apply
+     * @sa sizeRangeFilter(), hasSizeRangeFilter(), clearSizeRangeFilter()
+     */
+    void setSizeRangeFilter(const SizeRangeFilter &filter);
+
+    /**
+     * @brief Returns the current file size range filter.
+     *
+     * @return The current SizeRangeFilter
+     * @sa setSizeRangeFilter()
+     */
+    SizeRangeFilter sizeRangeFilter() const;
+
+    /**
+     * @brief Checks if a file size range filter is set.
+     *
+     * @return true if a valid size range filter is set, false otherwise
+     * @sa setSizeRangeFilter(), clearSizeRangeFilter()
+     */
+    bool hasSizeRangeFilter() const;
+
+    /**
+     * @brief Clears the file size range filter.
+     *
+     * @sa setSizeRangeFilter(), hasSizeRangeFilter()
+     */
+    void clearSizeRangeFilter();
 
 private:
     std::unique_ptr<SearchOptionsData> d;   // PIMPL

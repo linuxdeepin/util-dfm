@@ -12,6 +12,7 @@
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search/searchquery.h>
 #include <dfm-search/timerangefilter.h>
+#include <dfm-search/sizerangefilter.h>
 
 namespace dfmsearch {
 
@@ -53,6 +54,10 @@ struct SearchCliConfig
     // Time range filtering
     bool hasTimeFilter = false;
     DFMSEARCH::TimeRangeFilter timeFilter;
+
+    // File size range filtering
+    bool hasSizeFilter = false;
+    DFMSEARCH::SizeRangeFilter sizeFilter;
 };
 
 /**
@@ -117,6 +122,10 @@ private:
     QCommandLineOption m_timeThisYearOption;
     QCommandLineOption m_timeLastYearOption;
     QCommandLineOption m_timeRangeOption;
+
+    // File size range filtering options
+    QCommandLineOption m_sizeMinOption;
+    QCommandLineOption m_sizeMaxOption;
 };
 
 }   // namespace dfmsearch

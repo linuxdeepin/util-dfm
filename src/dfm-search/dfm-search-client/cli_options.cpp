@@ -4,6 +4,7 @@
 
 #include "cli_options.h"
 #include "time_parser.h"
+#include "size_parser.h"
 
 #include <QCoreApplication>
 #include <QFileInfo>
@@ -46,7 +47,9 @@ CliOptions::CliOptions()
       m_timeLastMonthOption(QStringList() << "time-last-month", "Filter files from last month"),
       m_timeThisYearOption(QStringList() << "time-this-year", "Filter files from this year"),
       m_timeLastYearOption(QStringList() << "time-last-year", "Filter files from last year"),
-      m_timeRangeOption(QStringList() << "time-range", "Custom time range (start,end)", "range")
+      m_timeRangeOption(QStringList() << "time-range", "Custom time range (start,end)", "range"),
+      m_sizeMinOption(QStringList() << "size-min", "Minimum file size (e.g., 1K, 10M, 1G, 512)", "size"),
+      m_sizeMaxOption(QStringList() << "size-max", "Maximum file size (e.g., 1K, 10M, 1G, 512)", "size")
 {
     setupOptions();
 }
@@ -86,6 +89,10 @@ void CliOptions::setupOptions()
     m_parser.addOption(m_timeThisYearOption);
     m_parser.addOption(m_timeLastYearOption);
     m_parser.addOption(m_timeRangeOption);
+
+    // File size range filtering options
+    m_parser.addOption(m_sizeMinOption);
+    m_parser.addOption(m_sizeMaxOption);
 
     // 位置参数
     m_parser.addPositionalArgument("keyword", "Search keyword");
@@ -136,6 +143,13 @@ void CliOptions::printHelp() const
     std::cout << "  --time-range=<start>,<end>     Custom time range (format: YYYY-MM-DD or \"YYYY-MM-DD HH:MM\")" << std::endl;
     std::cout << "                                 Example: --time-range=\"2025-01-01,2025-12-31\"" << std::endl;
     std::cout << std::endl;
+    std::cout << "File Size Range Filter Options:" << std::endl;
+    std::cout << "  --size-min=<size>              Minimum file size (e.g., 1K, 10M, 1G, 512)" << std::endl;
+    std::cout << "                                 Units: K=KB, M=MB, G=GB, T=TB (default: bytes)" << std::endl;
+    std::cout << "  --size-max=<size>              Maximum file size (e.g., 1K, 10M, 1G, 512)" << std::endl;
+    std::cout << "                                 Units: K=KB, M=MB, G=GB, T=TB (default: bytes)" << std::endl;
+    std::cout << "                                 Example: --size-min=1M --size-max=100M" << std::endl;
+    std::cout << std::endl;
     std::cout << "Output Options:" << std::endl;
     std::cout << "  --json, -j                     Output results in JSON format" << std::endl;
     std::cout << "  --verbose, -v                  Enable verbose output with detailed result information" << std::endl;
@@ -159,6 +173,9 @@ void CliOptions::printHelp() const
     std::cout << std::endl;
     std::cout << "  # Semantic search with JSON output" << std::endl;
     std::cout << "  dfm-searcher -s -j \"content contains meeting notes\" /home/user" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  # Filename search with file size filter (1MB to 100MB)" << std::endl;
+    std::cout << "  dfm-searcher --size-min=1M --size-max=100M \"video\" /home/user" << std::endl;
 }
 
 bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
@@ -284,7 +301,34 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
     }
 
     // 解析时间范围选项
-    return parseTimeOptions(config);
+    if (!parseTimeOptions(config)) {
+        return false;
+    }
+
+    // 解析文件大小范围选项
+    if (m_parser.isSet(m_sizeMinOption)) {
+        qint64 minBytes = 0;
+        if (SizeParser::parseSize(m_parser.value(m_sizeMinOption), minBytes) && minBytes > 0) {
+            config.sizeFilter.setMin(minBytes);
+            config.hasSizeFilter = true;
+        } else {
+            std::cerr << "Error: Invalid --size-min format. Use format like '1K', '10M', '1G', or '512'" << std::endl;
+            return false;
+        }
+    }
+
+    if (m_parser.isSet(m_sizeMaxOption)) {
+        qint64 maxBytes = 0;
+        if (SizeParser::parseSize(m_parser.value(m_sizeMaxOption), maxBytes) && maxBytes > 0) {
+            config.sizeFilter.setMax(maxBytes);
+            config.hasSizeFilter = true;
+        } else {
+            std::cerr << "Error: Invalid --size-max format. Use format like '1K', '10M', '1G', or '512'" << std::endl;
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool CliOptions::parseTimeOptions(SearchCliConfig &config)

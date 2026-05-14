@@ -40,6 +40,12 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
         if (!resultAPI.isDirectory()) {
             obj["fileType"] = resultAPI.fileType();
             obj["size"] = resultAPI.size();
+
+            // 文件大小数值（字节）
+            qint64 fileSizeBytes = resultAPI.fileSizeBytes();
+            if (fileSizeBytes > 0) {
+                obj["sizeBytes"] = fileSizeBytes;
+            }
         }
 
         QString filename = resultAPI.filename();
@@ -207,6 +213,21 @@ void JsonOutput::outputStreamingStart()
         searchInfo["timeRangeFilter"] = timeFilterInfo;
     }
 
+    // 添加文件大小范围过滤信息
+    if (m_options.hasSizeRangeFilter()) {
+        DFMSEARCH::SizeRangeFilter sizeFilter = m_options.sizeRangeFilter();
+        QJsonObject sizeFilterInfo;
+        if (sizeFilter.minSize() > 0) {
+            sizeFilterInfo["minBytes"] = sizeFilter.minSize();
+        }
+        if (sizeFilter.maxSize() > 0) {
+            sizeFilterInfo["maxBytes"] = sizeFilter.maxSize();
+        }
+        sizeFilterInfo["includeLower"] = sizeFilter.includeLower();
+        sizeFilterInfo["includeUpper"] = sizeFilter.includeUpper();
+        searchInfo["sizeRangeFilter"] = sizeFilterInfo;
+    }
+
     startObj["search"] = searchInfo;
     startObj["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
@@ -298,6 +319,21 @@ void JsonOutput::outputCompleteResult(const QList<SearchResult> &results)
         timeFilterInfo["startTime"] = start.toString(Qt::ISODate);
         timeFilterInfo["endTime"] = end.toString(Qt::ISODate);
         searchInfo["timeRangeFilter"] = timeFilterInfo;
+    }
+
+    // 添加文件大小范围过滤信息
+    if (m_options.hasSizeRangeFilter()) {
+        DFMSEARCH::SizeRangeFilter sizeFilter = m_options.sizeRangeFilter();
+        QJsonObject sizeFilterInfo;
+        if (sizeFilter.minSize() > 0) {
+            sizeFilterInfo["minBytes"] = sizeFilter.minSize();
+        }
+        if (sizeFilter.maxSize() > 0) {
+            sizeFilterInfo["maxBytes"] = sizeFilter.maxSize();
+        }
+        sizeFilterInfo["includeLower"] = sizeFilter.includeLower();
+        sizeFilterInfo["includeUpper"] = sizeFilter.includeUpper();
+        searchInfo["sizeRangeFilter"] = sizeFilterInfo;
     }
 
     root["search"] = searchInfo;

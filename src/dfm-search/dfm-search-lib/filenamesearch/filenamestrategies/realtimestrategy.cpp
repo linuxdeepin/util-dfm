@@ -12,6 +12,7 @@
 #include <QRegularExpression>
 
 #include <dfm-search/timerangefilter.h>
+#include <dfm-search/sizerangefilter.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -119,9 +120,9 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
             QString fileName = info.fileName();
             bool matches = false;
 
-            // 如果只有时间过滤没有关键词，直接匹配
+            // 如果只有过滤条件（时间/大小）没有关键词，直接匹配
             bool hasKeyword = !query.keyword().isEmpty() || query.type() == SearchQuery::Type::Boolean;
-            if (!hasKeyword && m_options.hasTimeRangeFilter()) {
+            if (!hasKeyword && (m_options.hasTimeRangeFilter() || m_options.hasSizeRangeFilter())) {
                 matches = true;
             }
             // 简单查询模式
@@ -174,6 +175,29 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
                 matches = timeMatch;
             }
 
+            // 文件大小范围过滤
+            if (matches && m_options.hasSizeRangeFilter()) {
+                SizeRangeFilter sizeFilter = m_options.sizeRangeFilter();
+                qint64 fileSize = info.size();
+
+                bool sizeMatch = true;
+                if (sizeFilter.minSize() > 0) {
+                    if (sizeFilter.includeLower()) {
+                        sizeMatch = sizeMatch && (fileSize >= sizeFilter.minSize());
+                    } else {
+                        sizeMatch = sizeMatch && (fileSize > sizeFilter.minSize());
+                    }
+                }
+                if (sizeFilter.maxSize() > 0) {
+                    if (sizeFilter.includeUpper()) {
+                        sizeMatch = sizeMatch && (fileSize <= sizeFilter.maxSize());
+                    } else {
+                        sizeMatch = sizeMatch && (fileSize < sizeFilter.maxSize());
+                    }
+                }
+                matches = sizeMatch;
+            }
+
             if (matches) {
                 // 创建搜索结果
                 SearchResult result(info.filePath());
@@ -186,6 +210,7 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
                         api.setFileType(info.suffix().isEmpty() ? "unknown" : info.suffix().toLower());
                         api.setFileExtension(info.suffix().toLower());
                         api.setSize(QString::number(info.size()));
+                        api.setFileSizeBytes(info.size());
                     } else {
                         api.setFileType("dir");
                     }

@@ -14,6 +14,7 @@
 
 #include <dfm-search/field_names.h>
 #include <dfm-search/timerangefilter.h>
+#include <dfm-search/sizerangefilter.h>
 
 #include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/cancellablecollector.h"
@@ -594,6 +595,16 @@ SearchResult FileNameIndexedStrategy::processDetailedSearchResult(
     QString size = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileSizeStr));
     api.setSize(size);
 
+    // 文件大小（数值，字节）
+    QString fileSizeStr = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFileSize));
+    if (!fileSizeStr.isEmpty()) {
+        bool ok = false;
+        qint64 fileSizeBytes = fileSizeStr.toLongLong(&ok);
+        if (ok && fileSizeBytes >= 0) {
+            api.setFileSizeBytes(fileSizeBytes);
+        }
+    }
+
     // 隐藏状态
     QString isHiddenStr = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kIsHidden)).toLower();
     api.setIsHidden(isHiddenStr == "y");
@@ -752,6 +763,21 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
 
         if (timeQuery) {
             finalQuery->add(timeQuery, BooleanClause::MUST);
+            hasValidQuery = true;
+        }
+    }
+
+    // Add file size range filter query
+    if (m_options.hasSizeRangeFilter()) {
+        SizeRangeFilter sizeFilter = m_options.sizeRangeFilter();
+
+        QueryPtr sizeQuery = TimeRangeUtils::buildNumericRangeQuery(
+                LuceneFieldNames::FileName::kFileSize,
+                sizeFilter.minSize(), sizeFilter.maxSize(),
+                sizeFilter.includeLower(), sizeFilter.includeUpper());
+
+        if (sizeQuery) {
+            finalQuery->add(sizeQuery, BooleanClause::MUST);
             hasValidQuery = true;
         }
     }

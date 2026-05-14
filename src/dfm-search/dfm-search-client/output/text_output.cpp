@@ -55,6 +55,20 @@ void TextOutput::outputSearchStarted()
                   << " to " << end.toString("yyyy-MM-dd HH:mm:ss").toStdString();
         std::cout << std::endl;
     }
+
+    // 打印文件大小范围过滤
+    if (m_options.hasSizeRangeFilter()) {
+        DFMSEARCH::SizeRangeFilter sizeFilter = m_options.sizeRangeFilter();
+        std::cout << "Size range filter: ";
+        if (sizeFilter.minSize() > 0) {
+            std::cout << "min=" << sizeFilter.minSize() << " bytes";
+        }
+        if (sizeFilter.maxSize() > 0) {
+            if (sizeFilter.minSize() > 0) std::cout << ", ";
+            std::cout << "max=" << sizeFilter.maxSize() << " bytes";
+        }
+        std::cout << std::endl;
+    }
 }
 
 void TextOutput::printSearchResult(const SearchResult &result)
@@ -75,7 +89,12 @@ void TextOutput::printSearchResult(const SearchResult &result)
             std::cout << "  Type: Directory" << std::endl;
         } else {
             std::cout << "  Type: " << resultAPI.fileType().toStdString() << std::endl;
-            std::cout << "  Size: " << resultAPI.size().toStdString() << " bytes" << std::endl;
+            qint64 fileSizeBytes = resultAPI.fileSizeBytes();
+            if (fileSizeBytes > 0) {
+                std::cout << "  Size: " << fileSizeBytes << " bytes" << std::endl;
+            } else {
+                std::cout << "  Size: " << resultAPI.size().toStdString() << " bytes" << std::endl;
+            }
         }
 
         // 文件名和扩展名
