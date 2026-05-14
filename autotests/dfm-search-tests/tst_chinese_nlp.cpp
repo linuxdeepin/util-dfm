@@ -7,6 +7,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QSet>
+#include <QStandardPaths>
 #include <QTest>
 
 #include "semantic/intentparser.h"
@@ -139,6 +140,18 @@ private Q_SLOTS:
     void noise_polite_words();
     void noise_suffix_words();
 
+    // Location tests
+    void location_desktop();
+    void location_download();
+    void location_documentsDir();
+    void location_picturesDir();
+    void location_musicDir();
+    void location_videosDir();
+    void location_trash();
+    void location_deleted();
+    void location_noLocation();
+    void location_desktopAndDownload();
+
     // End-to-end combined tests
     void combined_timeAndFiletype();
     void combined_timeAndFiletype_multi();
@@ -164,13 +177,14 @@ void tst_ChineseNLP::initTestCase()
 
     m_engine = new SemanticRuleEngine(this);
 
-    // Load all 6 rule files
+    // Load all 7 rule files
     const QString dir = rulesDir();
     QVERIFY2(QDir(dir).exists(), qPrintable(QStringLiteral("Rules dir not found: ") + dir));
 
     const QStringList files = { "noise_rules.json", "time_rules.json",
                                 "filetype_rules.json", "keyword_rules.json",
-                                "size_rules.json", "action_rules.json" };
+                                "size_rules.json", "action_rules.json",
+                                "location_rules.json" };
     for (const QString &f : files) {
         const QString path = dir + QLatin1Char('/') + f;
         bool ok = m_engine->loadRuleFile(path);
@@ -184,19 +198,21 @@ void tst_ChineseNLP::initTestCase()
     QVERIFY(m_engine->hasGroup("noise"));
     QVERIFY(m_engine->hasGroup("size"));
     QVERIFY(m_engine->hasGroup("action"));
+    QVERIFY(m_engine->hasGroup("location"));
 
     const QStringList groups = m_engine->groupNames();
-    QCOMPARE(groups.size(), 6);
+    QCOMPARE(groups.size(), 7);
 
     m_parser = new IntentParser(m_engine);
 
     // Verify default extractors are initialized
     QStringList names = m_parser->extractorNames();
-    QCOMPARE(names.size(), 5);
+    QCOMPARE(names.size(), 6);
     QVERIFY(names.contains("time"));
     QVERIFY(names.contains("filetype"));
     QVERIFY(names.contains("size"));
     QVERIFY(names.contains("action"));
+    QVERIFY(names.contains("location"));
     QVERIFY(names.contains("keyword"));
 }
 
@@ -1346,6 +1362,126 @@ void tst_ChineseNLP::action_combined_withTime_modify()
     QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
     QCOMPARE(intent.timeConstraint.preset, TimePreset::Yesterday);
     QCOMPARE(intent.timeConstraint.timeField, TimeField::ModifyTime);
+    QVERIFY(intent.fileExtensions.contains("jpg"));
+}
+
+// ===== Location Tests =====
+
+void tst_ChineseNLP::location_desktop()
+{
+    // "桌面上的文档" → location(桌面) + filetype(文档)
+    const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("桌面上的文档"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 1);
+    QCOMPARE(intent.searchDirectories.first(), desktopPath);
+    QVERIFY(!intent.fileExtensions.isEmpty());   // document type extensions
+    QVERIFY(intent.keywords.isEmpty());
+}
+
+void tst_ChineseNLP::location_download()
+{
+    // "下载里的图片" → location(下载) + filetype(图片)
+    const QString downloadPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("下载里的图片"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 1);
+    QCOMPARE(intent.searchDirectories.first(), downloadPath);
+    QVERIFY(intent.fileExtensions.contains("jpg"));
+    QVERIFY(intent.keywords.isEmpty());
+}
+
+void tst_ChineseNLP::location_documentsDir()
+{
+    // "文档目录里的报告" → location(文档目录) + keyword(报告)
+    const QString docsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("文档目录里的报告"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 1);
+    QCOMPARE(intent.searchDirectories.first(), docsPath);
+}
+
+void tst_ChineseNLP::location_picturesDir()
+{
+    // "图片文件夹里的照片" → location(图片文件夹) + filetype(图片)
+    const QString picsPath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("图片文件夹里的照片"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 1);
+    QCOMPARE(intent.searchDirectories.first(), picsPath);
+    QVERIFY(intent.fileExtensions.contains("jpg"));
+}
+
+void tst_ChineseNLP::location_musicDir()
+{
+    // "音乐目录里的歌曲" → location(音乐目录)
+    const QString musicPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("音乐目录里的歌曲"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 1);
+    QCOMPARE(intent.searchDirectories.first(), musicPath);
+}
+
+void tst_ChineseNLP::location_videosDir()
+{
+    // "视频目录下的电影" → location(视频目录)
+    const QString videosPath = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("视频目录下的电影"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 1);
+    QCOMPARE(intent.searchDirectories.first(), videosPath);
+}
+
+void tst_ChineseNLP::location_trash()
+{
+    // "回收站里的文件" → location(trash) + includeHidden + filetype(文件=文档类)
+    const QString trashPath = QDir::homePath() + "/.local/share/Trash/files";
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("回收站里的文件"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 1);
+    QCOMPARE(intent.searchDirectories.first(), trashPath);
+    QVERIFY(intent.includeHidden);
+    // "文件" matches filetype_document_general, so it's a filetype not a keyword
+    QVERIFY(!intent.fileExtensions.isEmpty());
+    QVERIFY(intent.fileExtensions.contains("doc"));
+    QVERIFY(intent.keywords.isEmpty());
+}
+
+void tst_ChineseNLP::location_deleted()
+{
+    // "昨天删除的音乐" → location(trash) + time(yesterday) + filetype(音乐)
+    const QString trashPath = QDir::homePath() + "/.local/share/Trash/files";
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("昨天删除的音乐"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 1);
+    QCOMPARE(intent.searchDirectories.first(), trashPath);
+    QVERIFY(intent.includeHidden);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint.preset, TimePreset::Yesterday);
+    QVERIFY(intent.fileExtensions.contains("mp3"));
+}
+
+void tst_ChineseNLP::location_noLocation()
+{
+    // "今天的文档" → no location, default behavior unchanged
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("今天的文档"), intent);
+    QVERIFY(intent.searchDirectories.isEmpty());
+    QVERIFY(!intent.includeHidden);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint.preset, TimePreset::Today);
+}
+
+void tst_ChineseNLP::location_desktopAndDownload()
+{
+    // "桌面和下载的图片" → location(桌面,下载) + filetype(图片)
+    const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    const QString downloadPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("桌面和下载的图片"), intent);
+    QCOMPARE(intent.searchDirectories.size(), 2);
+    QVERIFY(intent.searchDirectories.contains(desktopPath));
+    QVERIFY(intent.searchDirectories.contains(downloadPath));
     QVERIFY(intent.fileExtensions.contains("jpg"));
 }
 

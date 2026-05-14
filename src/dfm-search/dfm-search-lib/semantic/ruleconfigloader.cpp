@@ -63,7 +63,8 @@ QStringList RuleConfigLoader::ruleFileNames()
     return {"noise_rules.json",
             "time_rules.json",
             "filetype_rules.json",
-            "keyword_rules.json"};
+            "keyword_rules.json",
+            "location_rules.json"};
 }
 
 QString RuleConfigLoader::resolveLocaleDir(const QString &baseDir)

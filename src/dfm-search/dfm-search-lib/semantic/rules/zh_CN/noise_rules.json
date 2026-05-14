@@ -37,6 +37,14 @@
                     "enabled": true,
                     "priority": 70,
                     "metadata": {}
+                },
+                {
+                    "id": "noise_location_connector",
+                    "pattern": "上的|里的|下的",
+                    "description": "Location connector words to consume",
+                    "enabled": true,
+                    "priority": 190,
+                    "metadata": {}
                 }
             ]
         }

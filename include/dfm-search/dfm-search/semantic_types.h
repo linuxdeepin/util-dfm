@@ -92,6 +92,8 @@ struct ParsedIntent
     TimeConstraint timeConstraint;
     SizeConstraint sizeConstraint;
     QStringList fileExtensions;
+    QStringList searchDirectories;   // Absolute paths resolved from location words
+    bool includeHidden = false;      // true for trash (hidden directory)
     QStringList keywords;
     QList<MatchSpan> consumedSpans;
 };

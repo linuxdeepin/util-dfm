@@ -1,0 +1,100 @@
+{
+    "version": "1.0.0",
+    "groups": [
+        {
+            "name": "location",
+            "version": "1.0.0",
+            "locale": "zh-CN",
+            "rules": [
+                {
+                    "id": "loc_desktop",
+                    "pattern": "桌面",
+                    "description": "Desktop directory",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "xdg_type": "desktop",
+                        "include_hidden": false
+                    }
+                },
+                {
+                    "id": "loc_download",
+                    "pattern": "下载",
+                    "description": "Downloads directory",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "xdg_type": "download",
+                        "include_hidden": false
+                    }
+                },
+                {
+                    "id": "loc_documents_dir",
+                    "pattern": "文档目录|文档文件夹",
+                    "description": "Documents directory (must contain directory/folder word)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "xdg_type": "documents",
+                        "include_hidden": false
+                    }
+                },
+                {
+                    "id": "loc_pictures_dir",
+                    "pattern": "图片目录|图片文件夹|照片目录|照片文件夹",
+                    "description": "Pictures directory (must contain directory/folder word)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "xdg_type": "pictures",
+                        "include_hidden": false
+                    }
+                },
+                {
+                    "id": "loc_music_dir",
+                    "pattern": "音乐目录|音乐文件夹",
+                    "description": "Music directory (must contain directory/folder word)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "xdg_type": "music",
+                        "include_hidden": false
+                    }
+                },
+                {
+                    "id": "loc_videos_dir",
+                    "pattern": "视频目录|视频文件夹|电影目录|电影文件夹",
+                    "description": "Videos directory (must contain directory/folder word)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "xdg_type": "movies",
+                        "include_hidden": false
+                    }
+                },
+                {
+                    "id": "loc_trash",
+                    "pattern": "回收站|垃圾箱",
+                    "description": "Trash directory",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "xdg_type": "trash",
+                        "include_hidden": true
+                    }
+                },
+                {
+                    "id": "loc_deleted",
+                    "pattern": "删除的|删除掉的",
+                    "description": "Deleted files (maps to trash)",
+                    "enabled": true,
+                    "priority": 200,
+                    "metadata": {
+                        "xdg_type": "trash",
+                        "include_hidden": true
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -11,6 +11,7 @@
 #include <dfm-search/dsearch_global.h>
 
 #include <QDebug>
+#include <QDir>
 #include <QEventLoop>
 #include <QTimer>
 
@@ -71,6 +72,11 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
         timeFields = {plan.timeField};
     }
 
+    // Step 3b: Determine search directories
+    QStringList dirs = plan.searchDirectories.isEmpty()
+        ? QStringList{QDir::homePath()}
+        : plan.searchDirectories;
+
     // Helper: apply time field to options (clone + setTimeField if time filter present)
     auto applyTimeField = [](const SearchOptions &opts, TimeField tf) -> SearchOptions {
         TimeRangeFilter tfCopy = opts.timeRangeFilter();
@@ -129,48 +135,68 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
     }
     engines.clear();
 
-    // Launch engines for each time field (may be 1 or 2 for Both)
-    for (TimeField tf : timeFields) {
-        // File name search (always)
-        if (Global::isFileNameIndexReadyForSearch()) {
-            SearchEngine *engine = SearchEngine::create(SearchType::FileName, q);
-            engine->setSearchOptions(applyTimeField(plan.fileNameOptions, tf));
+    // Launch engines for each directory and each time field
+    for (const QString &dir : dirs) {
+        for (TimeField tf : timeFields) {
+            // File name search (always)
+            if (Global::isFileNameIndexReadyForSearch()) {
+                SearchOptions fnameOpts = applyTimeField(plan.fileNameOptions, tf);
+                fnameOpts.setSearchPath(dir);
+                if (plan.includeHidden) {
+                    fnameOpts.setIncludeHidden(true);
+                }
 
-            QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
-            QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
-            QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
+                SearchEngine *engine = SearchEngine::create(SearchType::FileName, q);
+                engine->setSearchOptions(fnameOpts);
 
-            engines.append(engine);
-            pendingFinishCount.fetch_add(1);
-            engine->search(plan.fileNameQuery);
-        }
+                QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
+                QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
+                QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
 
-        // Content search
-        if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
-            SearchEngine *engine = SearchEngine::create(SearchType::Content, q);
-            engine->setSearchOptions(applyTimeField(*plan.contentOptions, tf));
+                engines.append(engine);
+                pendingFinishCount.fetch_add(1);
+                engine->search(plan.fileNameQuery);
+            }
 
-            QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
-            QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
-            QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
+            // Content search
+            if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
+                SearchOptions contentOpts = applyTimeField(*plan.contentOptions, tf);
+                contentOpts.setSearchPath(dir);
+                if (plan.includeHidden) {
+                    contentOpts.setIncludeHidden(true);
+                }
 
-            engines.append(engine);
-            pendingFinishCount.fetch_add(1);
-            engine->search(*plan.contentQuery);
-        }
+                SearchEngine *engine = SearchEngine::create(SearchType::Content, q);
+                engine->setSearchOptions(contentOpts);
 
-        // OCR search
-        if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
-            SearchEngine *engine = SearchEngine::create(SearchType::Ocr, q);
-            engine->setSearchOptions(applyTimeField(*plan.ocrOptions, tf));
+                QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
+                QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
+                QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
 
-            QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
-            QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
-            QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
+                engines.append(engine);
+                pendingFinishCount.fetch_add(1);
+                engine->search(*plan.contentQuery);
+            }
 
-            engines.append(engine);
-            pendingFinishCount.fetch_add(1);
-            engine->search(*plan.ocrQuery);
+            // OCR search
+            if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
+                SearchOptions ocrOpts = applyTimeField(*plan.ocrOptions, tf);
+                ocrOpts.setSearchPath(dir);
+                if (plan.includeHidden) {
+                    ocrOpts.setIncludeHidden(true);
+                }
+
+                SearchEngine *engine = SearchEngine::create(SearchType::Ocr, q);
+                engine->setSearchOptions(ocrOpts);
+
+                QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
+                QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
+                QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
+
+                engines.append(engine);
+                pendingFinishCount.fetch_add(1);
+                engine->search(*plan.ocrQuery);
+            }
         }
     }
 
