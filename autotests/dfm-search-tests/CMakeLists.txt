@@ -30,5 +30,11 @@ target_include_directories(dfm-search-test
     ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-lib
 )
 
+# Pass source directory for locating rule files at runtime
+target_compile_definitions(dfm-search-test
+    PRIVATE
+    TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
 # Register the test with CTest
 add_test(NAME dfm-search-test COMMAND dfm-search-test)

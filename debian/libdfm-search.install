@@ -1,2 +1,3 @@
 usr/lib/*/libdfm-search*.so*
 usr/bin/dfm-searcher
+share/deepin/dfm-search/semantic/rules/*

@@ -1,0 +1,44 @@
+{
+    "version": "1.0.0",
+    "groups": [
+        {
+            "name": "noise",
+            "version": "1.0.0",
+            "locale": "zh-CN",
+            "rules": [
+                {
+                    "id": "noise_action",
+                    "pattern": "帮我找到|搜索|查找|找一下|搜一下|查一下|帮我搜|帮我找",
+                    "description": "Search action words to consume",
+                    "enabled": true,
+                    "priority": 100,
+                    "metadata": {}
+                },
+                {
+                    "id": "noise_suffix",
+                    "pattern": "的文件|的图片|的文档|的视频|的音频|的照片|的音乐|的压缩包|的安装包",
+                    "description": "Trailing suffix words to consume",
+                    "enabled": true,
+                    "priority": 90,
+                    "metadata": {}
+                },
+                {
+                    "id": "noise_polite",
+                    "pattern": "请|麻烦|谢谢|帮我",
+                    "description": "Polite words to consume",
+                    "enabled": true,
+                    "priority": 80,
+                    "metadata": {}
+                },
+                {
+                    "id": "noise_generic",
+                    "pattern": "里面|关于|含有|带有|和|与|以及|或者|或",
+                    "description": "Generic filler words to consume",
+                    "enabled": true,
+                    "priority": 70,
+                    "metadata": {}
+                }
+            ]
+        }
+    ]
+}

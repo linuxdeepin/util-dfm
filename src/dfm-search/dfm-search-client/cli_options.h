@@ -47,7 +47,10 @@ struct SearchCliConfig
     // 文件名搜索选项
     QString filenameKeyword;
 
-    // 时间范围过滤
+    // Semantic mode
+    bool semanticMode = false;
+
+    // Time range filtering
     bool hasTimeFilter = false;
     DFMSEARCH::TimeRangeFilter timeFilter;
 };
@@ -100,8 +103,9 @@ private:
     QCommandLineOption m_wildcardOption;
     QCommandLineOption m_jsonOption;
     QCommandLineOption m_verboseOption;
+    QCommandLineOption m_semanticOption;
 
-    // 时间范围过滤选项
+    // Time range filtering options
     QCommandLineOption m_timeFieldOption;
     QCommandLineOption m_timeLastOption;
     QCommandLineOption m_timeTodayOption;

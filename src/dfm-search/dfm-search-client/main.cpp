@@ -12,6 +12,7 @@
 #include <dfm-search/filenamesearchapi.h>
 #include <dfm-search/contentsearchapi.h>
 #include <dfm-search/ocrtextsearchapi.h>
+#include <dfm-search/semanticsearcher.h>
 
 #include "cli_options.h"
 #include "output/text_output.h"
@@ -156,7 +157,38 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // 创建搜索引擎
+    // Semantic search mode
+    if (config.semanticMode) {
+        auto *semanticSearcher = new DFMSEARCH::SemanticSearcher(&app);
+
+        OutputFormatter *formatter = createOutputFormatter(config, &app);
+        formatter->setSearchContext(config.keyword, config.searchPath,
+                                    SearchType::FileName, SearchMethod::Indexed);
+
+        QObject::connect(formatter, &OutputFormatter::finished, &app, &QCoreApplication::quit);
+        QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::searchStarted, [formatter]() {
+            formatter->outputSearchStarted();
+        });
+        QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::resultsFound, [formatter](const SearchResultList &results) {
+            for (const auto &result : results) {
+                formatter->outputResult(result);
+            }
+        });
+        QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::searchFinished, [formatter](const SearchResultList &results) {
+            formatter->outputSearchFinished(results);
+        });
+        QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::searchCancelled, [formatter]() {
+            formatter->outputSearchCancelled();
+        });
+        QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::errorOccurred, [formatter](const DFMSEARCH::SearchError &error) {
+            formatter->outputError(error);
+        });
+
+        semanticSearcher->search(config.keyword);
+        return app.exec();
+    }
+
+    // Create search engine (non-semantic mode)
     SearchEngine *engine = SearchFactory::createEngine(config.searchType, &app);
     if (!engine) {
         qCritical() << "Error: Failed to create search engine";

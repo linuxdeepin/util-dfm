@@ -33,6 +33,9 @@ CliOptions::CliOptions()
       m_verboseOption(QStringList() << "verbose"
                                     << "v",
                       "Enable verbose output with detailed result information"),
+      m_semanticOption(QStringList() << "semantic"
+                                     << "s",
+                       "Enable semantic natural language search"),
       m_timeFieldOption(QStringList() << "time-field", "Time field to filter (birth or modify)", "field", "modify"),
       m_timeLastOption(QStringList() << "time-last", "Rolling time window (e.g., 3d, 2h, 30m)", "duration"),
       m_timeTodayOption(QStringList() << "time-today", "Filter files from today"),
@@ -69,8 +72,9 @@ void CliOptions::setupOptions()
     m_parser.addOption(m_wildcardOption);
     m_parser.addOption(m_jsonOption);
     m_parser.addOption(m_verboseOption);
+    m_parser.addOption(m_semanticOption);
 
-    // 时间范围过滤选项
+    // Time range filtering options
     m_parser.addOption(m_timeFieldOption);
     m_parser.addOption(m_timeLastOption);
     m_parser.addOption(m_timeTodayOption);
@@ -90,7 +94,11 @@ void CliOptions::setupOptions()
 
 void CliOptions::printHelp() const
 {
-    std::cout << "Usage: dfm-searcher [options] <keyword> <search_path>" << std::endl;
+    std::cout << "Usage: dfm-searcher [options] <keyword> [search_path]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Semantic Search:" << std::endl;
+    std::cout << "  --semantic, -s                 Enable semantic natural language search" << std::endl;
+    std::cout << "                                 Example: dfm-searcher -s \"recent 3 days images\" /home/user" << std::endl;
     std::cout << std::endl;
     std::cout << "Search Types:" << std::endl;
     std::cout << "  --type=<filename|content|ocr>  Search type (default: filename)" << std::endl;
@@ -145,6 +153,12 @@ void CliOptions::printHelp() const
     std::cout << std::endl;
     std::cout << "  # Realtime search with time filter" << std::endl;
     std::cout << "  dfm-searcher --method=realtime --time-last=7d \"report\" /home/user" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  # Semantic search: find recent images" << std::endl;
+    std::cout << "  dfm-searcher --semantic \"recent 3 days images\" /home/user" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  # Semantic search with JSON output" << std::endl;
+    std::cout << "  dfm-searcher -s -j \"content contains meeting notes\" /home/user" << std::endl;
 }
 
 bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
@@ -152,22 +166,46 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
     m_parser.process(app);
 
     QStringList positionalArgs = m_parser.positionalArguments();
-    if (positionalArgs.size() < 2) {
+    if (positionalArgs.isEmpty()) {
         printHelp();
         return false;
     }
 
+    // Semantic mode: only keyword is required, search path is optional
+    config.semanticMode = m_parser.isSet(m_semanticOption);
     config.keyword = positionalArgs.at(0);
-    config.searchPath = positionalArgs.at(1);
+    if (positionalArgs.size() >= 2) {
+        config.searchPath = positionalArgs.at(1);
+    }
 
-    // 验证搜索路径
-    QFileInfo pathInfo(config.searchPath);
-    if (!pathInfo.exists() || !pathInfo.isDir()) {
-        std::cerr << "Error: Search path does not exist or is not a directory" << std::endl;
+    // Validate search path (not required in semantic mode)
+    if (!config.searchPath.isEmpty()) {
+        QFileInfo pathInfo(config.searchPath);
+        if (!pathInfo.exists() || !pathInfo.isDir()) {
+            std::cerr << "Error: Search path does not exist or is not a directory" << std::endl;
+            return false;
+        }
+    } else if (!config.semanticMode) {
+        std::cerr << "Error: Search path is required" << std::endl;
+        printHelp();
         return false;
     }
 
-    // 解析搜索类型
+    // In semantic mode, skip type/method/query parsing
+    if (config.semanticMode) {
+        config.jsonOutput = m_parser.isSet(m_jsonOption);
+        config.verbose = m_parser.isSet(m_verboseOption);
+        if (m_parser.isSet(m_maxPreviewOption)) {
+            bool ok;
+            int previewLength = m_parser.value(m_maxPreviewOption).toInt(&ok);
+            if (ok && previewLength > 0) {
+                config.maxPreviewLength = previewLength;
+            }
+        }
+        return true;
+    }
+
+    // Parse search type (non-semantic mode only)
     QString typeStr = m_parser.value(m_typeOption);
     if (typeStr == "content") {
         config.searchType = SearchType::Content;
