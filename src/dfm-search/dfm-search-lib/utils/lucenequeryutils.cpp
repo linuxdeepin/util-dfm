@@ -5,6 +5,8 @@
 
 #include <QDir>
 
+#include <lucene++/BooleanQuery.h>
+
 DFM_SEARCH_BEGIN_NS
 
 namespace LuceneQueryUtils {
@@ -63,6 +65,30 @@ Lucene::QueryPtr buildPathPrefixQuery(const QString &pathPrefix, const QString &
             Lucene::newLucene<Lucene::Term>(
                     Lucene::StringUtils::toUnicode(fieldName.toStdString()),
                     Lucene::StringUtils::toUnicode(normalizedPath.toStdString())));
+}
+
+Lucene::QueryPtr buildMultiPathPrefixQuery(const QStringList &paths, const QString &fieldName)
+{
+    if (paths.isEmpty() || fieldName.isEmpty()) {
+        return nullptr;
+    }
+
+    if (paths.size() == 1) {
+        return buildPathPrefixQuery(paths.first(), fieldName);
+    }
+
+    Lucene::BooleanQueryPtr boolQuery = Lucene::newLucene<Lucene::BooleanQuery>();
+    bool hasValid = false;
+
+    for (const QString &path : paths) {
+        Lucene::QueryPtr pathQuery = buildPathPrefixQuery(path, fieldName);
+        if (pathQuery) {
+            boolQuery->add(pathQuery, Lucene::BooleanClause::SHOULD);
+            hasValid = true;
+        }
+    }
+
+    return hasValid ? boolQuery : nullptr;
 }
 
 }   // namespace LuceneQueryUtils

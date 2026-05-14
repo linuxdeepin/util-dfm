@@ -8,8 +8,12 @@
 #include <QSet>
 #include <QTimer>
 
+#include <functional>
+
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search/searchengine.h>
+#include <dfm-search/searchquery.h>
+#include <dfm-search/searchoptions.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -17,6 +21,7 @@ class SemanticRuleEngine;
 class IntentParser;
 class SemanticQueryBuilder;
 class SemanticSearchPlan;
+class SemanticSearcher;
 
 class SemanticSearcherData
 {
@@ -27,11 +32,32 @@ public:
     void doSearch(const QString &naturalLanguage);
     void doCancel();
 
+    /**
+     * @brief Create, configure, and launch a search engine
+     *
+     * Creates a SearchEngine of the given type, sets its options, connects
+     * signal/slot handlers, appends it to the engines list, increments the
+     * pending finish counter, and starts the search.
+     *
+     * @param type The search engine type (FileName, Content, or Ocr)
+     * @param query The search query to execute
+     * @param options The search options (including multi-path and time filter)
+     * @param onResultsFound Callback for result aggregation
+     * @param onFinished Callback for engine completion tracking
+     * @param onError Callback for error handling
+     */
+    void createAndLaunchEngine(SearchType type,
+                               const SearchQuery &query,
+                               const SearchOptions &options,
+                               std::function<void(const SearchResultList &)> onResultsFound,
+                               std::function<void(const SearchResultList &)> onFinished,
+                               std::function<void(const SearchError &)> onError);
+
     SemanticSearcher *q = nullptr;
 
     // State
-    std::atomic<SearchStatus> status{SearchStatus::Ready};
-    std::atomic<bool> cancelled{false};
+    std::atomic<SearchStatus> status { SearchStatus::Ready };
+    std::atomic<bool> cancelled { false };
     int timeoutSeconds = 60;
 
     // Core components (owned)
@@ -41,7 +67,7 @@ public:
 
     // Sub-engines (owned per search, parented to q for auto-cleanup)
     QList<SearchEngine *> engines;
-    std::atomic<int> pendingFinishCount{0};
+    std::atomic<int> pendingFinishCount { 0 };
 
     // Result collection
     SearchResultList allResults;

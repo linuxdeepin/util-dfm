@@ -98,34 +98,36 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
         }
 
         // Add path prefix query optimization
-        if (mainQuery && SearchUtility::isOcrTextIndexAncestorPathsSupported()
-            && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
-            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath,
-                                                                              QString::fromWCharArray(LuceneFieldNames::OcrText::kAncestorPaths));
-            if (pathPrefixQuery) {
-                BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
-                finalQuery->add(mainQuery, BooleanClause::MUST);
-                finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
-                qInfo() << "Using path prefix query for OCR text search optimization:" << searchPath;
-                mainQuery = finalQuery;
+        QStringList searchPathsList = m_options.searchPaths();
+        if (mainQuery && SearchUtility::isOcrTextIndexAncestorPathsSupported()) {
+            bool usePrefixQuery = false;
+            for (const QString &p : searchPathsList) {
+                if (SearchUtility::shouldUsePathPrefixQuery(p)) {
+                    usePrefixQuery = true;
+                    break;
+                }
+            }
+            if (usePrefixQuery) {
+                QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
+                        searchPathsList,
+                        QString::fromWCharArray(LuceneFieldNames::OcrText::kAncestorPaths));
+                if (pathPrefixQuery) {
+                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                    finalQuery->add(mainQuery, BooleanClause::MUST);
+                    finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
+                    qInfo() << "Using multi-path prefix query for OCR text search optimization:" << searchPathsList;
+                    mainQuery = finalQuery;
+                }
             }
         }
 
         // Add time range filter query
         if (m_options.hasTimeRangeFilter()) {
             TimeRangeFilter filter = m_options.timeRangeFilter();
-            auto [start, end] = filter.resolveTimeRange();
-
-            qint64 startEpoch = TimeRangeUtils::toEpochSecs(start);
-            qint64 endEpoch = TimeRangeUtils::toEpochSecs(end);
-
-            const wchar_t *fieldName = (filter.timeField() == TimeField::BirthTime)
-                    ? LuceneFieldNames::OcrText::kBirthTime
-                    : LuceneFieldNames::OcrText::kModifyTime;
-
-            QueryPtr timeQuery = TimeRangeUtils::buildNumericRangeQuery(
-                    fieldName, startEpoch, endEpoch,
-                    filter.includeLower(), filter.includeUpper());
+            QueryPtr timeQuery = TimeRangeUtils::buildTimeRangeFilterQuery(
+                    filter,
+                    LuceneFieldNames::OcrText::kBirthTime,
+                    LuceneFieldNames::OcrText::kModifyTime);
 
             if (timeQuery) {
                 if (mainQuery) {
@@ -276,6 +278,7 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
     QString searchPath = m_options.searchPath();
     const QStringList &searchExcludedPaths = m_options.searchExcludedPaths();
+    QStringList allSearchPaths = m_options.searchPaths();
     auto docsSize = scoreDocs.size();
 
     OcrTextOptionsAPI optAPI(m_options);
@@ -333,7 +336,9 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
             QString path = QString::fromStdWString(pathField);
 
-            if (!path.startsWith(searchPath)) {
+            // Check against all search paths
+            if (!std::any_of(allSearchPaths.cbegin(), allSearchPaths.cend(),
+                             [&path](const auto &sp) { return path.startsWith(sp); })) {
                 continue;
             }
 

@@ -7,9 +7,13 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDateTime>
+#include <QCoreApplication>
+
+#include <dfm-search/semanticsearcher.h>
 
 #include "semantic/semanticruleengine.h"
 #include "semantic/intentparser.h"
+#include "semantic/ruleconfigloader.h"
 
 using namespace DFMSEARCH;
 
@@ -653,6 +657,253 @@ void tst_ParsedIntent::matchSpanValidity()
     QVERIFY(span.isValid());
 }
 
+// ===== tst_IsSemanticQuery =====
+
+namespace {
+
+// Resolve the source tree rule directory relative to TEST_SOURCE_DIR.
+// Falls back to a heuristic path if TEST_SOURCE_DIR is not defined.
+QString sourceRulesDir()
+{
+    QString base = QString::fromUtf8(TEST_SOURCE_DIR);
+    if (base.isEmpty()) {
+        base = QCoreApplication::applicationDirPath() + "/../../..";
+    }
+    return base + "/src/dfm-search/dfm-search-lib/semantic/rules/zh_CN";
+}
+
+// Check whether the source tree rule files exist and are loadable.
+bool sourceRulesAvailable()
+{
+    const QString dir = sourceRulesDir();
+    for (const QString &filename : RuleConfigLoader::ruleFileNames()) {
+        if (!QFile::exists(dir + "/" + filename)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Replicate isSemanticQuery() logic using internal components with source-tree rules.
+bool checkIsSemanticQuery(SemanticRuleEngine *engine, IntentParser *parser,
+                          const QString &input)
+{
+    if (input.trimmed().isEmpty()) {
+        return false;
+    }
+
+    ParsedIntent intent;
+    parser->parse(input, intent);
+
+    return intent.timeConstraint.isValid()
+            || intent.sizeConstraint.isValid()
+            || !intent.fileExtensions.isEmpty()
+            || !intent.searchDirectories.isEmpty();
+}
+
+}   // namespace
+
+class tst_IsSemanticQuery : public QObject
+{
+    Q_OBJECT
+
+private Q_SLOTS:
+    void initTestCase();
+    void emptyInput();
+    void whitespaceOnly();
+    void plainKeyword();
+    void plainChineseKeyword();
+    void todayKeyword();
+    void yesterdayKeyword();
+    void thisWeekKeyword();
+    void lastMonthKeyword();
+    void fileTypePdf();
+    void fileTypeImage();
+    void fileTypeDocument();
+    void locationDesktop();
+    void locationDownloads();
+    void locationTrash();
+    void sizeLarge();
+    void sizeSmall();
+    void sizeDynamic();
+    void timeAndFileType();
+    void locationAndTime();
+    void keywordOnlyNoMatch();
+    void consecutiveCalls();
+    void noiseWordsOnly();
+
+private:
+    SemanticRuleEngine *m_engine = nullptr;
+    IntentParser *m_parser = nullptr;
+};
+
+void tst_IsSemanticQuery::initTestCase()
+{
+    if (!sourceRulesAvailable()) {
+        QSKIP("Rule files not found in source tree, skipping isSemanticQuery tests");
+    }
+
+    m_engine = new SemanticRuleEngine(this);
+    const QString dir = sourceRulesDir();
+    QStringList ruleFiles = RuleConfigLoader::ruleFileNames();
+    // size_rules.json is not yet registered in RuleConfigLoader::ruleFileNames(),
+    // but the IntentParser includes a SizeExtractor. Load it explicitly.
+    if (!ruleFiles.contains("size_rules.json")) {
+        ruleFiles.append("size_rules.json");
+    }
+    for (const QString &filename : std::as_const(ruleFiles)) {
+        QString path = dir + "/" + filename;
+        if (!m_engine->loadRuleFile(path)) {
+            qWarning() << "Failed to load rule file:" << path;
+        }
+    }
+
+    m_parser = new IntentParser(m_engine);
+}
+
+void tst_IsSemanticQuery::emptyInput()
+{
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, QString()));
+}
+
+void tst_IsSemanticQuery::whitespaceOnly()
+{
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "   "));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "\t\n"));
+}
+
+void tst_IsSemanticQuery::plainKeyword()
+{
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "hello"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "meeting notes"));
+}
+
+void tst_IsSemanticQuery::plainChineseKeyword()
+{
+    // Pure Chinese text without any semantic triggers.
+    // Avoid words that match filetype/location/time/size rules
+    // (e.g. "报告" matches filetype_document_general, "音乐" matches filetype_audio).
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "蓝天白云"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "春夏秋冬"));
+}
+
+void tst_IsSemanticQuery::todayKeyword()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今天的文件"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今日份报告"));
+}
+
+void tst_IsSemanticQuery::yesterdayKeyword()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "昨天的报告"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "昨晚的截图"));
+}
+
+void tst_IsSemanticQuery::thisWeekKeyword()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "本周的文档"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "这周修改的"));
+}
+
+void tst_IsSemanticQuery::lastMonthKeyword()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "上个月的文件"));
+}
+
+void tst_IsSemanticQuery::fileTypePdf()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "pdf文档"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "找一下pdf"));
+}
+
+void tst_IsSemanticQuery::fileTypeImage()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "图片"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "截图"));
+}
+
+void tst_IsSemanticQuery::fileTypeDocument()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "文档"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "报告"));
+}
+
+void tst_IsSemanticQuery::locationDesktop()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "桌面的文件"));
+}
+
+void tst_IsSemanticQuery::locationDownloads()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "下载的文件"));
+}
+
+void tst_IsSemanticQuery::locationTrash()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "回收站的文件"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "删除的文件"));
+}
+
+void tst_IsSemanticQuery::sizeLarge()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "大文件"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "几个G的文件"));
+}
+
+void tst_IsSemanticQuery::sizeSmall()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "小文件"));
+}
+
+void tst_IsSemanticQuery::sizeDynamic()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "大于500M的文件"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "小于100K"));
+}
+
+void tst_IsSemanticQuery::timeAndFileType()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今天的pdf"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "本周的图片"));
+}
+
+void tst_IsSemanticQuery::locationAndTime()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "桌面今天的文件"));
+}
+
+void tst_IsSemanticQuery::keywordOnlyNoMatch()
+{
+    // Text that does not match any semantic rule pattern
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "xyzabc123"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "随便什么文字"));
+}
+
+void tst_IsSemanticQuery::consecutiveCalls()
+{
+    // Multiple calls with the same input should return consistent results
+    QString input = "今天的pdf";
+    bool first = checkIsSemanticQuery(m_engine, m_parser, input);
+    bool second = checkIsSemanticQuery(m_engine, m_parser, input);
+    bool third = checkIsSemanticQuery(m_engine, m_parser, input);
+    QCOMPARE(first, second);
+    QCOMPARE(second, third);
+    QVERIFY(first);
+
+    QString plain = "hello world";
+    bool p1 = checkIsSemanticQuery(m_engine, m_parser, plain);
+    bool p2 = checkIsSemanticQuery(m_engine, m_parser, plain);
+    QCOMPARE(p1, p2);
+    QVERIFY(!p1);
+}
+
+void tst_IsSemanticQuery::noiseWordsOnly()
+{
+    // Noise words alone (search action words) without any semantic dimension
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "搜索"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "查找"));
+}
+
 // ===== Factory functions =====
 
 QObject *create_tst_RuleEngine() { return new tst_RuleEngine(); }
@@ -660,5 +911,6 @@ QObject *create_tst_TimeExtraction() { return new tst_TimeExtraction(); }
 QObject *create_tst_FileTypeExtraction() { return new tst_FileTypeExtraction(); }
 QObject *create_tst_KeywordExtraction() { return new tst_KeywordExtraction(); }
 QObject *create_tst_ParsedIntent() { return new tst_ParsedIntent(); }
+QObject *create_tst_IsSemanticQuery() { return new tst_IsSemanticQuery(); }
 
 #include "tst_semantic_search.moc"

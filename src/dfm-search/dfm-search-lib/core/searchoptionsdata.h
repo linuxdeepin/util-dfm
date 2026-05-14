@@ -31,6 +31,7 @@ public:
     SearchMethod method;   ///< The search method to use
     bool caseSensitive;   ///< Whether search is case sensitive
     QString searchPath;   ///< The path to search in
+    QStringList searchPathsList;   ///< Multiple search paths
     QStringList searchExcludedPaths;   ///< excluded search paths.
     bool includeHidden;   ///< Whether to include hidden files
     int maxResults;   ///< Maximum number of results to return

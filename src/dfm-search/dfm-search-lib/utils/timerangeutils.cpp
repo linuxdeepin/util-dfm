@@ -5,6 +5,7 @@
 
 #include <dfm-search/timerangefilter.h>
 #include <lucene++/NumericRangeQuery.h>
+#include <lucene++/BooleanQuery.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -36,6 +37,51 @@ Lucene::QueryPtr buildNumericRangeQuery(
             maxVal,
             includeLower,
             includeUpper);
+}
+
+Lucene::QueryPtr buildTimeRangeFilterQuery(
+        const TimeRangeFilter &filter,
+        const wchar_t *birthTimeField,
+        const wchar_t *modifyTimeField)
+{
+    if (!filter.isValid()) {
+        return nullptr;
+    }
+
+    auto [start, end] = filter.resolveTimeRange();
+    qint64 startEpoch = toEpochSecs(start);
+    qint64 endEpoch = toEpochSecs(end);
+
+    if (filter.timeField() == TimeField::Both) {
+        // Build BooleanQuery with SHOULD for both time fields
+        Lucene::BooleanQueryPtr timeBoolQuery = Lucene::newLucene<Lucene::BooleanQuery>();
+
+        Lucene::QueryPtr birthQuery = buildNumericRangeQuery(
+                birthTimeField, startEpoch, endEpoch,
+                filter.includeLower(), filter.includeUpper());
+        if (birthQuery) {
+            timeBoolQuery->add(birthQuery, Lucene::BooleanClause::SHOULD);
+        }
+
+        Lucene::QueryPtr modifyQuery = buildNumericRangeQuery(
+                modifyTimeField, startEpoch, endEpoch,
+                filter.includeLower(), filter.includeUpper());
+        if (modifyQuery) {
+            timeBoolQuery->add(modifyQuery, Lucene::BooleanClause::SHOULD);
+        }
+
+        // Need at least one clause for a valid BooleanQuery
+        return (birthQuery || modifyQuery) ? timeBoolQuery : nullptr;
+    }
+
+    // Single field query
+    const wchar_t *fieldName = (filter.timeField() == TimeField::BirthTime)
+            ? birthTimeField
+            : modifyTimeField;
+
+    return buildNumericRangeQuery(
+            fieldName, startEpoch, endEpoch,
+            filter.includeLower(), filter.includeUpper());
 }
 
 }   // namespace TimeRangeUtils

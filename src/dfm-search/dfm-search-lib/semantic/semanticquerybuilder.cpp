@@ -187,12 +187,13 @@ TimeRangeFilter SemanticQueryBuilder::buildTimeRangeFilter(const TimeConstraint 
         break;
     }
 
-    // Set time field if explicitly specified by ActionExtractor
+    // Set time field on the filter
     if (tc.timeField == TimeField::BirthTime || tc.timeField == TimeField::ModifyTime) {
         filter.setTimeField(tc.timeField);
+    } else if (tc.timeField == TimeField::Unspecified || tc.timeField == TimeField::Both) {
+        // No specific time field or both requested → search both birth and modify time
+        filter.setTimeField(TimeField::Both);
     }
-    // When Unspecified or Both: timeField is NOT set on the filter here.
-    // The searcher handles Both by creating duplicate engines with each field.
 
     return filter;
 }

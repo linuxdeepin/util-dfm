@@ -4,7 +4,7 @@
 
 #include "actionextractor.h"
 
-#include "../semanticruleengine.h"
+#include "semantic/semanticruleengine.h"
 
 #include <QDebug>
 
