@@ -36,6 +36,7 @@ constexpr const wchar_t kIsHidden[] = L"is_hidden";
 constexpr const wchar_t kAncestorPaths[] = L"ancestor_paths";
 constexpr const wchar_t kBirthTime[] = L"birth_time";
 constexpr const wchar_t kModifyTime[] = L"modify_time";
+constexpr const wchar_t kFileSize[] = L"file_size";
 }   // namespace Content
 
 // OCR text index field names
@@ -47,6 +48,8 @@ constexpr const wchar_t kIsHidden[] = L"is_hidden";
 constexpr const wchar_t kAncestorPaths[] = L"ancestor_paths";
 constexpr const wchar_t kBirthTime[] = L"birth_time";
 constexpr const wchar_t kModifyTime[] = L"modify_time";
+constexpr const wchar_t kFileSize[] = L"file_size";
+constexpr const wchar_t kCheckSum[] = L"checksum";
 }   // namespace OcrText
 
 }   // namespace LuceneFieldNames
