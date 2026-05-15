@@ -5,13 +5,11 @@
 #ifndef SEMANTICRULEENGINE_H
 #define SEMANTICRULEENGINE_H
 
-#include <QFileSystemWatcher>
 #include <QHash>
 #include <QJsonObject>
 #include <QMap>
 #include <QRegularExpression>
 #include <QStringList>
-#include <QTimer>
 
 #include <dfm-search/dsearch_global.h>
 
@@ -38,7 +36,6 @@ struct RuleGroup {
  * @brief Rule engine that loads regex rules from JSON config files.
  *
  * Provides match/matchAll operations with priority-based ordering.
- * Supports hot-reload via QFileSystemWatcher.
  */
 class SemanticRuleEngine : public QObject
 {
@@ -109,21 +106,11 @@ public:
      */
     static bool parseRuleGroupStatic(const QJsonObject &groupObj, RuleGroup &outGroup);
 
-Q_SIGNALS:
-    void rulesReloaded();
-
-private Q_SLOTS:
-    void onRuleFilesChanged(const QStringList &files);
-
 private:
     bool parseRuleGroup(const QJsonObject &groupObj, RuleGroup &outGroup);
-    void startWatching();
 
     QMap<QString, RuleGroup> m_groups;
-    QMap<QString, RuleGroup> m_cachedGroups;   // last valid rules for rollback
     QMap<QString, QString> m_ruleFilePaths;    // group name -> resolved file path
-    QFileSystemWatcher *m_watcher = nullptr;
-    QTimer *m_reloadTimer = nullptr;
 };
 
 DFM_SEARCH_END_NS

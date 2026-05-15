@@ -50,12 +50,15 @@ public:
     static QString currentLocaleName();
 
     /**
-     * @brief Get the list of expected rule file names.
+     * @brief Scan locale directories and return resolved paths for all rule files.
+     * Scans user dir first, then system dir; user files take priority.
+     * Falls back through locale chain: zh_CN -> zh -> zh_CN (default).
+     * @return Deduplicated list of resolved absolute paths
      */
-    static QStringList ruleFileNames();
+    static QStringList ruleFilePaths();
 
     /**
-     * @brief Resolve the effective path for a rule file.
+     * @brief Resolve the effective path for a single rule file.
      * Checks user dir first, then system dir, with locale subdirectory lookup.
      * Falls back to zh_CN if the current locale directory is not found.
      * @param filename The rule file name (e.g., "time_rules.json")

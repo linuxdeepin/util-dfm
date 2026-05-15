@@ -8,7 +8,7 @@
             "rules": [
                 {
                     "id": "noise_action",
-                    "pattern": "帮我找到|搜索|查找|找一下|搜一下|查一下|帮我搜|帮我找",
+                    "pattern": "帮我找到|帮我搜|帮我找|搜索|查找|找一下|搜一下|查一下|找下|搜下|查下|找找|搜搜",
                     "description": "Search action words to consume",
                     "enabled": true,
                     "priority": 100,
@@ -20,6 +20,14 @@
                     "description": "Trailing suffix words to consume",
                     "enabled": true,
                     "priority": 90,
+                    "metadata": {}
+                },
+                {
+                    "id": "noise_size_lead",
+                    "pattern": "大小在|大小为|大小是|体积在|体积为|体积是|容量在|容量为|容量是|大小不超过|大小超过|大小不到|大小最多|大小最少|大小至少",
+                    "description": "Size constraint lead-in words to consume",
+                    "enabled": true,
+                    "priority": 140,
                     "metadata": {}
                 },
                 {

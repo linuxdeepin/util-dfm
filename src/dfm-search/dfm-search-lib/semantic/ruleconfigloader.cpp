@@ -12,6 +12,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLocale>
+#include <QSet>
 #include <QStandardPaths>
 
 DFM_SEARCH_BEGIN_NS
@@ -35,17 +36,17 @@ QString RuleConfigLoader::systemRulesDir()
 {
     return QDir(QDir(QLatin1String(kInstallPrefix))
                         .absoluteFilePath(QLatin1String("share/deepin/")
-                                         + libName()
-                                         + "/semantic/rules"))
+                                          + libName()
+                                          + "/semantic/rules"))
             .absolutePath();
 }
 
 QString RuleConfigLoader::userRulesDir()
 {
     return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-                        + "/deepin/"
-                        + libName()
-                        + "/semantic/rules")
+                + "/deepin/"
+                + libName()
+                + "/semantic/rules")
             .absolutePath();
 }
 
@@ -54,13 +55,28 @@ QString RuleConfigLoader::currentLocaleName()
     return QLocale::system().name().simplified();
 }
 
-QStringList RuleConfigLoader::ruleFileNames()
+QStringList RuleConfigLoader::ruleFilePaths()
 {
-    return {"noise_rules.json",
-            "time_rules.json",
-            "filetype_rules.json",
-            "keyword_rules.json",
-            "location_rules.json"};
+    QStringList paths;
+    QSet<QString> seen;   // deduplicate by filename
+
+    const QStringList dirs { resolveLocaleDir(userRulesDir()),
+                             resolveLocaleDir(systemRulesDir()) };
+
+    for (const QString &dir : dirs) {
+        const QStringList files = QDir(dir).entryList(
+                QStringList { QStringLiteral("*.json") },
+                QDir::Files | QDir::Readable);
+        for (const QString &filename : files) {
+            const QString absPath = QDir(dir).absoluteFilePath(filename);
+            if (!seen.contains(filename) && validateRuleFile(absPath)) {
+                paths.append(absPath);
+                seen.insert(filename);
+            }
+        }
+    }
+
+    return paths;
 }
 
 QString RuleConfigLoader::resolveLocaleDir(const QString &baseDir)

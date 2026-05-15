@@ -8,27 +8,12 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
-#include <QTimer>
 
 DFM_SEARCH_BEGIN_NS
 
 SemanticRuleEngine::SemanticRuleEngine(QObject *parent)
     : QObject(parent)
-    , m_watcher(new QFileSystemWatcher(this))
-    , m_reloadTimer(new QTimer(this))
 {
-    m_reloadTimer->setSingleShot(true);
-    m_reloadTimer->setInterval(100);
-
-    QObject::connect(m_reloadTimer, &QTimer::timeout, this, [this]() {
-        loadRules();
-        Q_EMIT rulesReloaded();
-    });
-
-    QObject::connect(m_watcher, &QFileSystemWatcher::fileChanged,
-            this, [this](const QString &) {
-                m_reloadTimer->start();
-            });
 }
 
 SemanticRuleEngine::~SemanticRuleEngine() = default;
@@ -36,15 +21,8 @@ SemanticRuleEngine::~SemanticRuleEngine() = default;
 bool SemanticRuleEngine::loadRules()
 {
     QMap<QString, RuleGroup> newGroups;
-    QStringList watchedFiles;
 
-    for (const QString &filename : RuleConfigLoader::ruleFileNames()) {
-        const QString path = RuleConfigLoader::resolveRulePath(filename);
-        if (path.isEmpty()) {
-            qWarning() << "Rule file not found:" << filename;
-            continue;
-        }
-
+    for (const QString &path : RuleConfigLoader::ruleFilePaths()) {
         QList<RuleGroup> loaded;
         if (!RuleConfigLoader::loadRuleFile(path, loaded)) {
             qWarning() << "Failed to load rule file:" << path;
@@ -73,28 +51,15 @@ bool SemanticRuleEngine::loadRules()
             }
 
             m_ruleFilePaths.insert(group.name, path);
-            if (!watchedFiles.contains(path)) {
-                watchedFiles.append(path);
-            }
         }
     }
 
     if (newGroups.isEmpty()) {
-        qWarning() << "No rule files loaded, keeping cached rules";
+        qWarning() << "No rule files loaded, keeping existing rules";
         return !m_groups.isEmpty();
     }
 
-    // Cache valid rules for rollback
-    m_cachedGroups = m_groups.isEmpty() ? newGroups : m_groups;
     m_groups = newGroups;
-
-    // Update file watcher
-    if (!m_watcher->files().isEmpty()) {
-        m_watcher->removePaths(m_watcher->files());
-    }
-    for (const QString &f : watchedFiles) {
-        m_watcher->addPath(f);
-    }
 
     return true;
 }
@@ -274,12 +239,6 @@ bool SemanticRuleEngine::parseRuleGroupStatic(const QJsonObject &groupObj, RuleG
     }
 
     return !outGroup.rules.isEmpty();
-}
-
-void SemanticRuleEngine::onRuleFilesChanged(const QStringList &files)
-{
-    Q_UNUSED(files);
-    m_reloadTimer->start();
 }
 
 DFM_SEARCH_END_NS

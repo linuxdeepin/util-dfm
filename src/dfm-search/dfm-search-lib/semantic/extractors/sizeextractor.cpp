@@ -47,7 +47,7 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
 
         if (direction == "min") {
             const QString value = match.captured("value");
-            const QString unit = match.captured("unit");
+            const QString unit = normalizeUnit(match.captured("unit"), metadata);
             qint64 bytes = parseSizeToBytes(value, unit);
             if (bytes <= 0) {
                 return;
@@ -56,7 +56,7 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
             sc.includeLower = true;
         } else if (direction == "max") {
             const QString value = match.captured("value");
-            const QString unit = match.captured("unit");
+            const QString unit = normalizeUnit(match.captured("unit"), metadata);
             qint64 bytes = parseSizeToBytes(value, unit);
             if (bytes <= 0) {
                 return;
@@ -65,9 +65,9 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
             sc.includeUpper = true;
         } else if (direction == "range") {
             const QString minVal = match.captured("min_val");
-            const QString minUnit = match.captured("min_unit");
+            const QString minUnit = normalizeUnit(match.captured("min_unit"), metadata);
             const QString maxVal = match.captured("max_val");
-            const QString maxUnit = match.captured("max_unit");
+            const QString maxUnit = normalizeUnit(match.captured("max_unit"), metadata);
             qint64 minBytes = parseSizeToBytes(minVal, minUnit);
             qint64 maxBytes = parseSizeToBytes(maxVal, maxUnit);
             if (minBytes <= 0 || maxBytes <= 0) {
@@ -88,6 +88,23 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
     }
 }
 
+QString SizeExtractor::normalizeUnit(const QString &rawUnit, const QVariantMap &metadata)
+{
+    if (rawUnit.isEmpty()) {
+        return {};
+    }
+
+    const QVariantMap unitMap = metadata.value("unit_map").toMap();
+    if (!unitMap.isEmpty()) {
+        const QString mapped = unitMap.value(rawUnit).toString();
+        if (!mapped.isEmpty()) {
+            return mapped;
+        }
+    }
+
+    return rawUnit;
+}
+
 qint64 SizeExtractor::parseSizeToBytes(const QString &value, const QString &unit)
 {
     bool ok = false;
@@ -96,21 +113,17 @@ qint64 SizeExtractor::parseSizeToBytes(const QString &value, const QString &unit
         return -1;
     }
 
-    QString upperUnit = unit.toUpper();
-    if (upperUnit.isEmpty()) {
-        // No unit: assume bytes
+    const QString u = unit.toUpper();
+    if (u.isEmpty() || u == "B" || u == "BB") {
         return static_cast<qint64>(num);
     }
-    if (upperUnit == "B" || upperUnit == "BB") {
-        return static_cast<qint64>(num);
-    }
-    if (upperUnit == "K" || upperUnit == "KB") {
+    if (u == "K" || u == "KB") {
         return static_cast<qint64>(num * 1024);
     }
-    if (upperUnit == "M" || upperUnit == "MB") {
+    if (u == "M" || u == "MB") {
         return static_cast<qint64>(num * 1024 * 1024);
     }
-    if (upperUnit == "G" || upperUnit == "GB") {
+    if (u == "G" || u == "GB") {
         return static_cast<qint64>(num * 1024 * 1024 * 1024);
     }
 
