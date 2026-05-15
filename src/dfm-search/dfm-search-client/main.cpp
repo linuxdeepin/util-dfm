@@ -165,19 +165,32 @@ int main(int argc, char *argv[])
     // Semantic search mode
     if (config.semanticMode) {
         auto *semanticSearcher = new DFMSEARCH::SemanticSearcher(&app);
+        semanticSearcher->setDetailedResultsEnabled(config.verbose);
 
         OutputFormatter *formatter = createOutputFormatter(config, &app);
+
+        // 为语义搜索构建 formatter 需要的 options
+        SearchOptions formatterOptions;
+        formatterOptions.setDetailedResultsEnabled(config.verbose);
+        if (config.hasTimeFilter) formatterOptions.setTimeRangeFilter(config.timeFilter);
+        if (config.hasSizeFilter) formatterOptions.setSizeRangeFilter(config.sizeFilter);
+
+        JsonOutput *jsonOutput = qobject_cast<JsonOutput *>(formatter);
+        if (jsonOutput) {
+            jsonOutput->setSearchOptions(formatterOptions);
+        }
+        TextOutput *textOutput = qobject_cast<TextOutput *>(formatter);
+        if (textOutput) {
+            textOutput->setSearchOptions(formatterOptions);
+            textOutput->setVerbose(config.verbose);
+        }
+
         formatter->setSearchContext(config.keyword, config.searchPath,
-                                    SearchType::FileName, SearchMethod::Indexed);
+                                    SearchType::Semantic, SearchMethod::Indexed);
 
         QObject::connect(formatter, &OutputFormatter::finished, &app, &QCoreApplication::quit);
         QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::searchStarted, [formatter]() {
             formatter->outputSearchStarted();
-        });
-        QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::resultsFound, [formatter](const SearchResultList &results) {
-            for (const auto &result : results) {
-                formatter->outputResult(result);
-            }
         });
         QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::searchFinished, [formatter](const SearchResultList &results) {
             formatter->outputSearchFinished(results);

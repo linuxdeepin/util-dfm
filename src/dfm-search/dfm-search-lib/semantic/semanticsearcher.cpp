@@ -68,21 +68,15 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
             : plan.searchDirectories;
 
     // Step 5: Set up signal/slot handlers
-    auto onResultsFound = [this](const SearchResultList &results) {
-        SearchResultList newResults;
+    auto onFinished = [this](const SearchResultList &results) {
+        // Collect and deduplicate results from each engine's final result list
         for (const SearchResult &r : results) {
             if (!seenPaths.contains(r.path())) {
                 seenPaths.insert(r.path());
-                newResults.append(r);
+                allResults.append(r);
             }
         }
-        if (!newResults.isEmpty()) {
-            allResults.append(newResults);
-            Q_EMIT q->resultsFound(newResults);
-        }
-    };
 
-    auto onFinished = [this](const SearchResultList &) {
         if (pendingFinishCount.fetch_sub(1) == 1) {
             // All engines finished
             timeoutTimer->stop();
@@ -121,6 +115,13 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
         return opts;
     };
 
+    // Apply caller-level options
+    auto applyCallerOptions = [this](SearchOptions &opts) {
+        if (detailedResultsEnabled) {
+            opts.setDetailedResultsEnabled(true);
+        }
+    };
+
     // Step 8: Launch up to 3 engines (FileName, Content, OCR)
     // TimeField::Both is no longer expanded here; it is handled by the Lucene strategy layer.
     // Multiple directories are passed via setSearchPaths().
@@ -128,22 +129,25 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
     // File name search (always, if index is ready)
     if (Global::isFileNameIndexReadyForSearch()) {
         SearchOptions fnameOpts = prepareOptions(plan.fileNameOptions);
+        applyCallerOptions(fnameOpts);
         createAndLaunchEngine(SearchType::FileName, plan.fileNameQuery,
-                              fnameOpts, onResultsFound, onFinished, onError);
+                              fnameOpts, onFinished, onError);
     }
 
     // Content search
     if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
         SearchOptions contentOpts = prepareOptions(*plan.contentOptions);
+        applyCallerOptions(contentOpts);
         createAndLaunchEngine(SearchType::Content, *plan.contentQuery,
-                              contentOpts, onResultsFound, onFinished, onError);
+                              contentOpts, onFinished, onError);
     }
 
     // OCR search
     if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
         SearchOptions ocrOpts = prepareOptions(*plan.ocrOptions);
+        applyCallerOptions(ocrOpts);
         createAndLaunchEngine(SearchType::Ocr, *plan.ocrQuery,
-                              ocrOpts, onResultsFound, onFinished, onError);
+                              ocrOpts, onFinished, onError);
     }
 
     // Step 9: Handle no-engine case
@@ -163,14 +167,12 @@ void SemanticSearcherData::createAndLaunchEngine(
         SearchType type,
         const SearchQuery &query,
         const SearchOptions &options,
-        std::function<void(const SearchResultList &)> onResultsFound,
         std::function<void(const SearchResultList &)> onFinished,
         std::function<void(const SearchError &)> onError)
 {
     SearchEngine *engine = SearchEngine::create(type, q);
     engine->setSearchOptions(options);
 
-    QObject::connect(engine, &SearchEngine::resultsFound, q, onResultsFound);
     QObject::connect(engine, &SearchEngine::searchFinished, q, onFinished);
     QObject::connect(engine, &SearchEngine::errorOccurred, q, onError);
 
@@ -242,6 +244,16 @@ bool SemanticSearcher::isSemanticQuery(const QString &input) const
 void SemanticSearcher::cancel()
 {
     d_ptr->doCancel();
+}
+
+void SemanticSearcher::setDetailedResultsEnabled(bool enable)
+{
+    d_ptr->detailedResultsEnabled = enable;
+}
+
+bool SemanticSearcher::isDetailedResultsEnabled() const
+{
+    return d_ptr->detailedResultsEnabled;
 }
 
 SearchResultExpected SemanticSearcher::searchSync(const QString &naturalLanguage)

@@ -203,6 +203,7 @@ enum SearchType {
     FileName,   // Search by file name
     Content,   // Search by content within files
     Ocr,   // Search by OCR-extracted text from images
+    Semantic = 40,   // Semantic / natural-language search (launches sub-engines internally)
     Custom = 50   // User-defined search type
 };
 Q_ENUM_NS(SearchType)
