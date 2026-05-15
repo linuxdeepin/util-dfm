@@ -22,8 +22,8 @@ struct RuleGroup;
  *   zh_CN -> zh -> zh_CN (default)
  *
  * Priority: user-local config > system-installed config.
- * System path: /usr/share/deepin/<lib_name>/semantic/rules/
- * User path: ~/.config/deepin/<lib_name>/semantic/rules/
+ * System path: /usr/share/deepin/dfm-search/semantic/rules/
+ * User path: ~/.config/deepin/dfm-search/semantic/rules/
  */
 class RuleConfigLoader
 {

@@ -20,7 +20,6 @@ add_library(${BIN_NAME} SHARED
 
 target_compile_definitions(${BIN_NAME} PRIVATE
     CMAKE_INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}"
-    DFM_SEARCH_LIB_NAME="${BIN_NAME}"
 )
 
 target_link_libraries(${BIN_NAME} PUBLIC
@@ -84,7 +83,7 @@ install(DIRECTORY
 # install semantic search rules (locale subdirectories preserved)
 install(DIRECTORY
     ${CMAKE_CURRENT_SOURCE_DIR}/semantic/rules/
-    DESTINATION share/deepin/${BIN_NAME}/semantic/rules
+    DESTINATION share/deepin/dfm-search/semantic/rules
 )
 
 # for pc file config - update to include all dependencies
