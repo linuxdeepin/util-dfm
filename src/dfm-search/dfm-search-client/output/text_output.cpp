@@ -38,6 +38,8 @@ void TextOutput::outputSearchStarted()
         typeStr = "Content";
     else if (m_searchType == SearchType::Ocr)
         typeStr = "Ocr";
+    else if (m_searchType == SearchType::Semantic)
+        typeStr = "Semantic";
     std::cout << "Search type: " << typeStr.toStdString() << std::endl;
     std::cout << "Search method: " << (m_searchMethod == SearchMethod::Indexed ? "Indexed" : "Realtime") << std::endl;
 
@@ -199,6 +201,13 @@ void TextOutput::printSearchResult(const SearchResult &result)
         qint64 sizeBytes = resultAPI.fileSizeBytes();
         if (sizeBytes > 0) {
             std::cout << "  Size: " << sizeBytes << " bytes" << std::endl;
+        }
+    } else if (m_searchType == SearchType::Semantic) {
+        // 语义搜索：通用输出所有 customAttributes
+        const QVariantMap attrs = result.customAttributes();
+        for (auto it = attrs.cbegin(); it != attrs.cend(); ++it) {
+            std::cout << "  " << it.key().toStdString() << ": "
+                      << it.value().toString().toStdString() << std::endl;
         }
     }
 

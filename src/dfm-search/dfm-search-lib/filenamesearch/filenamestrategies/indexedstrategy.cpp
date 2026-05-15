@@ -782,21 +782,12 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     // Add path prefix query optimization
     QStringList searchPathsList = m_options.searchPaths();
     if (hasValidQuery && SearchUtility::isFilenameIndexAncestorPathsSupported()) {
-        bool usePrefixQuery = false;
-        for (const QString &p : searchPathsList) {
-            if (SearchUtility::shouldUsePathPrefixQuery(p)) {
-                usePrefixQuery = true;
-                break;
-            }
-        }
-        if (usePrefixQuery) {
-            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
-                    searchPathsList,
-                    QString::fromWCharArray(LuceneFieldNames::FileName::kAncestorPaths));
-            if (pathPrefixQuery) {
-                finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
-                qInfo() << "Using multi-path prefix query for optimization:" << searchPathsList;
-            }
+        QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
+                searchPathsList,
+                QString::fromWCharArray(LuceneFieldNames::FileName::kAncestorPaths));
+        if (pathPrefixQuery) {
+            finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
+            qInfo() << "Using multi-path prefix query for optimization:" << searchPathsList;
         }
     }
 

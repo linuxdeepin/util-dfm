@@ -100,6 +100,22 @@ public:
      */
     void cancel();
 
+    /**
+     * @brief Enable or disable detailed results for sub-engines
+     *
+     * When enabled, each sub-engine (FileName, Content, OCR) will populate
+     * extra metadata fields (file type, size, timestamps, etc.) in results.
+     * Must be called before search().
+     *
+     * @param enable true to enable detailed results (default false)
+     */
+    void setDetailedResultsEnabled(bool enable);
+
+    /**
+     * @brief Check whether detailed results are enabled
+     */
+    bool isDetailedResultsEnabled() const;
+
 Q_SIGNALS:
     /**
      * @brief Emitted when a search operation starts

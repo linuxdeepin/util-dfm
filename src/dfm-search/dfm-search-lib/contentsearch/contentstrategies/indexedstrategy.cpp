@@ -103,24 +103,15 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
         // Add path prefix query optimization
         QStringList searchPathsList = m_options.searchPaths();
         if (mainQuery && SearchUtility::isContentIndexAncestorPathsSupported()) {
-            bool usePrefixQuery = false;
-            for (const QString &p : searchPathsList) {
-                if (SearchUtility::shouldUsePathPrefixQuery(p)) {
-                    usePrefixQuery = true;
-                    break;
-                }
-            }
-            if (usePrefixQuery) {
-                QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
-                        searchPathsList,
-                        QString::fromWCharArray(LuceneFieldNames::Content::kAncestorPaths));
-                if (pathPrefixQuery) {
-                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
-                    finalQuery->add(mainQuery, BooleanClause::MUST);
-                    finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
-                    qInfo() << "Using multi-path prefix query for content search optimization:" << searchPathsList;
-                    mainQuery = finalQuery;
-                }
+            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
+                    searchPathsList,
+                    QString::fromWCharArray(LuceneFieldNames::Content::kAncestorPaths));
+            if (pathPrefixQuery) {
+                BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                finalQuery->add(mainQuery, BooleanClause::MUST);
+                finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
+                qInfo() << "Using multi-path prefix query for content search optimization:" << searchPathsList;
+                mainQuery = finalQuery;
             }
         }
 

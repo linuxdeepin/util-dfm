@@ -42,14 +42,12 @@ public:
      * @param type The search engine type (FileName, Content, or Ocr)
      * @param query The search query to execute
      * @param options The search options (including multi-path and time filter)
-     * @param onResultsFound Callback for result aggregation
-     * @param onFinished Callback for engine completion tracking
+     * @param onFinished Callback for engine completion and result collection
      * @param onError Callback for error handling
      */
     void createAndLaunchEngine(SearchType type,
                                const SearchQuery &query,
                                const SearchOptions &options,
-                               std::function<void(const SearchResultList &)> onResultsFound,
                                std::function<void(const SearchResultList &)> onFinished,
                                std::function<void(const SearchError &)> onError);
 
@@ -75,6 +73,9 @@ public:
 
     // Timeout
     QTimer *timeoutTimer = nullptr;
+
+    // Options forwarded from caller
+    bool detailedResultsEnabled = false;
 };
 
 DFM_SEARCH_END_NS

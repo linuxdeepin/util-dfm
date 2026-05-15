@@ -171,6 +171,17 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
         }
 
         return obj;
+    } else if (m_searchType == SearchType::Semantic) {
+        // 语义搜索：结果来自多个子引擎，通用输出所有 customAttributes
+        QJsonObject obj;
+        obj["path"] = result.path();
+
+        const QVariantMap attrs = result.customAttributes();
+        for (auto it = attrs.cbegin(); it != attrs.cend(); ++it) {
+            obj[it.key()] = QJsonValue::fromVariant(it.value());
+        }
+
+        return obj;
     }
     return result.path();
 }
@@ -207,6 +218,9 @@ void JsonOutput::outputStreamingStart()
         break;
     case SearchType::Ocr:
         searchTypeStr = "ocr";
+        break;
+    case SearchType::Semantic:
+        searchTypeStr = "semantic";
         break;
     default:
         searchTypeStr = "unknown";
@@ -319,6 +333,9 @@ void JsonOutput::outputCompleteResult(const QList<SearchResult> &results)
         break;
     case SearchType::Ocr:
         searchTypeStr = "ocr";
+        break;
+    case SearchType::Semantic:
+        searchTypeStr = "semantic";
         break;
     default:
         searchTypeStr = "unknown";

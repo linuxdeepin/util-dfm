@@ -100,24 +100,15 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
         // Add path prefix query optimization
         QStringList searchPathsList = m_options.searchPaths();
         if (mainQuery && SearchUtility::isOcrTextIndexAncestorPathsSupported()) {
-            bool usePrefixQuery = false;
-            for (const QString &p : searchPathsList) {
-                if (SearchUtility::shouldUsePathPrefixQuery(p)) {
-                    usePrefixQuery = true;
-                    break;
-                }
-            }
-            if (usePrefixQuery) {
-                QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
-                        searchPathsList,
-                        QString::fromWCharArray(LuceneFieldNames::OcrText::kAncestorPaths));
-                if (pathPrefixQuery) {
-                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
-                    finalQuery->add(mainQuery, BooleanClause::MUST);
-                    finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
-                    qInfo() << "Using multi-path prefix query for OCR text search optimization:" << searchPathsList;
-                    mainQuery = finalQuery;
-                }
+            QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
+                    searchPathsList,
+                    QString::fromWCharArray(LuceneFieldNames::OcrText::kAncestorPaths));
+            if (pathPrefixQuery) {
+                BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                finalQuery->add(mainQuery, BooleanClause::MUST);
+                finalQuery->add(pathPrefixQuery, BooleanClause::MUST);
+                qInfo() << "Using multi-path prefix query for OCR text search optimization:" << searchPathsList;
+                mainQuery = finalQuery;
             }
         }
 
@@ -398,7 +389,7 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                         resultApi.setOcrContent(content);
                         // 设置高亮内容
                         const QString highlightedContent = ContentHighlighter::customHighlight(
-                            m_keywords, content, previewLen, enableHTML);
+                                m_keywords, content, previewLen, enableHTML);
                         resultApi.setHighlightedContent(highlightedContent);
                     }
                 } catch (const Lucene::LuceneException &e) {
