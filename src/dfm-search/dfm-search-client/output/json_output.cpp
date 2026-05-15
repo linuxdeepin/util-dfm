@@ -112,6 +112,12 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
             obj["birthTime"] = birthTimeObj;
         }
 
+        // 文件大小
+        qint64 sizeBytes = resultAPI.fileSizeBytes();
+        if (sizeBytes > 0) {
+            obj["sizeBytes"] = sizeBytes;
+        }
+
         return obj;
     } else if (m_searchType == SearchType::Ocr) {
         // OCR 搜索：返回详细对象
@@ -150,6 +156,18 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
             birthTimeObj["timestamp"] = birthTs;
             birthTimeObj["formatted"] = resultAPI.birthTimeString();
             obj["birthTime"] = birthTimeObj;
+        }
+
+        // 文件校验和
+        QString checksum = resultAPI.checksum();
+        if (!checksum.isEmpty()) {
+            obj["checksum"] = checksum;
+        }
+
+        // 文件大小
+        qint64 sizeBytes = resultAPI.fileSizeBytes();
+        if (sizeBytes > 0) {
+            obj["sizeBytes"] = sizeBytes;
         }
 
         return obj;

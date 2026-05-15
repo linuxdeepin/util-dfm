@@ -127,6 +127,20 @@ public:
      */
     void setHighlightedContent(const QString &content);
 
+    // ==================== File Size ====================
+
+    /**
+     * @brief Set the file size in bytes
+     * @param bytes File size in bytes
+     */
+    void setFileSizeBytes(qint64 bytes);
+
+    /**
+     * @brief Get the file size in bytes
+     * @return File size in bytes, 0 if not set
+     */
+    qint64 fileSizeBytes() const;
+
     // ==================== Extended Attributes ====================
 
     /**

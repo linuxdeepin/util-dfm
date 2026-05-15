@@ -57,6 +57,16 @@ QString TextSearchOptionsAPI::filenameKeyword() const
 
 // ==================== TextSearchResultAPI ====================
 
+void TextSearchResultAPI::setFileSizeBytes(qint64 bytes)
+{
+    m_result.setCustomAttribute("fileSizeBytes", bytes);
+}
+
+qint64 TextSearchResultAPI::fileSizeBytes() const
+{
+    return m_result.customAttribute("fileSizeBytes").toLongLong();
+}
+
 TextSearchResultAPI::TextSearchResultAPI(SearchResult &result)
     : m_result(result)
 {

@@ -443,6 +443,22 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                         resultApi.setBirthTimestamp(timestamp);
                     }
                 }
+
+                // 文件校验和
+                Lucene::String checksumField = doc->get(LuceneFieldNames::OcrText::kCheckSum);
+                if (!checksumField.empty()) {
+                    resultApi.setChecksum(QString::fromStdWString(checksumField));
+                }
+
+                // 文件大小
+                Lucene::String fileSizeField = doc->get(LuceneFieldNames::OcrText::kFileSize);
+                if (!fileSizeField.empty()) {
+                    bool ok = false;
+                    qint64 fileSize = QString::fromStdWString(fileSizeField).toLongLong(&ok);
+                    if (ok && fileSize > 0) {
+                        resultApi.setFileSizeBytes(fileSize);
+                    }
+                }
             }
 
             // Add to result collection

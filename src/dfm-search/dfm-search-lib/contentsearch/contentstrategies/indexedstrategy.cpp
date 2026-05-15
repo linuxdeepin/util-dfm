@@ -443,6 +443,16 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                         resultApi.setBirthTimestamp(timestamp);
                     }
                 }
+
+                // 文件大小
+                Lucene::String fileSizeField = doc->get(LuceneFieldNames::Content::kFileSize);
+                if (!fileSizeField.empty()) {
+                    bool ok = false;
+                    qint64 fileSize = QString::fromStdWString(fileSizeField).toLongLong(&ok);
+                    if (ok && fileSize > 0) {
+                        resultApi.setFileSizeBytes(fileSize);
+                    }
+                }
             }
 
             // 添加到结果集合
