@@ -22,6 +22,7 @@ public:
 
 private:
     static qint64 parseSizeToBytes(const QString &value, const QString &unit);
+    static QString normalizeUnit(const QString &rawUnit, const QVariantMap &metadata);
     SemanticRuleEngine *m_engine;
 };
 

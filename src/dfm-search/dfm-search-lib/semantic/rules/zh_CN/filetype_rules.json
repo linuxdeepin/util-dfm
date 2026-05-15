@@ -50,7 +50,7 @@
                 },
                 {
                     "id": "filetype_document_general",
-                    "pattern": "文档|文件|报告|文章|方案|文本|资料|笔记|稿件",
+                    "pattern": "文档|报告|文章|方案|文本|资料|笔记|稿件",
                     "description": "Generic documents (fallback)",
                     "enabled": true,
                     "priority": 100,

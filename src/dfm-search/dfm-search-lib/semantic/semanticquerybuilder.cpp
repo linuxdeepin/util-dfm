@@ -43,8 +43,6 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
     {
         SearchOptions opts = baseOpts;
         FileNameOptionsAPI fnameApi(opts);
-        fnameApi.setPinyinEnabled(true);
-        fnameApi.setPinyinAcronymEnabled(true);
 
         if (!intent.fileExtensions.isEmpty()) {
             fnameApi.setFileExtensions(intent.fileExtensions);
@@ -56,7 +54,7 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
             plan.fileNameQuery = SearchFactory::createQuery(intent.keywords, SearchQuery::Type::Boolean);
         } else {
             // No keywords: search all files (use wildcard to match everything)
-            plan.fileNameQuery = SearchFactory::createQuery(QStringLiteral("*"));
+            plan.fileNameQuery = SearchFactory::createQuery("");
         }
 
         plan.fileNameOptions = opts;

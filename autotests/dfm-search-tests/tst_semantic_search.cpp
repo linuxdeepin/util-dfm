@@ -676,12 +676,8 @@ QString sourceRulesDir()
 bool sourceRulesAvailable()
 {
     const QString dir = sourceRulesDir();
-    for (const QString &filename : RuleConfigLoader::ruleFileNames()) {
-        if (!QFile::exists(dir + "/" + filename)) {
-            return false;
-        }
-    }
-    return true;
+    return QDir(dir).exists()
+            && !QDir(dir).entryList({"*.json"}, QDir::Files).isEmpty();
 }
 
 // Replicate isSemanticQuery() logic using internal components with source-tree rules.
@@ -745,13 +741,9 @@ void tst_IsSemanticQuery::initTestCase()
 
     m_engine = new SemanticRuleEngine(this);
     const QString dir = sourceRulesDir();
-    QStringList ruleFiles = RuleConfigLoader::ruleFileNames();
-    // size_rules.json is not yet registered in RuleConfigLoader::ruleFileNames(),
-    // but the IntentParser includes a SizeExtractor. Load it explicitly.
-    if (!ruleFiles.contains("size_rules.json")) {
-        ruleFiles.append("size_rules.json");
-    }
-    for (const QString &filename : std::as_const(ruleFiles)) {
+    const QStringList ruleFiles = QDir(dir).entryList(
+            {"*.json"}, QDir::Files, QDir::Name);
+    for (const QString &filename : ruleFiles) {
         QString path = dir + "/" + filename;
         if (!m_engine->loadRuleFile(path)) {
             qWarning() << "Failed to load rule file:" << path;

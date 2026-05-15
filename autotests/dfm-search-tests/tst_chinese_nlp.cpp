@@ -17,8 +17,7 @@ using namespace DFMSEARCH;
 
 static QString rulesDir()
 {
-    return QStringLiteral(TEST_SOURCE_DIR) + QStringLiteral(
-            "/src/dfm-search/dfm-search-lib/semantic/rules/zh_CN");
+    return QStringLiteral(TEST_SOURCE_DIR) + QStringLiteral("/src/dfm-search/dfm-search-lib/semantic/rules/zh_CN");
 }
 
 // Helper: compare two QStringList as sets (order-independent)
@@ -104,6 +103,10 @@ private Q_SLOTS:
     void size_dynamic_min();
     void size_dynamic_max();
     void size_dynamic_between();
+    void size_chineseUnits_min();
+    void size_chineseUnits_max();
+    void size_chineseUnits_range();
+    void size_noUnit_bytes();
     void size_combined_withTime();
     void size_combined_withType();
     void size_combined_full();
@@ -262,8 +265,8 @@ void tst_ChineseNLP::timePreset_yesterday()
 void tst_ChineseNLP::timePreset_yesterday_variants()
 {
     const QStringList inputs = { QStringLiteral("昨日"), QStringLiteral("昨晚"),
-                                  QStringLiteral("昨天上午"), QStringLiteral("昨天下午"),
-                                  QStringLiteral("昨天晚上") };
+                                 QStringLiteral("昨天上午"), QStringLiteral("昨天下午"),
+                                 QStringLiteral("昨天晚上") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -283,7 +286,7 @@ void tst_ChineseNLP::timePreset_dayBeforeYesterday()
 void tst_ChineseNLP::timePreset_thisWeek_variants()
 {
     const QStringList inputs = { QStringLiteral("本周"), QStringLiteral("这周"),
-                                  QStringLiteral("这个星期"), QStringLiteral("这一个星期") };
+                                 QStringLiteral("这个星期"), QStringLiteral("这一个星期") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -295,7 +298,7 @@ void tst_ChineseNLP::timePreset_thisWeek_variants()
 void tst_ChineseNLP::timePreset_lastWeek_variants()
 {
     const QStringList inputs = { QStringLiteral("上周"), QStringLiteral("上个星期"),
-                                  QStringLiteral("上星期"), QStringLiteral("上一个星期") };
+                                 QStringLiteral("上星期"), QStringLiteral("上一个星期") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -307,7 +310,7 @@ void tst_ChineseNLP::timePreset_lastWeek_variants()
 void tst_ChineseNLP::timePreset_thisMonth_variants()
 {
     const QStringList inputs = { QStringLiteral("本月"), QStringLiteral("这个月"),
-                                  QStringLiteral("当月") };
+                                 QStringLiteral("当月") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -330,7 +333,7 @@ void tst_ChineseNLP::timePreset_lastMonth_variants()
 void tst_ChineseNLP::timePreset_thisYear_variants()
 {
     const QStringList inputs = { QStringLiteral("今年"), QStringLiteral("本年"),
-                                  QStringLiteral("这年") };
+                                 QStringLiteral("这年") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -409,9 +412,9 @@ void tst_ChineseNLP::fileType_precise_ppt()
 void tst_ChineseNLP::fileType_category_image_variants()
 {
     const QStringList inputs = { QStringLiteral("图片"), QStringLiteral("照片"),
-                                  QStringLiteral("截图"), QStringLiteral("壁纸"),
-                                  QStringLiteral("海报"), QStringLiteral("相片"),
-                                  QStringLiteral("表情包"), QStringLiteral("图") };
+                                 QStringLiteral("截图"), QStringLiteral("壁纸"),
+                                 QStringLiteral("海报"), QStringLiteral("相片"),
+                                 QStringLiteral("表情包"), QStringLiteral("图") };
     const QStringList expectedExts = { "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg" };
     for (const QString &input : inputs) {
         ParsedIntent intent;
@@ -424,8 +427,8 @@ void tst_ChineseNLP::fileType_category_image_variants()
 void tst_ChineseNLP::fileType_category_video_variants()
 {
     const QStringList inputs = { QStringLiteral("视频"), QStringLiteral("录像"),
-                                  QStringLiteral("电影"), QStringLiteral("动画"),
-                                  QStringLiteral("短片"), QStringLiteral("片子") };
+                                 QStringLiteral("电影"), QStringLiteral("动画"),
+                                 QStringLiteral("短片"), QStringLiteral("片子") };
     const QStringList expectedExts = { "mp4", "avi", "mkv", "mov", "flv", "wmv", "webm" };
     for (const QString &input : inputs) {
         ParsedIntent intent;
@@ -438,8 +441,8 @@ void tst_ChineseNLP::fileType_category_video_variants()
 void tst_ChineseNLP::fileType_category_audio_variants()
 {
     const QStringList inputs = { QStringLiteral("音频"), QStringLiteral("音乐"),
-                                  QStringLiteral("录音"), QStringLiteral("歌"),
-                                  QStringLiteral("语音") };
+                                 QStringLiteral("录音"), QStringLiteral("歌"),
+                                 QStringLiteral("语音") };
     const QStringList expectedExts = { "mp3", "wav", "flac", "aac", "ogg", "m4a" };
     for (const QString &input : inputs) {
         ParsedIntent intent;
@@ -886,13 +889,13 @@ void tst_ChineseNLP::timeCustom_lastYear_extra()
 
 void tst_ChineseNLP::fileType_document_general_allSynonyms()
 {
-    // Requirements 2.3.2.2.2: 文档, 文件, 报告, 文章, 方案, 文本, 资料, 笔记, 稿件
+    // Requirements 2.3.2.2.2: 文档, 报告, 文章, 方案, 文本, 资料, 笔记, 稿件
     const QStringList inputs = {
-        QStringLiteral("文档"), QStringLiteral("文件"), QStringLiteral("报告"),
+        QStringLiteral("文档"), QStringLiteral("报告"),
         QStringLiteral("文章"), QStringLiteral("方案"), QStringLiteral("文本"),
         QStringLiteral("资料"), QStringLiteral("笔记"), QStringLiteral("稿件")
     };
-    const QStringList expectedExts = {"doc", "docx", "pdf", "txt", "wps", "rtf", "md", "odt"};
+    const QStringList expectedExts = { "doc", "docx", "pdf", "txt", "wps", "rtf", "md", "odt" };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -947,7 +950,7 @@ void tst_ChineseNLP::fileType_image_allSynonyms()
         QStringLiteral("图"), QStringLiteral("壁纸"), QStringLiteral("海报"),
         QStringLiteral("相片"), QStringLiteral("表情包")
     };
-    const QStringList expectedExts = {"jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"};
+    const QStringList expectedExts = { "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg" };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -963,7 +966,7 @@ void tst_ChineseNLP::fileType_video_allSynonyms()
         QStringLiteral("视频"), QStringLiteral("录像"), QStringLiteral("电影"),
         QStringLiteral("动画"), QStringLiteral("短片"), QStringLiteral("片子")
     };
-    const QStringList expectedExts = {"mp4", "avi", "mkv", "mov", "flv", "wmv", "webm"};
+    const QStringList expectedExts = { "mp4", "avi", "mkv", "mov", "flv", "wmv", "webm" };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -979,7 +982,7 @@ void tst_ChineseNLP::fileType_audio_allSynonyms()
         QStringLiteral("音频"), QStringLiteral("音乐"), QStringLiteral("录音"),
         QStringLiteral("歌"), QStringLiteral("语音")
     };
-    const QStringList expectedExts = {"mp3", "wav", "flac", "aac", "ogg", "m4a"};
+    const QStringList expectedExts = { "mp3", "wav", "flac", "aac", "ogg", "m4a" };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -1087,14 +1090,14 @@ void tst_ChineseNLP::size_fuzzy_large()
     ParsedIntent intent;
     m_parser->parse(QStringLiteral("大文件"), intent);
     QVERIFY(intent.sizeConstraint.isValid());
-    QCOMPARE(intent.sizeConstraint.minSize, 524288000LL);  // 500MB
-    QCOMPARE(intent.sizeConstraint.maxSize, 0LL);  // no upper bound
+    QCOMPARE(intent.sizeConstraint.minSize, 524288000LL);   // 500MB
+    QCOMPARE(intent.sizeConstraint.maxSize, 0LL);   // no upper bound
 }
 
 void tst_ChineseNLP::size_fuzzy_large_synonyms()
 {
     const QStringList inputs = { QStringLiteral("很大的"), QStringLiteral("占空间的"),
-                                  QStringLiteral("几个G的") };
+                                 QStringLiteral("几个G的") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input + QStringLiteral("的图片"), intent);
@@ -1109,7 +1112,7 @@ void tst_ChineseNLP::size_fuzzy_small()
     m_parser->parse(QStringLiteral("小文件"), intent);
     QVERIFY(intent.sizeConstraint.isValid());
     QCOMPARE(intent.sizeConstraint.minSize, 0LL);
-    QCOMPARE(intent.sizeConstraint.maxSize, 1048576LL);  // 1MB
+    QCOMPARE(intent.sizeConstraint.maxSize, 1048576LL);   // 1MB
     QCOMPARE(intent.sizeConstraint.includeUpper, false);
 }
 
@@ -1118,7 +1121,7 @@ void tst_ChineseNLP::size_dynamic_min()
     ParsedIntent intent;
     m_parser->parse(QStringLiteral("大于500M的文档"), intent);
     QVERIFY(intent.sizeConstraint.isValid());
-    QCOMPARE(intent.sizeConstraint.minSize, 524288000LL);  // 500MB
+    QCOMPARE(intent.sizeConstraint.minSize, 524288000LL);   // 500MB
     QVERIFY(intent.sizeConstraint.includeLower);
 }
 
@@ -1127,7 +1130,7 @@ void tst_ChineseNLP::size_dynamic_max()
     ParsedIntent intent;
     m_parser->parse(QStringLiteral("小于100K的文件"), intent);
     QVERIFY(intent.sizeConstraint.isValid());
-    QCOMPARE(intent.sizeConstraint.maxSize, 102400LL);  // 100KB
+    QCOMPARE(intent.sizeConstraint.maxSize, 102400LL);   // 100KB
     QCOMPARE(intent.sizeConstraint.minSize, 0LL);
 }
 
@@ -1137,7 +1140,42 @@ void tst_ChineseNLP::size_dynamic_between()
     m_parser->parse(QStringLiteral("1M-10M的文件"), intent);
     QVERIFY(intent.sizeConstraint.isValid());
     QCOMPARE(intent.sizeConstraint.minSize, 1048576LL);   // 1MB
-    QCOMPARE(intent.sizeConstraint.maxSize, 10485760LL);  // 10MB
+    QCOMPARE(intent.sizeConstraint.maxSize, 10485760LL);   // 10MB
+}
+
+void tst_ChineseNLP::size_chineseUnits_min()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("大于100兆的文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 104857600LL);   // 100MB
+    QVERIFY(intent.sizeConstraint.includeLower);
+}
+
+void tst_ChineseNLP::size_chineseUnits_max()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("小于50兆的图片"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.maxSize, 52428800LL);   // 50MB
+}
+
+void tst_ChineseNLP::size_chineseUnits_range()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下大小在1兆到10兆的文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QVERIFY(intent.keywords.isEmpty());
+    QCOMPARE(intent.sizeConstraint.minSize, 1048576LL);   // 1MB
+    QCOMPARE(intent.sizeConstraint.maxSize, 10485760LL);   // 10MB
+}
+
+void tst_ChineseNLP::size_noUnit_bytes()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("小于1024的文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.maxSize, 1024LL);   // raw bytes
 }
 
 void tst_ChineseNLP::size_combined_withTime()
@@ -1165,7 +1203,7 @@ void tst_ChineseNLP::size_combined_full()
     QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
     QCOMPARE(intent.timeConstraint.preset, TimePreset::Yesterday);
     QVERIFY(intent.sizeConstraint.isValid());
-    QCOMPARE(intent.sizeConstraint.minSize, 104857600LL);  // 100MB
+    QCOMPARE(intent.sizeConstraint.minSize, 104857600LL);   // 100MB
     QVERIFY(intent.fileExtensions.contains("jpg"));
     QVERIFY(intent.fileExtensions.contains("mp4"));
 }
@@ -1189,7 +1227,7 @@ void tst_ChineseNLP::timeRelative_justNow()
 void tst_ChineseNLP::timeRelative_justNow_synonyms()
 {
     const QStringList inputs = { QStringLiteral("刚才"), QStringLiteral("刚"),
-                                  QStringLiteral("这会儿") };
+                                 QStringLiteral("这会儿") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input + QStringLiteral("的文档"), intent);
@@ -1212,7 +1250,7 @@ void tst_ChineseNLP::timeRelative_recentDays()
 void tst_ChineseNLP::timeRelative_recentDays_synonyms()
 {
     const QStringList inputs = { QStringLiteral("这几天"), QStringLiteral("近期"),
-                                  QStringLiteral("这阵子") };
+                                 QStringLiteral("这阵子") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input + QStringLiteral("的文件"), intent);
@@ -1295,7 +1333,7 @@ void tst_ChineseNLP::action_create_birthTime()
 void tst_ChineseNLP::action_create_synonyms()
 {
     const QStringList inputs = { QStringLiteral("创建的文档"), QStringLiteral("存下来的图片"),
-                                  QStringLiteral("保存的文件"), QStringLiteral("新加的视频") };
+                                 QStringLiteral("保存的文件"), QStringLiteral("新加的视频") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -1322,7 +1360,7 @@ void tst_ChineseNLP::action_modify_modifyTime()
 void tst_ChineseNLP::action_modify_synonyms()
 {
     const QStringList inputs = { QStringLiteral("编辑过的文档"), QStringLiteral("改过的文件"),
-                                  QStringLiteral("写过的图片"), QStringLiteral("更新的视频") };
+                                 QStringLiteral("写过的图片"), QStringLiteral("更新的视频") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -1437,7 +1475,7 @@ void tst_ChineseNLP::location_trash()
     // "回收站里的文件" → location(trash) + includeHidden + filetype(文件=文档类)
     const QString trashPath = QDir::homePath() + "/.local/share/Trash/files";
     ParsedIntent intent;
-    m_parser->parse(QStringLiteral("回收站里的文件"), intent);
+    m_parser->parse(QStringLiteral("回收站里的文档"), intent);
     QCOMPARE(intent.searchDirectories.size(), 1);
     QCOMPARE(intent.searchDirectories.first(), trashPath);
     QVERIFY(intent.includeHidden);
