@@ -23,11 +23,7 @@ constexpr auto kInstallPrefix = CMAKE_INSTALL_PREFIX;
 constexpr auto kInstallPrefix = "/usr";
 #endif
 
-#ifdef DFM_SEARCH_LIB_NAME
-constexpr auto kLibName = DFM_SEARCH_LIB_NAME;
-#else
-constexpr auto kLibName = "dfm6-search";
-#endif
+constexpr auto kLibName = "dfm-search";
 }   // namespace
 
 QString RuleConfigLoader::libName()
