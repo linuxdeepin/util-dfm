@@ -150,6 +150,12 @@ void TextOutput::printSearchResult(const SearchResult &result)
             std::cout << "  Created: " << resultAPI.birthTimeString().toStdString()
                       << " (timestamp: " << birthTs << ")" << std::endl;
         }
+
+        // 文件大小
+        qint64 sizeBytes = resultAPI.fileSizeBytes();
+        if (sizeBytes > 0) {
+            std::cout << "  Size: " << sizeBytes << " bytes" << std::endl;
+        }
     } else if (m_searchType == SearchType::Ocr) {
         OcrTextResultAPI resultAPI(const_cast<SearchResult &>(result));
 
@@ -181,6 +187,18 @@ void TextOutput::printSearchResult(const SearchResult &result)
         if (birthTs > 0) {
             std::cout << "  Created: " << resultAPI.birthTimeString().toStdString()
                       << " (timestamp: " << birthTs << ")" << std::endl;
+        }
+
+        // 文件校验和
+        QString checksum = resultAPI.checksum();
+        if (!checksum.isEmpty()) {
+            std::cout << "  Checksum: " << checksum.toStdString() << std::endl;
+        }
+
+        // 文件大小
+        qint64 sizeBytes = resultAPI.fileSizeBytes();
+        if (sizeBytes > 0) {
+            std::cout << "  Size: " << sizeBytes << " bytes" << std::endl;
         }
     }
 

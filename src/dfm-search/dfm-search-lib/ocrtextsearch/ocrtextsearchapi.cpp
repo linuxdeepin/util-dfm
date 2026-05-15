@@ -44,4 +44,14 @@ void OcrTextResultAPI::setOcrContent(const QString &content)
     m_result.setCustomAttribute("ocrContent", content);
 }
 
+QString OcrTextResultAPI::checksum() const
+{
+    return m_result.customAttribute("checksum").toString();
+}
+
+void OcrTextResultAPI::setChecksum(const QString &checksum)
+{
+    m_result.setCustomAttribute("checksum", checksum);
+}
+
 DFM_SEARCH_END_NS

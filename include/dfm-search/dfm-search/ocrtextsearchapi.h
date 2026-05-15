@@ -75,6 +75,18 @@ public:
      * @param content The OCR extracted text to set
      */
     void setOcrContent(const QString &content);
+
+    /**
+     * @brief Get the file checksum
+     * @return The checksum string, or empty if not set
+     */
+    QString checksum() const;
+
+    /**
+     * @brief Set the file checksum
+     * @param checksum The checksum string to set
+     */
+    void setChecksum(const QString &checksum);
 };
 
 DFM_SEARCH_END_NS
