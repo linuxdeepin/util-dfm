@@ -142,6 +142,27 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
             }
         }
 
+        // Add file size range filter query
+        if (m_options.hasSizeRangeFilter()) {
+            SizeRangeFilter sizeFilter = m_options.sizeRangeFilter();
+            QueryPtr sizeQuery = TimeRangeUtils::buildNumericRangeQuery(
+                    LuceneFieldNames::OcrText::kFileSize,
+                    sizeFilter.minSize(), sizeFilter.maxSize(),
+                    sizeFilter.includeLower(), sizeFilter.includeUpper());
+
+            if (sizeQuery) {
+                if (mainQuery) {
+                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                    finalQuery->add(mainQuery, BooleanClause::MUST);
+                    finalQuery->add(sizeQuery, BooleanClause::MUST);
+                    mainQuery = finalQuery;
+                } else {
+                    // Size filter alone is a valid query
+                    mainQuery = sizeQuery;
+                }
+            }
+        }
+
         // Add filename keyword query
         QString filenameKw = optAPI.filenameKeyword();
         if (!filenameKw.isEmpty()) {
