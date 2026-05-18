@@ -89,6 +89,12 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStrin
         if (pendingFinishCount.fetch_sub(1) == 1) {
             // All engines finished
             timeoutTimer->stop();
+
+            // Truncate final deduplicated results to maxResults
+            if (maxResults > 0 && allResults.size() > maxResults) {
+                allResults = allResults.mid(0, maxResults);
+            }
+
             if (cancelled.load()) {
                 status.store(SearchStatus::Cancelled);
                 Q_EMIT q->statusChanged(SearchStatus::Cancelled);
@@ -128,6 +134,9 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStrin
     auto applyCallerOptions = [this](SearchOptions &opts) {
         if (detailedResultsEnabled) {
             opts.setDetailedResultsEnabled(true);
+        }
+        if (maxResults > 0) {
+            opts.setMaxResults(maxResults);
         }
     };
 
@@ -273,6 +282,16 @@ void SemanticSearcher::setDetailedResultsEnabled(bool enable)
 bool SemanticSearcher::isDetailedResultsEnabled() const
 {
     return d_ptr->detailedResultsEnabled;
+}
+
+void SemanticSearcher::setMaxResults(int count)
+{
+    d_ptr->maxResults = count;
+}
+
+int SemanticSearcher::maxResults() const
+{
+    return d_ptr->maxResults;
 }
 
 SearchResultExpected SemanticSearcher::searchSync(const QString &naturalLanguage)

@@ -228,6 +228,13 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
                 config.maxPreviewLength = previewLength;
             }
         }
+        if (m_parser.isSet(m_maxResultsOption)) {
+            bool ok;
+            int maxResults = m_parser.value(m_maxResultsOption).toInt(&ok);
+            if (ok && maxResults >= 0) {
+                config.maxResults = maxResults;
+            }
+        }
         return true;
     }
 
