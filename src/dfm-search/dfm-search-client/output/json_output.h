@@ -7,9 +7,11 @@
 
 #include "output_formatter.h"
 #include <dfm-search/searchoptions.h>
+#include <dfm-search/semantic_types.h>
 
 #include <QJsonArray>
 #include <QDateTime>
+#include <optional>
 
 namespace dfmsearch {
 
@@ -41,6 +43,13 @@ public:
     void setSearchOptions(const SearchOptions &options) { m_options = options; }
 
     /**
+     * @brief 设置语义搜索解析的 ParsedIntent
+     *
+     * 在 searchType 为 Semantic 时，intent 信息会序列化到 JSON 输出中
+     */
+    void setParsedIntent(const DFMSEARCH::ParsedIntent &intent) { m_parsedIntent = intent; }
+
+    /**
      * @brief 设置是否启用详细输出模式
      * @param verbose true 启用详细输出
      */
@@ -49,6 +58,9 @@ public:
 private:
     QJsonValue resultToJson(const SearchResult &result);
     void printJsonLine(const QJsonObject &obj);
+
+    // Intent 序列化辅助
+    QJsonObject intentToJson(const DFMSEARCH::ParsedIntent &intent);
 
     // 流式输出方法
     void outputStreamingStart();
@@ -69,6 +81,7 @@ private:
     bool m_streaming;
     bool m_verbose = false;
     QJsonArray m_collectedResults;
+    std::optional<DFMSEARCH::ParsedIntent> m_parsedIntent;
 };
 
 }   // namespace dfmsearch

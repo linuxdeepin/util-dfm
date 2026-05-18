@@ -10,6 +10,7 @@
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search/searcherror.h>
 #include <dfm-search/searchresult.h>
+#include <dfm-search/semantic_types.h>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -72,6 +73,18 @@ public:
     void search(const QString &naturalLanguage);
 
     /**
+     * @brief Perform a semantic search with explicit search directories
+     *
+     * When @p searchDirectories is non-empty, those directories take priority
+     * over any directories resolved from the natural language input.
+     * If empty, falls back to NLP-parsed directories, then home directory.
+     *
+     * @param naturalLanguage The natural language query string
+     * @param searchDirectories Explicit directories to search in
+     */
+    void search(const QString &naturalLanguage, const QStringList &searchDirectories);
+
+    /**
      * @brief Check if the input contains semantic intent beyond a plain keyword.
      *
      * Returns true if parsing the input reveals time constraints, size constraints,
@@ -96,6 +109,14 @@ public:
     SearchResultExpected searchSync(const QString &naturalLanguage);
 
     /**
+     * @brief Perform a synchronous semantic search with explicit directories
+     * @param naturalLanguage The natural language query string
+     * @param searchDirectories Explicit directories to search in
+     * @return SearchResultExpected containing deduplicated results or an error
+     */
+    SearchResultExpected searchSync(const QString &naturalLanguage, const QStringList &searchDirectories);
+
+    /**
      * @brief Cancel the current search operation
      */
     void cancel();
@@ -117,6 +138,16 @@ public:
     bool isDetailedResultsEnabled() const;
 
 Q_SIGNALS:
+    /**
+     * @brief Emitted after the natural language input is parsed into an intent
+     *
+     * This fires before searchStarted(), allowing callers to inspect
+     * what the NLP parser understood from the input.
+     *
+     * @param intent The parsed intent structure
+     */
+    void intentParsed(const DFMSEARCH::ParsedIntent &intent);
+
     /**
      * @brief Emitted when a search operation starts
      */

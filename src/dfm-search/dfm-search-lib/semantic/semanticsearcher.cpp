@@ -40,7 +40,7 @@ SemanticSearcherData::~SemanticSearcherData()
     doCancel();
 }
 
-void SemanticSearcherData::doSearch(const QString &naturalLanguage)
+void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStringList &searchDirectories)
 {
     if (naturalLanguage.trimmed().isEmpty()) {
         Q_EMIT q->errorOccurred(SearchError(SearchErrorCode::InvalidQuery));
@@ -53,19 +53,28 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage)
     seenPaths.clear();
     status.store(SearchStatus::Searching);
     Q_EMIT q->statusChanged(SearchStatus::Searching);
-    Q_EMIT q->searchStarted();
 
-    // Step 2: Parse natural language into intent
+    // Step 2: Parse natural language into intent (before searchStarted
+    // so that intentParsed listeners have the data when searchStarted fires)
     ParsedIntent intent;
     intentParser->parse(naturalLanguage, intent);
+    Q_EMIT q->intentParsed(intent);
+
+    Q_EMIT q->searchStarted();
 
     // Step 3: Build search plan
     const SemanticSearchPlan plan = queryBuilder->build(intent);
 
     // Step 4: Determine search directories
-    QStringList dirs = plan.searchDirectories.isEmpty()
-            ? QStringList { QDir::homePath() }
-            : plan.searchDirectories;
+    // Priority: caller-specified directories > NLP-parsed directories > home directory
+    QStringList dirs;
+    if (!searchDirectories.isEmpty()) {
+        dirs = searchDirectories;
+    } else if (!plan.searchDirectories.isEmpty()) {
+        dirs = plan.searchDirectories;
+    } else {
+        dirs = QStringList { QDir::homePath() };
+    }
 
     // Step 5: Set up signal/slot handlers
     auto onFinished = [this](const SearchResultList &results) {
@@ -223,7 +232,17 @@ void SemanticSearcher::search(const QString &naturalLanguage)
         return;
     }
 
-    d_ptr->doSearch(naturalLanguage);
+    d_ptr->doSearch(naturalLanguage, {});
+}
+
+void SemanticSearcher::search(const QString &naturalLanguage, const QStringList &searchDirectories)
+{
+    if (d_ptr->status.load() == SearchStatus::Searching) {
+        qWarning() << "Search already in progress";
+        return;
+    }
+
+    d_ptr->doSearch(naturalLanguage, searchDirectories);
 }
 
 bool SemanticSearcher::isSemanticQuery(const QString &input) const
@@ -257,6 +276,11 @@ bool SemanticSearcher::isDetailedResultsEnabled() const
 }
 
 SearchResultExpected SemanticSearcher::searchSync(const QString &naturalLanguage)
+{
+    return searchSync(naturalLanguage, {});
+}
+
+SearchResultExpected SemanticSearcher::searchSync(const QString &naturalLanguage, const QStringList &searchDirectories)
 {
     if (d_ptr->status.load() == SearchStatus::Searching) {
         qWarning() << "Search already in progress";
@@ -306,7 +330,7 @@ SearchResultExpected SemanticSearcher::searchSync(const QString &naturalLanguage
                      });
 
     // Start the async search (uses internal timeout mechanism)
-    d_ptr->doSearch(naturalLanguage);
+    d_ptr->doSearch(naturalLanguage, searchDirectories);
 
     // Block until completion, cancellation, or error
     eventLoop.exec();

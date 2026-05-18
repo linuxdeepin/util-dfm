@@ -29,7 +29,7 @@ public:
     explicit SemanticSearcherData(SemanticSearcher *q);
     ~SemanticSearcherData();
 
-    void doSearch(const QString &naturalLanguage);
+    void doSearch(const QString &naturalLanguage, const QStringList &searchDirectories);
     void doCancel();
 
     /**
