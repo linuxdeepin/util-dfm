@@ -76,6 +76,7 @@ public:
 
     // Options forwarded from caller
     bool detailedResultsEnabled = false;
+    int maxResults = 0;   // 0 = unlimited
 };
 
 DFM_SEARCH_END_NS

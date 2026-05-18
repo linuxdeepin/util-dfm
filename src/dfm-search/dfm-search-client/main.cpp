@@ -166,6 +166,9 @@ int main(int argc, char *argv[])
     if (config.semanticMode) {
         auto *semanticSearcher = new DFMSEARCH::SemanticSearcher(&app);
         semanticSearcher->setDetailedResultsEnabled(config.verbose);
+        if (config.maxResults > 0) {
+            semanticSearcher->setMaxResults(config.maxResults);
+        }
 
         OutputFormatter *formatter = createOutputFormatter(config, &app);
 

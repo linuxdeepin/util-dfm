@@ -137,6 +137,23 @@ public:
      */
     bool isDetailedResultsEnabled() const;
 
+    /**
+     * @brief Set the maximum number of results to return
+     *
+     * Each sub-engine (FileName, Content, OCR) will be limited to this count.
+     * After all engines finish, results are deduplicated and truncated
+     * to this count.
+     *
+     * @param count Maximum result count (0 = unlimited, default 0)
+     */
+    void setMaxResults(int count);
+
+    /**
+     * @brief Get the maximum number of results
+     * @return Maximum result count (0 = unlimited)
+     */
+    int maxResults() const;
+
 Q_SIGNALS:
     /**
      * @brief Emitted after the natural language input is parsed into an intent
