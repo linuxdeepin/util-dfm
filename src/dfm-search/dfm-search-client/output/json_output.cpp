@@ -22,6 +22,125 @@ void JsonOutput::setSearchContext(const QString &keyword, const QString &searchP
     m_searchMethod = searchMethod;
 }
 
+QJsonObject JsonOutput::intentToJson(const DFMSEARCH::ParsedIntent &intent)
+{
+    QJsonObject obj;
+
+    // timeConstraint
+    if (intent.timeConstraint.isValid()) {
+        QJsonObject time;
+        QString kindStr;
+        switch (intent.timeConstraint.kind) {
+        case DFMSEARCH::TimeConstraintKind::Preset:
+            kindStr = "preset";
+            {
+                QString presetStr;
+                switch (intent.timeConstraint.preset) {
+                case DFMSEARCH::TimePreset::Today: presetStr = "today"; break;
+                case DFMSEARCH::TimePreset::Yesterday: presetStr = "yesterday"; break;
+                case DFMSEARCH::TimePreset::DayBeforeYesterday: presetStr = "dayBeforeYesterday"; break;
+                case DFMSEARCH::TimePreset::ThisWeek: presetStr = "thisWeek"; break;
+                case DFMSEARCH::TimePreset::LastWeek: presetStr = "lastWeek"; break;
+                case DFMSEARCH::TimePreset::ThisMonth: presetStr = "thisMonth"; break;
+                case DFMSEARCH::TimePreset::LastMonth: presetStr = "lastMonth"; break;
+                case DFMSEARCH::TimePreset::ThisYear: presetStr = "thisYear"; break;
+                case DFMSEARCH::TimePreset::LastYear: presetStr = "lastYear"; break;
+                }
+                time["preset"] = presetStr;
+            }
+            break;
+        case DFMSEARCH::TimeConstraintKind::Relative:
+            kindStr = "relative";
+            time["value"] = intent.timeConstraint.relativeValue;
+            {
+                QString unitStr;
+                switch (intent.timeConstraint.relativeUnit) {
+                case DFMSEARCH::TimeUnit::Minutes: unitStr = "minutes"; break;
+                case DFMSEARCH::TimeUnit::Hours: unitStr = "hours"; break;
+                case DFMSEARCH::TimeUnit::Days: unitStr = "days"; break;
+                case DFMSEARCH::TimeUnit::Weeks: unitStr = "weeks"; break;
+                case DFMSEARCH::TimeUnit::Months: unitStr = "months"; break;
+                case DFMSEARCH::TimeUnit::Years: unitStr = "years"; break;
+                }
+                time["unit"] = unitStr;
+            }
+            break;
+        case DFMSEARCH::TimeConstraintKind::Custom:
+            kindStr = "custom";
+            if (intent.timeConstraint.customStart.isValid())
+                time["start"] = intent.timeConstraint.customStart.toString(Qt::ISODate);
+            if (intent.timeConstraint.customEnd.isValid())
+                time["end"] = intent.timeConstraint.customEnd.toString(Qt::ISODate);
+            break;
+        case DFMSEARCH::TimeConstraintKind::None:
+            break;
+        }
+        time["kind"] = kindStr;
+
+        if (intent.timeConstraint.timeField != DFMSEARCH::TimeField::Unspecified) {
+            QString fieldStr;
+            switch (intent.timeConstraint.timeField) {
+            case DFMSEARCH::TimeField::ModifyTime: fieldStr = "modifyTime"; break;
+            case DFMSEARCH::TimeField::BirthTime: fieldStr = "birthTime"; break;
+            case DFMSEARCH::TimeField::Both: fieldStr = "both"; break;
+            default: fieldStr = "unspecified"; break;
+            }
+            time["timeField"] = fieldStr;
+        }
+
+        obj["timeConstraint"] = time;
+    }
+
+    // sizeConstraint
+    if (intent.sizeConstraint.isValid()) {
+        QJsonObject size;
+        if (intent.sizeConstraint.minSize > 0)
+            size["minBytes"] = intent.sizeConstraint.minSize;
+        if (intent.sizeConstraint.maxSize > 0)
+            size["maxBytes"] = intent.sizeConstraint.maxSize;
+        size["includeLower"] = intent.sizeConstraint.includeLower;
+        size["includeUpper"] = intent.sizeConstraint.includeUpper;
+        obj["sizeConstraint"] = size;
+    }
+
+    // fileExtensions
+    if (!intent.fileExtensions.isEmpty()) {
+        obj["fileExtensions"] = QJsonArray::fromStringList(intent.fileExtensions);
+    }
+
+    // searchDirectories (NLP-parsed, before caller override is applied)
+    if (!intent.searchDirectories.isEmpty()) {
+        obj["searchDirectories"] = QJsonArray::fromStringList(intent.searchDirectories);
+    }
+
+    // keywords
+    if (!intent.keywords.isEmpty()) {
+        obj["keywords"] = QJsonArray::fromStringList(intent.keywords);
+    }
+
+    // includeHidden
+    obj["includeHidden"] = intent.includeHidden;
+
+    // consumedSpans
+    if (!intent.consumedSpans.isEmpty()) {
+        QJsonArray spans;
+        for (const auto &span : intent.consumedSpans) {
+            if (span.isValid()) {
+                QJsonObject s;
+                s["start"] = span.start;
+                s["end"] = span.end;
+                s["ruleId"] = span.ruleId;
+                spans.append(s);
+            }
+        }
+        if (!spans.isEmpty()) {
+            obj["consumedSpans"] = spans;
+        }
+    }
+
+    return obj;
+}
+
 QJsonValue JsonOutput::resultToJson(const SearchResult &result)
 {
     // 如果不启用详细结果，只返回路径
@@ -260,6 +379,11 @@ void JsonOutput::outputStreamingStart()
         searchInfo["sizeRangeFilter"] = sizeFilterInfo;
     }
 
+    // 语义搜索：附加 ParsedIntent
+    if (m_searchType == SearchType::Semantic && m_parsedIntent.has_value()) {
+        searchInfo["intent"] = intentToJson(*m_parsedIntent);
+    }
+
     startObj["search"] = searchInfo;
     startObj["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
@@ -369,6 +493,11 @@ void JsonOutput::outputCompleteResult(const QList<SearchResult> &results)
         sizeFilterInfo["includeLower"] = sizeFilter.includeLower();
         sizeFilterInfo["includeUpper"] = sizeFilter.includeUpper();
         searchInfo["sizeRangeFilter"] = sizeFilterInfo;
+    }
+
+    // 语义搜索：附加 ParsedIntent
+    if (m_searchType == SearchType::Semantic && m_parsedIntent.has_value()) {
+        searchInfo["intent"] = intentToJson(*m_parsedIntent);
     }
 
     root["search"] = searchInfo;

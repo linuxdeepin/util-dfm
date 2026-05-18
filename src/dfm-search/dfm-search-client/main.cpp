@@ -189,6 +189,12 @@ int main(int argc, char *argv[])
                                     SearchType::Semantic, SearchMethod::Indexed);
 
         QObject::connect(formatter, &OutputFormatter::finished, &app, &QCoreApplication::quit);
+        QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::intentParsed,
+                         [formatter](const DFMSEARCH::ParsedIntent &intent) {
+                             if (auto *jsonOut = qobject_cast<JsonOutput *>(formatter)) {
+                                 jsonOut->setParsedIntent(intent);
+                             }
+                         });
         QObject::connect(semanticSearcher, &DFMSEARCH::SemanticSearcher::searchStarted, [formatter]() {
             formatter->outputSearchStarted();
         });
@@ -202,7 +208,11 @@ int main(int argc, char *argv[])
             formatter->outputError(error);
         });
 
-        semanticSearcher->search(config.keyword);
+        QStringList semanticDirs;
+        if (!config.searchPath.isEmpty()) {
+            semanticDirs = QStringList { config.searchPath };
+        }
+        semanticSearcher->search(config.keyword, semanticDirs);
         return app.exec();
     }
 
