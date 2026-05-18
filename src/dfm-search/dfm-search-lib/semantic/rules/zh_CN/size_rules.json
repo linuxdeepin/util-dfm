@@ -32,6 +32,30 @@
                     }
                 },
                 {
+                    "id": "size_dynamic_min_suffix",
+                    "pattern": "(?<value>\\d+(?:\\.\\d+)?)\\s*(?<unit>[KkMmGg][Bb]?|兆|字节|千|万)\\s*以上",
+                    "description": "Dynamic size min with suffix only (e.g. 10M以上, 1G以上, 500K以上)",
+                    "enabled": true,
+                    "priority": 160,
+                    "metadata": {
+                        "type": "dynamic",
+                        "direction": "min",
+                        "unit_map": {"兆": "M", "字节": "B", "千": "K", "万": "K"}
+                    }
+                },
+                {
+                    "id": "size_dynamic_max_suffix",
+                    "pattern": "(?<value>\\d+(?:\\.\\d+)?)\\s*(?<unit>[KkMmGg][Bb]?|兆|字节|千|万)\\s*(?:以内|以下)",
+                    "description": "Dynamic size max with suffix only (e.g. 10M以内, 1G以下, 500K以内)",
+                    "enabled": true,
+                    "priority": 160,
+                    "metadata": {
+                        "type": "dynamic",
+                        "direction": "max",
+                        "unit_map": {"兆": "M", "字节": "B", "千": "K", "万": "K"}
+                    }
+                },
+                {
                     "id": "size_dynamic",
                     "pattern": "(大于|超过|最少|至少|>)\\s*(?<value>\\d+(?:\\.\\d+)?)\\s*(?<unit>[KkMmGg][Bb]?|兆|字节|千|万)?以?[上内]?",
                     "description": "Dynamic precise size min (e.g. 大于500M, 1G以上, 大于100兆)",
