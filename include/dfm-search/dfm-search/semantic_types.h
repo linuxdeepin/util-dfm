@@ -81,6 +81,18 @@ struct SizeConstraint
 };
 
 /**
+ * @brief Represents the target scope for a semantic search.
+ *
+ * When a user explicitly specifies where to search (e.g. "文件名包含XX"
+ * vs "文件内容包含XX"), this enum controls which search paths are enabled.
+ */
+enum class SearchTarget {
+    All,          ///< All search paths enabled (default)
+    FileNameOnly, ///< Only filename search
+    ContentOnly   ///< Only content + OCR search
+};
+
+/**
  * @brief Represents the parsed intent from natural language input.
  *
  * This is the intermediate representation between NLP parsing
@@ -95,6 +107,7 @@ struct ParsedIntent
     QStringList searchDirectories;   // Absolute paths resolved from location words
     bool includeHidden = false;      // true for trash (hidden directory)
     QStringList keywords;
+    SearchTarget searchTarget = SearchTarget::All;
     QList<MatchSpan> consumedSpans;
 };
 

@@ -15,6 +15,7 @@
                     "metadata": {
                         "capture_group": 1,
                         "multi_keyword": true,
+                        "search_target": "all",
                         "cleanup_pattern": "[\\s。、\u201c\u201d\uff0c\u3001\u7684\u4e86\u8981\u554a]+",
                         "split_pattern": "[\u548c\u4e0e\u4ee5\u53ca\u6216\u3001]+"
                     }
@@ -28,6 +29,7 @@
                     "metadata": {
                         "capture_group": 1,
                         "multi_keyword": false,
+                        "search_target": "filename",
                         "cleanup_pattern": "[\\s。、\u201c\u201d\uff0c\u3001\u7684\u4e86\u8981\u554a]+",
                         "split_pattern": "[\u548c\u4e0e\u4ee5\u53ca\u6216\u3001]+"
                     }
@@ -37,10 +39,25 @@
                     "pattern": "内容(?:包含|含有|带有)(.+?)(?:的|$)",
                     "description": "Content contains keyword pattern",
                     "enabled": true,
-                    "priority": 200,
+                    "priority": 210,
                     "metadata": {
                         "capture_group": 1,
                         "multi_keyword": true,
+                        "search_target": "content",
+                        "cleanup_pattern": "[\\s。、\u201c\u201d\uff0c\u3001\u7684\u4e86\u8981\u554a]+",
+                        "split_pattern": "[\u548c\u4e0e\u4ee5\u53ca\u6216\u3001]+"
+                    }
+                },
+                {
+                    "id": "keyword_filename_has",
+                    "pattern": "文件名(?:包含|含有|带有|是|为)(.+?)(?:的|$)",
+                    "description": "Filename contains keyword pattern",
+                    "enabled": true,
+                    "priority": 210,
+                    "metadata": {
+                        "capture_group": 1,
+                        "multi_keyword": true,
+                        "search_target": "filename",
                         "cleanup_pattern": "[\\s。、\u201c\u201d\uff0c\u3001\u7684\u4e86\u8981\u554a]+",
                         "split_pattern": "[\u548c\u4e0e\u4ee5\u53ca\u6216\u3001]+"
                     }

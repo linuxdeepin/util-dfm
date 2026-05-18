@@ -60,6 +60,15 @@ bool KeywordExtractor::extractStructuredKeywords(const QString &input, ParsedInt
         intent.keywords = { captured };
     }
 
+    // Determine search target from rule metadata
+    const QString targetStr = metadata.value("search_target").toString();
+    if (targetStr == "filename") {
+        intent.searchTarget = SearchTarget::FileNameOnly;
+    } else if (targetStr == "content") {
+        intent.searchTarget = SearchTarget::ContentOnly;
+    }
+    // "all" or empty → keep default SearchTarget::All
+
     // Mark the entire matched region as consumed
     MatchSpan span;
     span.start = match.capturedStart();

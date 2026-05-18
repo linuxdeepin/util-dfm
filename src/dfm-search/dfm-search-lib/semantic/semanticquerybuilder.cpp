@@ -39,8 +39,15 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
     SearchOptions baseOpts = buildBaseOptions(intent.timeConstraint, intent.sizeConstraint);
     baseOpts.setSearchMethod(SearchMethod::Indexed);
 
-    // --- File name search (always enabled) ---
-    {
+    // Determine which search paths to enable based on user intent
+    const bool enableFileName = (intent.searchTarget == SearchTarget::All
+                              || intent.searchTarget == SearchTarget::FileNameOnly);
+    const bool enableContent = (intent.searchTarget == SearchTarget::All
+                             || intent.searchTarget == SearchTarget::ContentOnly);
+    const bool enableOcr = enableContent;   // OCR is a content search path
+
+    // --- File name search ---
+    if (enableFileName) {
         SearchOptions opts = baseOpts;
         FileNameOptionsAPI fnameApi(opts);
 
@@ -60,8 +67,8 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
         plan.fileNameOptions = opts;
     }
 
-    // --- Content search (when keywords available) ---
-    {
+    // --- Content search (when keywords available and content target enabled) ---
+    if (enableContent) {
         const bool hasKeywords = !intent.keywords.isEmpty();
         bool contentEnabled = hasKeywords;
 
@@ -102,8 +109,8 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
         }
     }
 
-    // --- OCR search (when keywords available) ---
-    {
+    // --- OCR search (when keywords available and content target enabled) ---
+    if (enableOcr) {
         const bool hasKeywords = !intent.keywords.isEmpty();
         bool ocrEnabled = hasKeywords;
 
