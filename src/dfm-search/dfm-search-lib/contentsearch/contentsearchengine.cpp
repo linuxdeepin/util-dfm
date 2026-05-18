@@ -42,7 +42,7 @@ SearchError ContentSearchEngine::validateSearchConditions()
     }
 
     if (m_currentQuery.type() == SearchQuery::Type::Simple
-        && m_currentQuery.keyword().toUtf8().size() < Global::kMinContentSearchKeywordLength
+        && m_currentQuery.keyword().size() < Global::kMinContentSearchKeywordLength
         && api.filenameKeyword().isEmpty()) {
         return SearchError(ContentSearchErrorCode::KeywordTooShort);
     }

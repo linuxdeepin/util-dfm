@@ -12,20 +12,20 @@ namespace Lucene {
 class NGramAnalyzer : public Analyzer
 {
 public:
-    explicit NGramAnalyzer(int32_t minGram = 2, int32_t maxGram = 4);
+    explicit NGramAnalyzer(int32_t minGram, int32_t maxGram);
     virtual ~NGramAnalyzer();
 
     LUCENE_CLASS(NGramAnalyzer);
 
 public:
-    virtual TokenStreamPtr tokenStream(const String& fieldName, const ReaderPtr& reader);
-    virtual TokenStreamPtr reusableTokenStream(const String& fieldName, const ReaderPtr& reader);
+    virtual TokenStreamPtr tokenStream(const String &fieldName, const ReaderPtr &reader);
+    virtual TokenStreamPtr reusableTokenStream(const String &fieldName, const ReaderPtr &reader);
 
 private:
     int32_t m_minGram;
     int32_t m_maxGram;
 };
 
-} // namespace Lucene
+}   // namespace Lucene
 
-#endif // NGRAMANALYZER_H
+#endif   // NGRAMANALYZER_H
