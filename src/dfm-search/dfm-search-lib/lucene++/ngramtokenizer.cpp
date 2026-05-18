@@ -4,6 +4,8 @@
 
 #include <dfm-search/lucene++/ngramtokenizer.h>
 
+#include <algorithm>
+
 #include <TermAttribute.h>
 #include <OffsetAttribute.h>
 #include <PositionIncrementAttribute.h>
@@ -13,18 +15,23 @@
 
 namespace Lucene {
 
-const int32_t NGramTokenizer::kMaxWordLen;
 const int32_t NGramTokenizer::kIoBufferSize;
 
 NGramTokenizer::NGramTokenizer(const ReaderPtr &input, int32_t minGram, int32_t maxGram)
-    : Tokenizer(input), m_minGram(minGram), m_maxGram(maxGram), m_isFirstTokenAtPosition(true)
+    : Tokenizer(input),
+      m_minGram(std::min(minGram, maxGram)),
+      m_maxGram(std::max(minGram, maxGram)),
+      m_isFirstTokenAtPosition(true)
 {
     init();
 }
 
 NGramTokenizer::NGramTokenizer(const AttributeFactoryPtr &factory, const ReaderPtr &input,
                                int32_t minGram, int32_t maxGram)
-    : Tokenizer(factory, input), m_minGram(minGram), m_maxGram(maxGram), m_isFirstTokenAtPosition(true)
+    : Tokenizer(factory, input),
+      m_minGram(std::min(minGram, maxGram)),
+      m_maxGram(std::max(minGram, maxGram)),
+      m_isFirstTokenAtPosition(true)
 {
     init();
 }

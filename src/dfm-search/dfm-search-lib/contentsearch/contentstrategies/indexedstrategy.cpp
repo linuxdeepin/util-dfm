@@ -18,8 +18,8 @@
 
 #include <dfm-search/field_names.h>
 #include <dfm-search/timerangefilter.h>
+#include <dfm-search/lucene++/ngramanalyzer.h>
 
-#include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/cancellablecollector.h"
 #include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
@@ -496,7 +496,7 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
         IndexSearcherPtr searcher = newLucene<IndexSearcher>(reader);
 
         // 创建分析器
-        AnalyzerPtr analyzer = newLucene<ChineseAnalyzer>();
+        AnalyzerPtr analyzer = newLucene<NGramAnalyzer>(2, 2);
 
         // 构建查询
         m_currentQuery = buildLuceneQuery(query, analyzer, m_options.searchPath());

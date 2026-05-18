@@ -23,6 +23,8 @@ public:
 public:
     virtual bool incrementToken();
     virtual void end();
+
+    using Tokenizer::reset;
     virtual void reset();
 
 private:
@@ -32,7 +34,6 @@ private:
     int32_t m_minGram;
     int32_t m_maxGram;
 
-    static const int32_t kMaxWordLen = 256;
     static const int32_t kIoBufferSize = 1024;
 
     CharArray m_ioBuffer;
