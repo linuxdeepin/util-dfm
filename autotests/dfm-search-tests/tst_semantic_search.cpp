@@ -853,6 +853,8 @@ void tst_IsSemanticQuery::sizeDynamic()
 {
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "大于500M的文件"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "小于100K"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "10M以上的表格"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "1G以内的文档"));
 }
 
 void tst_IsSemanticQuery::timeAndFileType()

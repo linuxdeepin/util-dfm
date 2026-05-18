@@ -110,6 +110,10 @@ private Q_SLOTS:
     void size_combined_withTime();
     void size_combined_withType();
     void size_combined_full();
+    void size_suffix_min();
+    void size_suffix_max();
+    void size_suffix_combined();
+    void size_suffix_chineseUnits();
 
     // Relative time tests
     void timeRelative_justNow();
@@ -121,6 +125,15 @@ private Q_SLOTS:
     void timeRelative_aWhileAgo();
     void timeRelative_aWhileAgo_synonyms();
     void timeRelative_priority_vs_preset();
+
+    // Dynamic relative time tests
+    void timeDynamic_recent_days();
+    void timeDynamic_recent_hours();
+    void timeDynamic_recent_weeks();
+    void timeDynamic_recent_months();
+    void timeDynamic_combined_noKeyword();
+    void timeDynamic_combined_withType();
+    void timeDynamic_chineseNumerals();
 
     // Action behavior tests
     void action_create_birthTime();
@@ -1208,6 +1221,80 @@ void tst_ChineseNLP::size_combined_full()
     QVERIFY(intent.fileExtensions.contains("mp4"));
 }
 
+void tst_ChineseNLP::size_suffix_min()
+{
+    // Suffix-only min: "10M以上" without prefix keyword
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("10M以上的文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 10485760LL);   // 10MB
+    QCOMPARE(intent.sizeConstraint.maxSize, 0LL);
+
+    // "1G以上" — GB unit
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("1G以上的图片"), intent2);
+    QVERIFY(intent2.sizeConstraint.isValid());
+    QCOMPARE(intent2.sizeConstraint.minSize, 1073741824LL);   // 1GB
+
+    // "500K以上" — KB unit
+    ParsedIntent intent3;
+    m_parser->parse(QStringLiteral("500K以上的文档"), intent3);
+    QVERIFY(intent3.sizeConstraint.isValid());
+    QCOMPARE(intent3.sizeConstraint.minSize, 512000LL);   // 500KB
+}
+
+void tst_ChineseNLP::size_suffix_max()
+{
+    // Suffix-only max: "10M以内"
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("10M以内的文档"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 0LL);
+    QCOMPARE(intent.sizeConstraint.maxSize, 10485760LL);   // 10MB
+
+    // "1G以下" — "以下" variant
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("1G以下的视频"), intent2);
+    QVERIFY(intent2.sizeConstraint.isValid());
+    QCOMPARE(intent2.sizeConstraint.maxSize, 1073741824LL);   // 1GB
+}
+
+void tst_ChineseNLP::size_suffix_combined()
+{
+    // The originally reported bug: "10M以上的表格"
+    // Should parse both size constraint and filetype
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("10M以上的表格"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 10485760LL);   // 10MB
+    QVERIFY(intent.fileExtensions.contains("xls"));
+    QVERIFY(intent.fileExtensions.contains("xlsx"));
+    QVERIFY(intent.fileExtensions.contains("csv"));
+
+    // "5G以内的压缩包" — size + filetype
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("5G以内的压缩包"), intent2);
+    QVERIFY(intent2.sizeConstraint.isValid());
+    QCOMPARE(intent2.sizeConstraint.maxSize, 5368709120LL);   // 5GB
+    QVERIFY(intent2.fileExtensions.contains("zip"));
+    QVERIFY(intent2.fileExtensions.contains("rar"));
+}
+
+void tst_ChineseNLP::size_suffix_chineseUnits()
+{
+    // Chinese unit names with suffix: "100兆以上"
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("100兆以上的文件"), intent);
+    QVERIFY(intent.sizeConstraint.isValid());
+    QCOMPARE(intent.sizeConstraint.minSize, 104857600LL);   // 100MB
+
+    // "50千以内"
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("50千以内的图片"), intent2);
+    QVERIFY(intent2.sizeConstraint.isValid());
+    QCOMPARE(intent2.sizeConstraint.maxSize, 51200LL);   // 50KB
+}
+
 // ===== Relative Time Tests =====
 
 void tst_ChineseNLP::timeRelative_justNow()
@@ -1310,6 +1397,185 @@ void tst_ChineseNLP::timeRelative_priority_vs_preset()
     m_parser->parse(QStringLiteral("今天之前的文档"), intent);
     QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
     QCOMPARE(intent.timeConstraint.preset, TimePreset::Today);
+}
+
+// ===== Dynamic Relative Time Tests =====
+
+void tst_ChineseNLP::timeDynamic_recent_days()
+{
+    // "最近3天" — dynamic relative, should consume all 4 chars
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("最近3天"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent.timeConstraint.relativeValue, 3);
+    QCOMPARE(intent.timeConstraint.relativeUnit, TimeUnit::Days);
+    // Verify time range: ~3 days ago to now
+    const qint64 startDelta = qAbs(intent.timeConstraint.customStart.secsTo(QDateTime::currentDateTime()));
+    QVERIFY2(startDelta >= 259000 && startDelta <= 259300, "Start should be ~3 days ago");
+
+    // "近3天" — shorter variant
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("近3天的图片"), intent2);
+    QCOMPARE(intent2.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent2.timeConstraint.relativeValue, 3);
+    QCOMPARE(intent2.timeConstraint.relativeUnit, TimeUnit::Days);
+    QVERIFY(intent2.fileExtensions.contains("jpg"));
+
+    // "过去7天" — variant
+    ParsedIntent intent3;
+    m_parser->parse(QStringLiteral("过去7天"), intent3);
+    QCOMPARE(intent3.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent3.timeConstraint.relativeValue, 7);
+
+    // "前3天" — variant
+    ParsedIntent intent4;
+    m_parser->parse(QStringLiteral("前3天的文档"), intent4);
+    QCOMPARE(intent4.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent4.timeConstraint.relativeValue, 3);
+}
+
+void tst_ChineseNLP::timeDynamic_recent_hours()
+{
+    // "最近2小时" — dynamic relative hours
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("最近2小时的文件"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent.timeConstraint.relativeValue, 2);
+    QCOMPARE(intent.timeConstraint.relativeUnit, TimeUnit::Hours);
+
+    // "近1小时" — shorter variant
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("近1小时"), intent2);
+    QCOMPARE(intent2.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent2.timeConstraint.relativeValue, 1);
+}
+
+void tst_ChineseNLP::timeDynamic_recent_weeks()
+{
+    // "最近2周" — dynamic relative weeks
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("最近2周的文档"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent.timeConstraint.relativeValue, 2);
+    QCOMPARE(intent.timeConstraint.relativeUnit, TimeUnit::Weeks);
+    // ~14 days
+    const qint64 startDelta = qAbs(intent.timeConstraint.customStart.secsTo(QDateTime::currentDateTime()));
+    QVERIFY2(startDelta >= 1209000 && startDelta <= 1210000, "Start should be ~2 weeks ago");
+}
+
+void tst_ChineseNLP::timeDynamic_recent_months()
+{
+    // "最近3个月" — dynamic relative months
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("最近3个月的图片"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent.timeConstraint.relativeValue, 3);
+    QCOMPARE(intent.timeConstraint.relativeUnit, TimeUnit::Months);
+    QVERIFY(intent.fileExtensions.contains("jpg"));
+
+    // "近1月" — shorter variant without "个"
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("近1月的文档"), intent2);
+    QCOMPARE(intent2.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent2.timeConstraint.relativeValue, 1);
+}
+
+void tst_ChineseNLP::timeDynamic_combined_noKeyword()
+{
+    // The originally reported bug: "最近3天的表格"
+    // Should parse as: time(recent 3 days) + filetype(spreadsheet) — NO keyword
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("最近3天的表格"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent.timeConstraint.relativeValue, 3);
+    QCOMPARE(intent.timeConstraint.relativeUnit, TimeUnit::Days);
+    // Filetype should be matched
+    QVERIFY(intent.fileExtensions.contains("xls"));
+    QVERIFY(intent.fileExtensions.contains("xlsx"));
+    QVERIFY(intent.fileExtensions.contains("csv"));
+    // No keywords — "3天" is consumed as part of the time expression
+    QVERIFY2(intent.keywords.isEmpty(),
+             qPrintable(QStringLiteral("Expected no keywords, got: ") + intent.keywords.join(",")));
+
+    // "过去7天的文档" — same pattern
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("过去7天的文档"), intent2);
+    QCOMPARE(intent2.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent2.timeConstraint.relativeValue, 7);
+    QVERIFY(!intent2.fileExtensions.isEmpty());
+    QVERIFY2(intent2.keywords.isEmpty(),
+             qPrintable(QStringLiteral("Expected no keywords, got: ") + intent2.keywords.join(",")));
+}
+
+void tst_ChineseNLP::timeDynamic_combined_withType()
+{
+    // "最近3天的图片和视频" — time + multiple filetypes, no keyword
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("最近3天的图片和视频"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent.timeConstraint.relativeValue, 3);
+    QVERIFY(intent.fileExtensions.contains("jpg"));
+    QVERIFY(intent.fileExtensions.contains("mp4"));
+    QVERIFY2(intent.keywords.isEmpty(),
+             qPrintable(QStringLiteral("Expected no keywords, got: ") + intent.keywords.join(",")));
+
+    // "近2个月的压缩包" — time + filetype
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("近2个月的压缩包"), intent2);
+    QCOMPARE(intent2.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent2.timeConstraint.relativeValue, 2);
+    QCOMPARE(intent2.timeConstraint.relativeUnit, TimeUnit::Months);
+    QVERIFY(intent2.fileExtensions.contains("zip"));
+    QVERIFY2(intent2.keywords.isEmpty(),
+             qPrintable(QStringLiteral("Expected no keywords, got: ") + intent2.keywords.join(",")));
+}
+
+void tst_ChineseNLP::timeDynamic_chineseNumerals()
+{
+    // "最近一周的图片" — 一 = 1
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("最近一周的图片"), intent);
+    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent.timeConstraint.relativeValue, 1);
+    QCOMPARE(intent.timeConstraint.relativeUnit, TimeUnit::Weeks);
+    QVERIFY(intent.fileExtensions.contains("jpg"));
+    QVERIFY(intent.keywords.isEmpty());
+
+    // "最近两周的表格" — 两 = 2
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("最近两周的表格"), intent2);
+    QCOMPARE(intent2.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent2.timeConstraint.relativeValue, 2);
+    QCOMPARE(intent2.timeConstraint.relativeUnit, TimeUnit::Weeks);
+    QVERIFY(intent2.fileExtensions.contains("xls"));
+    QVERIFY(intent2.keywords.isEmpty());
+
+    // "最近三天的文档" — 三 = 3
+    ParsedIntent intent3;
+    m_parser->parse(QStringLiteral("最近三天的文档"), intent3);
+    QCOMPARE(intent3.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent3.timeConstraint.relativeValue, 3);
+    QCOMPARE(intent3.timeConstraint.relativeUnit, TimeUnit::Days);
+    QVERIFY(!intent3.fileExtensions.isEmpty());
+    QVERIFY(intent3.keywords.isEmpty());
+
+    // "近五个月的视频" — 五 = 5
+    ParsedIntent intent4;
+    m_parser->parse(QStringLiteral("近五个月的视频"), intent4);
+    QCOMPARE(intent4.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent4.timeConstraint.relativeValue, 5);
+    QCOMPARE(intent4.timeConstraint.relativeUnit, TimeUnit::Months);
+    QVERIFY(intent4.fileExtensions.contains("mp4"));
+    QVERIFY(intent4.keywords.isEmpty());
+
+    // "过去七天" — 七 = 7
+    ParsedIntent intent5;
+    m_parser->parse(QStringLiteral("过去七天"), intent5);
+    QCOMPARE(intent5.timeConstraint.kind, TimeConstraintKind::Relative);
+    QCOMPARE(intent5.timeConstraint.relativeValue, 7);
+
+    // Mixed: Arabic + Chinese should still work
+    // "最近3天" already tested above
 }
 
 // ===== Action Behavior Tests =====

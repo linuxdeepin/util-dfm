@@ -57,6 +57,8 @@ void TimeExtractor::extract(const QString &input, ParsedIntent &intent)
         parseCustomTime(match, metadata, tc);
     } else if (typeStr == "relative") {
         parseRelativeTime(metadata, tc);
+    } else if (typeStr == "relative_dynamic") {
+        parseDynamicRelativeTime(match, metadata, tc);
     }
 
     if (tc.isValid()) {
@@ -165,6 +167,82 @@ void TimeExtractor::parseRelativeTime(const QVariantMap &metadata, TimeConstrain
     } else {
         tc.customStart = now.addSecs(-agoStartSecs);
     }
+}
+
+void TimeExtractor::parseDynamicRelativeTime(const QRegularExpressionMatch &match,
+                                               const QVariantMap &metadata,
+                                               TimeConstraint &tc)
+{
+    // Load locale-aware number conversion from rule metadata
+    const QMap<QString, int> digitMap = mapFromVariant(metadata.value("digit_map"));
+    const QString tensUnit = metadata.value("tens_unit").toString();
+
+    // Extract numeric value from any of the named capture groups (value, value2, value3, value4)
+    int value = 0;
+    const QStringList captureNames = { QStringLiteral("value"), QStringLiteral("value2"),
+                                        QStringLiteral("value3"), QStringLiteral("value4") };
+    for (const QString &name : captureNames) {
+        const QString captured = match.captured(name);
+        if (!captured.isNull()) {
+            value = localeAwareToInt(captured, digitMap, tensUnit);
+            if (value > 0) {
+                break;
+            }
+            value = 0;
+        }
+    }
+
+    if (value <= 0 || value > 3650) {
+        return;
+    }
+
+    // Determine unit from metadata or capture
+    const QString unitStr = metadata.value("default_unit").toString();
+    TimeUnit unit = TimeUnit::Days;
+    if (unitStr == "hours") {
+        unit = TimeUnit::Hours;
+    } else if (unitStr == "weeks") {
+        unit = TimeUnit::Weeks;
+    } else if (unitStr == "months") {
+        unit = TimeUnit::Months;
+    }
+
+    const QDateTime now = QDateTime::currentDateTime();
+    qint64 totalSeconds = 0;
+
+    switch (unit) {
+    case TimeUnit::Minutes:
+        totalSeconds = static_cast<qint64>(value) * 60;
+        break;
+    case TimeUnit::Hours:
+        totalSeconds = static_cast<qint64>(value) * 3600;
+        break;
+    case TimeUnit::Days:
+        totalSeconds = static_cast<qint64>(value) * 86400;
+        break;
+    case TimeUnit::Weeks:
+        totalSeconds = static_cast<qint64>(value) * 7 * 86400;
+        break;
+    case TimeUnit::Months: {
+        // Approximate: use average days per month
+        const QDate startDate = now.addMonths(-value).date();
+        tc.kind = TimeConstraintKind::Relative;
+        tc.customStart = QDateTime(startDate, QTime(0, 0, 0));
+        tc.customEnd = now;
+        tc.relativeValue = value;
+        tc.relativeUnit = unit;
+        return;
+    }
+    case TimeUnit::Years:
+        totalSeconds = static_cast<qint64>(value) * 365 * 86400;
+        break;
+    }
+
+    tc.kind = TimeConstraintKind::Relative;
+    tc.customStart = now.addSecs(-totalSeconds);
+    tc.customEnd = now;
+    tc.relativeValue = value;
+    tc.relativeUnit = unit;
 }
 
 int TimeExtractor::localeAwareToInt(const QString &input,

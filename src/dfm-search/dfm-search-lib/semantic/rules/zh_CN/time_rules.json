@@ -257,6 +257,58 @@
                     }
                 },
                 {
+                    "id": "time_recent_dynamic_days",
+                    "pattern": "最?近(?<value>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?天|过去(?<value2>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?天|前(?<value3>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?天|近(?<value4>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?天",
+                    "description": "Recent N days (e.g. 最近3天, 最近三天, 近1周, 过去七天)",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "type": "relative_dynamic",
+                        "default_unit": "days",
+                        "digit_map": {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10},
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_recent_dynamic_hours",
+                    "pattern": "最?近(?<value>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?小时|过去(?<value2>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?小时|近(?<value3>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?小时|前(?<value4>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?小时",
+                    "description": "Recent N hours (e.g. 最近2小时, 最近两小时, 近一小时)",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "type": "relative_dynamic",
+                        "default_unit": "hours",
+                        "digit_map": {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10},
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_recent_dynamic_weeks",
+                    "pattern": "最?近(?<value>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?周|过去(?<value2>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?周|近(?<value3>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?周|前(?<value4>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?周",
+                    "description": "Recent N weeks (e.g. 最近2周, 最近两周, 近一周)",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "type": "relative_dynamic",
+                        "default_unit": "weeks",
+                        "digit_map": {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10},
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_recent_dynamic_months",
+                    "pattern": "最?近(?<value>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?月|过去(?<value2>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?月|近(?<value3>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?月|前(?<value4>[一二两三四五六七八九十百千万\\d]+)\\s*(?:个)?月",
+                    "description": "Recent N months (e.g. 最近3个月, 最近三个月, 近一月)",
+                    "enabled": true,
+                    "priority": 150,
+                    "metadata": {
+                        "type": "relative_dynamic",
+                        "default_unit": "months",
+                        "digit_map": {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10},
+                        "tens_unit": "十"
+                    }
+                },
+                {
                     "id": "time_past_few_days",
                     "pattern": "那些天|之前几天|前几天",
                     "description": "Past few days (3-7 days ago)",
