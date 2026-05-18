@@ -14,6 +14,8 @@
 #include "semantic/semanticruleengine.h"
 #include "semantic/intentparser.h"
 #include "semantic/ruleconfigloader.h"
+#include "semantic/extractors/keywordextractor.h"
+#include "semantic/semanticquerybuilder.h"
 
 using namespace DFMSEARCH;
 
@@ -896,6 +898,157 @@ void tst_IsSemanticQuery::noiseWordsOnly()
     QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "查找"));
 }
 
+// ===== tst_SearchTarget =====
+
+class tst_SearchTarget : public QObject
+{
+    Q_OBJECT
+
+private Q_SLOTS:
+    void initTestCase();
+    void defaultIsAll();
+    void filenameContains();
+    void filenameNamed();
+    void contentContains();
+    void genericContainsStaysAll();
+    void unconsumedTextStaysAll();
+
+private:
+    SemanticRuleEngine *m_engine = nullptr;
+    KeywordExtractor *m_extractor = nullptr;
+};
+
+void tst_SearchTarget::initTestCase()
+{
+    if (!sourceRulesAvailable()) {
+        QSKIP("Rule files not found in source tree, skipping search target tests");
+    }
+
+    m_engine = new SemanticRuleEngine(this);
+    const QString dir = sourceRulesDir();
+    const QStringList ruleFiles = QDir(dir).entryList(
+            {"*.json"}, QDir::Files, QDir::Name);
+    for (const QString &filename : ruleFiles) {
+        QString path = dir + "/" + filename;
+        if (!m_engine->loadRuleFile(path)) {
+            qWarning() << "Failed to load rule file:" << path;
+        }
+    }
+
+    m_extractor = new KeywordExtractor(m_engine);
+}
+
+void tst_SearchTarget::defaultIsAll()
+{
+    ParsedIntent intent;
+    m_extractor->extract("蓝天白云", intent);
+    QCOMPARE(intent.searchTarget, SearchTarget::All);
+}
+
+void tst_SearchTarget::filenameContains()
+{
+    ParsedIntent intent;
+    m_extractor->extract("文件名包含测试的文档", intent);
+    QCOMPARE(intent.searchTarget, SearchTarget::FileNameOnly);
+    QCOMPARE(intent.keywords.size(), 1);
+    QCOMPARE(intent.keywords.first(), QString("测试"));
+}
+
+void tst_SearchTarget::filenameNamed()
+{
+    ParsedIntent intent;
+    m_extractor->extract("名为报告的文件", intent);
+    QCOMPARE(intent.searchTarget, SearchTarget::FileNameOnly);
+    QCOMPARE(intent.keywords.size(), 1);
+    QCOMPARE(intent.keywords.first(), QString("报告"));
+}
+
+void tst_SearchTarget::contentContains()
+{
+    ParsedIntent intent;
+    m_extractor->extract("文件内容包含配置的文档", intent);
+    QCOMPARE(intent.searchTarget, SearchTarget::ContentOnly);
+    QCOMPARE(intent.keywords.size(), 1);
+    QCOMPARE(intent.keywords.first(), QString("配置"));
+}
+
+void tst_SearchTarget::genericContainsStaysAll()
+{
+    ParsedIntent intent;
+    m_extractor->extract("包含测试的文件", intent);
+    QCOMPARE(intent.searchTarget, SearchTarget::All);
+    QVERIFY(!intent.keywords.isEmpty());
+}
+
+void tst_SearchTarget::unconsumedTextStaysAll()
+{
+    // No structured keyword rule matches → unconsumed text extraction
+    ParsedIntent intent;
+    m_extractor->extract("项目计划书", intent);
+    QCOMPARE(intent.searchTarget, SearchTarget::All);
+    QVERIFY(!intent.keywords.isEmpty());
+}
+
+// ===== tst_SemanticQueryBuilderTarget =====
+
+class tst_SemanticQueryBuilderTarget : public QObject
+{
+    Q_OBJECT
+
+private Q_SLOTS:
+    void defaultTarget();
+    void fileNameOnlyTarget();
+    void contentOnlyTarget();
+
+private:
+    ParsedIntent makeIntent(const QStringList &keywords, SearchTarget target) const;
+};
+
+ParsedIntent tst_SemanticQueryBuilderTarget::makeIntent(
+        const QStringList &keywords, SearchTarget target) const
+{
+    ParsedIntent intent;
+    intent.keywords = keywords;
+    intent.searchTarget = target;
+    return intent;
+}
+
+void tst_SemanticQueryBuilderTarget::defaultTarget()
+{
+    SemanticQueryBuilder builder;
+    ParsedIntent intent = makeIntent({"测试"}, SearchTarget::All);
+    SemanticSearchPlan plan = builder.build(intent);
+
+    // All three paths should produce queries
+    QVERIFY(!plan.fileNameQuery.keyword().isEmpty());
+    QVERIFY(plan.contentQuery.has_value());
+    QVERIFY(plan.ocrQuery.has_value());
+}
+
+void tst_SemanticQueryBuilderTarget::fileNameOnlyTarget()
+{
+    SemanticQueryBuilder builder;
+    ParsedIntent intent = makeIntent({"测试"}, SearchTarget::FileNameOnly);
+    SemanticSearchPlan plan = builder.build(intent);
+
+    // Only filename query should be built
+    QVERIFY(!plan.fileNameQuery.keyword().isEmpty());
+    QVERIFY(!plan.contentQuery.has_value());
+    QVERIFY(!plan.ocrQuery.has_value());
+}
+
+void tst_SemanticQueryBuilderTarget::contentOnlyTarget()
+{
+    SemanticQueryBuilder builder;
+    ParsedIntent intent = makeIntent({"测试"}, SearchTarget::ContentOnly);
+    SemanticSearchPlan plan = builder.build(intent);
+
+    // Filename should NOT be built; content and ocr should
+    QVERIFY(plan.fileNameQuery.keyword().isEmpty());
+    QVERIFY(plan.contentQuery.has_value());
+    QVERIFY(plan.ocrQuery.has_value());
+}
+
 // ===== Factory functions =====
 
 QObject *create_tst_RuleEngine() { return new tst_RuleEngine(); }
@@ -904,5 +1057,7 @@ QObject *create_tst_FileTypeExtraction() { return new tst_FileTypeExtraction(); 
 QObject *create_tst_KeywordExtraction() { return new tst_KeywordExtraction(); }
 QObject *create_tst_ParsedIntent() { return new tst_ParsedIntent(); }
 QObject *create_tst_IsSemanticQuery() { return new tst_IsSemanticQuery(); }
+QObject *create_tst_SearchTarget() { return new tst_SearchTarget(); }
+QObject *create_tst_SemanticQueryBuilderTarget() { return new tst_SemanticQueryBuilderTarget(); }
 
 #include "tst_semantic_search.moc"
