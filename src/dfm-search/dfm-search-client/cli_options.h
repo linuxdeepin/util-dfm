@@ -23,7 +23,10 @@ namespace dfmsearch {
  */
 struct SearchCliConfig
 {
-    // 基本参数
+    // Subcommand: if non-empty, the first positional arg is treated as a subcommand
+    QString subcommand;   // "" (search), "highlight"
+
+    // Basic parameters
     QString keyword;
     QString searchPath;
     SearchType searchType = SearchType::FileName;

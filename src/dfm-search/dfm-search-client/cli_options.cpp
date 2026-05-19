@@ -59,7 +59,7 @@ void CliOptions::setupOptions()
     m_parser.setApplicationDescription("DFM Search Client");
     m_parser.addHelpOption();
 
-    // 基本选项
+    // Basic options
     m_parser.addOption(m_typeOption);
     m_parser.addOption(m_methodOption);
     m_parser.addOption(m_queryOption);
@@ -94,7 +94,7 @@ void CliOptions::setupOptions()
     m_parser.addOption(m_sizeMinOption);
     m_parser.addOption(m_sizeMaxOption);
 
-    // 位置参数
+    // Positional arguments
     m_parser.addPositionalArgument("keyword", "Search keyword");
     m_parser.addPositionalArgument("search_path", "Path to search in");
 }
@@ -176,13 +176,69 @@ void CliOptions::printHelp() const
     std::cout << std::endl;
     std::cout << "  # Filename search with file size filter (1MB to 100MB)" << std::endl;
     std::cout << "  dfm-searcher --size-min=1M --size-max=100M \"video\" /home/user" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Highlight Retrieval (on-demand):" << std::endl;
+    std::cout << "  dfm-searcher highlight --type=<content|ocr> <keyword> <path1> [path2 ...] [-j]" << std::endl;
+    std::cout << "  Fetch highlighted content snippets for specific files without running a full search." << std::endl;
+    std::cout << std::endl;
+    std::cout << "  # Fetch highlight for a single file" << std::endl;
+    std::cout << "  dfm-searcher highlight --type=content \"hello\" /home/user/doc.txt" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  # Batch fetch highlights with JSON output" << std::endl;
+    std::cout << "  dfm-searcher highlight --type=ocr \"screenshot\" img1.png img2.png -j" << std::endl;
 }
 
 bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
 {
+    // Pre-scan for "highlight" subcommand
+    const QStringList rawArgs = app.arguments();
+    if (rawArgs.size() >= 2 && rawArgs.at(1) == "highlight") {
+        config.subcommand = "highlight";
+    }
+
     m_parser.process(app);
 
     QStringList positionalArgs = m_parser.positionalArguments();
+
+    // For highlight subcommand, the positional args are: keyword=<first arg> + paths=<remaining>
+    // "highlight" itself is consumed as first positional by QCommandLineParser
+    if (config.subcommand == "highlight") {
+        // Skip "highlight" keyword from positional args (it was parsed as the first positional)
+        QStringList args = positionalArgs;
+        if (!args.isEmpty() && args.first() == "highlight") {
+            args.removeFirst();
+        }
+        if (args.isEmpty()) {
+            std::cerr << "Error: highlight requires <keyword> and at least one <path>" << std::endl;
+            return false;
+        }
+
+        config.keyword = args.first();
+        // Remaining args are file paths
+        config.searchPath = args.mid(1).join(',');   // Reuse searchPath to store comma-separated paths
+
+        // Validate search type for highlight
+        QString typeStr = m_parser.value(m_typeOption);
+        if (typeStr == "content") {
+            config.searchType = SearchType::Content;
+        } else if (typeStr == "ocr") {
+            config.searchType = SearchType::Ocr;
+        } else {
+            std::cerr << "Error: highlight requires --type=content or --type=ocr" << std::endl;
+            return false;
+        }
+
+        config.jsonOutput = m_parser.isSet(m_jsonOption);
+        if (m_parser.isSet(m_maxPreviewOption)) {
+            bool ok;
+            int previewLength = m_parser.value(m_maxPreviewOption).toInt(&ok);
+            if (ok && previewLength > 0) {
+                config.maxPreviewLength = previewLength;
+            }
+        }
+        return true;
+    }
+
     if (positionalArgs.isEmpty()) {
         printHelp();
         return false;
