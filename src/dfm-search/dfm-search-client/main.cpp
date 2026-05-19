@@ -4,6 +4,10 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QTextStream>
 
 #include <dfm-search/searchengine.h>
 #include <dfm-search/searchfactory.h>
@@ -13,10 +17,13 @@
 #include <dfm-search/contentsearchapi.h>
 #include <dfm-search/ocrtextsearchapi.h>
 #include <dfm-search/semanticsearcher.h>
+#include <dfm-search/contentretriever.h>
 
 #include "cli_options.h"
 #include "output/text_output.h"
 #include "output/json_output.h"
+
+#include <iostream>
 
 using namespace dfmsearch;
 
@@ -155,11 +162,61 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    // 解析命令行参数
+    // Parse CLI arguments
     CliOptions cliOptions;
     SearchCliConfig config;
     if (!cliOptions.parse(app, config)) {
         return 1;
+    }
+
+    // Highlight subcommand: fetch highlighted content on demand
+    if (config.subcommand == "highlight") {
+        DFMSEARCH::ContentRetriever retriever;
+        DFMSEARCH::HighlightOptions hlOptions;
+        hlOptions.maxPreviewLength = config.maxPreviewLength;
+
+        // Paths are stored as comma-separated in config.searchPath
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+        QStringList paths = config.searchPath.split(',', Qt::SkipEmptyParts);
+#else
+        QStringList paths = config.searchPath.split(',', QString::SkipEmptyParts);
+#endif
+
+        if (config.jsonOutput) {
+            // JSON output
+            QJsonObject root;
+            root["type"] = "highlight";
+            root["searchType"] = (config.searchType == SearchType::Content) ? "content" : "ocr";
+            root["keyword"] = config.keyword;
+
+            QJsonArray results;
+            for (const QString &path : paths) {
+                QJsonObject item;
+                item["path"] = path;
+                item["contentMatch"] = retriever.fetchHighlight(path, config.keyword, config.searchType, hlOptions);
+                results.append(item);
+            }
+
+            root["totalResults"] = results.size();
+            root["results"] = results;
+
+            QJsonDocument doc(root);
+            std::cout << doc.toJson(QJsonDocument::Indented).toStdString() << std::endl;
+        } else {
+            // Text output
+            QTextStream out(stdout);
+            for (const QString &path : paths) {
+                QString hl = retriever.fetchHighlight(path, config.keyword, config.searchType, hlOptions);
+                out << path << "\n";
+                if (!hl.isEmpty()) {
+                    out << "  " << hl << "\n";
+                } else {
+                    out << "  (no match)\n";
+                }
+                out << Qt::endl;
+            }
+        }
+        return 0;
     }
 
     // Semantic search mode
