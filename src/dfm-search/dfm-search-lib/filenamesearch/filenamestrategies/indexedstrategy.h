@@ -83,10 +83,10 @@ private:
                                const QStringList &fileExtensions);
 
     // 执行索引查询并处理结果
-    void executeIndexQuery(const IndexQuery &query, const QString &searchPath, const QStringList &searchExcludedPaths);
+    void executeIndexQuery(const IndexQuery &query);
 
     // 构建 Lucene 查询
-    QueryPtr buildLuceneQuery(const IndexQuery &query, const QString &searchPath) const;
+    QueryPtr buildLuceneQuery(const IndexQuery &query) const;
 
     // 构建布尔查询的辅助方法
     BooleanQueryPtr buildBooleanTermsQuery(const IndexQuery &query, const AnalyzerPtr &analyzer) const;

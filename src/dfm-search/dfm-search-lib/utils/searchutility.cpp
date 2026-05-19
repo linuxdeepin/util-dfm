@@ -24,13 +24,6 @@ using namespace Lucene;
 
 namespace Global {
 
-// Index version threshold constants
-namespace IndexVersionThresholds {
-constexpr int FILENAME_ANCESTOR_PATHS = 3;
-constexpr int CONTENT_ANCESTOR_PATHS = 1;
-constexpr int OCRTEXT_ANCESTOR_PATHS = 1;
-}
-
 /**
  * @brief Read index version from a JSON status file
  * @param indexDir The index directory path
@@ -830,21 +823,6 @@ int ocrTextIndexVersion()
 }   //  namespace Global
 
 namespace SearchUtility {
-
-bool isFilenameIndexAncestorPathsSupported()
-{
-    return Global::fileNameIndexVersion() > Global::IndexVersionThresholds::FILENAME_ANCESTOR_PATHS;
-}
-
-bool isContentIndexAncestorPathsSupported()
-{
-    return Global::contentIndexVersion() > Global::IndexVersionThresholds::CONTENT_ANCESTOR_PATHS;
-}
-
-bool isOcrTextIndexAncestorPathsSupported()
-{
-    return Global::ocrTextIndexVersion() > Global::IndexVersionThresholds::OCRTEXT_ANCESTOR_PATHS;
-}
 
 QStringList extractBooleanKeywords(const SearchQuery &query)
 {

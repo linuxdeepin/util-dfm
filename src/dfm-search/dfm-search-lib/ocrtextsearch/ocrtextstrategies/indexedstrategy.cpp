@@ -22,7 +22,6 @@
 #include "utils/cancellablecollector.h"
 #include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
-#include "utils/searchutility.h"
 #include "utils/lucene_cancellation_compat.h"
 #include "utils/timerangeutils.h"
 
@@ -63,7 +62,7 @@ void OcrTextIndexedStrategy::search(const SearchQuery &query)
     }
 }
 
-Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer, const QString &searchPath)
+Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer)
 {
     try {
         m_keywords.clear();
@@ -97,9 +96,41 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
             mainQuery = newLucene<Lucene::BooleanQuery>();   // Should not happen
         }
 
+        // Add filename keyword query (before filters, so it replaces empty content query correctly)
+        QString filenameKw = optAPI.filenameKeyword();
+        if (!filenameKw.isEmpty()) {
+            Lucene::QueryParserPtr filenameParser = newLucene<Lucene::QueryParser>(
+                    Lucene::LuceneVersion::LUCENE_CURRENT,
+                    LuceneFieldNames::OcrText::kFilename,
+                    analyzer);
+            Lucene::QueryPtr filenameQuery = filenameParser->parse(
+                    LuceneQueryUtils::processQueryString(filenameKw, false));
+
+            if (filenameQuery) {
+                // Check if content keywords are effectively empty
+                bool noContentKeywords = (query.type() == SearchQuery::Type::Simple)
+                        ? query.keyword().isEmpty()
+                        : (query.subQueries().isEmpty()
+                           || std::all_of(query.subQueries().cbegin(), query.subQueries().cend(),
+                                          [](const auto &sq) { return sq.keyword().isEmpty(); }));
+
+                if (noContentKeywords) {
+                    // Filename-only search: replace empty content query with filename query
+                    mainQuery = filenameQuery;
+                } else if (mainQuery) {
+                    // Both content and filename: AND combination
+                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                    finalQuery->add(mainQuery, BooleanClause::MUST);
+                    finalQuery->add(filenameQuery, BooleanClause::MUST);
+                    mainQuery = finalQuery;
+                }
+                m_keywords.append(filenameKw);
+            }
+        }
+
         // Add path prefix query optimization
         QStringList searchPathsList = m_options.searchPaths();
-        if (mainQuery && SearchUtility::isOcrTextIndexAncestorPathsSupported()) {
+        if (mainQuery) {
             QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
                     searchPathsList,
                     QString::fromWCharArray(LuceneFieldNames::OcrText::kAncestorPaths));
@@ -110,6 +141,34 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
                 qInfo() << "Using multi-path prefix query for OCR text search optimization:" << searchPathsList;
                 mainQuery = finalQuery;
             }
+        }
+
+        // Add excluded paths filter (pushed down to query layer)
+        if (mainQuery) {
+            const QStringList &excludedPaths = m_options.searchExcludedPaths();
+            if (!excludedPaths.isEmpty()) {
+                QueryPtr excludedQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
+                        excludedPaths,
+                        QString::fromWCharArray(LuceneFieldNames::OcrText::kAncestorPaths));
+                if (excludedQuery) {
+                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                    finalQuery->add(mainQuery, BooleanClause::MUST);
+                    finalQuery->add(excludedQuery, BooleanClause::MUST_NOT);
+                    mainQuery = finalQuery;
+                }
+            }
+        }
+
+        // Add hidden file filter (pushed down to query layer)
+        if (mainQuery && !m_options.includeHidden()) {
+            QueryPtr hiddenQuery = Lucene::newLucene<Lucene::TermQuery>(
+                    Lucene::newLucene<Lucene::Term>(
+                            LuceneFieldNames::OcrText::kIsHidden,
+                            L"Y"));
+            BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+            finalQuery->add(mainQuery, BooleanClause::MUST);
+            finalQuery->add(hiddenQuery, BooleanClause::MUST_NOT);
+            mainQuery = finalQuery;
         }
 
         // Add time range filter query
@@ -151,38 +210,6 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
                     // Size filter alone is a valid query
                     mainQuery = sizeQuery;
                 }
-            }
-        }
-
-        // Add filename keyword query
-        QString filenameKw = optAPI.filenameKeyword();
-        if (!filenameKw.isEmpty()) {
-            Lucene::QueryParserPtr filenameParser = newLucene<Lucene::QueryParser>(
-                    Lucene::LuceneVersion::LUCENE_CURRENT,
-                    LuceneFieldNames::OcrText::kFilename,
-                    analyzer);
-            Lucene::QueryPtr filenameQuery = filenameParser->parse(
-                    LuceneQueryUtils::processQueryString(filenameKw, false));
-
-            if (filenameQuery) {
-                // Check if content keywords are effectively empty
-                bool noContentKeywords = (query.type() == SearchQuery::Type::Simple)
-                        ? query.keyword().isEmpty()
-                        : (query.subQueries().isEmpty()
-                           || std::all_of(query.subQueries().cbegin(), query.subQueries().cend(),
-                                          [](const auto &sq) { return sq.keyword().isEmpty(); }));
-
-                if (noContentKeywords) {
-                    // Filename-only search: use filename query directly
-                    mainQuery = filenameQuery;
-                } else if (mainQuery) {
-                    // Both content and filename: AND combination
-                    BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
-                    finalQuery->add(mainQuery, BooleanClause::MUST);
-                    finalQuery->add(filenameQuery, BooleanClause::MUST);
-                    mainQuery = finalQuery;
-                }
-                m_keywords.append(filenameKw);
             }
         }
 
@@ -288,15 +315,15 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     QElapsedTimer resultTimer;
     resultTimer.start();
 
-    QString searchPath = m_options.searchPath();
-    const QStringList &searchExcludedPaths = m_options.searchExcludedPaths();
-    QStringList allSearchPaths = m_options.searchPaths();
     auto docsSize = scoreDocs.size();
 
     OcrTextOptionsAPI optAPI(m_options);
     bool enableHTML = optAPI.isSearchResultHighlightEnabled();
     int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
     bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
+
+    // Pre-allocate to avoid reallocation during append
+    m_results.reserve(m_results.size() + static_cast<int>(docsSize));
 
     for (int32_t i = 0; i < docsSize; ++i) {
         if (m_cancelled.load()) {
@@ -306,18 +333,11 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
         try {
             Lucene::ScoreDocPtr scoreDoc = scoreDocs[i];
-            if (!scoreDoc) {
-                qWarning() << "Null ScoreDoc encountered at index" << i;
+            if (!scoreDoc || scoreDoc->doc < 0) {
+                qWarning() << "Invalid ScoreDoc at index" << i;
                 continue;
             }
 
-            // Defensive check: verify document ID is valid
-            if (scoreDoc->doc < 0) {
-                qWarning() << "Invalid document ID:" << scoreDoc->doc;
-                continue;
-            }
-
-            // Safely retrieve document (could throw if index is corrupted)
             Lucene::DocumentPtr doc;
             try {
                 doc = searcher->doc(scoreDoc->doc);
@@ -333,47 +353,14 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                 continue;
             }
 
-            // Safely get path
-            Lucene::String pathField;
-            try {
-                pathField = doc->get(LuceneFieldNames::OcrText::kPath);
-                if (pathField.empty()) {
-                    qWarning() << "Document missing path field at index:" << scoreDoc->doc;
-                    continue;
-                }
-            } catch (const std::exception &e) {
-                qWarning() << "Exception retrieving path field:" << e.what();
+            // Path filtering, excluded paths, hidden file — handled at query layer
+            Lucene::String pathField = doc->get(LuceneFieldNames::OcrText::kPath);
+            if (pathField.empty()) {
+                qWarning() << "Document missing path field at index:" << scoreDoc->doc;
                 continue;
             }
 
-            QString path = QString::fromStdWString(pathField);
-
-            // Check against all search paths
-            if (!std::any_of(allSearchPaths.cbegin(), allSearchPaths.cend(),
-                             [&path](const auto &sp) { return path.startsWith(sp); })) {
-                continue;
-            }
-
-            if (std::any_of(searchExcludedPaths.cbegin(), searchExcludedPaths.cend(),
-                            [&path](const auto &excluded) { return path.startsWith(excluded); })) {
-                continue;
-            }
-
-            // Safely check hidden status
-            if (Q_LIKELY(!m_options.includeHidden())) {
-                try {
-                    Lucene::String hiddenField = doc->get(LuceneFieldNames::OcrText::kIsHidden);
-                    if (!hiddenField.empty() && QString::fromStdWString(hiddenField).toLower() == "y") {
-                        continue;
-                    }
-                } catch (const std::exception &e) {
-                    qWarning() << "Exception retrieving is_hidden field:" << e.what();
-                    // Default to visible if field can't be read
-                }
-            }
-
-            // Create search result
-            SearchResult result(path);
+            SearchResult result(QString::fromStdWString(pathField));
 
             // 设置 OCR 内容结果
             OcrTextResultAPI resultApi(result);
@@ -381,7 +368,6 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             // 使用ContentHighlighter命名空间进行高亮
             if (enableRetrieval) {
                 try {
-                    // Safely get OCR contents with null check
                     Lucene::String ocrContentField = doc->get(LuceneFieldNames::OcrText::kOcrContents);
                     if (!ocrContentField.empty()) {
                         const QString content = QString::fromStdWString(ocrContentField);
@@ -394,10 +380,8 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                     }
                 } catch (const Lucene::LuceneException &e) {
                     qWarning() << "Exception retrieving OCR content field:" << QString::fromStdWString(e.getError());
-                    // Continue without content highlight
                 } catch (const std::exception &e) {
                     qWarning() << "Standard exception retrieving OCR content field:" << e.what();
-                    // Continue without content highlight
                 }
             }
 
@@ -453,11 +437,11 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             }
 
             // Add to result collection
-            m_results.append(result);
+            m_results.append(std::move(result));
 
             // Real-time result emission
             if (Q_UNLIKELY(m_options.resultFoundEnabled()))
-                emit resultFound(result);
+                emit resultFound(m_results.last());
 
         } catch (const Lucene::LuceneException &e) {
             qWarning() << "Error processing result:" << QString::fromStdWString(e.getError());
@@ -504,7 +488,7 @@ void OcrTextIndexedStrategy::performOcrTextSearch(const SearchQuery &query)
         AnalyzerPtr analyzer = newLucene<ChineseAnalyzer>();
 
         // Build query
-        m_currentQuery = buildLuceneQuery(query, analyzer, m_options.searchPath());
+        m_currentQuery = buildLuceneQuery(query, analyzer);
         if (!m_currentQuery) {
             qWarning() << "Failed to build Lucene query for OCR text search";
             emit errorOccurred(SearchError(OcrTextSearchErrorCode::OcrTextIndexException));

@@ -40,7 +40,7 @@ private:
     void performOcrTextSearch(const SearchQuery &query);
 
     // Build Lucene query
-    Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer, const QString &searchPath);
+    Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer);
 
     // Helper for simple queries
     Lucene::QueryPtr buildSimpleOcrContentsQuery(

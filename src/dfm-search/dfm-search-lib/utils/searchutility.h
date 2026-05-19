@@ -33,27 +33,6 @@ QStringList extractBooleanKeywords(const SearchQuery &query);
  */
 QStringList deepinAnythingFileTypes();
 
-/**
- * @brief Check if the filename index supports the ancestor_paths field.
- * This function checks the filename index version and returns true if the version is greater than 3.
- * @return true if the filename index supports ancestor_paths, false otherwise.
- */
-bool isFilenameIndexAncestorPathsSupported();
-
-/**
- * @brief Check if the content index supports the ancestor_paths field.
- * This function checks the content index version and returns true if the version is greater than 1.
- * @return true if the content index supports ancestor_paths, false otherwise.
- */
-bool isContentIndexAncestorPathsSupported();
-
-/**
- * @brief Check if the OCR text index supports the ancestor_paths field.
- * This function checks the OCR text index version and returns true if the version supports ancestor_paths.
- * @return true if the OCR text index supports ancestor_paths, false otherwise.
- */
-bool isOcrTextIndexAncestorPathsSupported();
-
 }   // namespace SearchUtility
 DFM_SEARCH_END_NS
 

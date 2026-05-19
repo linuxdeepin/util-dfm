@@ -51,8 +51,8 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
     } else if (config.searchType == SearchType::Content) {
         ContentOptionsAPI contentOptions(options);
         contentOptions.setMaxPreviewLength(config.maxPreviewLength);
-        contentOptions.setFullTextRetrievalEnabled(true);
-        contentOptions.setSearchResultHighlightEnabled(true);
+        contentOptions.setFullTextRetrievalEnabled(config.verbose);
+        contentOptions.setSearchResultHighlightEnabled(config.verbose);
         contentOptions.setFilenameContentMixedAndSearchEnabled(true);
         if (!config.filenameKeyword.isEmpty()) {
             contentOptions.setFilenameKeyword(config.filenameKeyword);
@@ -60,8 +60,8 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
     } else if (config.searchType == SearchType::Ocr) {
         OcrTextOptionsAPI ocrTextOptions(options);
         ocrTextOptions.setMaxPreviewLength(config.maxPreviewLength);
-        ocrTextOptions.setFullTextRetrievalEnabled(true);
-        ocrTextOptions.setSearchResultHighlightEnabled(true);
+        ocrTextOptions.setFullTextRetrievalEnabled(config.verbose);
+        ocrTextOptions.setSearchResultHighlightEnabled(config.verbose);
         ocrTextOptions.setFilenameOcrContentMixedAndSearchEnabled(true);
         if (!config.filenameKeyword.isEmpty()) {
             ocrTextOptions.setFilenameKeyword(config.filenameKeyword);
