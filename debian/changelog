@@ -1,3 +1,10 @@
+util-dfm (1.3.55) unstable; urgency=medium
+
+  * fix(build): detect Qt6 availability when os-version is missing
+  * refactor: add file size and checksum fields
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Tue, 19 May 2026 20:47:42 +0800
+
 util-dfm (1.3.54) unstable; urgency=medium
 
   * build: update debian package configuration for search component
