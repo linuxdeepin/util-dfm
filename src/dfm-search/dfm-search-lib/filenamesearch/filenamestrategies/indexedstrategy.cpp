@@ -316,8 +316,6 @@ void FileNameIndexedStrategy::search(const SearchQuery &query)
 void FileNameIndexedStrategy::performIndexSearch(const SearchQuery &query, const FileNameOptionsAPI &api)
 {
     bool caseSensitive = m_options.caseSensitive();
-    const QString &searchPath = m_options.searchPath();
-    const QStringList &searchExcludedPaths = m_options.searchExcludedPaths();
 
     QStringList fileTypes = api.fileTypes();
     QStringList fileExtensions = api.fileExtensions();
@@ -331,7 +329,7 @@ void FileNameIndexedStrategy::performIndexSearch(const SearchQuery &query, const
     IndexQuery indexQuery = buildIndexQuery(query, searchType, caseSensitive, pinyinEnabled, pinyinAcronymEnabled, fileTypes, fileExtensions);
 
     // 3. 执行查询并处理结果
-    executeIndexQuery(indexQuery, searchPath, searchExcludedPaths);
+    executeIndexQuery(indexQuery);
 }
 
 FileNameIndexedStrategy::SearchType FileNameIndexedStrategy::determineSearchType(
@@ -446,7 +444,7 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
     return result;
 }
 
-void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const QString &searchPath, const QStringList &searchExcludedPaths)
+void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query)
 {
     // 获取索引目录
     FSDirectoryPtr directory = m_indexManager->getIndexDirectory(m_indexDir);
@@ -479,7 +477,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     // 构建查询
     QueryPtr luceneQuery;
     try {
-        luceneQuery = buildLuceneQuery(query, searchPath);
+        luceneQuery = buildLuceneQuery(query);
         if (!luceneQuery) {
             emit errorOccurred(SearchError(SearchErrorCode::InvalidQuery));
             return;
@@ -522,9 +520,6 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
     auto docsSize = scoreDocs.size();
     m_results.reserve(docsSize);
 
-    // Get all search paths for post-filtering
-    QStringList allSearchPaths = m_options.searchPaths();
-
     // 实时处理搜索结果
     for (int i = 0; i < docsSize; i++) {
         if (m_cancelled.load()) {
@@ -537,29 +532,14 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const Q
             DocumentPtr doc = searcher->doc(scoreDoc->doc);
             QString path = QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kFullPath));
 
-            // Check against all search paths
-            if (!std::any_of(allSearchPaths.cbegin(), allSearchPaths.cend(),
-                             [&path](const auto &sp) { return path.startsWith(sp); })) {
-                continue;
-            }
-
-            if (std::any_of(searchExcludedPaths.cbegin(), searchExcludedPaths.cend(),
-                            [&path](const auto &excluded) { return path.startsWith(excluded); })) {
-                continue;
-            }
-
-            if (Q_LIKELY(!m_options.includeHidden())) {
-                if (QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kIsHidden)).toLower() == "y")
-                    continue;
-            }
+            // Path filtering, excluded paths, hidden file — handled at query layer
 
             // 处理搜索结果
             if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
                 m_results.append(processDetailedSearchResult(path, doc));
             } else {
-                // perf: quickly
                 SearchResult result(path);
-                m_results.append(result);
+                m_results.append(std::move(result));
             }
 
             // 实时发送结果
@@ -637,7 +617,7 @@ SearchResult FileNameIndexedStrategy::processDetailedSearchResult(
     return result;
 }
 
-Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &query, const QString &searchPath) const
+Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &query) const
 {
     BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
     bool hasValidQuery = false;
@@ -781,7 +761,7 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
 
     // Add path prefix query optimization
     QStringList searchPathsList = m_options.searchPaths();
-    if (hasValidQuery && SearchUtility::isFilenameIndexAncestorPathsSupported()) {
+    if (hasValidQuery) {
         QueryPtr pathPrefixQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
                 searchPathsList,
                 QString::fromWCharArray(LuceneFieldNames::FileName::kAncestorPaths));
@@ -791,12 +771,25 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         }
     }
 
+    // Add excluded paths filter (pushed down to query layer)
+    if (hasValidQuery) {
+        const QStringList &excludedPaths = m_options.searchExcludedPaths();
+        if (!excludedPaths.isEmpty()) {
+            QueryPtr excludedQuery = LuceneQueryUtils::buildMultiPathPrefixQuery(
+                    excludedPaths,
+                    QString::fromWCharArray(LuceneFieldNames::FileName::kAncestorPaths));
+            if (excludedQuery) {
+                finalQuery->add(excludedQuery, BooleanClause::MUST_NOT);
+            }
+        }
+    }
+
     // Filter hidden files at query level to avoid losing results due to maxResults limit
     if (hasValidQuery && Q_LIKELY(!m_options.includeHidden())) {
         QueryPtr hiddenQuery = Lucene::newLucene<Lucene::TermQuery>(
                 Lucene::newLucene<Lucene::Term>(
                         LuceneFieldNames::FileName::kIsHidden,
-                        Lucene::StringUtils::toUnicode("Y")));
+                        L"Y"));
         finalQuery->add(hiddenQuery, Lucene::BooleanClause::MUST_NOT);
     }
 
