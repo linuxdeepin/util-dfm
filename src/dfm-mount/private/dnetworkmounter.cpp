@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 - 2023 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2022 - 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -13,8 +13,11 @@
 #include <QDebug>
 #include <QTimer>
 #include <QtConcurrent>
+#include <QDBusUnixFileDescriptor>
 
 #include <libmount.h>
+
+#include <sys/mman.h>
 
 DFM_MOUNT_USE_NS
 
@@ -148,9 +151,7 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
         if (err)
             qDebug() << "query password failed: " << passwd << err->message;
         else {
-            // since daemon accept base64-ed passwd to mount cifs, cleartext should be encoded with base64
-            // see commit of dde-file-manager: 3b50664d4034754b15c1a516cfaab8c7fbdd3db9
-            passwd.insert(kLoginPasswd, QString(QByteArray(pwd).toBase64()));
+            passwd.insert(kLoginPasswd, pwd);
         }
     }
     return passwds;
@@ -471,12 +472,45 @@ void DNetworkMounter::mountByGvfsCallback(GObject *srcObj, GAsyncResult *res, gp
     delete finalize;
 }
 
+static QVariant preparePasswd(const QString &passwd)
+{
+    if (passwd.isEmpty()) {
+        qCritical() << "Created empty QVariant for empty passwd";
+        return QVariant("");
+    }
+
+    int fd = memfd_create("DBusFD", MFD_CLOEXEC);
+    if (fd < 0) {
+        qCritical() << "Failed to create memfd for data transfer";
+        return QVariant("");
+    }
+
+    QByteArray byteData = passwd.toUtf8();
+    ssize_t written = ::write(fd, byteData.constData(), byteData.size());
+    if (written < 0 || static_cast<ssize_t>(byteData.size()) != written) {
+        qCritical() << "Failed to write data to memfd";
+        ::close(fd);
+        return QVariant("");
+    }
+
+    if (lseek(fd, 0, SEEK_SET) < 0) {
+        qCritical() << "Failed to seek memfd to beginning";
+        ::close(fd);
+        return QVariant("");
+    }
+
+    QDBusUnixFileDescriptor dbusFd;
+    dbusFd.giveFileDescriptor(fd);
+
+    return QVariant::fromValue(dbusFd);
+}
+
 DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &address,
                                                               const MountPassInfo info)
 {
     QVariantMap param { { kLoginUser, info.userName },
                         { kLoginDomain, info.domain },
-                        { kLoginPasswd, info.passwd },
+                        { kLoginPasswd, preparePasswd(info.passwd) },
                         { kLoginTimeout, info.timeout },
                         { kMountFsType, "cifs" } };
 
@@ -495,13 +529,8 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
     if (ok) {
         err = DeviceError::kNoError;
 
-        if (!info.anonymous && info.savePasswd != NetworkMountPasswdSaveMode::kNeverSavePasswd) {
-            // since passwd from user input is base64-ed data, so the passwd should be decoded into cleartext for saving.
-            // associated commit of dde-file-manager: 3b50664d4034754b15c1a516cfaab8c7fbdd3db9
-            auto _info = info;
-            _info.passwd = QByteArray::fromBase64(info.passwd.toLocal8Bit());
-            savePasswd(address, _info);
-        }
+        if (!info.anonymous && info.savePasswd != NetworkMountPasswdSaveMode::kNeverSavePasswd)
+            savePasswd(address, info);
     }
 
     return { ok, err, mpt };
@@ -517,7 +546,7 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &ad
     for (const auto &login : infos) {
         QVariantMap param { { kLoginUser, login.value(kSchemaUser, "") },
                             { kLoginDomain, login.value(kSchemaDomain, "") },
-                            { kLoginPasswd, login.value(kLoginPasswd, "") },
+                            { kLoginPasswd, preparePasswd(login.value(kLoginPasswd, "").toString()) },
                             { kLoginTimeout, secs },
                             { kMountFsType, "cifs" } };
 
