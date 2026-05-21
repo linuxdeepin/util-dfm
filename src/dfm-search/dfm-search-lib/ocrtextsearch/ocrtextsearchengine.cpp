@@ -44,7 +44,7 @@ SearchError OcrTextSearchEngine::validateSearchConditions()
 
     OcrTextOptionsAPI optAPI(m_options);
     if (m_currentQuery.type() == SearchQuery::Type::Simple
-        && m_currentQuery.keyword().toUtf8().size() < Global::kMinContentSearchKeywordLength
+        && m_currentQuery.keyword().size() < Global::kMinContentSearchKeywordLength
         && optAPI.filenameKeyword().isEmpty()) {
         return SearchError(OcrTextSearchErrorCode::KeywordTooShort);
     }
