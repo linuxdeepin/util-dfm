@@ -514,7 +514,7 @@ QStringList defaultContentSearchExtensions()
 
 QStringList defaultIndexedDirectory()
 {
-    const QStringList &dirs = getResolvedIndexedDirectories();
+    static const QStringList dirs = getResolvedIndexedDirectories();
 
     if (dirs.isEmpty()) {
         return QStringList();
@@ -615,7 +615,7 @@ bool isPathInContentIndexDirectory(const QString &path)
     if (!isContentIndexAvailable())
         return false;
 
-    static const QStringList &kDirs = DFMSEARCH::Global::defaultIndexedDirectory();
+    static const QStringList kDirs = DFMSEARCH::Global::defaultIndexedDirectory();
     return isPathInAnyDirectory(path, kDirs);
 }
 
@@ -673,7 +673,7 @@ bool isPathInOcrTextIndexDirectory(const QString &path)
     if (!isOcrTextIndexAvailable())
         return false;
 
-    static const QStringList &kDirs = DFMSEARCH::Global::defaultIndexedDirectory();
+    static const QStringList kDirs = DFMSEARCH::Global::defaultIndexedDirectory();
     return isPathInAnyDirectory(path, kDirs);
 }
 
@@ -714,11 +714,11 @@ bool isPathInFileNameIndexDirectory(const QString &path)
     if (!isFileNameIndexDirectoryAvailable())
         return false;
 
-    static const QStringList &kBlackPaths = defaultBlacklistPaths();
+    static const QStringList kBlackPaths = defaultBlacklistPaths();
     if (BlacklistMatcher::isPathBlacklisted(path, kBlackPaths))
         return false;
 
-    static const QStringList &kIndexedDirs = DFMSEARCH::Global::defaultIndexedDirectory();
+    static const QStringList kIndexedDirs = DFMSEARCH::Global::defaultIndexedDirectory();
     return isPathInAnyDirectory(path, kIndexedDirs);
 }
 
