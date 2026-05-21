@@ -17,8 +17,8 @@
 #include <dfm-search/field_names.h>
 #include <dfm-search/timerangefilter.h>
 #include <dfm-search/ocrtextsearchapi.h>
+#include <dfm-search/lucene++/ngramanalyzer.h>
 
-#include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/cancellablecollector.h"
 #include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
@@ -484,8 +484,8 @@ void OcrTextIndexedStrategy::performOcrTextSearch(const SearchQuery &query)
         // Create searcher
         IndexSearcherPtr searcher = newLucene<IndexSearcher>(reader);
 
-        // Create analyzer (reuse ChineseAnalyzer for OCR text)
-        AnalyzerPtr analyzer = newLucene<ChineseAnalyzer>();
+        // Create analyzer (use NGram for OCR text fuzzy matching)
+        AnalyzerPtr analyzer = newLucene<NGramAnalyzer>(2, 2);
 
         // Build query
         m_currentQuery = buildLuceneQuery(query, analyzer);
