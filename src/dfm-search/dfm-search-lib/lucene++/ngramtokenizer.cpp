@@ -19,8 +19,8 @@ const int32_t NGramTokenizer::kIoBufferSize;
 
 NGramTokenizer::NGramTokenizer(const ReaderPtr &input, int32_t minGram, int32_t maxGram)
     : Tokenizer(input),
-      m_minGram(std::min(minGram, maxGram)),
-      m_maxGram(std::max(minGram, maxGram)),
+      m_minGram(std::min(normalizeGramSize(minGram), normalizeGramSize(maxGram))),
+      m_maxGram(std::max(normalizeGramSize(minGram), normalizeGramSize(maxGram))),
       m_isFirstTokenAtPosition(true)
 {
     init();
@@ -29,8 +29,8 @@ NGramTokenizer::NGramTokenizer(const ReaderPtr &input, int32_t minGram, int32_t 
 NGramTokenizer::NGramTokenizer(const AttributeFactoryPtr &factory, const ReaderPtr &input,
                                int32_t minGram, int32_t maxGram)
     : Tokenizer(factory, input),
-      m_minGram(std::min(minGram, maxGram)),
-      m_maxGram(std::max(minGram, maxGram)),
+      m_minGram(std::min(normalizeGramSize(minGram), normalizeGramSize(maxGram))),
+      m_maxGram(std::max(normalizeGramSize(minGram), normalizeGramSize(maxGram))),
       m_isFirstTokenAtPosition(true)
 {
     init();
@@ -40,21 +40,39 @@ NGramTokenizer::~NGramTokenizer()
 {
 }
 
+int32_t NGramTokenizer::normalizeGramSize(int32_t gramSize)
+{
+    return std::min(std::max(gramSize, 1), kIoBufferSize);
+}
+
 void NGramTokenizer::init()
 {
     m_ioBuffer = CharArray::newInstance(kIoBufferSize);
-    memset(m_ioBuffer.get(), 0, kIoBufferSize);
+    std::fill_n(m_ioBuffer.get(), kIoBufferSize, 0);
     m_termBuffer = CharArray::newInstance(m_maxGram);
-    memset(m_termBuffer.get(), 0, m_maxGram);
+    std::fill_n(m_termBuffer.get(), m_maxGram, 0);
 
     m_termAtt = addAttribute<TermAttribute>();
     m_offsetAtt = addAttribute<OffsetAttribute>();
     m_posIncrAtt = addAttribute<PositionIncrementAttribute>();
+
+    resetState();
 }
 
 void NGramTokenizer::reset()
 {
     Tokenizer::reset();
+    resetState();
+}
+
+void NGramTokenizer::reset(const ReaderPtr &input)
+{
+    Tokenizer::reset(input);
+    resetState();
+}
+
+void NGramTokenizer::resetState()
+{
     m_bufferIndex = 0;
     m_ioLen = 0;
     m_inputExhausted = false;
