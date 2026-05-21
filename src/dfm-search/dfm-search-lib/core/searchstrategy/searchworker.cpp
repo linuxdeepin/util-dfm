@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "searchworker.h"
 
+#include "utils/searchdconfig.h"
+
 DFM_SEARCH_BEGIN_NS
 
 SearchWorker::SearchWorker(QObject *parent)
@@ -13,6 +15,7 @@ SearchWorker::SearchWorker(QObject *parent)
     qRegisterMetaType<SearchType>();
     qRegisterMetaType<SearchResultList>();
     qRegisterMetaType<SearchError>();
+    qRegisterMetaType<SearchDConfigSnapshot>();
 }
 
 SearchWorker::~SearchWorker() = default;

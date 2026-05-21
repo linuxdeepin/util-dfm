@@ -18,7 +18,9 @@
 #include "3rdparty/fulltext/chineseanalyzer.h"
 #include "utils/cancellablecollector.h"
 #include "utils/searchutility.h"
+#include "utils/searchdconfig.h"
 #include "utils/lucenequeryutils.h"
+#include "utils/indexmutex.h"
 #include "utils/timerangeutils.h"
 
 DFM_SEARCH_BEGIN_NS
@@ -447,6 +449,9 @@ FileNameIndexedStrategy::IndexQuery FileNameIndexedStrategy::buildIndexQuery(
 
 void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query, const QString &searchPath, const QStringList &searchExcludedPaths)
 {
+    // 加索引级互斥锁，防止多线程并发访问同一 Lucene 索引目录
+    QMutexLocker indexLock(&IndexMutexGuard::mutexForPath(m_indexDir));
+
     // 获取索引目录
     FSDirectoryPtr directory = m_indexManager->getIndexDirectory(m_indexDir);
     if (!directory) {
@@ -757,8 +762,9 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
     }
 
     // Add path prefix query optimization
+    auto snapshot = m_options.customOption("dconfig_snapshot").value<SearchDConfigSnapshot>();
     if (hasValidQuery && SearchUtility::isFilenameIndexAncestorPathsSupported()
-        && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
+        && SearchUtility::shouldUsePathPrefixQuery(searchPath, snapshot.defaultIndexedDirs)) {
         QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath,
                                                                           QString::fromWCharArray(LuceneFieldNames::FileName::kAncestorPaths));
         if (pathPrefixQuery) {

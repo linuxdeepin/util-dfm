@@ -23,8 +23,10 @@
 #include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
 #include "utils/searchutility.h"
+#include "utils/searchdconfig.h"
 #include "utils/lucene_cancellation_compat.h"
 #include "utils/timerangeutils.h"
+#include "utils/indexmutex.h"
 
 using namespace Lucene;
 
@@ -98,8 +100,9 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
         }
 
         // Add path prefix query optimization
+        auto snapshot = m_options.customOption("dconfig_snapshot").value<SearchDConfigSnapshot>();
         if (mainQuery && SearchUtility::isOcrTextIndexAncestorPathsSupported()
-            && SearchUtility::shouldUsePathPrefixQuery(searchPath)) {
+            && SearchUtility::shouldUsePathPrefixQuery(searchPath, snapshot.defaultIndexedDirs)) {
             QueryPtr pathPrefixQuery = LuceneQueryUtils::buildPathPrefixQuery(searchPath,
                                                                               QString::fromWCharArray(LuceneFieldNames::OcrText::kAncestorPaths));
             if (pathPrefixQuery) {
@@ -416,6 +419,9 @@ void OcrTextIndexedStrategy::performOcrTextSearch(const SearchQuery &query)
     SearchCancellationGuard guard(&m_cancelled);
 
     try {
+        // 加索引级互斥锁，防止多线程并发访问同一 Lucene 索引目录
+        QMutexLocker indexLock(&IndexMutexGuard::mutexForPath(m_indexDir));
+
         // Get index directory
         FSDirectoryPtr directory = FSDirectory::open(m_indexDir.toStdWString());
         if (!directory) {

@@ -8,6 +8,8 @@
 #include <QEventLoop>
 #include <QTimer>
 
+#include "utils/searchdconfig.h"
+
 DFM_SEARCH_BEGIN_NS
 DCORE_USE_NAMESPACE
 
@@ -115,6 +117,9 @@ void GenericSearchEngine::search(const SearchQuery &query)
         setStatus(SearchStatus::Error);
         return;
     }
+
+    // 主线程实时读取 DConfig 配置，通过参数传入工作线程
+    m_options.setCustomOption("dconfig_snapshot", QVariant::fromValue(SearchDConfig::loadSnapshot()));
 
     // 发射信号请求工作线程执行搜索
     emit requestSearch(query, m_options, searchType());
@@ -232,6 +237,9 @@ SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
     connect(this, &GenericSearchEngine::searchFinished, &eventLoop, &QEventLoop::quit);
     connect(this, &GenericSearchEngine::errorOccurred, &eventLoop, &QEventLoop::quit);
     connect(&timeoutTimer, &QTimer::timeout, &eventLoop, &QEventLoop::quit);
+
+    // 主线程实时读取 DConfig 配置，通过参数传入工作线程
+    m_options.setCustomOption("dconfig_snapshot", QVariant::fromValue(SearchDConfig::loadSnapshot()));
 
     // 发射信号启动异步搜索
     emit requestSearch(query, m_options, searchType());

@@ -41,6 +41,14 @@ QStringList deepinAnythingFileTypes();
 bool shouldUsePathPrefixQuery(const QString &searchPath);
 
 /**
+ * @brief Thread-safe version of shouldUsePathPrefixQuery using preloaded config
+ * @param searchPath The search path
+ * @param defaultDirs Preloaded default indexed directories (from SearchDConfigSnapshot)
+ * @return true if path prefix query should be used, false otherwise
+ */
+bool shouldUsePathPrefixQuery(const QString &searchPath, const QStringList &defaultDirs);
+
+/**
  * @brief Check if the filename index supports the ancestor_paths field.
  * This function checks the filename index version and returns true if the version is greater than 3.
  * @return true if the filename index supports ancestor_paths, false otherwise.
