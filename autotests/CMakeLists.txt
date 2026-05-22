@@ -3,9 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(autotests)
 
-# Enable/disable building of unit tests (default: ON)
-option(BUILD_UNIT_TESTS "Build unit tests" ON)
-
+# BUILD_UNIT_TESTS is defined in top-level CMakeLists.txt;
+# this guard acts as a safety net if autotests is somehow included directly
 if(NOT BUILD_UNIT_TESTS)
     return()
 endif()

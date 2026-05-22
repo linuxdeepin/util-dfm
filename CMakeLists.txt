@@ -43,9 +43,16 @@ include(GNUInstallDirs)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 
-# Unit tests (requires Qt Test, enabled by default)
-# option(BUILD_UNIT_TESTS is defined in autotests/CMakeLists.txt)
-add_subdirectory(${PROJECT_SOURCE_DIR}/autotests)
+# Unit tests (enabled by default, except in Release/MinSizeRel builds)
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    option(BUILD_UNIT_TESTS "Build unit tests" OFF)
+else()
+    option(BUILD_UNIT_TESTS "Build unit tests" ON)
+endif()
+
+if(BUILD_UNIT_TESTS)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/autotests)
+endif()
 
 # Legacy tests (temporarily disabled)
 # add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
