@@ -15,6 +15,7 @@
 #include <lucene++/BooleanQuery.h>
 #include <lucene++/QueryWrapperFilter.h>
 #include <lucene++/WildcardQuery.h>
+#include <lucene++/MapFieldSelector.h>
 
 #include <dfm-search/field_names.h>
 #include <dfm-search/timerangefilter.h>
@@ -325,6 +326,24 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     bool enableHTML = optAPI.isSearchResultHighlightEnabled();
     int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
     bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
+    bool detailedResults = m_options.detailedResultsEnabled();
+
+    // Build field selector to avoid loading the large 'contents' field when not needed.
+    // The contents field stores full document text and loading it for every result
+    // (even when only path is needed) causes significant disk I/O overhead.
+    Lucene::Collection<Lucene::String> fieldsToLoad = Lucene::Collection<Lucene::String>::newInstance();
+    if (enableRetrieval) {
+        fieldsToLoad.add(LuceneFieldNames::Content::kContents);
+    }
+    fieldsToLoad.add(LuceneFieldNames::Content::kPath);
+    if (Q_UNLIKELY(detailedResults)) {
+        fieldsToLoad.add(LuceneFieldNames::Content::kFilename);
+        fieldsToLoad.add(LuceneFieldNames::Content::kIsHidden);
+        fieldsToLoad.add(LuceneFieldNames::Content::kModifyTime);
+        fieldsToLoad.add(LuceneFieldNames::Content::kBirthTime);
+        fieldsToLoad.add(LuceneFieldNames::Content::kFileSize);
+    }
+    Lucene::FieldSelectorPtr fieldSelector = newLucene<Lucene::MapFieldSelector>(fieldsToLoad);
 
     // Pre-allocate to avoid reallocation during append
     m_results.reserve(m_results.size() + static_cast<int>(docsSize));
@@ -344,7 +363,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
             Lucene::DocumentPtr doc;
             try {
-                doc = searcher->doc(scoreDoc->doc);
+                doc = searcher->doc(scoreDoc->doc, fieldSelector);
                 if (!doc) {
                     qWarning() << "Failed to retrieve document at index:" << scoreDoc->doc;
                     continue;
@@ -383,7 +402,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             }
 
             // 设置详细结果（如果启用）
-            if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
+            if (Q_UNLIKELY(detailedResults)) {
                 // 文件名
                 Lucene::String filenameField = doc->get(LuceneFieldNames::Content::kFilename);
                 if (!filenameField.empty()) {
