@@ -53,7 +53,7 @@ void GenericSearchEngine::init()
     connect(this, &GenericSearchEngine::requestSearch,
             m_worker, &SearchWorker::doSearch);
     connect(this, &GenericSearchEngine::requestCancel,
-            m_worker, &SearchWorker::cancelSearch);
+            m_worker, &SearchWorker::cancelSearch, Qt::DirectConnection);
 
     // 连接结果信号（工作线程 -> 主线程）
     connect(m_worker, &SearchWorker::resultFound,
