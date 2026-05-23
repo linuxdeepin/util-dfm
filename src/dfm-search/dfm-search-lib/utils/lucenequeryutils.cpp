@@ -6,10 +6,33 @@
 #include <QDir>
 
 #include <lucene++/BooleanQuery.h>
+#include <lucene++/PhraseQuery.h>
+#include <lucene++/TermQuery.h>
 
 DFM_SEARCH_BEGIN_NS
 
 namespace LuceneQueryUtils {
+namespace {
+
+Lucene::String toLuceneString(const QString &str, bool caseSensitive)
+{
+    QString normalized = caseSensitive ? str : str.toLower();
+    QByteArray utf8Bytes = normalized.toUtf8();
+    Lucene::String luceneStr = Lucene::StringUtils::toUnicode(std::string(utf8Bytes.constData(), utf8Bytes.length()));
+    if (luceneStr.empty()) {
+        luceneStr = Lucene::StringUtils::toUnicode(normalized.toStdString());
+    }
+    return luceneStr;
+}
+
+Lucene::TermPtr buildTerm(const QString &fieldName, const QString &text, bool caseSensitive)
+{
+    return Lucene::newLucene<Lucene::Term>(
+            toLuceneString(fieldName, true),
+            toLuceneString(text, caseSensitive));
+}
+
+}   // namespace
 
 std::wstring getLuceneSpecialChars()
 {
@@ -50,6 +73,30 @@ Lucene::String processQueryString(const QString &str, bool caseSensitive)
     }
 
     return luceneStr;
+}
+
+Lucene::QueryPtr buildNGramSearchQuery(const QString &fieldName, const QString &keyword, bool caseSensitive)
+{
+    if (fieldName.isEmpty() || keyword.isEmpty()) {
+        return nullptr;
+    }
+
+    if (keyword.size() <= 2) {
+        return Lucene::newLucene<Lucene::TermQuery>(
+                buildTerm(fieldName, keyword, caseSensitive));
+    }
+
+    Lucene::PhraseQueryPtr phraseQuery = Lucene::newLucene<Lucene::PhraseQuery>();
+    for (int pos = 0; pos + 2 <= keyword.size(); pos += 2) {
+        phraseQuery->add(buildTerm(fieldName, keyword.mid(pos, 2), caseSensitive), pos);
+    }
+
+    if (keyword.size() % 2 != 0) {
+        const int tailPos = keyword.size() - 2;
+        phraseQuery->add(buildTerm(fieldName, keyword.mid(tailPos, 2), caseSensitive), tailPos);
+    }
+
+    return phraseQuery;
 }
 
 Lucene::QueryPtr buildPathPrefixQuery(const QString &pathPrefix, const QString &fieldName)

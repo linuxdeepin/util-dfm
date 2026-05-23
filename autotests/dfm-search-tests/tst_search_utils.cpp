@@ -9,8 +9,13 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 
+#include <lucene++/LuceneHeaders.h>
+#include <lucene++/PhraseQuery.h>
+#include <lucene++/TermQuery.h>
+
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search-lib/utils/filenameblacklistmatcher.h>
+#include <dfm-search-lib/utils/lucenequeryutils.h>
 
 using namespace DFMSEARCH;
 
@@ -26,6 +31,7 @@ private Q_SLOTS:
     void testPinyinAcronym();
     void testAnythingStatus();
     void testFileNameBlacklistMatcher();
+    void testNGramSearchQuery();
 
 private:
     void doTestPinyin(const QString &caseName, const QString &input, bool expected);
@@ -329,6 +335,42 @@ void tst_SearchUtils::testGlobal()
     // Test default blacklist paths
     const auto &blacklistPaths = Global::defaultBlacklistPaths();
     Q_UNUSED(blacklistPaths);
+}
+
+void tst_SearchUtils::testNGramSearchQuery()
+{
+    Lucene::QueryPtr oneCharQuery = LuceneQueryUtils::buildNGramSearchQuery("contents", "A");
+    Lucene::TermQueryPtr oneCharTermQuery = boost::dynamic_pointer_cast<Lucene::TermQuery>(oneCharQuery);
+    QVERIFY(oneCharTermQuery);
+    QCOMPARE(oneCharTermQuery->getTerm()->field(), Lucene::String(L"contents"));
+    QCOMPARE(oneCharTermQuery->getTerm()->text(), Lucene::String(L"a"));
+
+    Lucene::QueryPtr twoCharQuery = LuceneQueryUtils::buildNGramSearchQuery("contents", "Ab");
+    Lucene::TermQueryPtr twoCharTermQuery = boost::dynamic_pointer_cast<Lucene::TermQuery>(twoCharQuery);
+    QVERIFY(twoCharTermQuery);
+    QCOMPARE(twoCharTermQuery->getTerm()->text(), Lucene::String(L"ab"));
+
+    Lucene::QueryPtr evenQuery = LuceneQueryUtils::buildNGramSearchQuery("contents", "abcdef");
+    Lucene::PhraseQueryPtr evenPhraseQuery = boost::dynamic_pointer_cast<Lucene::PhraseQuery>(evenQuery);
+    QVERIFY(evenPhraseQuery);
+    QCOMPARE(evenPhraseQuery->getTerms().size(), 3);
+    QCOMPARE(evenPhraseQuery->getTerms()[0]->text(), Lucene::String(L"ab"));
+    QCOMPARE(evenPhraseQuery->getTerms()[1]->text(), Lucene::String(L"cd"));
+    QCOMPARE(evenPhraseQuery->getTerms()[2]->text(), Lucene::String(L"ef"));
+    QCOMPARE(evenPhraseQuery->getPositions()[0], 0);
+    QCOMPARE(evenPhraseQuery->getPositions()[1], 2);
+    QCOMPARE(evenPhraseQuery->getPositions()[2], 4);
+
+    Lucene::QueryPtr oddQuery = LuceneQueryUtils::buildNGramSearchQuery("contents", "abcde");
+    Lucene::PhraseQueryPtr oddPhraseQuery = boost::dynamic_pointer_cast<Lucene::PhraseQuery>(oddQuery);
+    QVERIFY(oddPhraseQuery);
+    QCOMPARE(oddPhraseQuery->getTerms().size(), 3);
+    QCOMPARE(oddPhraseQuery->getTerms()[0]->text(), Lucene::String(L"ab"));
+    QCOMPARE(oddPhraseQuery->getTerms()[1]->text(), Lucene::String(L"cd"));
+    QCOMPARE(oddPhraseQuery->getTerms()[2]->text(), Lucene::String(L"de"));
+    QCOMPARE(oddPhraseQuery->getPositions()[0], 0);
+    QCOMPARE(oddPhraseQuery->getPositions()[1], 2);
+    QCOMPARE(oddPhraseQuery->getPositions()[2], 3);
 }
 
 QObject *create_tst_SearchUtils()

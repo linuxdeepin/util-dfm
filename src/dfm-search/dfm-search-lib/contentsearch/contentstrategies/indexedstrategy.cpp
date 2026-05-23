@@ -11,7 +11,6 @@
 #include <QElapsedTimer>
 
 #include <lucene++/LuceneHeaders.h>
-#include <lucene++/QueryParser.h>
 #include <lucene++/BooleanQuery.h>
 #include <lucene++/QueryWrapperFilter.h>
 #include <lucene++/WildcardQuery.h>
@@ -19,7 +18,6 @@
 
 #include <dfm-search/field_names.h>
 #include <dfm-search/timerangefilter.h>
-#include <dfm-search/lucene++/ngramanalyzer.h>
 
 #include "utils/cancellablecollector.h"
 #include "utils/contenthighlighter.h"
@@ -64,21 +62,16 @@ void ContentIndexedStrategy::search(const SearchQuery &query)
     }
 }
 
-Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer)
+Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &query)
 {
     try {
         m_keywords.clear();
         ContentOptionsAPI optAPI(m_options);   // Use the member m_options
         bool mixedAndEnabled = optAPI.isFilenameContentMixedAndSearchEnabled();
 
-        Lucene::QueryParserPtr contentsParser = newLucene<Lucene::QueryParser>(
-                Lucene::LuceneVersion::LUCENE_CURRENT,
-                LuceneFieldNames::Content::kContents,
-                analyzer);
-
         Lucene::QueryPtr mainQuery;
         if (query.type() == SearchQuery::Type::Simple) {
-            mainQuery = buildSimpleContentsQuery(query, contentsParser);
+            mainQuery = buildSimpleContentsQuery(query);
         } else if (query.type() == SearchQuery::Type::Boolean) {
             if (query.subQueries().isEmpty()) {
                 // For an empty boolean query, match nothing.
@@ -87,12 +80,12 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
                 // Determine which logic path to take for boolean queries
                 if (mixedAndEnabled && query.booleanOperator() == SearchQuery::BooleanOperator::AND) {
                     // New "advanced" AND logic for contents/filename
-                    mainQuery = buildAdvancedAndQuery(query, contentsParser, analyzer);
+                    mainQuery = buildAdvancedAndQuery(query);
                 } else {
                     // "Standard" contents-only logic for:
                     // 1. OR queries (regardless of mixedAndEnabled value).
                     // 2. AND queries when mixedAndEnabled is false.
-                    mainQuery = buildStandardBooleanContentsQuery(query, contentsParser);
+                    mainQuery = buildStandardBooleanContentsQuery(query);
                 }
             }
         } else {
@@ -103,12 +96,9 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
         // Add filename keyword query (before filters, so it replaces empty content query correctly)
         QString filenameKw = optAPI.filenameKeyword();
         if (!filenameKw.isEmpty()) {
-            Lucene::QueryParserPtr filenameParser = newLucene<Lucene::QueryParser>(
-                    Lucene::LuceneVersion::LUCENE_CURRENT,
-                    LuceneFieldNames::Content::kFilename,
-                    analyzer);
-            Lucene::QueryPtr filenameQuery = filenameParser->parse(
-                    LuceneQueryUtils::processQueryString(filenameKw, false));
+            Lucene::QueryPtr filenameQuery = LuceneQueryUtils::buildNGramSearchQuery(
+                    QString::fromWCharArray(LuceneFieldNames::Content::kFilename),
+                    filenameKw);
 
             if (filenameQuery) {
                 // Check if content keywords are effectively empty
@@ -228,15 +218,9 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
     }
 }
 
-QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query, const Lucene::QueryParserPtr &contentsParser, const Lucene::AnalyzerPtr &analyzer)
+QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query)
 {
     // This method implements the new "mixed" AND logic.
-    // It requires its own filenameParser.
-    Lucene::QueryParserPtr filenameParser = newLucene<Lucene::QueryParser>(
-            Lucene::LuceneVersion::LUCENE_CURRENT,
-            LuceneFieldNames::Content::kFilename,
-            analyzer);
-
     Lucene::BooleanQueryPtr overallQuery = newLucene<Lucene::BooleanQuery>();
     Lucene::BooleanQueryPtr mainAndClausesQuery = newLucene<Lucene::BooleanQuery>();
     Lucene::BooleanQueryPtr allContentsQuery = newLucene<Lucene::BooleanQuery>();
@@ -250,10 +234,12 @@ QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query,
         }
         hasValidKeywords = true;
 
-        // 使用 LuceneQueryUtils 处理特殊字符
-        Lucene::String processedKeyword = LuceneQueryUtils::processQueryString(subQuery.keyword(), false);
-        Lucene::QueryPtr contentsTermQuery = contentsParser->parse(processedKeyword);
-        Lucene::QueryPtr filenameTermQuery = filenameParser->parse(processedKeyword);
+        Lucene::QueryPtr contentsTermQuery = LuceneQueryUtils::buildNGramSearchQuery(
+                QString::fromWCharArray(LuceneFieldNames::Content::kContents),
+                subQuery.keyword());
+        Lucene::QueryPtr filenameTermQuery = LuceneQueryUtils::buildNGramSearchQuery(
+                QString::fromWCharArray(LuceneFieldNames::Content::kFilename),
+                subQuery.keyword());
 
         // Build (contents:keyword OR filename:keyword)
         Lucene::BooleanQueryPtr combinedTermQuery = newLucene<Lucene::BooleanQuery>();
@@ -283,7 +269,7 @@ QueryPtr ContentIndexedStrategy::buildAdvancedAndQuery(const SearchQuery &query,
     return overallQuery;
 }
 
-QueryPtr ContentIndexedStrategy::buildStandardBooleanContentsQuery(const SearchQuery &query, const Lucene::QueryParserPtr &contentsParser)
+QueryPtr ContentIndexedStrategy::buildStandardBooleanContentsQuery(const SearchQuery &query)
 {
     // This method implements the "original" boolean logic, searching only "contents".
     Lucene::BooleanQueryPtr booleanQuery = newLucene<Lucene::BooleanQuery>();
@@ -294,8 +280,9 @@ QueryPtr ContentIndexedStrategy::buildStandardBooleanContentsQuery(const SearchQ
             continue;   // Skip empty keywords
         }
 
-        // 使用 LuceneQueryUtils 处理特殊字符
-        Lucene::QueryPtr termQuery = contentsParser->parse(LuceneQueryUtils::processQueryString(subQuery.keyword(), false));
+        Lucene::QueryPtr termQuery = LuceneQueryUtils::buildNGramSearchQuery(
+                QString::fromWCharArray(LuceneFieldNames::Content::kContents),
+                subQuery.keyword());
         booleanQuery->add(termQuery,
                           query.booleanOperator() == SearchQuery::BooleanOperator::AND ? Lucene::BooleanClause::MUST : Lucene::BooleanClause::SHOULD);
     }
@@ -303,14 +290,15 @@ QueryPtr ContentIndexedStrategy::buildStandardBooleanContentsQuery(const SearchQ
     return booleanQuery;
 }
 
-QueryPtr ContentIndexedStrategy::buildSimpleContentsQuery(const SearchQuery &query, const Lucene::QueryParserPtr &contentsParser)
+QueryPtr ContentIndexedStrategy::buildSimpleContentsQuery(const SearchQuery &query)
 {
     m_keywords.append(query.keyword());
     if (query.keyword().isEmpty()) {
         return newLucene<Lucene::BooleanQuery>();   // Match nothing for empty keyword
     }
-    // 使用 LuceneQueryUtils 处理特殊字符
-    return contentsParser->parse(LuceneQueryUtils::processQueryString(query.keyword(), false));
+    return LuceneQueryUtils::buildNGramSearchQuery(
+            QString::fromWCharArray(LuceneFieldNames::Content::kContents),
+            query.keyword());
 }
 
 void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr &searcher,
@@ -495,11 +483,8 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
         // 创建搜索器
         IndexSearcherPtr searcher = newLucene<IndexSearcher>(reader);
 
-        // 创建分析器
-        AnalyzerPtr analyzer = newLucene<NGramAnalyzer>(2, 2);
-
         // 构建查询
-        m_currentQuery = buildLuceneQuery(query, analyzer);
+        m_currentQuery = buildLuceneQuery(query);
         if (!m_currentQuery) {
             qWarning() << "Failed to build Lucene query";
             emit errorOccurred(SearchError(ContentSearchErrorCode::ContentIndexException));
