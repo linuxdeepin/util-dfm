@@ -26,6 +26,21 @@ namespace LuceneQueryUtils {
 Lucene::String processQueryString(const QString &str, bool caseSensitive = false);
 
 /**
+ * @brief Build a query that matches text indexed by NGramAnalyzer(1, 2)
+ *
+ * The query is built directly instead of passing user input through an n-gram
+ * analyzer at search time. One- and two-character keywords use TermQuery.
+ * Longer keywords use a sparse PhraseQuery over 2-grams to avoid generating
+ * every overlapping query term.
+ *
+ * @param fieldName The indexed field name
+ * @param keyword The raw user keyword
+ * @param caseSensitive Whether the search is case sensitive
+ * @return Lucene query object, or nullptr if fieldName or keyword is empty
+ */
+Lucene::QueryPtr buildNGramSearchQuery(const QString &fieldName, const QString &keyword, bool caseSensitive = false);
+
+/**
  * @brief Get a list of Lucene special characters that need escaping
  * @return List of special characters
  */

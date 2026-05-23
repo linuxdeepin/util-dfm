@@ -7,7 +7,6 @@
 #include "basestrategy.h"
 
 #include <lucene++/LuceneHeaders.h>
-#include <lucene++/QueryParser.h>
 #include <lucene++/BooleanQuery.h>
 #include <lucene++/QueryWrapperFilter.h>
 #include <lucene++/WildcardQuery.h>
@@ -39,22 +38,15 @@ private:
     void performContentSearch(const SearchQuery &query);
 
     // Build Lucene query
-    Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer);
+    Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query);
     // Helper for simple queries (original logic for "contents" field)
-    Lucene::QueryPtr buildSimpleContentsQuery(
-            const SearchQuery &query,
-            const Lucene::QueryParserPtr &contentsParser);
+    Lucene::QueryPtr buildSimpleContentsQuery(const SearchQuery &query);
 
     // Helper for "standard" boolean logic (original logic for "contents" field, handles AND/OR)
-    Lucene::QueryPtr buildStandardBooleanContentsQuery(
-            const SearchQuery &query,
-            const Lucene::QueryParserPtr &contentsParser);
+    Lucene::QueryPtr buildStandardBooleanContentsQuery(const SearchQuery &query);
 
     // Helper for "advanced" mixed AND logic (searches "contents" and "filename")
-    Lucene::QueryPtr buildAdvancedAndQuery(
-            const SearchQuery &query,   // Operator is implicitly AND
-            const Lucene::QueryParserPtr &contentsParser,
-            const Lucene::AnalyzerPtr &analyzer);   // Analyzer is needed to create filenameParser
+    Lucene::QueryPtr buildAdvancedAndQuery(const SearchQuery &query);   // Operator is implicitly AND
 
     // Process search results
     void processSearchResults(const Lucene::IndexSearcherPtr &searcher,

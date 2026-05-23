@@ -7,7 +7,6 @@
 #include "basestrategy.h"
 
 #include <lucene++/LuceneHeaders.h>
-#include <lucene++/QueryParser.h>
 #include <lucene++/BooleanQuery.h>
 #include <lucene++/QueryWrapperFilter.h>
 #include <lucene++/WildcardQuery.h>
@@ -40,23 +39,16 @@ private:
     void performOcrTextSearch(const SearchQuery &query);
 
     // Build Lucene query
-    Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query, const Lucene::AnalyzerPtr &analyzer);
+    Lucene::QueryPtr buildLuceneQuery(const SearchQuery &query);
 
     // Helper for simple queries
-    Lucene::QueryPtr buildSimpleOcrContentsQuery(
-            const SearchQuery &query,
-            const Lucene::QueryParserPtr &ocrContentsParser);
+    Lucene::QueryPtr buildSimpleOcrContentsQuery(const SearchQuery &query);
 
     // Helper for "standard" boolean logic
-    Lucene::QueryPtr buildStandardBooleanOcrContentsQuery(
-            const SearchQuery &query,
-            const Lucene::QueryParserPtr &ocrContentsParser);
+    Lucene::QueryPtr buildStandardBooleanOcrContentsQuery(const SearchQuery &query);
 
     // Helper for "advanced" mixed AND logic (searches "ocr_contents" and "filename")
-    Lucene::QueryPtr buildAdvancedAndQuery(
-            const SearchQuery &query,
-            const Lucene::QueryParserPtr &ocrContentsParser,
-            const Lucene::AnalyzerPtr &analyzer);
+    Lucene::QueryPtr buildAdvancedAndQuery(const SearchQuery &query);
 
     // Process search results
     void processSearchResults(const Lucene::IndexSearcherPtr &searcher,
