@@ -32,6 +32,14 @@ Lucene::TermPtr buildTerm(const QString &fieldName, const QString &text, bool ca
             toLuceneString(text, caseSensitive));
 }
 
+int phrasePositionForStandardNGram2(int startOffset)
+{
+    // Standard lucene++ NGramTokenizer(1,2) emits 1-gram then 2-gram at each
+    // character offset, and every emitted token advances the phrase position by 1.
+    // Therefore the 2-gram starting at offset i lands at position 2 * i + 1.
+    return startOffset * 2 + 1;
+}
+
 }   // namespace
 
 std::wstring getLuceneSpecialChars()
@@ -88,12 +96,14 @@ Lucene::QueryPtr buildNGramSearchQuery(const QString &fieldName, const QString &
 
     Lucene::PhraseQueryPtr phraseQuery = Lucene::newLucene<Lucene::PhraseQuery>();
     for (int pos = 0; pos + 2 <= keyword.size(); pos += 2) {
-        phraseQuery->add(buildTerm(fieldName, keyword.mid(pos, 2), caseSensitive), pos);
+        phraseQuery->add(buildTerm(fieldName, keyword.mid(pos, 2), caseSensitive),
+                         phrasePositionForStandardNGram2(pos));
     }
 
     if (keyword.size() % 2 != 0) {
         const int tailPos = keyword.size() - 2;
-        phraseQuery->add(buildTerm(fieldName, keyword.mid(tailPos, 2), caseSensitive), tailPos);
+        phraseQuery->add(buildTerm(fieldName, keyword.mid(tailPos, 2), caseSensitive),
+                         phrasePositionForStandardNGram2(tailPos));
     }
 
     return phraseQuery;
