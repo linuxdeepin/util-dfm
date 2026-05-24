@@ -357,9 +357,9 @@ void tst_SearchUtils::testNGramSearchQuery()
     QCOMPARE(evenPhraseQuery->getTerms()[0]->text(), Lucene::String(L"ab"));
     QCOMPARE(evenPhraseQuery->getTerms()[1]->text(), Lucene::String(L"cd"));
     QCOMPARE(evenPhraseQuery->getTerms()[2]->text(), Lucene::String(L"ef"));
-    QCOMPARE(evenPhraseQuery->getPositions()[0], 0);
-    QCOMPARE(evenPhraseQuery->getPositions()[1], 2);
-    QCOMPARE(evenPhraseQuery->getPositions()[2], 4);
+    QCOMPARE(evenPhraseQuery->getPositions()[0], 1);
+    QCOMPARE(evenPhraseQuery->getPositions()[1], 5);
+    QCOMPARE(evenPhraseQuery->getPositions()[2], 9);
 
     Lucene::QueryPtr oddQuery = LuceneQueryUtils::buildNGramSearchQuery("contents", "abcde");
     Lucene::PhraseQueryPtr oddPhraseQuery = boost::dynamic_pointer_cast<Lucene::PhraseQuery>(oddQuery);
@@ -368,9 +368,9 @@ void tst_SearchUtils::testNGramSearchQuery()
     QCOMPARE(oddPhraseQuery->getTerms()[0]->text(), Lucene::String(L"ab"));
     QCOMPARE(oddPhraseQuery->getTerms()[1]->text(), Lucene::String(L"cd"));
     QCOMPARE(oddPhraseQuery->getTerms()[2]->text(), Lucene::String(L"de"));
-    QCOMPARE(oddPhraseQuery->getPositions()[0], 0);
-    QCOMPARE(oddPhraseQuery->getPositions()[1], 2);
-    QCOMPARE(oddPhraseQuery->getPositions()[2], 3);
+    QCOMPARE(oddPhraseQuery->getPositions()[0], 1);
+    QCOMPARE(oddPhraseQuery->getPositions()[1], 5);
+    QCOMPARE(oddPhraseQuery->getPositions()[2], 7);
 }
 
 QObject *create_tst_SearchUtils()
