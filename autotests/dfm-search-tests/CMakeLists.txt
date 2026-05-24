@@ -27,6 +27,7 @@ target_link_libraries(dfm-search-test
 # Add size_parser source for testing (it's part of dfm-searcher client but we test it here)
 target_sources(dfm-search-test PRIVATE
     ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/size_parser.cpp
+    ${CMAKE_SOURCE_DIR}/3rdparty/testutils/stub-ext/stub-shadow.cpp
 )
 
 target_include_directories(dfm-search-test
@@ -34,6 +35,8 @@ target_include_directories(dfm-search-test
     ${CMAKE_SOURCE_DIR}/src/dfm-search
     ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-lib
     ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client
+    ${CMAKE_SOURCE_DIR}/3rdparty/testutils/stub-ext
+    ${CMAKE_SOURCE_DIR}/3rdparty/testutils/cpp-stub
 )
 
 # Pass source directory for locating rule files at runtime
