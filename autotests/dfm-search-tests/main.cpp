@@ -19,6 +19,7 @@ extern QObject *create_tst_SizeRangeFilter();
 extern QObject *create_tst_IsSemanticQuery();
 extern QObject *create_tst_SearchTarget();
 extern QObject *create_tst_SemanticQueryBuilderTarget();
+extern QObject *create_tst_ContentRetriever();
 
 int main(int argc, char *argv[])
 {
@@ -80,6 +81,10 @@ int main(int argc, char *argv[])
     QObject *testObj14 = create_tst_SemanticQueryBuilderTarget();
     result |= QTest::qExec(testObj14, argc, argv);
     delete testObj14;
+
+    QObject *testObj15 = create_tst_ContentRetriever();
+    result |= QTest::qExec(testObj15, argc, argv);
+    delete testObj15;
 
     return result;
 }
