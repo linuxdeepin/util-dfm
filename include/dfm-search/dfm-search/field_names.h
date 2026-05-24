@@ -38,6 +38,7 @@ constexpr const wchar_t kAncestorPaths[] = L"ancestor_paths";
 constexpr const wchar_t kBirthTime[] = L"birth_time";
 constexpr const wchar_t kModifyTime[] = L"modify_time";
 constexpr const wchar_t kFileSize[] = L"file_size";
+constexpr const wchar_t kCheckSum[] = L"checksum";
 }   // namespace Content
 
 // OCR text index field names
