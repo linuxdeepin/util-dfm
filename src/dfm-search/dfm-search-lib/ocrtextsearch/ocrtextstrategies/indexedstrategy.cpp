@@ -12,6 +12,7 @@
 #include <lucene++/BooleanQuery.h>
 #include <lucene++/QueryWrapperFilter.h>
 #include <lucene++/WildcardQuery.h>
+#include <lucene++/MapFieldSelector.h>
 
 #include <dfm-search/field_names.h>
 #include <dfm-search/timerangefilter.h>
@@ -309,6 +310,25 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     bool enableHTML = optAPI.isSearchResultHighlightEnabled();
     int previewLen = optAPI.maxPreviewLength() > 0 ? optAPI.maxPreviewLength() : 50;
     bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
+    bool detailedResults = m_options.detailedResultsEnabled();
+
+    // Build field selector to avoid loading the large 'ocr_contents' field when not needed.
+    // The ocr_contents field stores OCR-recognized text and loading it for every result
+    // (even when only path is needed) causes significant disk I/O overhead.
+    Lucene::Collection<Lucene::String> fieldsToLoad = Lucene::Collection<Lucene::String>::newInstance();
+    if (enableRetrieval) {
+        fieldsToLoad.add(LuceneFieldNames::OcrText::kOcrContents);
+    }
+    fieldsToLoad.add(LuceneFieldNames::OcrText::kPath);
+    if (Q_UNLIKELY(detailedResults)) {
+        fieldsToLoad.add(LuceneFieldNames::OcrText::kFilename);
+        fieldsToLoad.add(LuceneFieldNames::OcrText::kIsHidden);
+        fieldsToLoad.add(LuceneFieldNames::OcrText::kModifyTime);
+        fieldsToLoad.add(LuceneFieldNames::OcrText::kBirthTime);
+        fieldsToLoad.add(LuceneFieldNames::OcrText::kCheckSum);
+        fieldsToLoad.add(LuceneFieldNames::OcrText::kFileSize);
+    }
+    Lucene::FieldSelectorPtr fieldSelector = newLucene<Lucene::MapFieldSelector>(fieldsToLoad);
 
     // Pre-allocate to avoid reallocation during append
     m_results.reserve(m_results.size() + static_cast<int>(docsSize));
@@ -328,7 +348,7 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
             Lucene::DocumentPtr doc;
             try {
-                doc = searcher->doc(scoreDoc->doc);
+                doc = searcher->doc(scoreDoc->doc, fieldSelector);
                 if (!doc) {
                     qWarning() << "Failed to retrieve document at index:" << scoreDoc->doc;
                     continue;
@@ -374,7 +394,7 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             }
 
             // 设置详细结果（如果启用）
-            if (Q_UNLIKELY(m_options.detailedResultsEnabled())) {
+            if (Q_UNLIKELY(detailedResults)) {
                 // 文件名
                 Lucene::String filenameField = doc->get(LuceneFieldNames::OcrText::kFilename);
                 if (!filenameField.empty()) {
