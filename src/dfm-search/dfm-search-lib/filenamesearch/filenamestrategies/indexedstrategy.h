@@ -89,7 +89,7 @@ private:
     QueryPtr buildLuceneQuery(const IndexQuery &query) const;
 
     // 构建布尔查询的辅助方法
-    BooleanQueryPtr buildBooleanTermsQuery(const IndexQuery &query, const AnalyzerPtr &analyzer) const;
+    BooleanQueryPtr buildBooleanTermsQuery(const IndexQuery &query) const;
 
     // 处理详细搜索结果（读取所有索引字段）
     SearchResult processDetailedSearchResult(const QString &path, const Lucene::DocumentPtr &doc);
@@ -116,14 +116,8 @@ public:
     QueryPtr buildExtQuery(const QStringList &extensions) const;
     QueryPtr buildPinyinQuery(const QStringList &pinyins, SearchQuery::BooleanOperator op = SearchQuery::BooleanOperator::AND) const;
     QueryPtr buildPinyinAcronymQuery(const QStringList &acronyms, SearchQuery::BooleanOperator op = SearchQuery::BooleanOperator::AND) const;
-    QueryPtr buildBooleanQuery(const QStringList &terms, bool caseSensitive, SearchQuery::BooleanOperator op, const Lucene::AnalyzerPtr &analyzer) const;
-    QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
-    QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer) const;
-
-private:
-    // 通用的查询构建方法
-    QueryPtr buildCommonQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer, bool allowWildcard = false) const;
-    QueryPtr buildCommonQuery(const QString &keyword, bool caseSensitive, const Lucene::AnalyzerPtr &analyzer, const QString &fieldName, bool allowWildcard = false) const;
+    QueryPtr buildWildcardQuery(const QString &keyword, bool caseSensitive) const;
+    QueryPtr buildSimpleQuery(const QString &keyword, bool caseSensitive) const;
 };
 
 /**
