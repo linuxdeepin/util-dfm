@@ -21,6 +21,7 @@ extern QObject *create_tst_SearchTarget();
 extern QObject *create_tst_SemanticQueryBuilderTarget();
 extern QObject *create_tst_ContentRetriever();
 extern QObject *create_tst_ContentSearchEngine();
+extern QObject *create_tst_FileNameSearchEngine();
 
 int main(int argc, char *argv[])
 {
@@ -90,6 +91,10 @@ int main(int argc, char *argv[])
     QObject *testObj16 = create_tst_ContentSearchEngine();
     result |= QTest::qExec(testObj16, argc, argv);
     delete testObj16;
+
+    QObject *testObj17 = create_tst_FileNameSearchEngine();
+    result |= QTest::qExec(testObj17, argc, argv);
+    delete testObj17;
 
     return result;
 }
