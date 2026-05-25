@@ -18,6 +18,7 @@
 #include <libmount.h>
 
 #include <unistd.h>
+#include <sys/mman.h>
 
 DFM_MOUNT_USE_NS
 
@@ -170,13 +171,7 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
         if (err)
             qDebug() << "query password failed: " << passwd << err->message;
         else {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            // since daemon accept base64-ed passwd to mount cifs, cleartext should be encoded with base64
-            // see commit of dde-file-manager: 3b50664d4034754b15c1a516cfaab8c7fbdd3db9
-            passwd.insert(kLoginPasswd, QString(QByteArray(pwd).toBase64()));
-#else
             passwd.insert(kLoginPasswd, QString(pwd));
-#endif
         }
     }
     return passwds;
@@ -551,36 +546,29 @@ static QVariant preparePasswd(const QString &passwd)
         return QVariant("");
     }
 
-    // Prepare passwd
-    const QByteArray passwdBytes = passwd.toLocal8Bit();
-
-    // Create pipe
-    int pipefds[2];
-    if (pipe(pipefds) == -1) {
-        qCritical() << "Failed to create pipe:" << strerror(errno);
+    int fd = memfd_create("DBusFD", MFD_CLOEXEC);
+    if (fd < 0) {
+        qCritical() << "Failed to create memfd for data transfer";
         return QVariant("");
     }
 
-    // pipefds[0] is for reading
-    // pipefds[1] is for writing
-    int read_fd = pipefds[0];
-    int write_fd = pipefds[1];
-
-    // Write passwd to pipe
-    qint64 bytesWritten = write(write_fd, passwdBytes.constData(), passwdBytes.size());
-    close(write_fd);
-    if (bytesWritten != passwdBytes.size()) {
-        qCritical() << "Failed to write passwd to pipe.";
-        close(read_fd);
+    QByteArray byteData = passwd.toUtf8();
+    ssize_t written = ::write(fd, byteData.constData(), byteData.size());
+    if (written < 0 || static_cast<ssize_t>(byteData.size()) != written) {
+        qCritical() << "Failed to write data to memfd";
+        ::close(fd);
         return QVariant("");
     }
 
-    // Create file descriptor wrapper
-    QDBusUnixFileDescriptor dbusFd(read_fd);
-    // read_fd has been copied to QDBusUnixFileDescriptor
-    close(read_fd);
+    if (lseek(fd, 0, SEEK_SET) < 0) {
+        qCritical() << "Failed to seek memfd to beginning";
+        ::close(fd);
+        return QVariant("");
+    }
 
-    qDebug() << "Successfully created fd for passwd transmission";
+    QDBusUnixFileDescriptor dbusFd;
+    dbusFd.giveFileDescriptor(fd);
+
     return QVariant::fromValue(dbusFd);
 }
 
@@ -589,11 +577,7 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
 {
     QVariantMap param { { kLoginUser, info.userName },
                         { kLoginDomain, info.domain },
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                        { kLoginPasswd, info.passwd },
-#else
                         { kLoginPasswd, preparePasswd(info.passwd) },
-#endif
                         { kLoginTimeout, info.timeout },
                         { kMountFsType, "cifs" } };
 
@@ -613,15 +597,7 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithUserInput(const QString &add
         err = DeviceError::kNoError;
 
         if (!info.anonymous && info.savePasswd != NetworkMountPasswdSaveMode::kNeverSavePasswd) {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            // since passwd from user input is base64-ed data, so the passwd should be decoded into cleartext for saving.
-            // associated commit of dde-file-manager: 3b50664d4034754b15c1a516cfaab8c7fbdd3db9
-            auto _info = info;
-            _info.passwd = QByteArray::fromBase64(info.passwd.toLocal8Bit());
-            savePasswd(address, _info);
-#else
             savePasswd(address, info);
-#endif
         }
     }
 
@@ -638,11 +614,7 @@ DNetworkMounter::MountRet DNetworkMounter::mountWithSavedInfos(const QString &ad
     for (const auto &login : infos) {
         QVariantMap param { { kLoginUser, login.value(kSchemaUser, "") },
                             { kLoginDomain, login.value(kSchemaDomain, "") },
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                            { kLoginPasswd, login.value(kLoginPasswd, "") },
-#else
                             { kLoginPasswd, preparePasswd(login.value(kLoginPasswd, "").toString()) },
-#endif
                             { kLoginTimeout, secs },
                             { kMountFsType, "cifs" } };
 
