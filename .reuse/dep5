@@ -43,3 +43,18 @@ Files: src/dfm-burn/3rdparty/udfclient/*
 Copyright: Reinoud Zandijk <reinoud@netbsd.org>
 License: ClArtistic
 
+# cpp-stub (MIT)
+Files: 3rdparty/testutils/cpp-stub/stub.h 3rdparty/testutils/cpp-stub/addr_any.h 3rdparty/testutils/cpp-stub/addr_pri.h
+Copyright: jobczz
+License: MIT
+
+# ELFIO (MIT)
+Files: 3rdparty/testutils/cpp-stub/elfio.hpp
+Copyright: Sergei Tikhomirov
+License: MIT
+
+# semantic rules
+Files: src/dfm-search/dfm-search-lib/semantic/rules/zh_CN/*.json
+Copyright: 2026 UnionTech Software Technology Co., Ltd.
+License: GPL-3.0-or-later
+
