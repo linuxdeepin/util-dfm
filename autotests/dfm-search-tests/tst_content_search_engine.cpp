@@ -20,7 +20,7 @@
 #include <lucene++/Field.h>
 #include <lucene++/IndexWriter.h>
 #include <lucene++/LuceneHeaders.h>
-#include <lucene++/NGramAnalyzer.h>
+#include <lucene++/ChineseAnalyzer.h>
 
 using namespace DFMSEARCH;
 using namespace Lucene;
@@ -92,7 +92,7 @@ void createContentIndex(const QString &indexDir, const QList<TestDocument> &docu
 
     IndexWriterPtr writer = newLucene<IndexWriter>(
             FSDirectory::open(indexDir.toStdWString()),
-            newLucene<NGramAnalyzer>(1, 2),
+            newLucene<ChineseAnalyzer>(),
             true,
             IndexWriter::MaxFieldLengthLIMITED);
 
@@ -109,7 +109,7 @@ void createOcrIndex(const QString &indexDir, const QList<TestDocument> &document
 
     IndexWriterPtr writer = newLucene<IndexWriter>(
             FSDirectory::open(indexDir.toStdWString()),
-            newLucene<NGramAnalyzer>(1, 2),
+            newLucene<ChineseAnalyzer>(),
             true,
             IndexWriter::MaxFieldLengthLIMITED);
 

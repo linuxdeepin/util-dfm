@@ -21,7 +21,7 @@
 #include <lucene++/Field.h>
 #include <lucene++/IndexWriter.h>
 #include <lucene++/LuceneHeaders.h>
-#include <lucene++/NGramAnalyzer.h>
+#include <lucene++/ChineseAnalyzer.h>
 #include <lucene++/NumericField.h>
 
 using namespace DFMSEARCH;
@@ -113,7 +113,7 @@ void createFileNameIndex(const QString &indexDir, const QList<TestDocument> &doc
 
     IndexWriterPtr writer = newLucene<IndexWriter>(
             FSDirectory::open(indexDir.toStdWString()),
-            newLucene<NGramAnalyzer>(1, 2),
+            newLucene<ChineseAnalyzer>(),
             true,
             IndexWriter::MaxFieldLengthLIMITED);
 
