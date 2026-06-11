@@ -114,7 +114,7 @@ void DFileInfoPrivate::initNormal()
         return;
 
     const QUrl &url = q->uri();
-    this->gfile = DLocalHelper::createGFile(url);;
+    this->gfile = DLocalHelper::createGFile(url);
 }
 
 void DFileInfoPrivate::attributeExtend(DFileInfo::MediaType type, QList<DFileInfo::AttributeExtendID> ids, DFileInfo::AttributeExtendFuncCallback callback)
@@ -304,9 +304,7 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             if (ret != 0)
                 return QVariant();
 
-            return statxBuffer.stx_btime.tv_sec > 0
-                    ? quint64(statxBuffer.stx_btime.tv_sec)
-                    : quint64(statxBuffer.stx_ctime.tv_sec);
+            return quint64(statxBuffer.stx_btime.tv_sec);
         }
         return qulonglong(ret);
     }
@@ -325,9 +323,7 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             if (ret != 0)
                 return QVariant();
 
-            return statxBuffer.stx_btime.tv_nsec > 0
-                    ? statxBuffer.stx_btime.tv_nsec / 1000000
-                    : statxBuffer.stx_ctime.tv_nsec / 1000000;
+            return statxBuffer.stx_btime.tv_nsec / 1000000;
         }
         return QVariant(ret);
     }
@@ -346,9 +342,7 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             if (ret != 0)
                 return QVariant();
 
-            return statxBuffer.stx_mtime.tv_sec > 0
-                    ? quint64(statxBuffer.stx_mtime.tv_sec)
-                    : quint64(statxBuffer.stx_ctime.tv_sec);
+            return quint64(statxBuffer.stx_mtime.tv_sec);
         }
         return qulonglong(ret);
     }
@@ -367,9 +361,7 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             if (ret != 0)
                 return QVariant();
 
-            return statxBuffer.stx_mtime.tv_nsec > 0
-                    ? statxBuffer.stx_mtime.tv_nsec / 1000000
-                    : statxBuffer.stx_ctime.tv_nsec / 1000000;
+            return statxBuffer.stx_mtime.tv_nsec / 1000000;
         }
         return QVariant(ret);
     }
@@ -388,9 +380,7 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             if (ret != 0)
                 return QVariant();
 
-            return statxBuffer.stx_atime.tv_sec > 0
-                    ? quint64(statxBuffer.stx_atime.tv_sec)
-                    : quint64(statxBuffer.stx_ctime.tv_sec);
+            return quint64(statxBuffer.stx_atime.tv_sec);
         }
         return qulonglong(ret);
     }
@@ -409,9 +399,7 @@ QVariant DFileInfoPrivate::attributesBySelf(DFileInfo::AttributeID id)
             if (ret != 0)
                 return QVariant();
 
-            return statxBuffer.stx_atime.tv_nsec > 0
-                    ? statxBuffer.stx_atime.tv_nsec / 1000000
-                    : statxBuffer.stx_ctime.tv_nsec / 1000000;
+            return statxBuffer.stx_atime.tv_nsec / 1000000;
         }
         return QVariant(ret);
     }
