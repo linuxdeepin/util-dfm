@@ -219,7 +219,8 @@ QString ContentRetriever::fetchHighlight(const QString &path,
         }
 
         return ContentHighlighter::customHighlight(
-                keywords, content, options.maxPreviewLength, options.enableHtml);
+                keywords, content, options.maxPreviewLength, options.enableHtml,
+                options.positioningMaxLength);
     } catch (const LuceneException &e) {
         qWarning() << "ContentRetriever: error fetching highlight for" << path
                    << QString::fromStdWString(e.getError());
@@ -260,7 +261,8 @@ QMap<QString, QString> ContentRetriever::fetchHighlights(const QStringList &path
             }
 
             results.insert(path, ContentHighlighter::customHighlight(
-                                         keywords, content, options.maxPreviewLength, options.enableHtml));
+                                         keywords, content, options.maxPreviewLength, options.enableHtml,
+                                         options.positioningMaxLength));
         } catch (const LuceneException &e) {
             qWarning() << "ContentRetriever: error for" << path
                        << QString::fromStdWString(e.getError());

@@ -33,11 +33,12 @@ namespace ContentHighlighter {
  *
  * @param keywords    A list of search keywords (supports wildcards *, ?).
  * @param content     The original document content to be searched.
- * @param maxLength   The maximum length of the returned snippet (used when no line breaks are present).
- * @param enableHtml  Whether to wrap matched keywords with <b></b> tags for highlighting.
+ * @param maxLength           The maximum length of the returned snippet (used when no line breaks are present).
+ * @param enableHtml          Whether to wrap matched keywords with <b></b> tags for highlighting.
+ * @param positioningMaxLength Keyword positioning window size for finding the optimal snippet start/end (min 30).
  * @return A snippet of content with matched keywords highlighted, or an empty string if no match is found.
  */
-QString customHighlight(const QStringList &keywords, const QString &content, int maxLength, bool enableHtml);
+QString customHighlight(const QStringList &keywords, const QString &content, int maxLength, bool enableHtml, int positioningMaxLength = 30);
 
 }   // namespace ContentHighlighter
 
