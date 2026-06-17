@@ -200,6 +200,9 @@ private Q_SLOTS:
     void realtime_sizeAndTimeFilters_applyWithoutIndex();
     void realtime_detailedResults_populateAttributes();
     void realtime_pinyinOption_doesNotProducePinyinMatches();
+    void realtime_symlinkDirName_matchesInResults();
+    void realtime_symlinkDir_notRecursedInto();
+    void realtime_circularSymlinkDir_deduplicated();
 };
 
 void tst_FileNameSearchEngine::search_simpleKeyword_matchesIndexedFilename()
@@ -909,6 +912,88 @@ void tst_FileNameSearchEngine::realtime_pinyinOption_doesNotProducePinyinMatches
     const SearchResultExpected expected = engine->searchSync(SearchQuery::createSimpleQuery("xiangmujihua"));
     QVERIFY(expected.hasValue());
     QCOMPARE(expected.value().size(), 0);
+}
+
+void tst_FileNameSearchEngine::realtime_symlinkDirName_matchesInResults()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString rootDir = tempDir.path() + "/docs";
+    QVERIFY(QDir().mkpath(rootDir));
+
+    // 创建一个真实目录和一个指向它的符号链接目录
+    const QString realDir = rootDir + "/real-target";
+    QVERIFY(QDir().mkpath(realDir));
+    QVERIFY(createFileWithSize(realDir + "/inside.txt", 16));
+
+    // 创建指向真实目录的符号链接
+    const QString symlinkDir = rootDir + "/target 快捷方式";
+    QVERIFY(QFile::link(realDir, symlinkDir));
+
+    std::unique_ptr<SearchEngine> engine(SearchEngine::create(SearchType::FileName));
+    engine->setSearchOptions(createRealtimeOptions(rootDir));
+
+    // 搜索关键词应匹配符号链接目录名称
+    const SearchResultExpected expected = engine->searchSync(SearchQuery::createSimpleQuery("快捷方式"));
+    QVERIFY(expected.hasValue());
+
+    const QStringList paths = resultPaths(expected);
+    QCOMPARE(paths.size(), 1);
+    QCOMPARE(paths.first(), symlinkDir);
+}
+
+void tst_FileNameSearchEngine::realtime_symlinkDir_notRecursedInto()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString rootDir = tempDir.path() + "/docs";
+    QVERIFY(QDir().mkpath(rootDir));
+
+    // 真实目录放在搜索根目录之外，确保只有通过 symlink 才能到达
+    const QString realDir = tempDir.path() + "/outside-target";
+    QVERIFY(QDir().mkpath(realDir));
+
+    // 创建指向真实目录的符号链接（链接位于搜索根目录内）
+    const QString symlinkDir = rootDir + "/symlink";
+    QVERIFY(QFile::link(realDir, symlinkDir));
+
+    // 在真实目录内创建一个文件，该文件名不会出现在搜索路径其他位置
+    QVERIFY(createFileWithSize(realDir + "/unique-inside-file.txt", 16));
+
+    std::unique_ptr<SearchEngine> engine(SearchEngine::create(SearchType::FileName));
+    engine->setSearchOptions(createRealtimeOptions(rootDir));
+
+    // 搜索真实目录内部的文件，应该找不到（因为不会递归进入 symlink）
+    const SearchResultExpected expected = engine->searchSync(
+            SearchQuery::createSimpleQuery("unique-inside-file"));
+    QVERIFY(expected.hasValue());
+    QCOMPARE(expected.value().size(), 0);
+}
+
+void tst_FileNameSearchEngine::realtime_circularSymlinkDir_deduplicated()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString rootDir = tempDir.path() + "/docs";
+    QVERIFY(QDir().mkpath(rootDir));
+
+    // 创建一个指向自身祖先目录的循环符号链接
+    const QString symlinkDir = rootDir + "/loop-link";
+    QVERIFY(QFile::link(rootDir, symlinkDir));
+
+    std::unique_ptr<SearchEngine> engine(SearchEngine::create(SearchType::FileName));
+    engine->setSearchOptions(createRealtimeOptions(rootDir));
+
+    // 搜索应该正常完成，不会因循环链接而死循环
+    const SearchResultExpected expected = engine->searchSync(SearchQuery::createSimpleQuery("loop-link"));
+    QVERIFY(expected.hasValue());
+
+    const QStringList paths = resultPaths(expected);
+    QCOMPARE(paths.size(), 1);
+    QCOMPARE(paths.first(), symlinkDir);
 }
 
 QObject *create_tst_FileNameSearchEngine()

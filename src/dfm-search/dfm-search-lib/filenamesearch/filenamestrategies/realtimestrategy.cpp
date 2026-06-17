@@ -108,11 +108,8 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
             }
 
             // 将子目录添加到栈中以便后续处理
-            if (info.isDir()) {
-                // 检查是否为符号链接，避免循环
-                if (info.isSymLink()) {
-                    continue;
-                }
+            // 符号链接目录不递归进入（防止循环），但其名称仍参与匹配
+            if (info.isDir() && !info.isSymLink()) {
                 directoryStack.push(info.filePath());
             }
 
