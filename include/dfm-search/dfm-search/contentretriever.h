@@ -18,8 +18,9 @@ DFM_SEARCH_BEGIN_NS
  */
 struct HighlightOptions
 {
-    int maxPreviewLength = 200;   ///< Maximum snippet length in characters
-    bool enableHtml = false;   ///< Wrap matched keywords with <b> tags
+    int maxPreviewLength = 200;      ///< Maximum snippet length in characters
+    int positioningMaxLength = 30; ///< Keyword positioning window size (min 30)
+    bool enableHtml = false;         ///< Wrap matched keywords with <b> tags
 };
 
 /**

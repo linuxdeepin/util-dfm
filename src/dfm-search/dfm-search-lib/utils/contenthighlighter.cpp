@@ -155,7 +155,7 @@ KeywordMatch findFirstKeywordMatch(const QString &content, const QStringList &ke
 }
 }   // namespace
 
-QString customHighlight(const QStringList &keywords, const QString &content, int maxLength, bool enableHtml)
+QString customHighlight(const QStringList &keywords, const QString &content, int maxLength, bool enableHtml, int positioningMaxLength)
 {
     if (content.isEmpty() || keywords.isEmpty()) {
         return QString();
@@ -191,13 +191,13 @@ QString customHighlight(const QStringList &keywords, const QString &content, int
         return match.keyword;   // Return the keyword as is (original behavior)
     }
 
-    // This is the "30 characters" from the requirement, used for positioning the keyword.
-    const int positioningMaxLength = 30;
+    // Enforce minimum of 30 for the positioning window
+    const int effectivePositioningLength = qMax(30, positioningMaxLength);
 
     // 1. Calculate the optimal start position.
     //    This start position is determined based on making the keyword visible
-    //    and well-positioned within a `positioningMaxLength` (e.g., 80 char) window.
-    int optimalStart = findOptimalStartPosition(content, match.position, positioningMaxLength);
+    //    and well-positioned within the positioning window.
+    int optimalStart = findOptimalStartPosition(content, match.position, effectivePositioningLength);
 
     // 2. Calculate the optimal end position.
     //    This uses the `optimalStart` calculated above and extends the snippet
