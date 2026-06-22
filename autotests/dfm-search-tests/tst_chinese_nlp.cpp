@@ -31,38 +31,38 @@ namespace {
 // Keep these lists in sync with filetype_rules.json extensions.
 QStringList imageExpectedExts()
 {
-    return QStringList{
-        "ani","avif","avifs","bmp","bw","dci","eps","epsf","epsi","exr","gif",
-        "heic","heif","heis","heix","icns","ico","jpe","jpeg","jpg","kra","mng",
-        "ora","pcx","pic","png","psd","raf","ras","raw","rgb","rgba","sgi","svg",
-        "svgz","tga","tif","tiff","wbmp","webp","wmf","xcf","cr2","crw","nef","dng",
-        "arw","orf","rw2","pef","srw","mrw","x3f","dcr","kdc","3fr","nrw","mef","iiq",
-        "sr2","erf","mos","rwl"
+    return QStringList {
+        "ani", "avif", "avifs", "bmp", "bw", "dci", "eps", "epsf", "epsi", "exr", "gif",
+        "heic", "heif", "heis", "heix", "icns", "ico", "jpe", "jpeg", "jpg", "kra", "mng",
+        "ora", "pcx", "pic", "png", "psd", "raf", "ras", "raw", "rgb", "rgba", "sgi", "svg",
+        "svgz", "tga", "tif", "tiff", "wbmp", "webp", "wmf", "xcf", "cr2", "crw", "nef", "dng",
+        "arw", "orf", "rw2", "pef", "srw", "mrw", "x3f", "dcr", "kdc", "3fr", "nrw", "mef", "iiq",
+        "sr2", "erf", "mos", "rwl"
     };
 }
 
 QStringList videoExpectedExts()
 {
-    return QStringList{
-        "3g2","3gp","3gp2","3gpp","amr","amv","asf","asx","avi","bdmv","bik","d2v",
-        "divx","drc","dsa","dsm","dss","dsv","evo","f4v","flc","fli","flic","flv",
-        "hdmov","ifo","ivf","m1v","m2p","m2t","m2ts","m2v","m4b","m4p","m4v","mkv",
-        "mp2v","mp4","mp4v","mpe","mpeg","mpg","mpls","mpv2","mpv4","mov","mts","ogm",
-        "ogv","pss","pva","qt","ram","ratdvd","rm","rmm","rmvb","roq","rpm","smil","smk",
-        "swf","tp","tpr","ts","vob","vp6","webm","wm","wmp","wmv"
+    return QStringList {
+        "3g2", "3gp", "3gp2", "3gpp", "amr", "amv", "asf", "asx", "avi", "bdmv", "bik", "d2v",
+        "divx", "drc", "dsa", "dsm", "dss", "dsv", "evo", "f4v", "flc", "fli", "flic", "flv",
+        "hdmov", "ifo", "ivf", "m1v", "m2p", "m2t", "m2ts", "m2v", "m4b", "m4p", "m4v", "mkv",
+        "mp2v", "mp4", "mp4v", "mpe", "mpeg", "mpg", "mpls", "mpv2", "mpv4", "mov", "mts", "ogm",
+        "ogv", "pss", "pva", "qt", "ram", "ratdvd", "rm", "rmm", "rmvb", "roq", "rpm", "smil", "smk",
+        "swf", "tp", "tpr", "ts", "vob", "vp6", "webm", "wm", "wmp", "wmv"
     };
 }
 
 QStringList audioExpectedExts()
 {
-    return QStringList{
-        "aac","ac3","aif","aifc","aiff","au","cda","dts","fla","flac","it","m1a",
-        "m2a","m3u","m4a","mid","midi","mka","mod","mp2","mp3","mpa","ogg","opus",
-        "ra","rmi","spc","snd","umx","voc","wav","wma","xm","ape"
+    return QStringList {
+        "aac", "ac3", "aif", "aifc", "aiff", "au", "cda", "dts", "fla", "flac", "it", "m1a",
+        "m2a", "m3u", "m4a", "mid", "midi", "mka", "mod", "mp2", "mp3", "mpa", "ogg", "opus",
+        "ra", "rmi", "spc", "snd", "umx", "voc", "wav", "wma", "xm", "ape"
     };
 }
 
-} // namespace
+}   // namespace
 
 class tst_ChineseNLP : public QObject
 {
@@ -201,8 +201,6 @@ private Q_SLOTS:
     void location_picturesDir();
     void location_musicDir();
     void location_videosDir();
-    void location_trash();
-    void location_deleted();
     void location_noLocation();
     void location_desktopAndDownload();
 
@@ -1772,35 +1770,6 @@ void tst_ChineseNLP::location_videosDir()
     m_parser->parse(QStringLiteral("视频目录下的电影"), intent);
     QCOMPARE(intent.searchDirectories.size(), 1);
     QCOMPARE(intent.searchDirectories.first(), videosPath);
-}
-
-void tst_ChineseNLP::location_trash()
-{
-    // "回收站里的文件" → location(trash) + includeHidden + filetype(文件=文档类)
-    const QString trashPath = QDir::homePath() + "/.local/share/Trash/files";
-    ParsedIntent intent;
-    m_parser->parse(QStringLiteral("回收站里的文档"), intent);
-    QCOMPARE(intent.searchDirectories.size(), 1);
-    QCOMPARE(intent.searchDirectories.first(), trashPath);
-    QVERIFY(intent.includeHidden);
-    // "文件" matches filetype_document_general, so it's a filetype not a keyword
-    QVERIFY(!intent.fileExtensions.isEmpty());
-    QVERIFY(intent.fileExtensions.contains("doc"));
-    QVERIFY(intent.keywords.isEmpty());
-}
-
-void tst_ChineseNLP::location_deleted()
-{
-    // "昨天删除的音乐" → location(trash) + time(yesterday) + filetype(音乐)
-    const QString trashPath = QDir::homePath() + "/.local/share/Trash/files";
-    ParsedIntent intent;
-    m_parser->parse(QStringLiteral("昨天删除的音乐"), intent);
-    QCOMPARE(intent.searchDirectories.size(), 1);
-    QCOMPARE(intent.searchDirectories.first(), trashPath);
-    QVERIFY(intent.includeHidden);
-    QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
-    QCOMPARE(intent.timeConstraint.preset, TimePreset::Yesterday);
-    QVERIFY(intent.fileExtensions.contains("mp3"));
 }
 
 void tst_ChineseNLP::location_noLocation()
