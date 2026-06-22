@@ -26,6 +26,44 @@ static bool setEquals(const QStringList &a, const QStringList &b)
     return QSet<QString>(a.begin(), a.end()) == QSet<QString>(b.begin(), b.end());
 }
 
+namespace {
+
+// Keep these lists in sync with filetype_rules.json extensions.
+QStringList imageExpectedExts()
+{
+    return QStringList{
+        "ani","avif","avifs","bmp","bw","dci","eps","epsf","epsi","exr","gif",
+        "heic","heif","heis","heix","icns","ico","jpe","jpeg","jpg","kra","mng",
+        "ora","pcx","pic","png","psd","raf","ras","raw","rgb","rgba","sgi","svg",
+        "svgz","tga","tif","tiff","wbmp","webp","wmf","xcf","cr2","crw","nef","dng",
+        "arw","orf","rw2","pef","srw","mrw","x3f","dcr","kdc","3fr","nrw","mef","iiq",
+        "sr2","erf","mos","rwl"
+    };
+}
+
+QStringList videoExpectedExts()
+{
+    return QStringList{
+        "3g2","3gp","3gp2","3gpp","amr","amv","asf","asx","avi","bdmv","bik","d2v",
+        "divx","drc","dsa","dsm","dss","dsv","evo","f4v","flc","fli","flic","flv",
+        "hdmov","ifo","ivf","m1v","m2p","m2t","m2ts","m2v","m4b","m4p","m4v","mkv",
+        "mp2v","mp4","mp4v","mpe","mpeg","mpg","mpls","mpv2","mpv4","mov","mts","ogm",
+        "ogv","pss","pva","qt","ram","ratdvd","rm","rmm","rmvb","roq","rpm","smil","smk",
+        "swf","tp","tpr","ts","vob","vp6","webm","wm","wmp","wmv"
+    };
+}
+
+QStringList audioExpectedExts()
+{
+    return QStringList{
+        "aac","ac3","aif","aifc","aiff","au","cda","dts","fla","flac","it","m1a",
+        "m2a","m3u","m4a","mid","midi","mka","mod","mp2","mp3","mpa","ogg","opus",
+        "ra","rmi","spc","snd","umx","voc","wav","wma","xm","ape"
+    };
+}
+
+} // namespace
+
 class tst_ChineseNLP : public QObject
 {
     Q_OBJECT
@@ -428,7 +466,7 @@ void tst_ChineseNLP::fileType_category_image_variants()
                                  QStringLiteral("截图"), QStringLiteral("壁纸"),
                                  QStringLiteral("海报"), QStringLiteral("相片"),
                                  QStringLiteral("表情包"), QStringLiteral("图") };
-    const QStringList expectedExts = { "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg" };
+    const QStringList expectedExts = imageExpectedExts();
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -442,7 +480,7 @@ void tst_ChineseNLP::fileType_category_video_variants()
     const QStringList inputs = { QStringLiteral("视频"), QStringLiteral("录像"),
                                  QStringLiteral("电影"), QStringLiteral("动画"),
                                  QStringLiteral("短片"), QStringLiteral("片子") };
-    const QStringList expectedExts = { "mp4", "avi", "mkv", "mov", "flv", "wmv", "webm" };
+    const QStringList expectedExts = videoExpectedExts();
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -456,7 +494,7 @@ void tst_ChineseNLP::fileType_category_audio_variants()
     const QStringList inputs = { QStringLiteral("音频"), QStringLiteral("音乐"),
                                  QStringLiteral("录音"), QStringLiteral("歌"),
                                  QStringLiteral("语音") };
-    const QStringList expectedExts = { "mp3", "wav", "flac", "aac", "ogg", "m4a" };
+    const QStringList expectedExts = audioExpectedExts();
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -470,7 +508,7 @@ void tst_ChineseNLP::fileType_category_archive()
     ParsedIntent intent;
     m_parser->parse(QStringLiteral("压缩包"), intent);
     QVERIFY(intent.fileExtensions.contains("zip"));
-    QVERIFY(intent.fileExtensions.contains("tar.gz"));
+    QVERIFY(intent.fileExtensions.contains("gz"));
     QVERIFY(intent.fileExtensions.contains("rar"));
     QVERIFY(intent.fileExtensions.contains("7z"));
 }
@@ -606,7 +644,7 @@ void tst_ChineseNLP::combined_timeAndFiletype()
     m_parser->parse(QStringLiteral("今天的图片"), intent);
     QCOMPARE(intent.timeConstraint.kind, TimeConstraintKind::Preset);
     QCOMPARE(intent.timeConstraint.preset, TimePreset::Today);
-    const QStringList imageExts = { "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg" };
+    const QStringList imageExts = imageExpectedExts();
     QVERIFY(setEquals(intent.fileExtensions, imageExts));
     // "的" is consumed by noise_suffix "的图片"
     QVERIFY(intent.keywords.isEmpty());
@@ -963,7 +1001,7 @@ void tst_ChineseNLP::fileType_image_allSynonyms()
         QStringLiteral("图"), QStringLiteral("壁纸"), QStringLiteral("海报"),
         QStringLiteral("相片"), QStringLiteral("表情包")
     };
-    const QStringList expectedExts = { "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg" };
+    const QStringList expectedExts = imageExpectedExts();
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -979,7 +1017,7 @@ void tst_ChineseNLP::fileType_video_allSynonyms()
         QStringLiteral("视频"), QStringLiteral("录像"), QStringLiteral("电影"),
         QStringLiteral("动画"), QStringLiteral("短片"), QStringLiteral("片子")
     };
-    const QStringList expectedExts = { "mp4", "avi", "mkv", "mov", "flv", "wmv", "webm" };
+    const QStringList expectedExts = videoExpectedExts();
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -995,7 +1033,7 @@ void tst_ChineseNLP::fileType_audio_allSynonyms()
         QStringLiteral("音频"), QStringLiteral("音乐"), QStringLiteral("录音"),
         QStringLiteral("歌"), QStringLiteral("语音")
     };
-    const QStringList expectedExts = { "mp3", "wav", "flac", "aac", "ogg", "m4a" };
+    const QStringList expectedExts = audioExpectedExts();
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
