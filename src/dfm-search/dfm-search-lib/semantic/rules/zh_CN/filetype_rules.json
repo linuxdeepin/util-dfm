@@ -90,7 +90,7 @@
                     "enabled": true,
                     "priority": 150,
                     "metadata": {
-                        "extensions": ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"],
+                        "extensions": ["ani","avif","avifs","bmp","bw","dci","eps","epsf","epsi","exr","gif","heic","heif","heis","heix","icns","ico","jpe","jpeg","jpg","kra","mng","ora","pcx","pic","png","psd","raf","ras","raw","rgb","rgba","sgi","svg","svgz","tga","tif","tiff","wbmp","webp","wmf","xcf","cr2","crw","nef","dng","arw","orf","rw2","pef","srw","mrw","x3f","dcr","kdc","3fr","nrw","mef","iiq","sr2","erf","mos","rwl"],
                         "fileTypes": ["pic"]
                     }
                 },
@@ -101,7 +101,7 @@
                     "enabled": true,
                     "priority": 150,
                     "metadata": {
-                        "extensions": ["mp4", "avi", "mkv", "mov", "flv", "wmv", "webm"],
+                        "extensions": ["3g2","3gp","3gp2","3gpp","amr","amv","asf","asx","avi","bdmv","bik","d2v","divx","drc","dsa","dsm","dss","dsv","evo","f4v","flc","fli","flic","flv","hdmov","ifo","ivf","m1v","m2p","m2t","m2ts","m2v","m4b","m4p","m4v","mkv","mp2v","mp4","mp4v","mpe","mpeg","mpg","mpls","mpv2","mpv4","mov","mts","ogm","ogv","pss","pva","qt","ram","ratdvd","rm","rmm","rmvb","roq","rpm","smil","smk","swf","tp","tpr","ts","vob","vp6","webm","wm","wmp","wmv"],
                         "fileTypes": ["video"]
                     }
                 },
@@ -112,7 +112,7 @@
                     "enabled": true,
                     "priority": 150,
                     "metadata": {
-                        "extensions": ["mp3", "wav", "flac", "aac", "ogg", "m4a"],
+                        "extensions": ["aac","ac3","aif","aifc","aiff","au","cda","dts","fla","flac","it","m1a","m2a","m3u","m4a","mid","midi","mka","mod","mp2","mp3","mpa","ogg","opus","ra","rmi","spc","snd","umx","voc","wav","wma","xm","ape"],
                         "fileTypes": ["audio"]
                     }
                 },
@@ -123,7 +123,7 @@
                     "enabled": true,
                     "priority": 150,
                     "metadata": {
-                        "extensions": ["zip", "tar.gz", "tar", "rar", "7z", "bz2"],
+                        "extensions": ["7z","ace","arj","bz2","cab","gz","gzip","jar","r00","r01","r02","r03","r04","r05","r06","r07","r08","r09","r10","r11","r12","r13","r14","r15","r16","r17","r18","r19","r20","r21","r22","r23","r24","r25","r26","r27","r28","r29","rar","tar","tgz","z","zip"],
                         "fileTypes": ["archive"]
                     }
                 },
@@ -134,7 +134,7 @@
                     "enabled": true,
                     "priority": 150,
                     "metadata": {
-                        "extensions": ["deb", "AppImage", "sh", "py", "bin", "run"],
+                        "extensions": ["deb", "AppImage", "sh", "py", "bin", "run", "desktop"],
                         "fileTypes": ["app"]
                     }
                 },
