@@ -33,6 +33,17 @@ public:
     void doCancel();
 
     /**
+     * @brief Guard non-semantic queries at public entry points.
+     *
+     * Calls q->isSemanticQuery() to avoid duplicating intent parsing logic.
+     *
+     * @param input The query string to validate.
+     * @return An empty SearchError if the query is valid (caller proceeds).
+     *         A non-empty SearchError if rejected (caller must propagate the error and return).
+     */
+    SearchError guardNonSemantic(const QString &input);
+
+    /**
      * @brief Create, configure, and launch a search engine
      *
      * Creates a SearchEngine of the given type, sets its options, connects

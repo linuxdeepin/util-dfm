@@ -40,6 +40,16 @@ SemanticSearcherData::~SemanticSearcherData()
     doCancel();
 }
 
+SearchError SemanticSearcherData::guardNonSemantic(const QString &input)
+{
+    if (q->isSemanticQuery(input))
+        return SearchError();   // valid semantic query
+
+    qWarning() << "Non-semantic query:" << input
+               << "- Use FileName/Content search instead";
+    return SearchError(SearchErrorCode::InvalidQuery);
+}
+
 void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStringList &searchDirectories)
 {
     if (naturalLanguage.trimmed().isEmpty()) {
@@ -241,6 +251,11 @@ void SemanticSearcher::search(const QString &naturalLanguage)
         return;
     }
 
+    if (const auto err = d_ptr->guardNonSemantic(naturalLanguage); err.isError()) {
+        Q_EMIT errorOccurred(err);
+        return;
+    }
+
     d_ptr->doSearch(naturalLanguage, {});
 }
 
@@ -248,6 +263,11 @@ void SemanticSearcher::search(const QString &naturalLanguage, const QStringList 
 {
     if (d_ptr->status.load() == SearchStatus::Searching) {
         qWarning() << "Search already in progress";
+        return;
+    }
+
+    if (const auto err = d_ptr->guardNonSemantic(naturalLanguage); err.isError()) {
+        Q_EMIT errorOccurred(err);
         return;
     }
 
@@ -308,6 +328,10 @@ SearchResultExpected SemanticSearcher::searchSync(const QString &naturalLanguage
 
     if (naturalLanguage.trimmed().isEmpty()) {
         return Dtk::Core::DUnexpected<SearchError>(SearchError(SearchErrorCode::InvalidQuery));
+    }
+
+    if (const auto err = d_ptr->guardNonSemantic(naturalLanguage); err.isError()) {
+        return Dtk::Core::DUnexpected<SearchError>(err);
     }
 
     SearchResultList results;
