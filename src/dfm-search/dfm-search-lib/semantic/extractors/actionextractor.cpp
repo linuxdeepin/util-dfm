@@ -5,7 +5,10 @@
 #include "actionextractor.h"
 
 #include "semantic/semanticruleengine.h"
+#include "locationextractor.h"
 
+#include <QDir>
+#include <QFileInfo>
 #include <QDebug>
 
 DFM_SEARCH_BEGIN_NS
@@ -23,29 +26,95 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
         return;
     }
 
-    QString ruleId;
-    QRegularExpressionMatch match;
-    if (!m_engine->match("action", input, match, &ruleId)) {
-        return;
+    // Use matchAll to support co-existing action dimensions
+    // (e.g., "别人传的修改过的文档" = IM received + modify time).
+    QStringList ruleIds;
+    const QList<QRegularExpressionMatch> matches =
+            m_engine->matchAll("action", input, &ruleIds);
+
+    for (int i = 0; i < matches.size(); ++i) {
+        const QRegularExpressionMatch &m = matches[i];
+        const QVariantMap metadata = m_engine->ruleMetadata("action", ruleIds[i]);
+        const QString timeFieldStr = metadata.value("time_field").toString();
+        const QString imCategory = metadata.value("im_category").toString();
+
+        // ── IM category actions (e.g., received → IM directories) ──
+        if (imCategory == QLatin1String("received")) {
+            const QStringList resolvedPaths = resolveImReceivedPaths();
+            if (!resolvedPaths.isEmpty()) {
+                for (const QString &path : resolvedPaths) {
+                    if (!intent.searchDirectories.contains(path)) {
+                        intent.searchDirectories.append(path);
+                    }
+                }
+
+                MatchSpan span;
+                span.start = m.capturedStart();
+                span.end = m.capturedEnd();
+                span.ruleId = ruleIds[i];
+                intent.consumedSpans.append(span);
+            }
+            // else: no IM directories resolved → do NOT consume span
+            // (trigger words demote to keyword fallback)
+            continue;
+        }
+
+        // ── Existing time_field actions ──
+        if (timeFieldStr == QLatin1String("birth")) {
+            intent.timeConstraint.timeField = TimeField::BirthTime;
+        } else if (timeFieldStr == QLatin1String("modify")) {
+            intent.timeConstraint.timeField = TimeField::ModifyTime;
+        } else {
+            qWarning() << "Unknown action metadata in rule" << ruleIds[i]
+                       << ":" << metadata;
+            continue;
+        }
+
+        MatchSpan span;
+        span.start = m.capturedStart();
+        span.end = m.capturedEnd();
+        span.ruleId = ruleIds[i];
+        intent.consumedSpans.append(span);
+    }
+}
+
+QStringList ActionExtractor::resolveImReceivedPaths() const
+{
+    QStringList paths;
+
+    if (!m_engine->hasGroup("location")) {
+        return paths;
     }
 
-    const QVariantMap metadata = m_engine->ruleMetadata("action", ruleId);
-    const QString timeFieldStr = metadata.value("time_field").toString();
+    const QStringList locRuleIds = m_engine->ruleIds("location");
+    for (const QString &rid : locRuleIds) {
+        const QVariantMap meta = m_engine->ruleMetadata("location", rid);
+        if (!meta.value("im_received").toBool()) {
+            continue;
+        }
 
-    if (timeFieldStr == "birth") {
-        intent.timeConstraint.timeField = TimeField::BirthTime;
-    } else if (timeFieldStr == "modify") {
-        intent.timeConstraint.timeField = TimeField::ModifyTime;
-    } else {
-        qWarning() << "Unknown time_field in action rule:" << timeFieldStr;
-        return;
+        const QString xdgType = meta.value("xdg_type").toString();
+        const QString customSubdir = meta.value("custom_path").toString();
+
+        QStringList resolved;
+        if (!customSubdir.isEmpty()) {
+            resolved = LocationExtractor::expandCustomPath(
+                    QDir::homePath(), customSubdir);
+        } else if (!xdgType.isEmpty()) {
+            const QString path = LocationExtractor::resolveXdgPath(xdgType);
+            if (!path.isEmpty()) {
+                resolved = { path };
+            }
+        }
+
+        for (const QString &p : resolved) {
+            if (QFileInfo::exists(p) && !paths.contains(p)) {
+                paths.append(p);
+            }
+        }
     }
 
-    MatchSpan span;
-    span.start = match.capturedStart();
-    span.end = match.capturedEnd();
-    span.ruleId = ruleId;
-    intent.consumedSpans.append(span);
+    return paths;
 }
 
 QString ActionExtractor::name() const

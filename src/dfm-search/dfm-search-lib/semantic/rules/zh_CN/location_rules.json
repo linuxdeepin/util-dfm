@@ -80,7 +80,8 @@
                     "priority": 180,
                     "metadata": {
                         "custom_path": "Documents/xwechat_files/*/msg/file",
-                        "include_hidden": false
+                        "include_hidden": false,
+                        "im_received": true
                     }
                 }
             ]
