@@ -7,6 +7,7 @@
 #include <dfm-search/field_names.h>
 
 #include "utils/contenthighlighter.h"
+#include "utils/highlightoptions_p.h"
 #include "utils/searchutility.h"
 
 #include <QDebug>
@@ -120,6 +121,51 @@ static std::optional<SearchType> resolveSemanticType(const QString &path)
 }
 
 }   // namespace
+
+// ── HighlightOptions (Pimpl) ──────────────────────────────────────────
+
+HighlightOptions::HighlightOptions()
+    : d(new HighlightOptionsPrivate)
+{
+}
+
+HighlightOptions::~HighlightOptions() = default;
+
+HighlightOptions::HighlightOptions(const HighlightOptions &other) = default;
+
+HighlightOptions &HighlightOptions::operator=(const HighlightOptions &other) = default;
+
+int HighlightOptions::maxPreviewLength() const
+{
+    return d->maxPreviewLength;
+}
+
+void HighlightOptions::setMaxPreviewLength(int length)
+{
+    d->maxPreviewLength = length;
+}
+
+int HighlightOptions::positioningMaxLength() const
+{
+    return d->positioningMaxLength;
+}
+
+void HighlightOptions::setPositioningMaxLength(int length)
+{
+    d->positioningMaxLength = length;
+}
+
+bool HighlightOptions::enableHtml() const
+{
+    return d->enableHtml;
+}
+
+void HighlightOptions::setEnableHtml(bool enable)
+{
+    d->enableHtml = enable;
+}
+
+// ── ContentRetriever ───────────────────────────────────────────────────
 
 struct ContentRetriever::Private
 {
@@ -252,8 +298,8 @@ QString ContentRetriever::fetchHighlight(const QString &path,
         }
 
         return ContentHighlighter::customHighlight(
-                keywords, content, options.maxPreviewLength, options.enableHtml,
-                options.positioningMaxLength);
+                keywords, content, options.maxPreviewLength(), options.enableHtml(),
+                options.positioningMaxLength());
     } catch (const LuceneException &e) {
         qWarning() << "ContentRetriever: error fetching highlight for" << path
                    << QString::fromStdWString(e.getError());
@@ -310,8 +356,8 @@ QMap<QString, QString> ContentRetriever::fetchHighlights(const QStringList &path
             }
 
             results.insert(path, ContentHighlighter::customHighlight(
-                                         keywords, content, options.maxPreviewLength, options.enableHtml,
-                                         options.positioningMaxLength));
+                                         keywords, content, options.maxPreviewLength(), options.enableHtml(),
+                                         options.positioningMaxLength()));
         } catch (const LuceneException &e) {
             qWarning() << "ContentRetriever: error for" << path
                        << QString::fromStdWString(e.getError());
