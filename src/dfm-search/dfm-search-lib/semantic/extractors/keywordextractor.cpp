@@ -55,17 +55,17 @@ bool KeywordExtractor::extractStructuredKeywords(const QString &input, ParsedInt
     const bool multiKeyword = metadata.value("multi_keyword", false).toBool();
 
     if (multiKeyword) {
-        intent.keywords = splitMultiKeywords(captured, metadata);
+        intent.setKeywords(splitMultiKeywords(captured, metadata));
     } else {
-        intent.keywords = { captured };
+        intent.setKeywords({ captured });
     }
 
     // Determine search target from rule metadata
     const QString targetStr = metadata.value("search_target").toString();
     if (targetStr == "filename") {
-        intent.searchTarget = SearchTarget::FileNameOnly;
+        intent.setSearchTarget(SearchTarget::FileNameOnly);
     } else if (targetStr == "content") {
-        intent.searchTarget = SearchTarget::ContentOnly;
+        intent.setSearchTarget(SearchTarget::ContentOnly);
     }
     // "all" or empty → keep default SearchTarget::All
 
@@ -74,14 +74,14 @@ bool KeywordExtractor::extractStructuredKeywords(const QString &input, ParsedInt
     span.start = match.capturedStart();
     span.end = match.capturedEnd();
     span.ruleId = ruleId;
-    intent.consumedSpans.append(span);
+    intent.consumedSpans().append(span);
 
     return true;
 }
 
 void KeywordExtractor::extractUnconsumedText(const QString &input, ParsedIntent &intent)
 {
-    QList<MatchSpan> allSpans = intent.consumedSpans;
+    QList<MatchSpan> allSpans = intent.consumedSpans();
 
     // Also consume noise words
     if (m_engine->hasGroup("noise")) {
@@ -133,7 +133,7 @@ void KeywordExtractor::extractUnconsumedText(const QString &input, ParsedIntent 
         return;
     }
 
-    intent.keywords = { cleaned };
+    intent.setKeywords({ cleaned });
 }
 
 QString KeywordExtractor::extractUnconsumedRegions(const QString &input, const QList<MatchSpan> &allSpans) const
