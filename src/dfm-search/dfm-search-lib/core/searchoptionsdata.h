@@ -34,6 +34,7 @@ public:
     QStringList searchPathsList;   ///< Multiple search paths
     QStringList searchExcludedPaths;   ///< excluded search paths.
     bool includeHidden;   ///< Whether to include hidden files
+    bool hiddenOnly;   ///< Whether to search hidden files only (exclude non-hidden)
     int maxResults;   ///< Maximum number of results to return
     QVariantHash customOptions;   ///< Custom search options
     bool resultFoundEnabled;   ///< Whether to enable result found notifications

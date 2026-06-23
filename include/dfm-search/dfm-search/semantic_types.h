@@ -106,6 +106,7 @@ struct ParsedIntent
     QStringList fileExtensions;
     QStringList searchDirectories;   // Absolute paths resolved from location words
     bool includeHidden = false;      // true for trash (hidden directory)
+    bool hiddenOnly = false;         // true = 只搜索隐藏文件（filename only）
     QStringList keywords;
     SearchTarget searchTarget = SearchTarget::All;
     QList<MatchSpan> consumedSpans;

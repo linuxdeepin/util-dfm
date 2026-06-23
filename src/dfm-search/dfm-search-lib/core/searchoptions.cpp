@@ -15,6 +15,7 @@ SearchOptionsData::SearchOptionsData()
       caseSensitive(false),
       searchPath(QDir::homePath()),
       includeHidden(false),
+      hiddenOnly(false),
       maxResults(-1),
       resultFoundEnabled(false),
       detailedResultsEnabled(false)
@@ -127,6 +128,16 @@ void SearchOptions::setIncludeHidden(bool include)
 bool SearchOptions::includeHidden() const
 {
     return d->includeHidden;
+}
+
+void SearchOptions::setHiddenOnly(bool hiddenOnly)
+{
+    d->hiddenOnly = hiddenOnly;
+}
+
+bool SearchOptions::hiddenOnly() const
+{
+    return d->hiddenOnly;
 }
 
 int SearchOptions::maxResults() const

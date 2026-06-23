@@ -21,7 +21,13 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
 
     // Pass location info through to plan (searcher handles per-directory options)
     plan.searchDirectories = intent.searchDirectories;
-    plan.includeHidden = intent.includeHidden;
+    plan.includeHidden = intent.includeHidden || intent.hiddenOnly;
+    plan.hiddenOnly = intent.hiddenOnly;
+
+    // When hiddenOnly is true, force filename-only search (no content/OCR)
+    const SearchTarget effectiveTarget = intent.hiddenOnly
+            ? SearchTarget::FileNameOnly
+            : intent.searchTarget;
 
     // Determine time field strategy
     if (intent.timeConstraint.isValid() && intent.timeConstraint.timeField == TimeField::Unspecified) {
@@ -40,10 +46,10 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
     baseOpts.setSearchMethod(SearchMethod::Indexed);
 
     // Determine which search paths to enable based on user intent
-    const bool enableFileName = (intent.searchTarget == SearchTarget::All
-                              || intent.searchTarget == SearchTarget::FileNameOnly);
-    const bool enableContent = (intent.searchTarget == SearchTarget::All
-                             || intent.searchTarget == SearchTarget::ContentOnly);
+    const bool enableFileName = (effectiveTarget == SearchTarget::All
+                              || effectiveTarget == SearchTarget::FileNameOnly);
+    const bool enableContent = (effectiveTarget == SearchTarget::All
+                             || effectiveTarget == SearchTarget::ContentOnly);
     const bool enableOcr = enableContent;   // OCR is a content search path
 
     // --- File name search ---
