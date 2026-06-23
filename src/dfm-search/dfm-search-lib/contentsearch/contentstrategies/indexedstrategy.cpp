@@ -4,7 +4,6 @@
 #include "indexedstrategy.h"
 
 #include <QDir>
-#include <QFileInfo>
 #include <QMimeDatabase>
 #include <QTextStream>
 #include <QThread>
@@ -219,6 +218,27 @@ Lucene::QueryPtr ContentIndexedStrategy::buildLuceneQuery(const SearchQuery &que
             }
         }
 
+        // Add file extension filter query (pushed down to index query layer)
+        {
+            const QStringList fileExtensions = optAPI.fileExtensions();
+            if (!fileExtensions.isEmpty() && mainQuery) {
+                Lucene::BooleanQueryPtr extQuery = newLucene<BooleanQuery>();
+                for (const QString &ext : fileExtensions) {
+                    extQuery->add(
+                            Lucene::newLucene<Lucene::TermQuery>(
+                                    Lucene::newLucene<Lucene::Term>(
+                                            LuceneFieldNames::Content::kFileExt,
+                                            ext.toStdWString())),
+                            Lucene::BooleanClause::SHOULD);
+                }
+                extQuery->setMinimumNumberShouldMatch(1);
+                BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+                finalQuery->add(mainQuery, BooleanClause::MUST);
+                finalQuery->add(extQuery, BooleanClause::MUST);
+                mainQuery = finalQuery;
+            }
+        }
+
         return mainQuery;
 
     } catch (const Lucene::LuceneException &e) {
@@ -328,10 +348,6 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
     bool detailedResults = m_options.detailedResultsEnabled();
 
-    // File extension filter (post-query filtering)
-    const QStringList fileExtensions = optAPI.fileExtensions();
-    const bool hasExtFilter = !fileExtensions.isEmpty();
-
     // Build field selector to avoid loading the large 'contents' field when not needed.
     // The contents field stores full document text and loading it for every result
     // (even when only path is needed) causes significant disk I/O overhead.
@@ -385,15 +401,6 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             if (pathField.empty()) {
                 qWarning() << "Document missing path field at index:" << scoreDoc->doc;
                 continue;
-            }
-
-            // File extension filter (post-query filtering, since filename field is NGram-analyzed)
-            if (hasExtFilter) {
-                QString filePath = QString::fromStdWString(pathField);
-                QFileInfo fi(filePath);
-                if (!fileExtensions.contains(fi.suffix().toLower())) {
-                    continue;
-                }
             }
 
             SearchResult result(QString::fromStdWString(pathField));
