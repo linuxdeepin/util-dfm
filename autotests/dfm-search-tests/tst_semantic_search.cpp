@@ -712,7 +712,8 @@ bool checkIsSemanticQuery(SemanticRuleEngine *engine, IntentParser *parser,
             || intent.sizeConstraint.isValid()
             || !intent.fileExtensions.isEmpty()
             || !intent.searchDirectories.isEmpty()
-            || intent.includeHidden;
+            || intent.includeHidden
+            || intent.hiddenOnly;
 }
 
 }   // namespace

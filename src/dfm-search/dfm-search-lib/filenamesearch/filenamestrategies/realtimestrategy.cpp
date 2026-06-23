@@ -195,6 +195,10 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
                 matches = sizeMatch;
             }
 
+            if (matches && m_options.hiddenOnly() && !info.isHidden()) {
+                matches = false;
+            }
+
             if (matches) {
                 // 创建搜索结果
                 SearchResult result(info.filePath());
