@@ -37,6 +37,15 @@ void LocationExtractor::extract(const QString &input, ParsedIntent &intent)
         const QString customSubdir = metadata.value("custom_path").toString();
         const bool includeHidden = metadata.value("include_hidden", false).toBool();
 
+        // Always record the consumed span when a rule matches,
+        // regardless of whether the resolved directory exists on this machine.
+        // This ensures KeywordExtractor correctly excludes trigger words.
+        MatchSpan span;
+        span.start = m.capturedStart();
+        span.end = m.capturedEnd();
+        span.ruleId = ruleIds[i];
+        intent.consumedSpans.append(span);
+
         QStringList resolvedPaths;
         if (!customSubdir.isEmpty()) {
             resolvedPaths = expandCustomPath(QDir::homePath(), customSubdir);
@@ -62,12 +71,6 @@ void LocationExtractor::extract(const QString &input, ParsedIntent &intent)
         if (includeHidden) {
             intent.includeHidden = true;
         }
-
-        MatchSpan span;
-        span.start = m.capturedStart();
-        span.end = m.capturedEnd();
-        span.ruleId = ruleIds[i];
-        intent.consumedSpans.append(span);
     }
 }
 
