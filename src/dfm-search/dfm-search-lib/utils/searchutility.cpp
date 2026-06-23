@@ -129,7 +129,7 @@ static std::optional<QStringList> tryLoadStringListFromDConfigInternal(
         return std::nullopt;   // Type mismatch
     }
     // No need to delete dconfigPtr, dconfigParent will manage it when it goes out of scope.
-    return value.toStringList();
+    return value.toString().split(';');
 }
 
 // --- Specific Loader for "supportedFileExtensions" ---
