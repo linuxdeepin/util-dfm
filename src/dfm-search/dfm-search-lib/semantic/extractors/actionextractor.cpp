@@ -42,27 +42,27 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
 
         // ── Hidden-only files (filename search only, include hidden directories) ──
         if (hiddenOnly) {
-            intent.hiddenOnly = true;
-            intent.includeHidden = true;
-            intent.searchTarget = SearchTarget::FileNameOnly;
+            intent.setHiddenOnly(true);
+            intent.setIncludeHidden(true);
+            intent.setSearchTarget(SearchTarget::FileNameOnly);
 
             MatchSpan span;
             span.start = m.capturedStart();
             span.end = m.capturedEnd();
             span.ruleId = ruleIds[i];
-            intent.consumedSpans.append(span);
+            intent.consumedSpans().append(span);
             continue;
         }
 
         // ── Include hidden files ──
         if (includeHidden) {
-            intent.includeHidden = true;
+            intent.setIncludeHidden(true);
 
             MatchSpan span;
             span.start = m.capturedStart();
             span.end = m.capturedEnd();
             span.ruleId = ruleIds[i];
-            intent.consumedSpans.append(span);
+            intent.consumedSpans().append(span);
             continue;
         }
 
@@ -71,8 +71,8 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
             const QStringList resolvedPaths = resolveImReceivedPaths();
             if (!resolvedPaths.isEmpty()) {
                 for (const QString &path : resolvedPaths) {
-                    if (!intent.searchDirectories.contains(path)) {
-                        intent.searchDirectories.append(path);
+                    if (!intent.searchDirectories().contains(path)) {
+                        intent.searchDirectories().append(path);
                     }
                 }
 
@@ -80,7 +80,7 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
                 span.start = m.capturedStart();
                 span.end = m.capturedEnd();
                 span.ruleId = ruleIds[i];
-                intent.consumedSpans.append(span);
+                intent.consumedSpans().append(span);
             }
             // else: no IM directories resolved → do NOT consume span
             // (trigger words demote to keyword fallback)
@@ -89,9 +89,9 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
 
         // ── Existing time_field actions ──
         if (timeFieldStr == QLatin1String("birth")) {
-            intent.timeConstraint.timeField = TimeField::BirthTime;
+            intent.timeConstraint().timeField = TimeField::BirthTime;
         } else if (timeFieldStr == QLatin1String("modify")) {
-            intent.timeConstraint.timeField = TimeField::ModifyTime;
+            intent.timeConstraint().timeField = TimeField::ModifyTime;
         } else {
             qWarning() << "Unknown action metadata in rule" << ruleIds[i]
                        << ":" << metadata;
@@ -102,7 +102,7 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
         span.start = m.capturedStart();
         span.end = m.capturedEnd();
         span.ruleId = ruleIds[i];
-        intent.consumedSpans.append(span);
+        intent.consumedSpans().append(span);
     }
 }
 

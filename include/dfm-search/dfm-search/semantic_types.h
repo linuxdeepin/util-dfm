@@ -7,12 +7,15 @@
 
 #include <QDateTime>
 #include <QList>
+#include <QSharedDataPointer>
 #include <QString>
 #include <QStringList>
 
 #include <dfm-search/dsearch_global.h>
 
 DFM_SEARCH_BEGIN_NS
+
+class ParsedIntentPrivate;
 
 /**
  * @brief Represents a consumed span in the input text matched by a rule.
@@ -98,18 +101,65 @@ enum class SearchTarget {
  * This is the intermediate representation between NLP parsing
  * and search query construction. Declared public for future
  * structured API extensibility.
+ *
+ * Pimpl-based (QSharedDataPointer) for ABI stability:
+ * new fields can be added to ParsedIntentPrivate without
+ * breaking binary compatibility.
  */
-struct ParsedIntent
+class ParsedIntent
 {
-    TimeConstraint timeConstraint;
-    SizeConstraint sizeConstraint;
-    QStringList fileExtensions;
-    QStringList searchDirectories;   // Absolute paths resolved from location words
-    bool includeHidden = false;      // true for trash (hidden directory)
-    bool hiddenOnly = false;         // true = 只搜索隐藏文件（filename only）
-    QStringList keywords;
-    SearchTarget searchTarget = SearchTarget::All;
-    QList<MatchSpan> consumedSpans;
+public:
+    ParsedIntent();
+    ~ParsedIntent();
+    ParsedIntent(const ParsedIntent &other);
+    ParsedIntent &operator=(const ParsedIntent &other);
+    ParsedIntent(ParsedIntent &&other) noexcept;
+    ParsedIntent &operator=(ParsedIntent &&other) noexcept;
+
+    // timeConstraint
+    const TimeConstraint &timeConstraint() const;
+    TimeConstraint &timeConstraint();
+    void setTimeConstraint(const TimeConstraint &tc);
+
+    // sizeConstraint
+    const SizeConstraint &sizeConstraint() const;
+    SizeConstraint &sizeConstraint();
+    void setSizeConstraint(const SizeConstraint &sc);
+
+    // fileExtensions
+    const QStringList &fileExtensions() const;
+    QStringList &fileExtensions();
+    void setFileExtensions(const QStringList &extensions);
+
+    // searchDirectories
+    const QStringList &searchDirectories() const;
+    QStringList &searchDirectories();
+    void setSearchDirectories(const QStringList &dirs);
+
+    // includeHidden
+    bool includeHidden() const;
+    void setIncludeHidden(bool include);
+
+    // hiddenOnly
+    bool hiddenOnly() const;
+    void setHiddenOnly(bool hidden);
+
+    // keywords
+    const QStringList &keywords() const;
+    QStringList &keywords();
+    void setKeywords(const QStringList &kw);
+
+    // searchTarget
+    SearchTarget searchTarget() const;
+    void setSearchTarget(SearchTarget target);
+
+    // consumedSpans
+    const QList<MatchSpan> &consumedSpans() const;
+    QList<MatchSpan> &consumedSpans();
+    void setConsumedSpans(const QList<MatchSpan> &spans);
+
+private:
+    QSharedDataPointer<ParsedIntentPrivate> d;
 };
 
 DFM_SEARCH_END_NS

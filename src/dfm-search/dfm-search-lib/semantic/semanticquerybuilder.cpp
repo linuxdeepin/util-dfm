@@ -20,29 +20,29 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
     SemanticSearchPlan plan;
 
     // Pass location info through to plan (searcher handles per-directory options)
-    plan.searchDirectories = intent.searchDirectories;
-    plan.includeHidden = intent.includeHidden || intent.hiddenOnly;
-    plan.hiddenOnly = intent.hiddenOnly;
+    plan.searchDirectories = intent.searchDirectories();
+    plan.includeHidden = intent.includeHidden() || intent.hiddenOnly();
+    plan.hiddenOnly = intent.hiddenOnly();
 
     // When hiddenOnly is true, force filename-only search (no content/OCR)
-    const SearchTarget effectiveTarget = intent.hiddenOnly
+    const SearchTarget effectiveTarget = intent.hiddenOnly()
             ? SearchTarget::FileNameOnly
-            : intent.searchTarget;
+            : intent.searchTarget();
 
     // Determine time field strategy
-    if (intent.timeConstraint.isValid() && intent.timeConstraint.timeField == TimeField::Unspecified) {
+    if (intent.timeConstraint().isValid() && intent.timeConstraint().timeField == TimeField::Unspecified) {
         // Time constraint exists but no action specified → search both birth and modify time
         plan.timeField = TimeField::Both;
-    } else if (intent.timeConstraint.timeField == TimeField::BirthTime) {
+    } else if (intent.timeConstraint().timeField == TimeField::BirthTime) {
         plan.timeField = TimeField::BirthTime;
-    } else if (intent.timeConstraint.timeField == TimeField::ModifyTime) {
+    } else if (intent.timeConstraint().timeField == TimeField::ModifyTime) {
         plan.timeField = TimeField::ModifyTime;
     } else {
         plan.timeField = TimeField::ModifyTime;
     }
 
     // Base options shared across all search paths
-    SearchOptions baseOpts = buildBaseOptions(intent.timeConstraint, intent.sizeConstraint);
+    SearchOptions baseOpts = buildBaseOptions(intent.timeConstraint(), intent.sizeConstraint());
     baseOpts.setSearchMethod(SearchMethod::Indexed);
 
     // Determine which search paths to enable based on user intent
@@ -57,14 +57,14 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
         SearchOptions opts = baseOpts;
         FileNameOptionsAPI fnameApi(opts);
 
-        if (!intent.fileExtensions.isEmpty()) {
-            fnameApi.setFileExtensions(intent.fileExtensions);
+        if (!intent.fileExtensions().isEmpty()) {
+            fnameApi.setFileExtensions(intent.fileExtensions());
         }
 
-        if (intent.keywords.size() == 1) {
-            plan.fileNameQuery = SearchFactory::createQuery(intent.keywords.first());
-        } else if (intent.keywords.size() > 1) {
-            plan.fileNameQuery = SearchFactory::createQuery(intent.keywords, SearchQuery::Type::Boolean);
+        if (intent.keywords().size() == 1) {
+            plan.fileNameQuery = SearchFactory::createQuery(intent.keywords().first());
+        } else if (intent.keywords().size() > 1) {
+            plan.fileNameQuery = SearchFactory::createQuery(intent.keywords(), SearchQuery::Type::Boolean);
         } else {
             // No keywords: search all files (use wildcard to match everything)
             plan.fileNameQuery = SearchFactory::createQuery("");
@@ -75,7 +75,7 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
 
     // --- Content search (when keywords available and content target enabled) ---
     if (enableContent) {
-        const bool hasKeywords = !intent.keywords.isEmpty();
+        const bool hasKeywords = !intent.keywords().isEmpty();
         bool contentEnabled = hasKeywords;
 
         // Check if content index is available
@@ -87,7 +87,7 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
             // Check minimum keyword length
             const int minLen = Global::kMinContentSearchKeywordLength;
             bool hasValidKeyword = false;
-            for (const QString &kw : intent.keywords) {
+            for (const QString &kw : intent.keywords()) {
                 if (kw.length() >= minLen) {
                     hasValidKeyword = true;
                     break;
@@ -106,14 +106,14 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
             contentApi.setFilenameContentMixedAndSearchEnabled(true);
 
             // Pass file extension filter to content search
-            if (!intent.fileExtensions.isEmpty()) {
-                contentApi.setFileExtensions(intent.fileExtensions);
+            if (!intent.fileExtensions().isEmpty()) {
+                contentApi.setFileExtensions(intent.fileExtensions());
             }
 
-            if (intent.keywords.size() == 1) {
-                plan.contentQuery = SearchFactory::createQuery(intent.keywords.first());
-            } else if (intent.keywords.size() > 1) {
-                plan.contentQuery = SearchFactory::createQuery(intent.keywords, SearchQuery::Type::Boolean);
+            if (intent.keywords().size() == 1) {
+                plan.contentQuery = SearchFactory::createQuery(intent.keywords().first());
+            } else if (intent.keywords().size() > 1) {
+                plan.contentQuery = SearchFactory::createQuery(intent.keywords(), SearchQuery::Type::Boolean);
             }
 
             plan.contentOptions = opts;
@@ -122,7 +122,7 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
 
     // --- OCR search (when keywords available and content target enabled) ---
     if (enableOcr) {
-        const bool hasKeywords = !intent.keywords.isEmpty();
+        const bool hasKeywords = !intent.keywords().isEmpty();
         bool ocrEnabled = hasKeywords;
 
         if (ocrEnabled && !Global::isOcrTextIndexAvailable()) {
@@ -137,14 +137,14 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
             ocrApi.setFilenameOcrContentMixedAndSearchEnabled(true);
 
             // Pass file extension filter to OCR search
-            if (!intent.fileExtensions.isEmpty()) {
-                ocrApi.setFileExtensions(intent.fileExtensions);
+            if (!intent.fileExtensions().isEmpty()) {
+                ocrApi.setFileExtensions(intent.fileExtensions());
             }
 
-            if (intent.keywords.size() == 1) {
-                plan.ocrQuery = SearchFactory::createQuery(intent.keywords.first());
-            } else if (intent.keywords.size() > 1) {
-                plan.ocrQuery = SearchFactory::createQuery(intent.keywords, SearchQuery::Type::Boolean);
+            if (intent.keywords().size() == 1) {
+                plan.ocrQuery = SearchFactory::createQuery(intent.keywords().first());
+            } else if (intent.keywords().size() > 1) {
+                plan.ocrQuery = SearchFactory::createQuery(intent.keywords(), SearchQuery::Type::Boolean);
             }
 
             plan.ocrOptions = opts;
