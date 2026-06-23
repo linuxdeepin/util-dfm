@@ -79,12 +79,12 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
     }
 
     if (sc.isValid()) {
-        intent.sizeConstraint = sc;
+        intent.setSizeConstraint(sc);
         MatchSpan span;
         span.start = match.capturedStart();
         span.end = match.capturedEnd();
         span.ruleId = ruleId;
-        intent.consumedSpans.append(span);
+        intent.consumedSpans().append(span);
     }
 }
 

@@ -62,12 +62,12 @@ void TimeExtractor::extract(const QString &input, ParsedIntent &intent)
     }
 
     if (tc.isValid()) {
-        intent.timeConstraint = tc;
+        intent.setTimeConstraint(tc);
         MatchSpan span;
         span.start = match.capturedStart();
         span.end = match.capturedEnd();
         span.ruleId = ruleId;
-        intent.consumedSpans.append(span);
+        intent.consumedSpans().append(span);
     }
 }
 

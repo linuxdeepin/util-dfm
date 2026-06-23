@@ -44,7 +44,7 @@ void LocationExtractor::extract(const QString &input, ParsedIntent &intent)
         span.start = m.capturedStart();
         span.end = m.capturedEnd();
         span.ruleId = ruleIds[i];
-        intent.consumedSpans.append(span);
+        intent.consumedSpans().append(span);
 
         QStringList resolvedPaths;
         if (!customSubdir.isEmpty()) {
@@ -63,13 +63,13 @@ void LocationExtractor::extract(const QString &input, ParsedIntent &intent)
             if (!QFileInfo::exists(path)) {
                 continue;
             }
-            if (!intent.searchDirectories.contains(path)) {
-                intent.searchDirectories.append(path);
+            if (!intent.searchDirectories().contains(path)) {
+                intent.searchDirectories().append(path);
             }
         }
 
         if (includeHidden) {
-            intent.includeHidden = true;
+            intent.setIncludeHidden(true);
         }
     }
 }

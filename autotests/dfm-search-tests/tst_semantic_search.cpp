@@ -642,10 +642,10 @@ private Q_SLOTS:
 void tst_ParsedIntent::defaultState()
 {
     ParsedIntent intent;
-    QVERIFY(intent.timeConstraint.kind == TimeConstraintKind::None);
-    QVERIFY(intent.fileExtensions.isEmpty());
-    QVERIFY(intent.keywords.isEmpty());
-    QVERIFY(intent.consumedSpans.isEmpty());
+    QVERIFY(intent.timeConstraint().kind == TimeConstraintKind::None);
+    QVERIFY(intent.fileExtensions().isEmpty());
+    QVERIFY(intent.keywords().isEmpty());
+    QVERIFY(intent.consumedSpans().isEmpty());
 }
 
 void tst_ParsedIntent::timeConstraintDefault()
@@ -708,13 +708,13 @@ bool checkIsSemanticQuery(SemanticRuleEngine *engine, IntentParser *parser,
     ParsedIntent intent;
     parser->parse(input, intent);
 
-    return intent.timeConstraint.isValid()
-            || intent.sizeConstraint.isValid()
-            || !intent.fileExtensions.isEmpty()
-            || !intent.searchDirectories.isEmpty()
-            || intent.includeHidden
-            || intent.hiddenOnly
-            || !intent.consumedSpans.isEmpty();
+    return intent.timeConstraint().isValid()
+            || intent.sizeConstraint().isValid()
+            || !intent.fileExtensions().isEmpty()
+            || !intent.searchDirectories().isEmpty()
+            || intent.includeHidden()
+            || intent.hiddenOnly()
+            || !intent.consumedSpans().isEmpty();
 }
 
 }   // namespace
@@ -965,42 +965,42 @@ void tst_SearchTarget::defaultIsAll()
 {
     ParsedIntent intent;
     m_extractor->extract("蓝天白云", intent);
-    QCOMPARE(intent.searchTarget, SearchTarget::All);
+    QCOMPARE(intent.searchTarget(), SearchTarget::All);
 }
 
 void tst_SearchTarget::filenameContains()
 {
     ParsedIntent intent;
     m_extractor->extract("文件名包含测试的文档", intent);
-    QCOMPARE(intent.searchTarget, SearchTarget::FileNameOnly);
-    QCOMPARE(intent.keywords.size(), 1);
-    QCOMPARE(intent.keywords.first(), QString("测试"));
+    QCOMPARE(intent.searchTarget(), SearchTarget::FileNameOnly);
+    QCOMPARE(intent.keywords().size(), 1);
+    QCOMPARE(intent.keywords().first(), QString("测试"));
 }
 
 void tst_SearchTarget::filenameNamed()
 {
     ParsedIntent intent;
     m_extractor->extract("名为报告的文件", intent);
-    QCOMPARE(intent.searchTarget, SearchTarget::FileNameOnly);
-    QCOMPARE(intent.keywords.size(), 1);
-    QCOMPARE(intent.keywords.first(), QString("报告"));
+    QCOMPARE(intent.searchTarget(), SearchTarget::FileNameOnly);
+    QCOMPARE(intent.keywords().size(), 1);
+    QCOMPARE(intent.keywords().first(), QString("报告"));
 }
 
 void tst_SearchTarget::contentContains()
 {
     ParsedIntent intent;
     m_extractor->extract("文件内容包含配置的文档", intent);
-    QCOMPARE(intent.searchTarget, SearchTarget::ContentOnly);
-    QCOMPARE(intent.keywords.size(), 1);
-    QCOMPARE(intent.keywords.first(), QString("配置"));
+    QCOMPARE(intent.searchTarget(), SearchTarget::ContentOnly);
+    QCOMPARE(intent.keywords().size(), 1);
+    QCOMPARE(intent.keywords().first(), QString("配置"));
 }
 
 void tst_SearchTarget::genericContainsStaysAll()
 {
     ParsedIntent intent;
     m_extractor->extract("包含测试的文件", intent);
-    QCOMPARE(intent.searchTarget, SearchTarget::All);
-    QVERIFY(!intent.keywords.isEmpty());
+    QCOMPARE(intent.searchTarget(), SearchTarget::All);
+    QVERIFY(!intent.keywords().isEmpty());
 }
 
 void tst_SearchTarget::unconsumedTextStaysAll()
@@ -1008,8 +1008,8 @@ void tst_SearchTarget::unconsumedTextStaysAll()
     // No structured keyword rule matches → unconsumed text extraction
     ParsedIntent intent;
     m_extractor->extract("项目计划书", intent);
-    QCOMPARE(intent.searchTarget, SearchTarget::All);
-    QVERIFY(!intent.keywords.isEmpty());
+    QCOMPARE(intent.searchTarget(), SearchTarget::All);
+    QVERIFY(!intent.keywords().isEmpty());
 }
 
 // ===== tst_LocationExtraction =====
@@ -1139,9 +1139,9 @@ void tst_LocationExtraction::extractWechatTriggerWords()
     for (const QString &input : inputs) {
         ParsedIntent intent;
         extractor.extract(input, intent);
-        QVERIFY2(!intent.consumedSpans.isEmpty(),
+        QVERIFY2(!intent.consumedSpans().isEmpty(),
                  qUtf8Printable("Expected consumed span for: " + input));
-        QVERIFY2(!intent.searchDirectories.isEmpty(),
+        QVERIFY2(!intent.searchDirectories().isEmpty(),
                  qUtf8Printable("Expected searchDirectory for: " + input));
     }
 
@@ -1175,11 +1175,11 @@ void tst_LocationExtraction::extractCustomPathResolved()
     ParsedIntent intent;
     extractor.extract("我的目录的文件", intent);
 
-    QVERIFY2(!intent.searchDirectories.isEmpty(),
+    QVERIFY2(!intent.searchDirectories().isEmpty(),
              "Expected at least one resolved search directory");
     // Path must end with /data
     bool hasData = false;
-    for (const QString &path : intent.searchDirectories) {
+    for (const QString &path : intent.searchDirectories()) {
         if (path.endsWith("/data")) hasData = true;
     }
     QVERIFY(hasData);
@@ -1207,8 +1207,8 @@ ParsedIntent tst_SemanticQueryBuilderTarget::makeIntent(
         const QStringList &keywords, SearchTarget target) const
 {
     ParsedIntent intent;
-    intent.keywords = keywords;
-    intent.searchTarget = target;
+    intent.setKeywords(keywords);
+    intent.setSearchTarget(target);
     return intent;
 }
 
