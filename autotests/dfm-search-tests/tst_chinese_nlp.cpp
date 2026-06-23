@@ -203,6 +203,9 @@ private Q_SLOTS:
     void location_videosDir();
     void location_noLocation();
     void location_desktopAndDownload();
+    void location_wechatPatternRecognition();
+    void location_wechatConsumesTriggerWords();
+    void location_imReceiveConsumesTriggerWords();
 
     // End-to-end combined tests
     void combined_timeAndFiletype();
@@ -1662,7 +1665,7 @@ void tst_ChineseNLP::action_modify_modifyTime()
 void tst_ChineseNLP::action_modify_synonyms()
 {
     const QStringList inputs = { QStringLiteral("编辑过的文档"), QStringLiteral("改过的文件"),
-                                 QStringLiteral("写过的图片"), QStringLiteral("更新的视频") };
+                                 QStringLiteral("写过的图片"), QStringLiteral("更新的视频"), QStringLiteral("修改的文档") };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -1794,6 +1797,94 @@ void tst_ChineseNLP::location_desktopAndDownload()
     QVERIFY(intent.searchDirectories.contains(desktopPath));
     QVERIFY(intent.searchDirectories.contains(downloadPath));
     QVERIFY(intent.fileExtensions.contains("jpg"));
+}
+
+void tst_ChineseNLP::location_wechatPatternRecognition()
+{
+    // WeChat custom_path uses glob which may match nothing locally,
+    // so verify pattern recognition via consumedSpans instead of searchDirectories.
+    const QStringList inputs = {
+        "微信的文件", "vx收到的文档", "微信里发给我的",
+        "微信群的文件", "微信接收的压缩包"
+    };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input, intent);
+        QVERIFY2(!intent.consumedSpans.isEmpty(),
+                 qUtf8Printable("Expected consumed span for: " + input));
+    }
+}
+
+void tst_ChineseNLP::location_wechatConsumesTriggerWords()
+{
+    // Verify that location trigger words are fully consumed and do NOT leak
+    // into keywords. Regex alternation must place longer patterns first so that
+    // "微信发我的" wins over "微信", otherwise "发给我" incorrectly becomes a keyword.
+    const struct
+    {
+        const char *input;
+        const char *expectedKeywordNotContaining;   // keyword must NOT contain this
+    } cases[] = {
+        { "微信发给我的文档", "发给我" },
+        { "微信接收的文件", "接收" },
+        { "微信群里发的", "微信群" },
+        { "vx的文件", "vx" },
+    };
+
+    for (const auto &c : cases) {
+        ParsedIntent intent;
+        m_parser->parse(QString::fromUtf8(c.input), intent);
+        // Trigger word itself must not appear as a keyword
+        for (const QString &kw : intent.keywords) {
+            QVERIFY2(!kw.contains(QString::fromUtf8(c.expectedKeywordNotContaining)),
+                     qUtf8Printable(QString("Keyword '%1' should not contain trigger fragment '%2' (input: %3)")
+                                            .arg(kw)
+                                            .arg(c.expectedKeywordNotContaining)
+                                            .arg(c.input)));
+        }
+    }
+}
+
+void tst_ChineseNLP::location_imReceiveConsumesTriggerWords()
+{
+    // action_im_receive trigger words must be fully consumed and NOT leak
+    // into keywords.  Create a fake WeChat received-files directory so that
+    // resolveImReceivedPaths() finds a valid path and consumes the span.
+    // We put it under ~/Documents/xwechat_files/tst_*/msg/file which matches
+    // the loc_wechat_data custom_path glob pattern.
+    const QString fakeWechatBase = QDir::homePath() + "/Documents/xwechat_files/tst_unittest_user";
+    const QString fakeWechatDir = fakeWechatBase + "/msg/file";
+    const bool dirCreated = QDir().mkpath(fakeWechatDir);
+    if (dirCreated) {
+        const struct
+        {
+            const char *input;
+            const char *trigger;   // must NOT appear in any keyword
+        } cases[] = {
+            { "别人传的文档", "别人传" },
+            { "接收的文件", "接收" },
+            { "发给我的报告", "发给我" },
+            { "传给我的资料", "传给我" },
+        };
+
+        for (const auto &c : cases) {
+            ParsedIntent intent;
+            m_parser->parse(QString::fromUtf8(c.input), intent);
+            for (const QString &kw : intent.keywords) {
+                QVERIFY2(!kw.contains(QString::fromUtf8(c.trigger)),
+                         qUtf8Printable(QString("Keyword '%1' must not contain '%2' "
+                                                "(input: %3, keywords: %4)")
+                                                .arg(kw)
+                                                .arg(c.trigger)
+                                                .arg(c.input)
+                                                .arg(intent.keywords.join(", "))));
+            }
+        }
+        // Clean up immediately — do not wait for destructor
+        QDir(fakeWechatBase).removeRecursively();
+    } else {
+        QSKIP("Could not create fake WeChat dir for IM receive test");
+    }
 }
 
 QObject *create_tst_ChineseNLP()

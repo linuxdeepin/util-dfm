@@ -18,7 +18,7 @@
                 },
                 {
                     "id": "action_modify",
-                    "pattern": "修改过的|编辑过的|改过的|写过的|更新的",
+                    "pattern": "修改过的|编辑过的|修改的|改过的|写过的|更新的",
                     "description": "Action: modified files (ModifyTime)",
                     "enabled": true,
                     "priority": 200,
