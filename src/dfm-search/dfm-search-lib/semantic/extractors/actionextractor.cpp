@@ -37,6 +37,19 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
         const QVariantMap metadata = m_engine->ruleMetadata("action", ruleIds[i]);
         const QString timeFieldStr = metadata.value("time_field").toString();
         const QString imCategory = metadata.value("im_category").toString();
+        const bool includeHidden = metadata.value("include_hidden", false).toBool();
+
+        // ── Include hidden files ──
+        if (includeHidden) {
+            intent.includeHidden = true;
+
+            MatchSpan span;
+            span.start = m.capturedStart();
+            span.end = m.capturedEnd();
+            span.ruleId = ruleIds[i];
+            intent.consumedSpans.append(span);
+            continue;
+        }
 
         // ── IM category actions (e.g., received → IM directories) ──
         if (imCategory == QLatin1String("received")) {

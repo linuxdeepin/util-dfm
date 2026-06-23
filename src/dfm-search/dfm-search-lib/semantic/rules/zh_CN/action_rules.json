@@ -27,6 +27,16 @@
                     }
                 },
                 {
+                    "id": "action_hidden_file",
+                    "pattern": "隐藏文件|隐藏的|藏起来的|看不到的",
+                    "description": "Action: search hidden files (include hidden flag)",
+                    "enabled": true,
+                    "priority": 190,
+                    "metadata": {
+                        "include_hidden": true
+                    }
+                },
+                {
                     "id": "action_im_receive",
                     "pattern": "发给我的|接收的|别人传的|传给我的|别人发的|别人给的",
                     "description": "Action: IM received files — maps to all IM received-file directories",
