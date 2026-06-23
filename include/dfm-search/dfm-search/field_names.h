@@ -31,6 +31,7 @@ constexpr const wchar_t kAncestorPaths[] = L"ancestor_paths";
 // Content index field names
 namespace Content {
 constexpr const wchar_t kContents[] = L"contents";
+constexpr const wchar_t kFileExt[] = L"file_ext";
 constexpr const wchar_t kFilename[] = L"filename";
 constexpr const wchar_t kPath[] = L"path";
 constexpr const wchar_t kIsHidden[] = L"is_hidden";
@@ -44,6 +45,7 @@ constexpr const wchar_t kCheckSum[] = L"checksum";
 // OCR text index field names
 namespace OcrText {
 constexpr const wchar_t kOcrContents[] = L"ocr_contents";
+constexpr const wchar_t kFileExt[] = L"file_ext";
 constexpr const wchar_t kFilename[] = L"filename";
 constexpr const wchar_t kPath[] = L"path";
 constexpr const wchar_t kIsHidden[] = L"is_hidden";
