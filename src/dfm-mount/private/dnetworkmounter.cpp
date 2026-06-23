@@ -323,7 +323,7 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
 
     QString mpt;
     QString addr(QUrl::fromPercentEncoding(address.toLower().toLocal8Bit()));
-    if (isMounted(addr, mpt) || isMountedByGio(address.toLower(), mpt)) {
+    if (isMounted(addr, mpt)) {
         if (mountResult)
             mountResult(false, Utils::genOperateErrorInfo(DeviceError::kGIOErrorAlreadyMounted), mpt);
         return;
@@ -690,40 +690,4 @@ bool DNetworkMounter::isMounted(const QString &address, QString &mpt)
     } else {
         return false;
     }
-}
-
-bool DNetworkMounter::isMountedByGio(const QString &url, QString &mpt)
-{
-    GFile_autoptr file = g_file_new_for_uri(url.toStdString().c_str());
-    if (!file)
-        return false;
-
-    GError_autoptr error = nullptr;
-    GMount_autoptr mount = g_file_find_enclosing_mount(file, nullptr, &error);
-    if (!mount) {
-        qWarning() << "gio: cannot find enclosing mount for" << url << (error ? error->message : "");
-        return false;
-    }
-
-    // Prefer the default location (e.g., the mount's "home" directory)
-    GFile_autoptr defLocation = g_mount_get_default_location(mount);
-    if (defLocation) {
-        g_autofree char *path = g_file_get_path(defLocation);
-        if (path) {
-            mpt = QString::fromUtf8(path);
-            return true;
-        }
-    }
-
-    // Fallback to the mount root
-    GFile_autoptr root = g_mount_get_root(mount);
-    if (root) {
-        g_autofree char *path = g_file_get_path(root);
-        if (path) {
-            mpt = QString::fromUtf8(path);
-            return true;
-        }
-    }
-
-    return false;
 }
