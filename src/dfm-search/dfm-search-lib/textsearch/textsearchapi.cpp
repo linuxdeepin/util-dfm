@@ -45,6 +45,16 @@ bool TextSearchOptionsAPI::isFullTextRetrievalEnabled() const
     return m_options.customOption("fullTextRetrieval").toBool();
 }
 
+void TextSearchOptionsAPI::setFileExtensions(const QStringList &extensions)
+{
+    m_options.setCustomOption("fileExtensions", extensions);
+}
+
+QStringList TextSearchOptionsAPI::fileExtensions() const
+{
+    return m_options.customOption("fileExtensions").toStringList();
+}
+
 void TextSearchOptionsAPI::setFilenameKeyword(const QString &keyword)
 {
     m_options.setCustomOption("filenameKeyword", keyword);

@@ -105,6 +105,11 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
             // Enable filename-content mixed AND search
             contentApi.setFilenameContentMixedAndSearchEnabled(true);
 
+            // Pass file extension filter to content search
+            if (!intent.fileExtensions.isEmpty()) {
+                contentApi.setFileExtensions(intent.fileExtensions);
+            }
+
             if (intent.keywords.size() == 1) {
                 plan.contentQuery = SearchFactory::createQuery(intent.keywords.first());
             } else if (intent.keywords.size() > 1) {
@@ -130,6 +135,11 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
 
             // Enable filename-OCR content mixed AND search
             ocrApi.setFilenameOcrContentMixedAndSearchEnabled(true);
+
+            // Pass file extension filter to OCR search
+            if (!intent.fileExtensions.isEmpty()) {
+                ocrApi.setFileExtensions(intent.fileExtensions);
+            }
 
             if (intent.keywords.size() == 1) {
                 plan.ocrQuery = SearchFactory::createQuery(intent.keywords.first());
