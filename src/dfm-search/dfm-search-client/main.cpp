@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
     if (config.subcommand == "highlight") {
         DFMSEARCH::ContentRetriever retriever;
         DFMSEARCH::HighlightOptions hlOptions;
-        hlOptions.maxPreviewLength = config.maxPreviewLength;
+        hlOptions.setMaxPreviewLength(config.maxPreviewLength);
 
         // Paths are stored as comma-separated in config.searchPath
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)

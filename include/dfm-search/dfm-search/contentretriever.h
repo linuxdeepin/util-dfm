@@ -7,20 +7,44 @@
 #include <QObject>
 #include <QStringList>
 #include <QMap>
+#include <QSharedDataPointer>
 #include <memory>
 
 #include <dfm-search/dsearch_global.h>
 
 DFM_SEARCH_BEGIN_NS
 
+class HighlightOptionsPrivate;
+
 /**
- * @brief Lightweight options for highlight extraction
+ * @brief Lightweight options for highlight extraction (Pimpl-based, ABI-stable)
+ *
+ * New fields can be added to HighlightOptionsPrivate without breaking ABI,
+ * because the public class layout is fixed at one pointer width.
+ *
+ * Supports implicit sharing (COW) via QSharedDataPointer.
  */
-struct HighlightOptions
+class HighlightOptions
 {
-    int maxPreviewLength = 200;      ///< Maximum snippet length in characters
-    int positioningMaxLength = 30; ///< Keyword positioning window size (min 30)
-    bool enableHtml = false;         ///< Wrap matched keywords with <b> tags
+public:
+    HighlightOptions();
+    ~HighlightOptions();
+    HighlightOptions(const HighlightOptions &other);
+    HighlightOptions &operator=(const HighlightOptions &other);
+    HighlightOptions(HighlightOptions &&other) noexcept = default;
+    HighlightOptions &operator=(HighlightOptions &&other) noexcept = default;
+
+    int maxPreviewLength() const;
+    void setMaxPreviewLength(int length);
+
+    int positioningMaxLength() const;
+    void setPositioningMaxLength(int length);
+
+    bool enableHtml() const;
+    void setEnableHtml(bool enable);
+
+private:
+    QSharedDataPointer<HighlightOptionsPrivate> d;
 };
 
 /**
