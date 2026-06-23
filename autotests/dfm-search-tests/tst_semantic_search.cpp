@@ -711,7 +711,8 @@ bool checkIsSemanticQuery(SemanticRuleEngine *engine, IntentParser *parser,
     return intent.timeConstraint.isValid()
             || intent.sizeConstraint.isValid()
             || !intent.fileExtensions.isEmpty()
-            || !intent.searchDirectories.isEmpty();
+            || !intent.searchDirectories.isEmpty()
+            || intent.includeHidden;
 }
 
 }   // namespace
@@ -743,6 +744,7 @@ private Q_SLOTS:
     void keywordOnlyNoMatch();
     void consecutiveCalls();
     void noiseWordsOnly();
+    void hiddenFile();
 
 private:
     SemanticRuleEngine *m_engine = nullptr;
@@ -906,6 +908,15 @@ void tst_IsSemanticQuery::noiseWordsOnly()
     // Noise words alone (search action words) without any semantic dimension
     QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "搜索"));
     QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "查找"));
+}
+
+void tst_IsSemanticQuery::hiddenFile()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "隐藏文件"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "隐藏的"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "藏起来的"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "看不到的"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今天的隐藏文件"));
 }
 
 // ===== tst_SearchTarget =====
