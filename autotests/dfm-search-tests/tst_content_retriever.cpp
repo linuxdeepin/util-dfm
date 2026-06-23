@@ -145,7 +145,7 @@ void tst_ContentRetriever::fetchHighlight_usesTemporaryIndex()
     ContentRetriever retriever;
     retriever.setIndexDirectory(SearchType::Content, contentIndexDir);
     HighlightOptions options;
-    options.maxPreviewLength = 80;
+    options.setMaxPreviewLength(80);
 
     const QString snippet = retriever.fetchHighlight("/tmp/doc-b.txt",
                                                      "budget",
@@ -185,7 +185,7 @@ void tst_ContentRetriever::concurrentFetch_sharedRetriever()
     retriever.setIndexDirectory(SearchType::Ocr, ocrIndexDir);
 
     HighlightOptions options;
-    options.maxPreviewLength = 80;
+    options.setMaxPreviewLength(80);
 
     std::atomic_bool failed { false };
     std::vector<std::future<void>> tasks;
