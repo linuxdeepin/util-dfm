@@ -88,6 +88,8 @@ private Q_SLOTS:
     void fetchContent_single();
     void fetchContent_batch();
     void fetchHighlight_usesTemporaryIndex();
+    void fetchContent_semanticRoutingFailsWhenNoDConfig();
+    void fetchHighlight_semanticRoutingFailsWhenNoDConfig();
     void concurrentFetch_sharedRetriever();
 };
 
@@ -150,6 +152,22 @@ void tst_ContentRetriever::fetchHighlight_usesTemporaryIndex()
                                                      SearchType::Content,
                                                      options);
     QVERIFY(snippet.contains("budget", Qt::CaseInsensitive));
+}
+
+void tst_ContentRetriever::fetchContent_semanticRoutingFailsWhenNoDConfig()
+{
+    // In test environment dconfig is unavailable, so semanticDocExtensions()/semanticPicExtensions()
+    // return empty sets → Semantic type should be rejected with a warning and return empty.
+    ContentRetriever retriever;
+    QVERIFY(retriever.fetchContent("/tmp/doc-a.txt", SearchType::Semantic).isEmpty());
+    QVERIFY(retriever.fetchContent("/tmp/img-a.png", SearchType::Semantic).isEmpty());
+}
+
+void tst_ContentRetriever::fetchHighlight_semanticRoutingFailsWhenNoDConfig()
+{
+    ContentRetriever retriever;
+    HighlightOptions options;
+    QVERIFY(retriever.fetchHighlight("/tmp/doc-b.txt", "budget", SearchType::Semantic, options).isEmpty());
 }
 
 void tst_ContentRetriever::concurrentFetch_sharedRetriever()
