@@ -49,7 +49,7 @@ QStringList videoExpectedExts()
         "hdmov", "ifo", "ivf", "m1v", "m2p", "m2t", "m2ts", "m2v", "m4b", "m4p", "m4v", "mkv",
         "mp2v", "mp4", "mp4v", "mpe", "mpeg", "mpg", "mpls", "mpv2", "mpv4", "mov", "mts", "ogm",
         "ogv", "pss", "pva", "qt", "ram", "ratdvd", "rm", "rmm", "rmvb", "roq", "rpm", "smil", "smk",
-        "swf", "tp", "tpr", "ts", "vob", "vp6", "webm", "wm", "wmp", "wmv"
+        "swf", "tp", "tpr", "vob", "vp6", "webm", "wm", "wmp", "wmv"
     };
 }
 
