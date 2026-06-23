@@ -51,6 +51,7 @@ private:
     static void doLastMount(const QString &address, const MountPassInfo info, DeviceOperateCallbackWithMessage cb);
 
     static bool isMounted(const QString &address, QString &mpt);
+    static bool isMountedByGio(const QString &url, QString &mpt);
 };
 
 DFM_MOUNT_END_NS
