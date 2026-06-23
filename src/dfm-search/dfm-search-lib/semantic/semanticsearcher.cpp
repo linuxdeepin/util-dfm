@@ -137,6 +137,9 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStrin
         if (plan.includeHidden) {
             opts.setIncludeHidden(true);
         }
+        if (plan.hiddenOnly) {
+            opts.setHiddenOnly(true);
+        }
         return opts;
     };
 
@@ -287,7 +290,8 @@ bool SemanticSearcher::isSemanticQuery(const QString &input) const
             || intent.sizeConstraint.isValid()
             || !intent.fileExtensions.isEmpty()
             || !intent.searchDirectories.isEmpty()
-            || intent.includeHidden;
+            || intent.includeHidden
+            || intent.hiddenOnly;
 }
 
 void SemanticSearcher::cancel()

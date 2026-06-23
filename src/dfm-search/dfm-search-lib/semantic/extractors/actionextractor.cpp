@@ -38,6 +38,21 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
         const QString timeFieldStr = metadata.value("time_field").toString();
         const QString imCategory = metadata.value("im_category").toString();
         const bool includeHidden = metadata.value("include_hidden", false).toBool();
+        const bool hiddenOnly = metadata.value("hidden_only", false).toBool();
+
+        // ── Hidden-only files (filename search only, include hidden directories) ──
+        if (hiddenOnly) {
+            intent.hiddenOnly = true;
+            intent.includeHidden = true;
+            intent.searchTarget = SearchTarget::FileNameOnly;
+
+            MatchSpan span;
+            span.start = m.capturedStart();
+            span.end = m.capturedEnd();
+            span.ruleId = ruleIds[i];
+            intent.consumedSpans.append(span);
+            continue;
+        }
 
         // ── Include hidden files ──
         if (includeHidden) {

@@ -732,6 +732,15 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         finalQuery->add(hiddenQuery, Lucene::BooleanClause::MUST_NOT);
     }
 
+    // When hiddenOnly is true, only return hidden files (MUST kIsHidden:Y)
+    if (hasValidQuery && m_options.hiddenOnly()) {
+        QueryPtr hiddenOnlyQuery = Lucene::newLucene<Lucene::TermQuery>(
+                Lucene::newLucene<Lucene::Term>(
+                        LuceneFieldNames::FileName::kIsHidden,
+                        L"Y"));
+        finalQuery->add(hiddenOnlyQuery, Lucene::BooleanClause::MUST);
+    }
+
     return hasValidQuery ? finalQuery : nullptr;
 }
 
