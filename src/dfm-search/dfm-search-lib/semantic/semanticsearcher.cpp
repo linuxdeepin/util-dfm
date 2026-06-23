@@ -286,7 +286,8 @@ bool SemanticSearcher::isSemanticQuery(const QString &input) const
     return intent.timeConstraint.isValid()
             || intent.sizeConstraint.isValid()
             || !intent.fileExtensions.isEmpty()
-            || !intent.searchDirectories.isEmpty();
+            || !intent.searchDirectories.isEmpty()
+            || intent.includeHidden;
 }
 
 void SemanticSearcher::cancel()
