@@ -49,10 +49,10 @@ void FileTypeExtractor::extract(const QString &input, ParsedIntent &intent)
         span.start = m.capturedStart();
         span.end = m.capturedEnd();
         span.ruleId = ruleIds[i];
-        intent.consumedSpans.append(span);
+        intent.consumedSpans().append(span);
     }
 
-    intent.fileExtensions = seenExtensions.values();
+    intent.setFileExtensions(seenExtensions.values());
 }
 
 QString FileTypeExtractor::name() const

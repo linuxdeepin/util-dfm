@@ -286,13 +286,13 @@ bool SemanticSearcher::isSemanticQuery(const QString &input) const
     ParsedIntent intent;
     d_ptr->intentParser->parse(input, intent);
 
-    return intent.timeConstraint.isValid()
-            || intent.sizeConstraint.isValid()
-            || !intent.fileExtensions.isEmpty()
-            || !intent.searchDirectories.isEmpty()
-            || intent.includeHidden
-            || intent.hiddenOnly
-            || !intent.consumedSpans.isEmpty();
+    return intent.timeConstraint().isValid()
+            || intent.sizeConstraint().isValid()
+            || !intent.fileExtensions().isEmpty()
+            || !intent.searchDirectories().isEmpty()
+            || intent.includeHidden()
+            || intent.hiddenOnly()
+            || !intent.consumedSpans().isEmpty();
 }
 
 void SemanticSearcher::cancel()
