@@ -27,6 +27,7 @@ struct SemanticSearchPlan {
     TimeField timeField = TimeField::ModifyTime;   // BirthTime, ModifyTime, or Both
     QStringList searchDirectories;   // Empty = use default homePath
     bool includeHidden = false;      // For trash directory
+    bool hiddenOnly = false;         // true = only return hidden files (filename only)
 };
 
 /**

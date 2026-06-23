@@ -29,11 +29,11 @@
                 {
                     "id": "action_hidden_file",
                     "pattern": "隐藏文件|隐藏的|藏起来的|看不到的",
-                    "description": "Action: search hidden files (include hidden flag)",
+                    "description": "Action: search hidden files only",
                     "enabled": true,
                     "priority": 190,
                     "metadata": {
-                        "include_hidden": true
+                        "hidden_only": true
                     }
                 },
                 {

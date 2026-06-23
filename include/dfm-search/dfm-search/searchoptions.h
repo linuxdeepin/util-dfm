@@ -140,6 +140,16 @@ public:
     bool includeHidden() const;
 
     /**
+     * @brief Set whether to search hidden files only (exclude non-hidden files)
+     */
+    void setHiddenOnly(bool hiddenOnly);
+
+    /**
+     * @brief Check if the search is restricted to hidden files only
+     */
+    bool hiddenOnly() const;
+
+    /**
      * @brief Get the maximum result count limit
      */
     int maxResults() const;

@@ -162,6 +162,18 @@ Lucene::QueryPtr OcrTextIndexedStrategy::buildLuceneQuery(const SearchQuery &que
             mainQuery = finalQuery;
         }
 
+        // When hiddenOnly is true, only return hidden files (MUST kIsHidden:Y)
+        if (mainQuery && m_options.hiddenOnly()) {
+            QueryPtr hiddenOnlyQuery = Lucene::newLucene<Lucene::TermQuery>(
+                    Lucene::newLucene<Lucene::Term>(
+                            LuceneFieldNames::OcrText::kIsHidden,
+                            L"Y"));
+            BooleanQueryPtr finalQuery = newLucene<BooleanQuery>();
+            finalQuery->add(mainQuery, BooleanClause::MUST);
+            finalQuery->add(hiddenOnlyQuery, BooleanClause::MUST);
+            mainQuery = finalQuery;
+        }
+
         // Add time range filter query
         if (m_options.hasTimeRangeFilter()) {
             TimeRangeFilter filter = m_options.timeRangeFilter();
