@@ -381,12 +381,30 @@ char *DEnumeratorPrivate::filePath(const QUrl &url)
 
 QUrl DEnumeratorPrivate::buildUrl(const QUrl &url, const char *fileName)
 {
-    QString path;
-    if (url.path() == "/") {
-        path = "/" + QString(fileName);
+    // 防御空指针，避免std::string或QByteArray构造时崩溃
+    if (!fileName) {
+        return QUrl();
+    }
+
+    // 拦截路径遍历攻击，防止恶意文件名越权
+    QByteArray fileNameBa(fileName);
+    // 拦截路径遍历攻击：禁止文件名中包含任何路径分隔符或连续点号，从根源阻断目录穿越
+    if (fileNameBa.contains('/') || fileNameBa.contains('\\') || fileNameBa.startsWith('.')) {
+        return QUrl();
+    }
+
+    QByteArray path;
+    QString urlPath = url.path();
+
+    if (urlPath == "/" || urlPath.isEmpty()) {
+        path = QByteArray("/") + fileNameBa;
     } else {
-        QString dirPath = url.path();
-        path = dirPath.endsWith('/') ? dirPath + QString(fileName) : dirPath + "/" + QString(fileName);
+        QByteArray dirPath = urlPath.toUtf8();
+        if (!dirPath.endsWith('/')) {
+            dirPath.append('/');
+        }
+        // 使用QByteArray进行底层字节数组拼接，避免QString剥离BOM (efbbbf)
+        path = dirPath + fileNameBa;
     }
 
     // 保留原始 URL 的 scheme 和 host，而不是假定为本地文件
