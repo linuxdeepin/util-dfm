@@ -745,6 +745,7 @@ private Q_SLOTS:
     void consecutiveCalls();
     void noiseWordsOnly();
     void wechatLocationConsumesTriggerWords();
+    void imReceiveConsumesTriggerInKeyword();
 
 private:
     SemanticRuleEngine *m_engine = nullptr;
@@ -954,6 +955,48 @@ void tst_IsSemanticQuery::wechatLocationConsumesTriggerWords()
                                             .arg(c.expectedKeywordNotContaining)
                                             .arg(c.input)));
         }
+    }
+}
+
+void tst_IsSemanticQuery::imReceiveConsumesTriggerInKeyword()
+{
+    // action_im_receive trigger words must be fully consumed and NOT leak
+    // into keywords.  Create a fake WeChat received-files directory so that
+    // resolveImReceivedPaths() finds a valid path and consumes the span.
+    // We put it under ~/Documents/xwechat_files/tst_*/msg/file which matches
+    // the loc_wechat_data custom_path glob pattern.
+    const QString fakeWechatBase = QDir::homePath() + "/Documents/xwechat_files/tst_unittest_user";
+    const QString fakeWechatDir = fakeWechatBase + "/msg/file";
+    const bool dirCreated = QDir().mkpath(fakeWechatDir);
+    if (dirCreated) {
+        const struct
+        {
+            const char *input;
+            const char *trigger;   // must NOT appear in any keyword
+        } cases[] = {
+            { "别人传的文档", "别人传" },
+            { "接收的文件", "接收" },
+            { "发给我的报告", "发给我" },
+            { "传给我的资料", "传给我" },
+        };
+
+        for (const auto &c : cases) {
+            ParsedIntent intent;
+            m_parser->parse(QString::fromUtf8(c.input), intent);
+            for (const QString &kw : intent.keywords) {
+                QVERIFY2(!kw.contains(QString::fromUtf8(c.trigger)),
+                         qUtf8Printable(QString("Keyword '%1' must not contain '%2' "
+                                                "(input: %3, keywords: %4)")
+                                                .arg(kw)
+                                                .arg(c.trigger)
+                                                .arg(c.input)
+                                                .arg(intent.keywords.join(", "))));
+            }
+        }
+        // Clean up immediately — do not wait for destructor
+        QDir(fakeWechatBase).removeRecursively();
+    } else {
+        QSKIP("Could not create fake WeChat dir for IM receive test");
     }
 }
 
