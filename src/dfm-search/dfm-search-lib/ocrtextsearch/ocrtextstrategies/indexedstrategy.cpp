@@ -324,6 +324,10 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
     bool detailedResults = m_options.detailedResultsEnabled();
 
+    // File extension filter (post-query filtering)
+    const QStringList fileExtensions = optAPI.fileExtensions();
+    const bool hasExtFilter = !fileExtensions.isEmpty();
+
     // Build field selector to avoid loading the large 'ocr_contents' field when not needed.
     // The ocr_contents field stores OCR-recognized text and loading it for every result
     // (even when only path is needed) causes significant disk I/O overhead.
@@ -378,6 +382,15 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
             if (pathField.empty()) {
                 qWarning() << "Document missing path field at index:" << scoreDoc->doc;
                 continue;
+            }
+
+            // File extension filter (post-query filtering, since filename field is NGram-analyzed)
+            if (hasExtFilter) {
+                QString filePath = QString::fromStdWString(pathField);
+                QFileInfo fi(filePath);
+                if (!fileExtensions.contains(fi.suffix().toLower())) {
+                    continue;
+                }
             }
 
             SearchResult result(QString::fromStdWString(pathField));

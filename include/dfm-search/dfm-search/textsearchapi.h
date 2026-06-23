@@ -75,6 +75,24 @@ public:
      */
     bool isFullTextRetrievalEnabled() const;
 
+    // ==================== File Extension Filter ====================
+
+    /**
+     * @brief Sets file extensions to filter search results.
+     *
+     * When set, only files matching the specified extensions will be returned.
+     * Extensions should be provided without the leading dot (e.g., "jpg", "png").
+     *
+     * @param extensions The list of file extensions to filter by.
+     */
+    void setFileExtensions(const QStringList &extensions);
+
+    /**
+     * @brief Gets the file extensions used to filter search results.
+     * @return The list of file extensions, or empty list if not set.
+     */
+    QStringList fileExtensions() const;
+
     // ==================== Filename Search ====================
 
     /**
