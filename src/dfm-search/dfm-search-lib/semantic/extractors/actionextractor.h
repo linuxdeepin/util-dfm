@@ -22,6 +22,8 @@ public:
 
 private:
     SemanticRuleEngine *m_engine;
+
+    QStringList resolveImReceivedPaths() const;
 };
 
 DFM_SEARCH_END_NS
