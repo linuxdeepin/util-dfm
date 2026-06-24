@@ -50,8 +50,8 @@ void TimeExtractor::extract(const QString &input, ParsedIntent &intent)
         };
 
         if (kPresetMap.contains(presetStr)) {
-            tc.kind = TimeConstraintKind::Preset;
-            tc.preset = kPresetMap.value(presetStr);
+            tc.setKind(TimeConstraintKind::Preset);
+            tc.setPreset(kPresetMap.value(presetStr));
         }
     } else if (typeStr == "custom") {
         parseCustomTime(match, metadata, tc);
@@ -64,9 +64,9 @@ void TimeExtractor::extract(const QString &input, ParsedIntent &intent)
     if (tc.isValid()) {
         intent.setTimeConstraint(tc);
         MatchSpan span;
-        span.start = match.capturedStart();
-        span.end = match.capturedEnd();
-        span.ruleId = ruleId;
+        span.setStart(match.capturedStart());
+        span.setEnd(match.capturedEnd());
+        span.setRuleId(ruleId);
         intent.consumedSpans().append(span);
     }
 }
@@ -134,21 +134,21 @@ void TimeExtractor::parseCustomTime(const QRegularExpressionMatch &match,
             qWarning() << "Invalid date:" << year << month << day;
             return;
         }
-        tc.kind = TimeConstraintKind::Custom;
-        tc.customStart = QDateTime(date, QTime(0, 0, 0));
-        tc.customEnd = QDateTime(date, QTime(23, 59, 59));
+        tc.setKind(TimeConstraintKind::Custom);
+        tc.setCustomStart(QDateTime(date, QTime(0, 0, 0)));
+        tc.setCustomEnd(QDateTime(date, QTime(23, 59, 59)));
     } else if (month > 0 && day == 0) {
         // Year-month only: entire month
         QDate monthStart(year, month, 1);
         QDate monthEnd(year, month, monthStart.daysInMonth());
-        tc.kind = TimeConstraintKind::Custom;
-        tc.customStart = QDateTime(monthStart, QTime(0, 0, 0));
-        tc.customEnd = QDateTime(monthEnd, QTime(23, 59, 59));
+        tc.setKind(TimeConstraintKind::Custom);
+        tc.setCustomStart(QDateTime(monthStart, QTime(0, 0, 0)));
+        tc.setCustomEnd(QDateTime(monthEnd, QTime(23, 59, 59)));
     } else if (month == 0) {
         // Year only: entire year
-        tc.kind = TimeConstraintKind::Custom;
-        tc.customStart = QDateTime(QDate(year, 1, 1), QTime(0, 0, 0));
-        tc.customEnd = QDateTime(QDate(year, 12, 31), QTime(23, 59, 59));
+        tc.setKind(TimeConstraintKind::Custom);
+        tc.setCustomStart(QDateTime(QDate(year, 1, 1), QTime(0, 0, 0)));
+        tc.setCustomEnd(QDateTime(QDate(year, 12, 31), QTime(23, 59, 59)));
     }
 }
 
@@ -158,14 +158,14 @@ void TimeExtractor::parseRelativeTime(const QVariantMap &metadata, TimeConstrain
     const int agoEndSecs = metadata.value("ago_end_seconds", 0).toInt();
     const int agoStartSecs = metadata.value("ago_start_seconds", 0).toInt();
 
-    tc.kind = TimeConstraintKind::Relative;
-    tc.customEnd = now.addSecs(-agoEndSecs);
+    tc.setKind(TimeConstraintKind::Relative);
+    tc.setCustomEnd(now.addSecs(-agoEndSecs));
 
     if (agoStartSecs < 0) {
         // Sentinel: "from epoch"
-        tc.customStart = QDateTime::fromMSecsSinceEpoch(0);
+        tc.setCustomStart(QDateTime::fromMSecsSinceEpoch(0));
     } else {
-        tc.customStart = now.addSecs(-agoStartSecs);
+        tc.setCustomStart(now.addSecs(-agoStartSecs));
     }
 }
 
@@ -226,11 +226,11 @@ void TimeExtractor::parseDynamicRelativeTime(const QRegularExpressionMatch &matc
     case TimeUnit::Months: {
         // Approximate: use average days per month
         const QDate startDate = now.addMonths(-value).date();
-        tc.kind = TimeConstraintKind::Relative;
-        tc.customStart = QDateTime(startDate, QTime(0, 0, 0));
-        tc.customEnd = now;
-        tc.relativeValue = value;
-        tc.relativeUnit = unit;
+        tc.setKind(TimeConstraintKind::Relative);
+        tc.setCustomStart(QDateTime(startDate, QTime(0, 0, 0)));
+        tc.setCustomEnd(now);
+        tc.setRelativeValue(value);
+        tc.setRelativeUnit(unit);
         return;
     }
     case TimeUnit::Years:
@@ -238,11 +238,11 @@ void TimeExtractor::parseDynamicRelativeTime(const QRegularExpressionMatch &matc
         break;
     }
 
-    tc.kind = TimeConstraintKind::Relative;
-    tc.customStart = now.addSecs(-totalSeconds);
-    tc.customEnd = now;
-    tc.relativeValue = value;
-    tc.relativeUnit = unit;
+    tc.setKind(TimeConstraintKind::Relative);
+    tc.setCustomStart(now.addSecs(-totalSeconds));
+    tc.setCustomEnd(now);
+    tc.setRelativeValue(value);
+    tc.setRelativeUnit(unit);
 }
 
 int TimeExtractor::localeAwareToInt(const QString &input,
