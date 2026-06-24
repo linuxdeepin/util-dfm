@@ -95,6 +95,18 @@ bool DEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DEnumeratorP
                                                              enumLinks ? G_FILE_QUERY_INFO_NONE : G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
                                                              cancellable,
                                                              &gerror);
+
+    // g_file_enumerate_children internally creates and destroys temporary
+    // GDBusProxy instances (mount tracker proxy, daemon proxy).  During proxy
+    // finalization, g_dbus_connection_signal_unsubscribe defers the
+    // user_data_free_func (weak_ref_free) to the thread-default GMainContext
+    // via call_destroy_notify() — a g_idle_source.  Process it now while we
+    // are on the same thread, otherwise the GWeakRef (8 bytes from
+    // gdbusproxy.c:112) leaks when no GLib main loop runs on this QThread.
+    // See: glib2.0/gio/gdbusconnection.c:signal_subscriber_unref → call_destroy_notify
+    GMainContext *ctx = g_main_context_get_thread_default();
+    if (ctx)
+        g_main_context_iteration(ctx, TRUE);
     if (!me) {
         // Clean up the enumerator if it was created but the object is no longer valid
         if (genumerator) {
