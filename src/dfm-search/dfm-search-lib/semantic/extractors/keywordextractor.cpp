@@ -71,9 +71,9 @@ bool KeywordExtractor::extractStructuredKeywords(const QString &input, ParsedInt
 
     // Mark the entire matched region as consumed
     MatchSpan span;
-    span.start = match.capturedStart();
-    span.end = match.capturedEnd();
-    span.ruleId = ruleId;
+    span.setStart(match.capturedStart());
+    span.setEnd(match.capturedEnd());
+    span.setRuleId(ruleId);
     intent.consumedSpans().append(span);
 
     return true;
@@ -91,9 +91,9 @@ void KeywordExtractor::extractUnconsumedText(const QString &input, ParsedIntent 
 
         for (int i = 0; i < noiseMatches.size(); ++i) {
             MatchSpan span;
-            span.start = noiseMatches[i].capturedStart();
-            span.end = noiseMatches[i].capturedEnd();
-            span.ruleId = noiseRuleIds[i];
+            span.setStart(noiseMatches[i].capturedStart());
+            span.setEnd(noiseMatches[i].capturedEnd());
+            span.setRuleId(noiseRuleIds[i]);
             allSpans.append(span);
         }
     }
@@ -145,8 +145,8 @@ QString KeywordExtractor::extractUnconsumedRegions(const QString &input, const Q
     // Build a set of consumed character positions
     QVector<bool> consumed(input.size(), false);
     for (const MatchSpan &span : allSpans) {
-        if (span.isValid() && span.end <= input.size()) {
-            for (int i = span.start; i < span.end; ++i) {
+        if (span.isValid() && span.end() <= input.size()) {
+            for (int i = span.start(); i < span.end(); ++i) {
                 consumed[i] = true;
             }
         }
