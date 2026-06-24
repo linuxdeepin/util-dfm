@@ -41,6 +41,10 @@ DEnumeratorPrivate::~DEnumeratorPrivate()
         g_object_unref(cancellable);
         cancellable = nullptr;
     }
+    if (fts) {
+        fts_close(fts);
+        fts = nullptr;
+    }
 }
 
 bool DEnumeratorPrivate::init(const QUrl &url)
