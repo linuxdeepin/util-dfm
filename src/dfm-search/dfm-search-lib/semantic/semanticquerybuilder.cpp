@@ -30,12 +30,12 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
             : intent.searchTarget();
 
     // Determine time field strategy
-    if (intent.timeConstraint().isValid() && intent.timeConstraint().timeField == TimeField::Unspecified) {
+    if (intent.timeConstraint().isValid() && intent.timeConstraint().timeField() == TimeField::Unspecified) {
         // Time constraint exists but no action specified → search both birth and modify time
         plan.timeField = TimeField::Both;
-    } else if (intent.timeConstraint().timeField == TimeField::BirthTime) {
+    } else if (intent.timeConstraint().timeField() == TimeField::BirthTime) {
         plan.timeField = TimeField::BirthTime;
-    } else if (intent.timeConstraint().timeField == TimeField::ModifyTime) {
+    } else if (intent.timeConstraint().timeField() == TimeField::ModifyTime) {
         plan.timeField = TimeField::ModifyTime;
     } else {
         plan.timeField = TimeField::ModifyTime;
@@ -162,9 +162,9 @@ TimeRangeFilter SemanticQueryBuilder::buildTimeRangeFilter(const TimeConstraint 
         return filter;
     }
 
-    switch (tc.kind) {
+    switch (tc.kind()) {
     case TimeConstraintKind::Preset:
-        switch (tc.preset) {
+        switch (tc.preset()) {
         case TimePreset::Today:
             filter.setToday();
             break;
@@ -199,19 +199,19 @@ TimeRangeFilter SemanticQueryBuilder::buildTimeRangeFilter(const TimeConstraint 
         }
         break;
     case TimeConstraintKind::Relative:
-        filter.setRange(tc.customStart, tc.customEnd);
+        filter.setRange(tc.customStart(), tc.customEnd());
         break;
     case TimeConstraintKind::Custom:
-        filter.setRange(tc.customStart, tc.customEnd);
+        filter.setRange(tc.customStart(), tc.customEnd());
         break;
     case TimeConstraintKind::None:
         break;
     }
 
     // Set time field on the filter
-    if (tc.timeField == TimeField::BirthTime || tc.timeField == TimeField::ModifyTime) {
-        filter.setTimeField(tc.timeField);
-    } else if (tc.timeField == TimeField::Unspecified || tc.timeField == TimeField::Both) {
+    if (tc.timeField() == TimeField::BirthTime || tc.timeField() == TimeField::ModifyTime) {
+        filter.setTimeField(tc.timeField());
+    } else if (tc.timeField() == TimeField::Unspecified || tc.timeField() == TimeField::Both) {
         // No specific time field or both requested → search both birth and modify time
         filter.setTimeField(TimeField::Both);
     }
@@ -225,10 +225,10 @@ SizeRangeFilter SemanticQueryBuilder::buildSizeRangeFilter(const SizeConstraint 
     if (!sc.isValid()) {
         return filter;
     }
-    filter.setMin(sc.minSize);
-    filter.setMax(sc.maxSize);
-    filter.setIncludeLower(sc.includeLower);
-    filter.setIncludeUpper(sc.includeUpper);
+    filter.setMin(sc.minSize());
+    filter.setMax(sc.maxSize());
+    filter.setIncludeLower(sc.includeLower());
+    filter.setIncludeUpper(sc.includeUpper());
     return filter;
 }
 

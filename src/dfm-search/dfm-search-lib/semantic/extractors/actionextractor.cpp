@@ -47,9 +47,9 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
             intent.setSearchTarget(SearchTarget::FileNameOnly);
 
             MatchSpan span;
-            span.start = m.capturedStart();
-            span.end = m.capturedEnd();
-            span.ruleId = ruleIds[i];
+            span.setStart(m.capturedStart());
+            span.setEnd(m.capturedEnd());
+            span.setRuleId(ruleIds[i]);
             intent.consumedSpans().append(span);
             continue;
         }
@@ -59,9 +59,9 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
             intent.setIncludeHidden(true);
 
             MatchSpan span;
-            span.start = m.capturedStart();
-            span.end = m.capturedEnd();
-            span.ruleId = ruleIds[i];
+            span.setStart(m.capturedStart());
+            span.setEnd(m.capturedEnd());
+            span.setRuleId(ruleIds[i]);
             intent.consumedSpans().append(span);
             continue;
         }
@@ -77,9 +77,9 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
                 }
 
                 MatchSpan span;
-                span.start = m.capturedStart();
-                span.end = m.capturedEnd();
-                span.ruleId = ruleIds[i];
+                span.setStart(m.capturedStart());
+                span.setEnd(m.capturedEnd());
+                span.setRuleId(ruleIds[i]);
                 intent.consumedSpans().append(span);
             }
             // else: no IM directories resolved → do NOT consume span
@@ -89,9 +89,9 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
 
         // ── Existing time_field actions ──
         if (timeFieldStr == QLatin1String("birth")) {
-            intent.timeConstraint().timeField = TimeField::BirthTime;
+            intent.timeConstraint().setTimeField(TimeField::BirthTime);
         } else if (timeFieldStr == QLatin1String("modify")) {
-            intent.timeConstraint().timeField = TimeField::ModifyTime;
+            intent.timeConstraint().setTimeField(TimeField::ModifyTime);
         } else {
             qWarning() << "Unknown action metadata in rule" << ruleIds[i]
                        << ":" << metadata;
@@ -99,9 +99,9 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
         }
 
         MatchSpan span;
-        span.start = m.capturedStart();
-        span.end = m.capturedEnd();
-        span.ruleId = ruleIds[i];
+        span.setStart(m.capturedStart());
+        span.setEnd(m.capturedEnd());
+        span.setRuleId(ruleIds[i]);
         intent.consumedSpans().append(span);
     }
 }

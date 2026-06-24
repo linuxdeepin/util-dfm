@@ -642,7 +642,7 @@ private Q_SLOTS:
 void tst_ParsedIntent::defaultState()
 {
     ParsedIntent intent;
-    QVERIFY(intent.timeConstraint().kind == TimeConstraintKind::None);
+    QVERIFY(intent.timeConstraint().kind() == TimeConstraintKind::None);
     QVERIFY(intent.fileExtensions().isEmpty());
     QVERIFY(intent.keywords().isEmpty());
     QVERIFY(intent.consumedSpans().isEmpty());
@@ -652,14 +652,14 @@ void tst_ParsedIntent::timeConstraintDefault()
 {
     TimeConstraint tc;
     QVERIFY(!tc.isValid());
-    QCOMPARE(tc.kind, TimeConstraintKind::None);
+    QCOMPARE(tc.kind(), TimeConstraintKind::None);
 }
 
 void tst_ParsedIntent::timeConstraintPreset()
 {
     TimeConstraint tc;
-    tc.kind = TimeConstraintKind::Preset;
-    tc.preset = TimePreset::Today;
+    tc.setKind(TimeConstraintKind::Preset);
+    tc.setPreset(TimePreset::Today);
     QVERIFY(tc.isValid());
 }
 
@@ -668,9 +668,9 @@ void tst_ParsedIntent::matchSpanValidity()
     MatchSpan span;
     QVERIFY(!span.isValid());
 
-    span.start = 0;
-    span.end = 5;
-    span.ruleId = "test_rule";
+    span.setStart(0);
+    span.setEnd(5);
+    span.setRuleId("test_rule");
     QVERIFY(span.isValid());
 }
 

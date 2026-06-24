@@ -30,12 +30,12 @@ QJsonObject JsonOutput::intentToJson(const DFMSEARCH::ParsedIntent &intent)
     if (intent.timeConstraint().isValid()) {
         QJsonObject time;
         QString kindStr;
-        switch (intent.timeConstraint().kind) {
+        switch (intent.timeConstraint().kind()) {
         case DFMSEARCH::TimeConstraintKind::Preset:
             kindStr = "preset";
             {
                 QString presetStr;
-                switch (intent.timeConstraint().preset) {
+                switch (intent.timeConstraint().preset()) {
                 case DFMSEARCH::TimePreset::Today: presetStr = "today"; break;
                 case DFMSEARCH::TimePreset::Yesterday: presetStr = "yesterday"; break;
                 case DFMSEARCH::TimePreset::DayBeforeYesterday: presetStr = "dayBeforeYesterday"; break;
@@ -51,10 +51,10 @@ QJsonObject JsonOutput::intentToJson(const DFMSEARCH::ParsedIntent &intent)
             break;
         case DFMSEARCH::TimeConstraintKind::Relative:
             kindStr = "relative";
-            time["value"] = intent.timeConstraint().relativeValue;
+            time["value"] = intent.timeConstraint().relativeValue();
             {
                 QString unitStr;
-                switch (intent.timeConstraint().relativeUnit) {
+                switch (intent.timeConstraint().relativeUnit()) {
                 case DFMSEARCH::TimeUnit::Minutes: unitStr = "minutes"; break;
                 case DFMSEARCH::TimeUnit::Hours: unitStr = "hours"; break;
                 case DFMSEARCH::TimeUnit::Days: unitStr = "days"; break;
@@ -67,19 +67,19 @@ QJsonObject JsonOutput::intentToJson(const DFMSEARCH::ParsedIntent &intent)
             break;
         case DFMSEARCH::TimeConstraintKind::Custom:
             kindStr = "custom";
-            if (intent.timeConstraint().customStart.isValid())
-                time["start"] = intent.timeConstraint().customStart.toString(Qt::ISODate);
-            if (intent.timeConstraint().customEnd.isValid())
-                time["end"] = intent.timeConstraint().customEnd.toString(Qt::ISODate);
+            if (intent.timeConstraint().customStart().isValid())
+                time["start"] = intent.timeConstraint().customStart().toString(Qt::ISODate);
+            if (intent.timeConstraint().customEnd().isValid())
+                time["end"] = intent.timeConstraint().customEnd().toString(Qt::ISODate);
             break;
         case DFMSEARCH::TimeConstraintKind::None:
             break;
         }
         time["kind"] = kindStr;
 
-        if (intent.timeConstraint().timeField != DFMSEARCH::TimeField::Unspecified) {
+        if (intent.timeConstraint().timeField() != DFMSEARCH::TimeField::Unspecified) {
             QString fieldStr;
-            switch (intent.timeConstraint().timeField) {
+            switch (intent.timeConstraint().timeField()) {
             case DFMSEARCH::TimeField::ModifyTime: fieldStr = "modifyTime"; break;
             case DFMSEARCH::TimeField::BirthTime: fieldStr = "birthTime"; break;
             case DFMSEARCH::TimeField::Both: fieldStr = "both"; break;
@@ -94,12 +94,12 @@ QJsonObject JsonOutput::intentToJson(const DFMSEARCH::ParsedIntent &intent)
     // sizeConstraint
     if (intent.sizeConstraint().isValid()) {
         QJsonObject size;
-        if (intent.sizeConstraint().minSize > 0)
-            size["minBytes"] = intent.sizeConstraint().minSize;
-        if (intent.sizeConstraint().maxSize > 0)
-            size["maxBytes"] = intent.sizeConstraint().maxSize;
-        size["includeLower"] = intent.sizeConstraint().includeLower;
-        size["includeUpper"] = intent.sizeConstraint().includeUpper;
+        if (intent.sizeConstraint().minSize() > 0)
+            size["minBytes"] = intent.sizeConstraint().minSize();
+        if (intent.sizeConstraint().maxSize() > 0)
+            size["maxBytes"] = intent.sizeConstraint().maxSize();
+        size["includeLower"] = intent.sizeConstraint().includeLower();
+        size["includeUpper"] = intent.sizeConstraint().includeUpper();
         obj["sizeConstraint"] = size;
     }
 
@@ -127,9 +127,9 @@ QJsonObject JsonOutput::intentToJson(const DFMSEARCH::ParsedIntent &intent)
         for (const auto &span : intent.consumedSpans()) {
             if (span.isValid()) {
                 QJsonObject s;
-                s["start"] = span.start;
-                s["end"] = span.end;
-                s["ruleId"] = span.ruleId;
+                s["start"] = span.start();
+                s["end"] = span.end();
+                s["ruleId"] = span.ruleId();
                 spans.append(s);
             }
         }

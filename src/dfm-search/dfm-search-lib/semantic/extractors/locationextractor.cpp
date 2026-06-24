@@ -41,9 +41,9 @@ void LocationExtractor::extract(const QString &input, ParsedIntent &intent)
         // regardless of whether the resolved directory exists on this machine.
         // This ensures KeywordExtractor correctly excludes trigger words.
         MatchSpan span;
-        span.start = m.capturedStart();
-        span.end = m.capturedEnd();
-        span.ruleId = ruleIds[i];
+        span.setStart(m.capturedStart());
+        span.setEnd(m.capturedEnd());
+        span.setRuleId(ruleIds[i]);
         intent.consumedSpans().append(span);
 
         QStringList resolvedPaths;

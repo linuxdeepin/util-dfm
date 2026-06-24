@@ -34,13 +34,13 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
     SizeConstraint sc;
 
     if (typeStr == "preset") {
-        sc.minSize = metadata.value("min_bytes", 0).toLongLong();
-        sc.maxSize = metadata.value("max_bytes", 0).toLongLong();
+        sc.setMinSize(metadata.value("min_bytes", 0).toLongLong());
+        sc.setMaxSize(metadata.value("max_bytes", 0).toLongLong());
         if (metadata.contains("include_upper")) {
-            sc.includeUpper = metadata.value("include_upper").toBool();
+            sc.setIncludeUpper(metadata.value("include_upper").toBool());
         }
         if (metadata.contains("include_lower")) {
-            sc.includeLower = metadata.value("include_lower").toBool();
+            sc.setIncludeLower(metadata.value("include_lower").toBool());
         }
     } else if (typeStr == "dynamic") {
         const QString direction = metadata.value("direction").toString();
@@ -52,8 +52,8 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
             if (bytes <= 0) {
                 return;
             }
-            sc.minSize = bytes;
-            sc.includeLower = true;
+            sc.setMinSize(bytes);
+            sc.setIncludeLower(true);
         } else if (direction == "max") {
             const QString value = match.captured("value");
             const QString unit = normalizeUnit(match.captured("unit"), metadata);
@@ -61,8 +61,8 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
             if (bytes <= 0) {
                 return;
             }
-            sc.maxSize = bytes;
-            sc.includeUpper = true;
+            sc.setMaxSize(bytes);
+            sc.setIncludeUpper(true);
         } else if (direction == "range") {
             const QString minVal = match.captured("min_val");
             const QString minUnit = normalizeUnit(match.captured("min_unit"), metadata);
@@ -73,17 +73,17 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
             if (minBytes <= 0 || maxBytes <= 0) {
                 return;
             }
-            sc.minSize = minBytes;
-            sc.maxSize = maxBytes;
+            sc.setMinSize(minBytes);
+            sc.setMaxSize(maxBytes);
         }
     }
 
     if (sc.isValid()) {
         intent.setSizeConstraint(sc);
         MatchSpan span;
-        span.start = match.capturedStart();
-        span.end = match.capturedEnd();
-        span.ruleId = ruleId;
+        span.setStart(match.capturedStart());
+        span.setEnd(match.capturedEnd());
+        span.setRuleId(ruleId);
         intent.consumedSpans().append(span);
     }
 }
