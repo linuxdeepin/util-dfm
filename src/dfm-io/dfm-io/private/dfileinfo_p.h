@@ -19,6 +19,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <sys/stat.h>
 
 BEGIN_IO_NAMESPACE
 
@@ -55,6 +56,7 @@ public:
     QVariant attributesBySelf(DFileInfo::AttributeID id);
     QVariant attributesFromUrl(DFileInfo::AttributeID id);
     void checkAndResetCancel();
+    [[nodiscard]] bool ensureStatxCached() const;
 
     [[nodiscard]] DFileFuture *initQuerierAsync(int ioPriority, QObject *parent = nullptr) const;
     [[nodiscard]] QFuture<void> refreshAsync();
@@ -94,6 +96,11 @@ public:
     std::atomic_bool stoped { false };
     std::atomic_bool fileExists { false };
     QMap<DFileInfo::AttributeID, QVariant> caches;
+
+    // statx 缓存：6 个时间属性 case 共享一次 statx 调用，避免重复系统调用
+    mutable struct statx statxBuf {};
+    mutable bool statxCached { false };
+    mutable bool statxValid { false };
     std::atomic_bool cacheing { false };
     std::atomic_bool refreshing { false };
     QMutex mutex;
