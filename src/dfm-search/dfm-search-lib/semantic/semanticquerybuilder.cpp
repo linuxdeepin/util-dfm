@@ -23,11 +23,36 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
     plan.searchDirectories = intent.searchDirectories();
     plan.includeHidden = intent.includeHidden() || intent.hiddenOnly();
     plan.hiddenOnly = intent.hiddenOnly();
+    plan.recentOnly = intent.recentOnly();
 
     // When hiddenOnly is true, force filename-only search (no content/OCR)
     const SearchTarget effectiveTarget = intent.hiddenOnly()
             ? SearchTarget::FileNameOnly
             : intent.searchTarget();
+
+    // ── Recently-used files: route to RecentSearchEngine (DBus data source) ──
+    // 最近使用记录不在 lucene++ 索引中，因此当 recentOnly 为 true 时，
+    // 抑制所有 index-based 引擎，仅启动 Recent 引擎。
+    if (plan.recentOnly) {
+        plan.recentOptions = buildBaseOptions(intent.timeConstraint(), intent.sizeConstraint());
+        // Recent 引擎不依赖 SearchMethod::Indexed，但保留 options 一致性
+        plan.recentOptions->setSearchMethod(SearchMethod::Realtime);
+
+        FileNameOptionsAPI recentApi(*plan.recentOptions);
+        if (!intent.fileExtensions().isEmpty()) {
+            recentApi.setFileExtensions(intent.fileExtensions());
+        }
+
+        if (intent.keywords().size() == 1) {
+            plan.recentQuery = SearchFactory::createQuery(intent.keywords().first());
+        } else if (intent.keywords().size() > 1) {
+            plan.recentQuery = SearchFactory::createQuery(intent.keywords(), SearchQuery::Type::Boolean);
+        } else {
+            plan.recentQuery = SearchFactory::createQuery(QStringLiteral(""));
+        }
+
+        return plan;   // recentOnly 独占搜索路径，不启动其他引擎
+    }
 
     // Determine time field strategy
     if (intent.timeConstraint().isValid() && intent.timeConstraint().timeField() == TimeField::Unspecified) {

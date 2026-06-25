@@ -113,6 +113,17 @@ void ParsedIntent::setHiddenOnly(bool hidden)
     d->hiddenOnly = hidden;
 }
 
+// recentOnly
+bool ParsedIntent::recentOnly() const
+{
+    return d->recentOnly;
+}
+
+void ParsedIntent::setRecentOnly(bool recent)
+{
+    d->recentOnly = recent;
+}
+
 // keywords
 const QStringList &ParsedIntent::keywords() const
 {

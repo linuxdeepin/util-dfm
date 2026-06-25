@@ -24,10 +24,13 @@ struct SemanticSearchPlan {
     std::optional<SearchOptions> contentOptions;
     std::optional<SearchQuery> ocrQuery;
     std::optional<SearchOptions> ocrOptions;
+    std::optional<SearchQuery> recentQuery;   // 最近使用文件搜索 (DBus 数据源)
+    std::optional<SearchOptions> recentOptions;
     TimeField timeField = TimeField::ModifyTime;   // BirthTime, ModifyTime, or Both
     QStringList searchDirectories;   // Empty = use default homePath
     bool includeHidden = false;      // For trash directory
     bool hiddenOnly = false;         // true = only return hidden files (filename only)
+    bool recentOnly = false;         // true = search recently-used files only (suppress index engines)
 };
 
 /**
