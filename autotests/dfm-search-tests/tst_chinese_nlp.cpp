@@ -182,6 +182,16 @@ private Q_SLOTS:
     void action_combined_withTime_create();
     void action_combined_withTime_modify();
 
+    // Action: recently-used files (DBus RecentManager data source)
+    void action_recent_basic();
+    void action_recent_synonyms();
+    void action_recent_timeFieldForced();
+    void action_recent_combined_withTime();
+    void action_recent_combined_withFiletype();
+    void action_recent_combined_withKeyword();
+    void action_recent_notTriggered_byBareVerb();
+    void action_recent_consumesTriggerWords();
+
     // Keyword tests
     void keyword_contains_single();
     void keyword_contains_multi();
@@ -1706,6 +1716,139 @@ void tst_ChineseNLP::action_combined_withTime_modify()
     QCOMPARE(intent.timeConstraint().preset(), TimePreset::Yesterday);
     QCOMPARE(intent.timeConstraint().timeField(), TimeField::ModifyTime);
     QVERIFY(intent.fileExtensions().contains("jpg"));
+}
+
+// ===== Action: Recently-Used Files Tests =====
+// action_recent rule (pattern: 打开过的|看过的|浏览过的|读过的|点开过的)
+// routes to the DBus RecentManager data source via intent.recentOnly.
+
+void tst_ChineseNLP::action_recent_basic()
+{
+    // "打开过的文件" → recentOnly=true, span consumed with ruleId action_recent
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("打开过的文件"), intent);
+    QVERIFY2(intent.recentOnly(),
+             "打开过的 should set recentOnly=true");
+    QCOMPARE(intent.timeConstraint().timeField(), TimeField::ModifyTime);
+
+    bool actionConsumed = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("action_recent")) {
+            actionConsumed = true;
+            break;
+        }
+    }
+    QVERIFY2(actionConsumed, "action_recent should produce a consumed span");
+}
+
+void tst_ChineseNLP::action_recent_synonyms()
+{
+    // All five synonyms from the requirements must trigger recentOnly.
+    const QStringList inputs = {
+        QStringLiteral("打开过的文件"),
+        QStringLiteral("看过的文档"),
+        QStringLiteral("浏览过的图片"),
+        QStringLiteral("读过的pdf"),
+        QStringLiteral("点开过的视频"),
+    };
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input, intent);
+        QVERIFY2(intent.recentOnly(),
+                 qPrintable(QStringLiteral("recentOnly not set for: ") + input));
+        QCOMPARE(intent.timeConstraint().timeField(), TimeField::ModifyTime);
+    }
+}
+
+void tst_ChineseNLP::action_recent_timeFieldForced()
+{
+    // Even when no explicit time constraint is given, action_recent must
+    // force timeField=ModifyTime because recent records only carry modified.
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("看过的"), intent);
+    QVERIFY(intent.recentOnly());
+    QCOMPARE(intent.timeConstraint().timeField(), TimeField::ModifyTime);
+}
+
+void tst_ChineseNLP::action_recent_combined_withTime()
+{
+    // "昨天看过的" → time yesterday + recentOnly
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("昨天看过的文件"), intent);
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Preset);
+    QCOMPARE(intent.timeConstraint().preset(), TimePreset::Yesterday);
+    QCOMPARE(intent.timeConstraint().timeField(), TimeField::ModifyTime);
+    QVERIFY(intent.recentOnly());
+}
+
+void tst_ChineseNLP::action_recent_combined_withFiletype()
+{
+    // "看过的pdf" → recentOnly + filetype pdf
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("看过的pdf"), intent);
+    QVERIFY(intent.recentOnly());
+    QVERIFY(intent.fileExtensions().contains("pdf"));
+
+    // "浏览过的图片" → recentOnly + image extensions
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("浏览过的图片"), intent2);
+    QVERIFY(intent2.recentOnly());
+    QVERIFY(intent2.fileExtensions().contains("jpg"));
+}
+
+void tst_ChineseNLP::action_recent_combined_withKeyword()
+{
+    // "看过的预算" → action consumes "看过的", remaining "预算" becomes keyword.
+    // "预算" is not a filetype, so it falls through to keyword extraction.
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("看过的预算"), intent);
+    QVERIFY(intent.recentOnly());
+    QCOMPARE(intent.keywords().size(), 1);
+    QCOMPARE(intent.keywords().first(), QString("预算"));
+}
+
+void tst_ChineseNLP::action_recent_notTriggered_byBareVerb()
+{
+    // Bare verb without "过的" suffix must NOT trigger recent (avoids false positives).
+    // "打开文件" is a plain command, not a recent-files query.
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("打开文件"), intent);
+    QVERIFY2(!intent.recentOnly(),
+             "打开 (without 过的) must not trigger recentOnly");
+
+    // "看文件" — also bare
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("看文件"), intent2);
+    QVERIFY(!intent2.recentOnly());
+}
+
+void tst_ChineseNLP::action_recent_consumesTriggerWords()
+{
+    // Trigger words must be fully consumed and not leak into keywords.
+    const struct {
+        const char *input;
+        const char *trigger;   // must NOT appear in any keyword
+    } cases[] = {
+        { "打开过的报告", "打开" },
+        { "看过的文档", "看过" },
+        { "浏览过的图片", "浏览" },
+        { "读过的pdf", "读过" },
+        { "点开过的视频", "点开" },
+    };
+
+    for (const auto &c : cases) {
+        ParsedIntent intent;
+        m_parser->parse(QString::fromUtf8(c.input), intent);
+        QVERIFY2(intent.recentOnly(),
+                 qUtf8Printable("recentOnly not set for: " + QString::fromUtf8(c.input)));
+        for (const QString &kw : intent.keywords()) {
+            QVERIFY2(!kw.contains(QString::fromUtf8(c.trigger)),
+                     qUtf8Printable(QString("Keyword '%1' must not contain trigger '%2' (input: %3)")
+                                            .arg(kw)
+                                            .arg(QString::fromUtf8(c.trigger))
+                                            .arg(c.input)));
+        }
+    }
 }
 
 // ===== Location Tests =====
