@@ -20,6 +20,9 @@ SearchEngine *SearchFactory::createEngine(SearchType type, QObject *parent)
     case SearchType::Ocr:
         engine = new SearchEngine(type, parent);
         break;
+    case SearchType::Recent:
+        engine = new SearchEngine(type, parent);
+        break;
     case SearchType::Semantic:
     case SearchType::Custom:
         // TODO: Created by application based on provider

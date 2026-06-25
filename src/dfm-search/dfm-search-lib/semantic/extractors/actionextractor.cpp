@@ -39,6 +39,21 @@ void ActionExtractor::extract(const QString &input, ParsedIntent &intent)
         const QString imCategory = metadata.value("im_category").toString();
         const bool includeHidden = metadata.value("include_hidden", false).toBool();
         const bool hiddenOnly = metadata.value("hidden_only", false).toBool();
+        const bool recent = metadata.value("recent", false).toBool();
+
+        // ── Recently-used files (DBus RecentManager data source) ──
+        if (recent) {
+            intent.setRecentOnly(true);
+            // Force ModifyTime — recent records only carry a "modified" timestamp
+            intent.timeConstraint().setTimeField(TimeField::ModifyTime);
+
+            MatchSpan span;
+            span.setStart(m.capturedStart());
+            span.setEnd(m.capturedEnd());
+            span.setRuleId(ruleIds[i]);
+            intent.consumedSpans().append(span);
+            continue;
+        }
 
         // ── Hidden-only files (filename search only, include hidden directories) ──
         if (hiddenOnly) {

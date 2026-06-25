@@ -153,33 +153,44 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStrin
         }
     };
 
-    // Step 8: Launch up to 3 engines (FileName, Content, OCR)
+    // Step 8: Launch engines based on plan
     // TimeField::Both is no longer expanded here; it is handled by the Lucene strategy layer.
     // Multiple directories are passed via setSearchPaths().
 
-    // File name search (always, if index is ready)
-    if (Global::isFileNameIndexReadyForSearch()) {
-        SearchOptions fnameOpts = prepareOptions(plan.fileNameOptions);
-        applyCallerOptions(fnameOpts);
-        createAndLaunchEngine(SearchType::FileName, plan.fileNameQuery,
-                              fnameOpts, onFinished, onError);
-    }
+    // ── Recently-used files: DBus data source, exclusive path ──
+    // recentOnly 抑制所有 index-based 引擎（数据不在索引中）。
+    if (plan.recentOnly && plan.recentQuery.has_value() && plan.recentOptions.has_value()) {
+        SearchOptions recentOpts = *plan.recentOptions;
+        applyCallerOptions(recentOpts);
+        createAndLaunchEngine(SearchType::Recent, *plan.recentQuery,
+                              recentOpts, onFinished, onError);
+    } else {
+        // ── Index-based engines: FileName, Content, OCR ──
 
-    // Content search
-    if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
-        SearchOptions contentOpts = prepareOptions(*plan.contentOptions);
-        applyCallerOptions(contentOpts);
-        createAndLaunchEngine(SearchType::Content, *plan.contentQuery,
-                              contentOpts, onFinished, onError);
-    }
+        // File name search (always, if index is ready)
+        if (Global::isFileNameIndexReadyForSearch()) {
+            SearchOptions fnameOpts = prepareOptions(plan.fileNameOptions);
+            applyCallerOptions(fnameOpts);
+            createAndLaunchEngine(SearchType::FileName, plan.fileNameQuery,
+                                  fnameOpts, onFinished, onError);
+        }
 
-    // OCR search
-    if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
-        SearchOptions ocrOpts = prepareOptions(*plan.ocrOptions);
-        applyCallerOptions(ocrOpts);
-        createAndLaunchEngine(SearchType::Ocr, *plan.ocrQuery,
-                              ocrOpts, onFinished, onError);
-    }
+        // Content search
+        if (plan.contentQuery.has_value() && plan.contentOptions.has_value()) {
+            SearchOptions contentOpts = prepareOptions(*plan.contentOptions);
+            applyCallerOptions(contentOpts);
+            createAndLaunchEngine(SearchType::Content, *plan.contentQuery,
+                                  contentOpts, onFinished, onError);
+        }
+
+        // OCR search
+        if (plan.ocrQuery.has_value() && plan.ocrOptions.has_value()) {
+            SearchOptions ocrOpts = prepareOptions(*plan.ocrOptions);
+            applyCallerOptions(ocrOpts);
+            createAndLaunchEngine(SearchType::Ocr, *plan.ocrQuery,
+                                  ocrOpts, onFinished, onError);
+        }
+    }   // end of else (index-based engines)
 
     // Step 9: Handle no-engine case
     if (pendingFinishCount.load() == 0) {
@@ -292,6 +303,7 @@ bool SemanticSearcher::isSemanticQuery(const QString &input) const
             || !intent.searchDirectories().isEmpty()
             || intent.includeHidden()
             || intent.hiddenOnly()
+            || intent.recentOnly()
             || !intent.consumedSpans().isEmpty();
 }
 

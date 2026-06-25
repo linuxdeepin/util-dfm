@@ -200,6 +200,10 @@ public:
     bool hiddenOnly() const;
     void setHiddenOnly(bool hidden);
 
+    // recentOnly — true means search recently-used files via DBus RecentManager
+    bool recentOnly() const;
+    void setRecentOnly(bool recent);
+
     // keywords
     const QStringList &keywords() const;
     QStringList &keywords();
