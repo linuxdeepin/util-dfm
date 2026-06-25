@@ -1,5 +1,5 @@
 # Setup the environment
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core DBus REQUIRED)
 find_package(Dtk${DFM_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost REQUIRED)
@@ -24,6 +24,7 @@ target_compile_definitions(${BIN_NAME} PRIVATE
 
 target_link_libraries(${BIN_NAME} PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::DBus
     Dtk${DFM_VERSION_MAJOR}::Core
     PkgConfig::Lucene
     Threads::Threads
@@ -89,7 +90,7 @@ install(DIRECTORY
 # for pc file config - update to include all dependencies
 set(PC_LIBS_PRIVATE Qt${QT_VERSION_MAJOR}Core dtk${DFM_VERSION_MAJOR}core)
 set(PC_REQ_PRIVATE liblucene++ liblucene++-contrib)
-set(PC_REQ_PUBLIC Qt${QT_VERSION_MAJOR}Core dtk${DFM_VERSION_MAJOR}core)
+set(PC_REQ_PUBLIC Qt${QT_VERSION_MAJOR}Core Qt${QT_VERSION_MAJOR}DBus dtk${DFM_VERSION_MAJOR}core)
 
 # config pkgconfig file
 configure_file(${PROJECT_SOURCE_DIR}/misc/${BASE_NAME}/${BASE_NAME}.pc.in ${BIN_NAME}.pc @ONLY)

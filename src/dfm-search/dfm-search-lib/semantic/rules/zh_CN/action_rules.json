@@ -45,6 +45,16 @@
                     "metadata": {
                         "im_category": "received"
                     }
+                },
+                {
+                    "id": "action_recent",
+                    "pattern": "打开过的|看过的|浏览过的|读过的|点开过的",
+                    "description": "Action: recently used files — sourced from RecentManager DBus (XDG recent records)",
+                    "enabled": true,
+                    "priority": 180,
+                    "metadata": {
+                        "recent": true
+                    }
                 }
             ]
         }

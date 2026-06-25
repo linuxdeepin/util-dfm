@@ -24,6 +24,7 @@ public:
     QStringList searchDirectories;
     bool includeHidden = false;
     bool hiddenOnly = false;
+    bool recentOnly = false;   // true = search recently-used files (DBus RecentManager)
     QStringList keywords;
     SearchTarget searchTarget = SearchTarget::All;
     QList<MatchSpan> consumedSpans;
