@@ -42,9 +42,12 @@ public:
     void search(const SearchQuery &query) override;
     void cancel() override;
 
-private:
+protected:
     // 调用 DBus 获取最近使用记录；失败时返回空列表并记录 warning。
+    // 访问权限为 protected 以便测试子类通过 VADDR 宏取到成员函数指针进行打桩。
     QList<RecentItem> fetchRecentItems();
+
+private:
 
     // ── 过滤管道（每个阶段纯函数，便于测试与组合） ──
 
