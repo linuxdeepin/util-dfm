@@ -18,7 +18,7 @@
 DFM_SEARCH_BEGIN_NS
 
 namespace {
-constexpr auto kDBusService = "org.deepin.Filemanager.Daemon.RecentManager";
+constexpr auto kDBusService = "org.deepin.Filemanager.Daemon";
 constexpr auto kDBusPath = "/org/deepin/Filemanager/Daemon/RecentManager";
 constexpr auto kDBusInterface = "org.deepin.Filemanager.Daemon.RecentManager";
 constexpr auto kDBusMethod = "GetItemsInfo";
@@ -44,34 +44,26 @@ QList<RecentItem> RecentSearchStrategy::fetchRecentItems()
         return items;
     }
 
-    QDBusReply<QString> reply = iface.call(QString::fromLatin1(kDBusMethod));
+    QDBusPendingReply<QVariantList> reply = iface.call(QString::fromLatin1(kDBusMethod));
     if (!reply.isValid()) {
         qWarning() << "RecentManager GetItemsInfo failed:" << reply.error().message();
         return items;
     }
+    const QVariantList &topLevelList = reply.value();
 
-    const QByteArray raw = reply.value().toUtf8();
-    if (raw.isEmpty()) {
-        return items;
-    }
+    for (const auto &v : topLevelList) {
+        QDBusArgument dbusArg = v.value<QDBusArgument>();
 
-    QJsonParseError parseErr;
-    const QJsonDocument doc = QJsonDocument::fromJson(raw, &parseErr);
-    if (parseErr.error != QJsonParseError::NoError || !doc.isArray()) {
-        qWarning() << "RecentManager: invalid JSON payload:" << parseErr.errorString();
-        return items;
-    }
-
-    const QJsonArray arr = doc.array();
-    items.reserve(arr.size());
-    for (const QJsonValue &v : arr) {
-        const QJsonObject obj = v.toObject();
-        RecentItem item;
-        item.href = obj.value("Href").toString();
-        item.path = obj.value("Path").toString();
-        item.modified = static_cast<qint64>(obj.value("modified").toVariant().toLongLong());
-        if (!item.path.isEmpty() && item.modified > 0) {
-            items.append(std::move(item));
+        QVariantMap map;
+        dbusArg >> map;   // 直接将QDBusArgument解包为QVariantMap
+        if (!map.isEmpty()) {
+            RecentItem item;
+            item.href = map.value("Href").toString();
+            item.path = map.value("Path").toString();
+            item.modified = static_cast<qint64>(map.value("modified").toLongLong());
+            if (!item.path.isEmpty() && item.modified > 0) {
+                items.append(std::move(item));
+            }
         }
     }
 
@@ -85,7 +77,7 @@ QList<RecentItem> RecentSearchStrategy::fetchRecentItems()
 // 确保语义搜索在不同数据源下产生可预期的匹配结果。
 
 QList<RecentItem> RecentSearchStrategy::filterByKeyword(const QList<RecentItem> &items,
-                                                         const QString &keyword) const
+                                                        const QString &keyword) const
 {
     if (keyword.isEmpty()) {
         return items;
