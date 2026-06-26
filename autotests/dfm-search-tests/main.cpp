@@ -23,6 +23,7 @@ extern QObject *create_tst_LocationExtraction();
 extern QObject *create_tst_ContentRetriever();
 extern QObject *create_tst_ContentSearchEngine();
 extern QObject *create_tst_FileNameSearchEngine();
+extern QObject *create_tst_RecentSearchEngine();
 
 int main(int argc, char *argv[])
 {
@@ -100,6 +101,10 @@ int main(int argc, char *argv[])
     QObject *testObj17 = create_tst_FileNameSearchEngine();
     result |= QTest::qExec(testObj17, argc, argv);
     delete testObj17;
+
+    QObject *testObj18 = create_tst_RecentSearchEngine();
+    result |= QTest::qExec(testObj18, argc, argv);
+    delete testObj18;
 
     return result;
 }
