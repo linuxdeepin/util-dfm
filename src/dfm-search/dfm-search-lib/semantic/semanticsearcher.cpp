@@ -76,12 +76,14 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStrin
     const SemanticSearchPlan plan = queryBuilder->build(intent);
 
     // Step 4: Determine search directories
-    // Priority: caller-specified directories > NLP-parsed directories > home directory
+    // Priority: NLP-parsed directories > caller-specified directories > home directory
+    // NLP 解析出的路径是用户意图的最直接表达（如"在文档里找xxx"），
+    // 应优先于调用者传入的默认路径。
     QStringList dirs;
-    if (!searchDirectories.isEmpty()) {
-        dirs = searchDirectories;
-    } else if (!plan.searchDirectories.isEmpty()) {
+    if (!plan.searchDirectories.isEmpty()) {
         dirs = plan.searchDirectories;
+    } else if (!searchDirectories.isEmpty()) {
+        dirs = searchDirectories;
     } else {
         dirs = QStringList { QDir::homePath() };
     }
