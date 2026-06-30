@@ -290,14 +290,20 @@ void SemanticSearcher::search(const QString &naturalLanguage, const QStringList 
     d_ptr->doSearch(naturalLanguage, searchDirectories);
 }
 
-bool SemanticSearcher::isSemanticQuery(const QString &input) const
+ParsedIntent SemanticSearcher::parseIntent(const QString &input) const
 {
+    ParsedIntent intent;
     if (input.trimmed().isEmpty()) {
-        return false;
+        return intent;   // default-constructed: all constraints invalid/empty
     }
 
-    ParsedIntent intent;
     d_ptr->intentParser->parse(input, intent);
+    return intent;
+}
+
+bool SemanticSearcher::isSemanticQuery(const QString &input) const
+{
+    const ParsedIntent intent = parseIntent(input);
 
     return intent.timeConstraint().isValid()
             || intent.sizeConstraint().isValid()
