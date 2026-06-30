@@ -55,7 +55,7 @@
                     "enabled": true,
                     "priority": 100,
                     "metadata": {
-                        "extensions": ["doc", "docx", "pdf", "txt", "wps", "rtf", "md", "odt"],
+                        "extensions": ["rtf","odt","ods","odp","odg","docx","xlsx","et","pptx","ppsx","md","xls","xlsb","doc","dot","wps","ppt","pps","txt","pdf","dps","sh","json","yaml","ini","bat","sql","uof","ofd","pot"],
                         "fileTypes": ["doc"],
                         "general": true
                     }
