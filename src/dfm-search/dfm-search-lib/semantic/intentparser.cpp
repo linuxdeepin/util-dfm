@@ -10,6 +10,7 @@
 #include "extractors/keywordextractor.h"
 #include "extractors/locationextractor.h"
 #include "extractors/sizeextractor.h"
+#include "extractors/targetextractor.h"
 #include "extractors/timeextractor.h"
 
 DFM_SEARCH_BEGIN_NS
@@ -52,6 +53,7 @@ void IntentParser::initDefaultExtractors()
     addExtractor(std::make_unique<SizeExtractor>(m_engine));
     addExtractor(std::make_unique<ActionExtractor>(m_engine));
     addExtractor(std::make_unique<LocationExtractor>(m_engine));
+    addExtractor(std::make_unique<TargetExtractor>(m_engine));
     addExtractor(std::make_unique<KeywordExtractor>(m_engine));
 }
 

@@ -18,6 +18,86 @@
 
 DFM_SEARCH_BEGIN_NS
 
+namespace {
+
+bool hasKeywordRuleSpan(const ParsedIntent &intent)
+{
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId().startsWith(QStringLiteral("keyword_"))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool hasTargetRuleSpan(const ParsedIntent &intent)
+{
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId().startsWith(QStringLiteral("target_"))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool hasConstraintSignal(const ParsedIntent &intent)
+{
+    return intent.timeConstraint().isValid() || intent.sizeConstraint().isValid()
+            || intent.recentOnly();
+}
+
+bool hasLocationSignal(const ParsedIntent &intent)
+{
+    return intent.hiddenOnly() || !intent.searchDirectories().isEmpty();
+}
+
+bool hasKeywordAndFileType(const ParsedIntent &intent)
+{
+    return !intent.keywords().isEmpty() && !intent.fileExtensions().isEmpty();
+}
+
+bool hasFileTypeAndTarget(const ParsedIntent &intent)
+{
+    return !intent.fileExtensions().isEmpty() && hasTargetRuleSpan(intent);
+}
+
+bool hasConstraintAndTarget(const ParsedIntent &intent)
+{
+    if (!hasConstraintSignal(intent)) {
+        return false;
+    }
+
+    return hasTargetRuleSpan(intent) || !intent.keywords().isEmpty()
+            || !intent.fileExtensions().isEmpty() || intent.searchTarget() != SearchTarget::All;
+}
+
+bool isSemanticIntent(const ParsedIntent &intent)
+{
+    if (hasLocationSignal(intent)) {
+        return true;
+    }
+
+    if (hasKeywordRuleSpan(intent)) {
+        return true;
+    }
+
+    if (hasConstraintAndTarget(intent)) {
+        return true;
+    }
+
+    if (hasFileTypeAndTarget(intent)) {
+        return true;
+    }
+
+    if (hasKeywordAndFileType(intent)) {
+        return true;
+    }
+
+    return false;
+}
+
+}   // namespace
+
 SemanticSearcherData::SemanticSearcherData(SemanticSearcher *q_ptr)
     : q(q_ptr), ruleEngine(new SemanticRuleEngine(q)), intentParser(new IntentParser(ruleEngine)), queryBuilder(new SemanticQueryBuilder()), timeoutTimer(new QTimer(q))
 {
@@ -303,16 +383,12 @@ ParsedIntent SemanticSearcher::parseIntent(const QString &input) const
 
 bool SemanticSearcher::isSemanticQuery(const QString &input) const
 {
-    const ParsedIntent intent = parseIntent(input);
+    return isSemanticIntent(parseIntent(input));
+}
 
-    return intent.timeConstraint().isValid()
-            || intent.sizeConstraint().isValid()
-            || !intent.fileExtensions().isEmpty()
-            || !intent.searchDirectories().isEmpty()
-            || intent.includeHidden()
-            || intent.hiddenOnly()
-            || intent.recentOnly()
-            || !intent.consumedSpans().isEmpty();
+bool SemanticSearcher::isSemanticQuery(const ParsedIntent &intent) const
+{
+    return isSemanticIntent(intent);
 }
 
 void SemanticSearcher::cancel()

@@ -708,13 +708,38 @@ bool checkIsSemanticQuery(SemanticRuleEngine *engine, IntentParser *parser,
     ParsedIntent intent;
     parser->parse(input, intent);
 
-    return intent.timeConstraint().isValid()
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId().startsWith("keyword_")) {
+            return true;
+        }
+    }
+
+    if (intent.hiddenOnly() || !intent.searchDirectories().isEmpty()) {
+        return true;
+    }
+
+    const bool hasConstraint = intent.timeConstraint().isValid()
             || intent.sizeConstraint().isValid()
-            || !intent.fileExtensions().isEmpty()
-            || !intent.searchDirectories().isEmpty()
-            || intent.includeHidden()
-            || intent.hiddenOnly()
-            || !intent.consumedSpans().isEmpty();
+            || intent.recentOnly();
+    bool hasTargetRule = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId().startsWith("target_")) {
+            hasTargetRule = true;
+            break;
+        }
+    }
+    const bool hasTarget = hasTargetRule || !intent.keywords().isEmpty()
+            || !intent.fileExtensions().isEmpty() || intent.searchTarget() != SearchTarget::All;
+
+    if (hasConstraint && hasTarget) {
+        return true;
+    }
+
+    if (hasTargetRule && !intent.fileExtensions().isEmpty()) {
+        return true;
+    }
+
+    return !intent.keywords().isEmpty() && !intent.fileExtensions().isEmpty();
 }
 
 }   // namespace
@@ -742,11 +767,21 @@ private Q_SLOTS:
     void sizeSmall();
     void sizeDynamic();
     void timeAndFileType();
+    void singleTimeOnly();
+    void singleSizeOnly();
+    void singleFileTypeOnly();
+    void singleRecentOnly();
+    void timePlusTarget();
+    void timePlusFileType();
+    void fileTypePlusTarget();
+    void sizePlusFileType();
+    void recentPlusTarget();
     void locationAndTime();
     void keywordOnlyNoMatch();
     void consecutiveCalls();
     void noiseWordsOnly();
     void hiddenFile();
+    void structuredKeywordRule();
 
 private:
     SemanticRuleEngine *m_engine = nullptr;
@@ -814,7 +849,7 @@ void tst_IsSemanticQuery::yesterdayKeyword()
 void tst_IsSemanticQuery::thisWeekKeyword()
 {
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "本周的文档"));
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "这周修改的"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "这周修改的"));
 }
 
 void tst_IsSemanticQuery::lastMonthKeyword()
@@ -825,19 +860,19 @@ void tst_IsSemanticQuery::lastMonthKeyword()
 void tst_IsSemanticQuery::fileTypePdf()
 {
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "pdf文档"));
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "找一下pdf"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "找一下pdf"));
 }
 
 void tst_IsSemanticQuery::fileTypeImage()
 {
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "图片"));
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "截图"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "图片"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "截图"));
 }
 
 void tst_IsSemanticQuery::fileTypeDocument()
 {
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "文档"));
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "报告"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "文档"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "报告"));
 }
 
 void tst_IsSemanticQuery::locationDesktop()
@@ -864,7 +899,8 @@ void tst_IsSemanticQuery::sizeSmall()
 void tst_IsSemanticQuery::sizeDynamic()
 {
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "大于500M的文件"));
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "小于100K"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "小于100K"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "小于100K文件"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "10M以上的表格"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "1G以内的文档"));
 }
@@ -873,6 +909,65 @@ void tst_IsSemanticQuery::timeAndFileType()
 {
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今天的pdf"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "本周的图片"));
+}
+
+void tst_IsSemanticQuery::singleTimeOnly()
+{
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "去年"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "去年的"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "今天的"));
+}
+
+void tst_IsSemanticQuery::singleSizeOnly()
+{
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "大于10M"));
+}
+
+void tst_IsSemanticQuery::singleFileTypeOnly()
+{
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "PPT"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "文档"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "报告"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "图片"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "截图"));
+}
+
+void tst_IsSemanticQuery::singleRecentOnly()
+{
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "打开过的"));
+}
+
+void tst_IsSemanticQuery::timePlusTarget()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "去年的文件"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "去年的预算"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今天的文件"));
+}
+
+void tst_IsSemanticQuery::timePlusFileType()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "去年的报告"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "本周的图片"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今天的pdf"));
+}
+
+void tst_IsSemanticQuery::fileTypePlusTarget()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "PPT文件"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "pdf文件"));
+}
+
+void tst_IsSemanticQuery::sizePlusFileType()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "大于10M的文档"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "10M以上的表格"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "1G以内的文档"));
+}
+
+void tst_IsSemanticQuery::recentPlusTarget()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "打开过的预算"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "打开过的文件"));
 }
 
 void tst_IsSemanticQuery::locationAndTime()
@@ -915,10 +1010,17 @@ void tst_IsSemanticQuery::noiseWordsOnly()
 void tst_IsSemanticQuery::hiddenFile()
 {
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "隐藏文件"));
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "隐藏的"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "隐藏的文件"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "藏起来的"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "看不到的"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今天的隐藏文件"));
+}
+
+void tst_IsSemanticQuery::structuredKeywordRule()
+{
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "包含测试的文件"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "文件名包含测试的文档"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "文件内容包含配置的文档"));
 }
 
 // ===== tst_SearchTarget =====
