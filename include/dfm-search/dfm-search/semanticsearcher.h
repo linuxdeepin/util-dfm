@@ -108,8 +108,9 @@ public:
     /**
      * @brief Check if the input contains semantic intent beyond a plain keyword.
      *
-     * Returns true if parsing the input reveals time constraints, size constraints,
-     * file type filters, or location constraints. Returns false for plain keyword input.
+     * Returns true for self-sufficient semantic actions/locations, structured keyword
+     * rules, or constraint-plus-target combinations. Returns false for single-slot
+     * inputs such as a lone time, size, or filetype constraint.
      *
      * This is a convenience wrapper around parseIntent(): it parses once and
      * checks whether any semantic dimension was extracted. The parsing result
@@ -123,6 +124,17 @@ public:
      * @return true if the input contains semantic intent, false for plain keywords
      */
     bool isSemanticQuery(const QString &input) const;
+
+    /**
+     * @brief Check whether a parsed intent should use semantic search.
+     *
+     * This overload lets callers reuse an already parsed intent and avoid
+     * re-running the NLP pipeline.
+     *
+     * @param intent The parsed intent to evaluate
+     * @return true if the parsed intent is semantic, false otherwise
+     */
+    bool isSemanticQuery(const DFMSEARCH::ParsedIntent &intent) const;
 
     /**
      * @brief Perform a synchronous semantic search

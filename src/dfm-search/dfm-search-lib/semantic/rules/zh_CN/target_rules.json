@@ -1,0 +1,36 @@
+{
+    "version": "1.0.0",
+    "groups": [
+        {
+            "name": "target",
+            "version": "1.0.0",
+            "locale": "zh-CN",
+            "rules": [
+                {
+                    "id": "target_file_generic",
+                    "pattern": "文件",
+                    "description": "Generic file target noun",
+                    "enabled": true,
+                    "priority": 100,
+                    "metadata": {}
+                },
+                {
+                    "id": "target_filename",
+                    "pattern": "文件名",
+                    "description": "Filename target noun",
+                    "enabled": true,
+                    "priority": 120,
+                    "metadata": {}
+                },
+                {
+                    "id": "target_folder",
+                    "pattern": "文件夹|目录",
+                    "description": "Folder target noun",
+                    "enabled": true,
+                    "priority": 100,
+                    "metadata": {}
+                }
+            ]
+        }
+    ]
+}
