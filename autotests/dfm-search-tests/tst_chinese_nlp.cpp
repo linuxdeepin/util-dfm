@@ -199,6 +199,12 @@ private Q_SLOTS:
     void keyword_contentHas();
     void keyword_contentHas_multi();
 
+    // Target tests
+    void target_genericFileConsumed();
+    void target_filenameConsumed();
+    void target_folderConsumed();
+    void target_directoryConsumed();
+
     // Noise + unconsumed text tests
     void noise_action_words();
     void noise_polite_words();
@@ -242,14 +248,14 @@ void tst_ChineseNLP::initTestCase()
 
     m_engine = new SemanticRuleEngine(this);
 
-    // Load all 7 rule files
+    // Load all semantic rule files used by the default parser
     const QString dir = rulesDir();
     QVERIFY2(QDir(dir).exists(), qPrintable(QStringLiteral("Rules dir not found: ") + dir));
 
     const QStringList files = { "noise_rules.json", "time_rules.json",
                                 "filetype_rules.json", "keyword_rules.json",
                                 "size_rules.json", "action_rules.json",
-                                "location_rules.json" };
+                                "location_rules.json", "target_rules.json" };
     for (const QString &f : files) {
         const QString path = dir + QLatin1Char('/') + f;
         bool ok = m_engine->loadRuleFile(path);
@@ -264,20 +270,22 @@ void tst_ChineseNLP::initTestCase()
     QVERIFY(m_engine->hasGroup("size"));
     QVERIFY(m_engine->hasGroup("action"));
     QVERIFY(m_engine->hasGroup("location"));
+    QVERIFY(m_engine->hasGroup("target"));
 
     const QStringList groups = m_engine->groupNames();
-    QCOMPARE(groups.size(), 7);
+    QCOMPARE(groups.size(), 8);
 
     m_parser = new IntentParser(m_engine);
 
     // Verify default extractors are initialized
     QStringList names = m_parser->extractorNames();
-    QCOMPARE(names.size(), 6);
+    QCOMPARE(names.size(), 7);
     QVERIFY(names.contains("time"));
     QVERIFY(names.contains("filetype"));
     QVERIFY(names.contains("size"));
     QVERIFY(names.contains("action"));
     QVERIFY(names.contains("location"));
+    QVERIFY(names.contains("target"));
     QVERIFY(names.contains("keyword"));
 }
 
@@ -544,7 +552,12 @@ void tst_ChineseNLP::fileType_general_document()
 {
     ParsedIntent intent;
     m_parser->parse(QStringLiteral("文档"), intent);
-    const QStringList expectedExts = { "doc", "docx", "pdf", "txt", "wps", "rtf", "md", "odt" };
+    const QStringList expectedExts = { "rtf", "odt", "ods", "odp", "odg",
+                                       "docx", "xlsx", "et", "pptx", "ppsx",
+                                       "md", "xls", "xlsb", "doc", "dot", "wps",
+                                       "ppt", "pps", "txt", "pdf", "dps", "sh",
+                                       "json", "yaml", "ini", "bat", "sql", "uof",
+                                       "ofd", "pot" };
     QVERIFY(setEquals(intent.fileExtensions(), expectedExts));
 }
 
@@ -607,6 +620,82 @@ void tst_ChineseNLP::keyword_contentHas_multi()
     QCOMPARE(intent.keywords().size(), 2);
     QVERIFY(intent.keywords().contains("产品规划"));
     QVERIFY(intent.keywords().contains("市场调研"));
+}
+
+void tst_ChineseNLP::target_genericFileConsumed()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("文件"), intent);
+
+    QVERIFY(intent.keywords().isEmpty());
+
+    bool matched = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("target_file_generic")) {
+            matched = true;
+            QCOMPARE(span.start(), 0);
+            QCOMPARE(span.end(), 2);
+            break;
+        }
+    }
+    QVERIFY2(matched, "target_file_generic should produce a consumed span");
+}
+
+void tst_ChineseNLP::target_filenameConsumed()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("文件名"), intent);
+
+    QVERIFY(intent.keywords().isEmpty());
+
+    bool matched = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("target_filename")) {
+            matched = true;
+            QCOMPARE(span.start(), 0);
+            QCOMPARE(span.end(), 3);
+            break;
+        }
+    }
+    QVERIFY2(matched, "target_filename should produce a consumed span");
+}
+
+void tst_ChineseNLP::target_folderConsumed()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("文件夹"), intent);
+
+    QVERIFY(intent.keywords().isEmpty());
+
+    bool matched = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("target_folder")) {
+            matched = true;
+            QCOMPARE(span.start(), 0);
+            QCOMPARE(span.end(), 3);
+            break;
+        }
+    }
+    QVERIFY2(matched, "target_folder should produce a consumed span for 文件夹");
+}
+
+void tst_ChineseNLP::target_directoryConsumed()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("目录"), intent);
+
+    QVERIFY(intent.keywords().isEmpty());
+
+    bool matched = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("target_folder")) {
+            matched = true;
+            QCOMPARE(span.start(), 0);
+            QCOMPARE(span.end(), 2);
+            break;
+        }
+    }
+    QVERIFY2(matched, "target_folder should produce a consumed span for 目录");
 }
 
 // ===== Noise + Unconsumed Text Tests =====
@@ -957,7 +1046,12 @@ void tst_ChineseNLP::fileType_document_general_allSynonyms()
         QStringLiteral("文章"), QStringLiteral("方案"), QStringLiteral("文本"),
         QStringLiteral("资料"), QStringLiteral("笔记"), QStringLiteral("稿件")
     };
-    const QStringList expectedExts = { "doc", "docx", "pdf", "txt", "wps", "rtf", "md", "odt" };
+    const QStringList expectedExts = { "rtf", "odt", "ods", "odp", "odg",
+                                       "docx", "xlsx", "et", "pptx", "ppsx",
+                                       "md", "xls", "xlsb", "doc", "dot", "wps",
+                                       "ppt", "pps", "txt", "pdf", "dps", "sh",
+                                       "json", "yaml", "ini", "bat", "sql", "uof",
+                                       "ofd", "pot" };
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -1825,7 +1919,8 @@ void tst_ChineseNLP::action_recent_notTriggered_byBareVerb()
 void tst_ChineseNLP::action_recent_consumesTriggerWords()
 {
     // Trigger words must be fully consumed and not leak into keywords.
-    const struct {
+    const struct
+    {
         const char *input;
         const char *trigger;   // must NOT appear in any keyword
     } cases[] = {
