@@ -1300,6 +1300,7 @@ private Q_SLOTS:
     void defaultTarget();
     void fileNameOnlyTarget();
     void contentOnlyTarget();
+    void hiddenOnlyNoKeyword();
 
 private:
     ParsedIntent makeIntent(const QStringList &keywords, SearchTarget target) const;
@@ -1348,6 +1349,36 @@ void tst_SemanticQueryBuilderTarget::contentOnlyTarget()
     QVERIFY(plan.fileNameQuery.keyword().isEmpty());
     QVERIFY(plan.contentQuery.has_value());
     QVERIFY(plan.ocrQuery.has_value());
+}
+
+void tst_SemanticQueryBuilderTarget::hiddenOnlyNoKeyword()
+{
+    // "下载的隐藏文件" 这类仅含位置槽 + 属性槽、无关键字槽的语义搜索：
+    // 解析后 hiddenOnly=true、includeHidden=true、searchTarget=FileNameOnly、keywords=[]。
+    // 预期 plan 仍应构建 fileName 路径（空关键字），由 indexedstrategy 的
+    // hiddenOnlyQuery (kIsHidden:Y) 作为主查询条件，pathPrefixQuery 限制到下载目录。
+    SemanticQueryBuilder builder;
+    ParsedIntent intent;
+    intent.setKeywords({});                  // 无关键字
+    intent.setHiddenOnly(true);
+    intent.setIncludeHidden(true);
+    intent.setSearchTarget(SearchTarget::FileNameOnly);
+    intent.setSearchDirectories({ QStringLiteral("/home/test/Downloads") });
+
+    SemanticSearchPlan plan = builder.build(intent);
+
+    // plan 顶层标志必须正确（SemanticSearcher.prepareOptions 会据此透传到 SearchOptions）
+    QVERIFY(plan.hiddenOnly);
+    QVERIFY(plan.includeHidden);
+    QVERIFY(plan.searchDirectories == QStringList { QStringLiteral("/home/test/Downloads") });
+
+    // fileName 路径必须构建（即使关键字为空）—— 否则搜索根本不会执行
+    // indexedstrategy 依赖空关键字的 fileNameQuery 走 Simple 分支，由 hiddenOnlyQuery 兜底
+    QVERIFY(plan.fileNameQuery.keyword().isEmpty());
+
+    // content/ocr 不应启用（hiddenOnly 强制 FileNameOnly，且无关键字）
+    QVERIFY(!plan.contentQuery.has_value());
+    QVERIFY(!plan.ocrQuery.has_value());
 }
 
 // ===== Factory functions =====

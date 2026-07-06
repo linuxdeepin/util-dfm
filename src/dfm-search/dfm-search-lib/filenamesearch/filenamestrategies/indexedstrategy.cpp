@@ -669,6 +669,19 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
         break;
     }
 
+    // hiddenOnly 本身就是有效主查询条件，不依赖其他 keyword/type/ext。
+    // 让 "下载的隐藏文件" 这类无关键字的语义搜索能直接走 kIsHidden 倒排索引，
+    // 同时让后续 pathPrefixQuery / excludedPaths / hidden filter 能正确叠加。
+    // 必须在 pathPrefixQuery 等依赖 hasValidQuery 的块之前注入。
+    if (m_options.hiddenOnly()) {
+        QueryPtr hiddenOnlyQuery = Lucene::newLucene<Lucene::TermQuery>(
+                Lucene::newLucene<Lucene::Term>(
+                        LuceneFieldNames::FileName::kIsHidden,
+                        L"Y"));
+        finalQuery->add(hiddenOnlyQuery, Lucene::BooleanClause::MUST);
+        hasValidQuery = true;
+    }
+
     // Add time range filter query
     if (m_options.hasTimeRangeFilter()) {
         TimeRangeFilter filter = m_options.timeRangeFilter();
@@ -730,15 +743,6 @@ Lucene::QueryPtr FileNameIndexedStrategy::buildLuceneQuery(const IndexQuery &que
                         LuceneFieldNames::FileName::kIsHidden,
                         L"Y"));
         finalQuery->add(hiddenQuery, Lucene::BooleanClause::MUST_NOT);
-    }
-
-    // When hiddenOnly is true, only return hidden files (MUST kIsHidden:Y)
-    if (hasValidQuery && m_options.hiddenOnly()) {
-        QueryPtr hiddenOnlyQuery = Lucene::newLucene<Lucene::TermQuery>(
-                Lucene::newLucene<Lucene::Term>(
-                        LuceneFieldNames::FileName::kIsHidden,
-                        L"Y"));
-        finalQuery->add(hiddenOnlyQuery, Lucene::BooleanClause::MUST);
     }
 
     return hasValidQuery ? finalQuery : nullptr;
