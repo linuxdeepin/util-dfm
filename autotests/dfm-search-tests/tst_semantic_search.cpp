@@ -708,19 +708,24 @@ bool checkIsSemanticQuery(SemanticRuleEngine *engine, IntentParser *parser,
     ParsedIntent intent;
     parser->parse(input, intent);
 
+    // Replicate isSemanticIntent() — keep in sync with semanticsearcher.cpp.
+    // 维度计数法：任何单维度都不算语义查询，至少 2 个维度组合才算。
+
+    // keyword_* 规则 span 单独成立
     for (const MatchSpan &span : intent.consumedSpans()) {
         if (span.ruleId().startsWith("keyword_")) {
             return true;
         }
     }
 
-    if (intent.hiddenOnly() || !intent.searchDirectories().isEmpty()) {
-        return true;
-    }
-
-    const bool hasConstraint = intent.timeConstraint().isValid()
-            || intent.sizeConstraint().isValid()
-            || intent.recentOnly();
+    int dimensionCount = 0;
+    if (!intent.searchDirectories().isEmpty()) ++dimensionCount;
+    if (intent.hiddenOnly()) ++dimensionCount;
+    if (intent.recentOnly()) ++dimensionCount;
+    if (intent.timeConstraint().isValid()) ++dimensionCount;
+    if (intent.sizeConstraint().isValid()) ++dimensionCount;
+    if (!intent.fileExtensions().isEmpty()) ++dimensionCount;
+    if (!intent.keywords().isEmpty()) ++dimensionCount;
     bool hasTargetRule = false;
     for (const MatchSpan &span : intent.consumedSpans()) {
         if (span.ruleId().startsWith("target_")) {
@@ -728,18 +733,9 @@ bool checkIsSemanticQuery(SemanticRuleEngine *engine, IntentParser *parser,
             break;
         }
     }
-    const bool hasTarget = hasTargetRule || !intent.keywords().isEmpty()
-            || !intent.fileExtensions().isEmpty() || intent.searchTarget() != SearchTarget::All;
+    if (hasTargetRule) ++dimensionCount;
 
-    if (hasConstraint && hasTarget) {
-        return true;
-    }
-
-    if (hasTargetRule && !intent.fileExtensions().isEmpty()) {
-        return true;
-    }
-
-    return !intent.keywords().isEmpty() && !intent.fileExtensions().isEmpty();
+    return dimensionCount >= 2;
 }
 
 }   // namespace
@@ -782,6 +778,8 @@ private Q_SLOTS:
     void noiseWordsOnly();
     void hiddenFile();
     void structuredKeywordRule();
+    void locationOnlyRejected();
+    void locationPlusDimensionAccepted();
 
 private:
     SemanticRuleEngine *m_engine = nullptr;
@@ -1009,10 +1007,14 @@ void tst_IsSemanticQuery::noiseWordsOnly()
 
 void tst_IsSemanticQuery::hiddenFile()
 {
+    // hiddenOnly + target "文件" = 2 维度 → 通过
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "隐藏文件"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "隐藏的文件"));
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "藏起来的"));
-    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "看不到的"));
+    // 纯属性槽单维度 → 不通过（与"打开过的"、"隐藏的"一致）
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "藏起来的"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "看不到的"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "隐藏的"));
+    // time + hiddenOnly = 2 维度 → 通过
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "今天的隐藏文件"));
 }
 
@@ -1021,6 +1023,25 @@ void tst_IsSemanticQuery::structuredKeywordRule()
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "包含测试的文件"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "文件名包含测试的文档"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "文件内容包含配置的文档"));
+}
+
+void tst_IsSemanticQuery::locationOnlyRejected()
+{
+    // 仅命中位置槽、无其他维度 —— 不应通过语义查询检查。
+    // 这类查询本质是"列出某目录所有文件"，indexedstrategy 没有列全部文件的能力，
+    // 由 guardNonSemantic 拦下报 InvalidQuery，避免进入 doSearch 后空关键字报错。
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "下载"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "微信"));
+    QVERIFY(!checkIsSemanticQuery(m_engine, m_parser, "桌面"));
+}
+
+void tst_IsSemanticQuery::locationPlusDimensionAccepted()
+{
+    // 位置槽 + 其他维度 —— 应通过语义查询检查。
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "下载的隐藏文件"));   // location + hiddenOnly
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "下载的文档"));         // location + fileExtensions
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "下载的pdf"));          // location + fileExtensions
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "桌面的今天的文件"));   // location + time + target
 }
 
 // ===== tst_SearchTarget =====
@@ -1301,6 +1322,7 @@ private Q_SLOTS:
     void fileNameOnlyTarget();
     void contentOnlyTarget();
     void hiddenOnlyNoKeyword();
+    void noKeywordWithFileExtensions();
 
 private:
     ParsedIntent makeIntent(const QStringList &keywords, SearchTarget target) const;
@@ -1372,13 +1394,33 @@ void tst_SemanticQueryBuilderTarget::hiddenOnlyNoKeyword()
     QVERIFY(plan.includeHidden);
     QVERIFY(plan.searchDirectories == QStringList { QStringLiteral("/home/test/Downloads") });
 
-    // fileName 路径必须构建（即使关键字为空）—— 否则搜索根本不会执行
-    // indexedstrategy 依赖空关键字的 fileNameQuery 走 Simple 分支，由 hiddenOnlyQuery 兜底
-    QVERIFY(plan.fileNameQuery.keyword().isEmpty());
+    // 无关键字时改用 wildcard "*" 匹配所有文件名 ——
+    // indexedstrategy Wildcard 分支 buildWildcardQuery("*") 生成匹配所有文件名的 WildcardQuery，
+    // 让 pathPrefixQuery / hiddenOnlyQuery 作为真正的过滤器叠加。
+    QCOMPARE(plan.fileNameQuery.keyword(), QStringLiteral("*"));
+    QCOMPARE(plan.fileNameQuery.type(), SearchQuery::Type::Wildcard);
 
     // content/ocr 不应启用（hiddenOnly 强制 FileNameOnly，且无关键字）
     QVERIFY(!plan.contentQuery.has_value());
     QVERIFY(!plan.ocrQuery.has_value());
+}
+
+void tst_SemanticQueryBuilderTarget::noKeywordWithFileExtensions()
+{
+    // "今天的图片"、"下载的pdf" 这类有 fileExtensions 但无 keyword 的查询：
+    // fileNameQuery 必须保持空 Simple（不是 wildcard "*"），否则 determineSearchType
+    // 会把 wildcard "*" 误导进 Combined 分支用 buildSimpleQuery("*") 走 NGram —— 错误。
+    // 空 Simple 让 determineSearchType 走 Combined(ext only)，由 extQuery 作主查询条件。
+    SemanticQueryBuilder builder;
+    ParsedIntent intent;
+    intent.setKeywords({});
+    intent.setFileExtensions({ "png", "jpg" });
+    intent.setSearchTarget(SearchTarget::All);
+
+    SemanticSearchPlan plan = builder.build(intent);
+
+    QVERIFY(plan.fileNameQuery.keyword().isEmpty());
+    QCOMPARE(plan.fileNameQuery.type(), SearchQuery::Type::Simple);
 }
 
 // ===== Factory functions =====

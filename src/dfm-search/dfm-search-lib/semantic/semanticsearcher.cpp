@@ -40,60 +40,35 @@ bool hasTargetRuleSpan(const ParsedIntent &intent)
     return false;
 }
 
-bool hasConstraintSignal(const ParsedIntent &intent)
+// 计算语义维度个数。任何单维度单独都不算语义查询（"下载"、"隐藏的"、"打开过的"、
+// "图片"、"去年"、"大于10M" 都只是单维度），必须至少 2 个维度组合才表达完整搜索意图。
+// 维度：location / hiddenOnly / recentOnly / time / size / fileType / keyword / target
+int countSemanticDimensions(const ParsedIntent &intent)
 {
-    return intent.timeConstraint().isValid() || intent.sizeConstraint().isValid()
-            || intent.recentOnly();
-}
-
-bool hasLocationSignal(const ParsedIntent &intent)
-{
-    return intent.hiddenOnly() || !intent.searchDirectories().isEmpty();
-}
-
-bool hasKeywordAndFileType(const ParsedIntent &intent)
-{
-    return !intent.keywords().isEmpty() && !intent.fileExtensions().isEmpty();
-}
-
-bool hasFileTypeAndTarget(const ParsedIntent &intent)
-{
-    return !intent.fileExtensions().isEmpty() && hasTargetRuleSpan(intent);
-}
-
-bool hasConstraintAndTarget(const ParsedIntent &intent)
-{
-    if (!hasConstraintSignal(intent)) {
-        return false;
-    }
-
-    return hasTargetRuleSpan(intent) || !intent.keywords().isEmpty()
-            || !intent.fileExtensions().isEmpty() || intent.searchTarget() != SearchTarget::All;
+    int count = 0;
+    if (!intent.searchDirectories().isEmpty()) ++count;   // location
+    if (intent.hiddenOnly()) ++count;                     // hiddenOnly 属性
+    if (intent.recentOnly()) ++count;                     // recentOnly 属性
+    if (intent.timeConstraint().isValid()) ++count;       // time 约束
+    if (intent.sizeConstraint().isValid()) ++count;       // size 约束
+    if (!intent.fileExtensions().isEmpty()) ++count;      // fileType
+    if (!intent.keywords().isEmpty()) ++count;            // keyword (unconsumed text)
+    if (hasTargetRuleSpan(intent)) ++count;               // target 名词 (文件/文件名/文件夹)
+    return count;
 }
 
 bool isSemanticIntent(const ParsedIntent &intent)
 {
-    if (hasLocationSignal(intent)) {
-        return true;
-    }
-
+    // 结构化关键字规则 (keyword_* span) 本身已表达明确搜索意图，单独成立
+    // (如 "包含测试的文件"、"文件名包含报告的文档")
     if (hasKeywordRuleSpan(intent)) {
         return true;
     }
 
-    if (hasConstraintAndTarget(intent)) {
-        return true;
-    }
-
-    if (hasFileTypeAndTarget(intent)) {
-        return true;
-    }
-
-    if (hasKeywordAndFileType(intent)) {
-        return true;
-    }
-
-    return false;
+    // 至少 2 个语义维度组合才算完整语义查询。
+    // 单维度（纯位置/纯属性/纯时间/纯大小/纯文件类型）不构成可执行的搜索意图，
+    // 由 guardNonSemantic 拦下报 InvalidQuery，避免进入 doSearch 后空关键字报错。
+    return countSemanticDimensions(intent) >= 2;
 }
 
 }   // namespace
@@ -199,10 +174,16 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStrin
         }
     };
 
-    auto onError = [](const SearchError &error) {
+    // 引擎错误也必须触发计数归零检查，否则上层会一直阻塞到 60s 超时。
+    // 校验失败（如 KeywordIsEmpty）会让 GenericSearchEngine::search 在
+    // emit errorOccurred 后直接 return，不会 emit searchFinished ——
+    // 此时必须由 onError 兜底减计数，把错误视为引擎完成。
+    auto onError = [this, onFinished](const SearchError &error) {
         qWarning() << "Search error:" << error.message();
         // Don't propagate individual engine errors to caller
         // The other engines may still produce valid results
+        // 但仍需减计数，否则 pendingFinishCount 永不到 0
+        onFinished({});
     };
 
     // Step 6: Clean up any previous search engines

@@ -91,8 +91,18 @@ SemanticSearchPlan SemanticQueryBuilder::build(const ParsedIntent &intent)
         } else if (intent.keywords().size() > 1) {
             plan.fileNameQuery = SearchFactory::createQuery(intent.keywords(), SearchQuery::Type::Boolean);
         } else {
-            // No keywords: search all files (use wildcard to match everything)
-            plan.fileNameQuery = SearchFactory::createQuery("");
+            // 无关键字时的兜底 —— 必须区分是否有 fileExtensions，避免走错 indexedstrategy 分支：
+            // - 有 fileExtensions（"今天的图片"、"下载的pdf"）：保持空 Simple query，让
+            //   determineSearchType 走 Combined 分支，由 extQuery 作为主查询条件
+            // - 无 fileExtensions（"桌面的文件"、"下载的隐藏文件"、"下载的文件"）：用
+            //   wildcard "*" 匹配所有文件名，让 pathPrefixQuery / hiddenOnlyQuery 作为
+            //   真正的过滤器（Wildcard 分支不会被 Combined 误导走 NGram）
+            if (!intent.fileExtensions().isEmpty()) {
+                plan.fileNameQuery = SearchFactory::createQuery("");
+            } else {
+                plan.fileNameQuery = SearchFactory::createQuery(QStringLiteral("*"),
+                        SearchQuery::Type::Wildcard);
+            }
         }
 
         plan.fileNameOptions = opts;
