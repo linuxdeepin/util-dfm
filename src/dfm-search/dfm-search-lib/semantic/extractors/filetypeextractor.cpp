@@ -30,6 +30,13 @@ void FileTypeExtractor::extract(const QString &input, ParsedIntent &intent)
         const QRegularExpressionMatch &m = matches[i];
         const QVariantMap metadata = m_engine->ruleMetadata("filetype", ruleIds[i]);
 
+        // Always consume the matched span so the matched text doesn't leak into keywords
+        MatchSpan span;
+        span.setStart(m.capturedStart());
+        span.setEnd(m.capturedEnd());
+        span.setRuleId(ruleIds[i]);
+        intent.consumedSpans().append(span);
+
         const QStringList extensions = metadata.value("extensions").toStringList();
         const bool isGeneral = metadata.value("general", false).toBool();
 
@@ -44,12 +51,6 @@ void FileTypeExtractor::extract(const QString &input, ParsedIntent &intent)
                 seenExtensions.insert(ext);
             }
         }
-
-        MatchSpan span;
-        span.setStart(m.capturedStart());
-        span.setEnd(m.capturedEnd());
-        span.setRuleId(ruleIds[i]);
-        intent.consumedSpans().append(span);
     }
 
     intent.setFileExtensions(seenExtensions.values());

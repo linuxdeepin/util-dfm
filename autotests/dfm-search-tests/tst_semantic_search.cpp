@@ -735,6 +735,19 @@ bool checkIsSemanticQuery(SemanticRuleEngine *engine, IntentParser *parser,
     }
     if (hasTargetRule) ++dimensionCount;
 
+    bool hasSpecificFt = false;
+    bool hasGeneralFt = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        const QString rid = span.ruleId();
+        if (rid.startsWith("filetype_")) {
+            if (rid.endsWith("_general"))
+                hasGeneralFt = true;
+            else
+                hasSpecificFt = true;
+        }
+    }
+    if (hasSpecificFt && hasGeneralFt) ++dimensionCount;
+
     return dimensionCount >= 2;
 }
 
@@ -770,6 +783,7 @@ private Q_SLOTS:
     void timePlusTarget();
     void timePlusFileType();
     void fileTypePlusTarget();
+    void specificAndGeneralFiletype();
     void sizePlusFileType();
     void recentPlusTarget();
     void locationAndTime();
@@ -953,6 +967,17 @@ void tst_IsSemanticQuery::fileTypePlusTarget()
 {
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "PPT文件"));
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "pdf文件"));
+}
+
+void tst_IsSemanticQuery::specificAndGeneralFiletype()
+{
+    // specific filetype + general filetype word (文档/表格/幻灯片) should be
+    // recognized as semantic (≥2 dimensions via the specific+general combo rule).
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "PPT文档"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "pdf文档"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "xls表格"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "PPT幻灯片"));
+    QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "Word文档"));
 }
 
 void tst_IsSemanticQuery::sizePlusFileType()
