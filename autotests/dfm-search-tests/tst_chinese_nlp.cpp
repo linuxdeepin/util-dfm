@@ -129,6 +129,18 @@ private Q_SLOTS:
     void fileType_application_allSynonyms();
     void fileType_design_source_allSynonyms();
 
+    // Filetype specific+general combination tests (span leak regression)
+    void fileType_specificAndGeneral_pptDocument();
+    void fileType_specificAndGeneral_xlsSpreadsheet();
+    void fileType_specificAndGeneral_wordDocument();
+    void fileType_specificAndGeneral_pdfDocument();
+    void fileType_specificAndGeneral_pptPresentation();
+
+    // Filetype full-extension match tests (regex alternation order regression)
+    void fileType_fullExtensionMatch_pptx();
+    void fileType_fullExtensionMatch_docx();
+    void fileType_fullExtensionMatch_xlsx();
+
     // Combined time+type tests
     void combined_fullDateAndType();
     void combined_monthAndType();
@@ -1196,6 +1208,102 @@ void tst_ChineseNLP::fileType_design_source_allSynonyms()
         QVERIFY2(intent.fileExtensions().contains("ai"),
                  qPrintable(QStringLiteral("Missing ai for: ") + input));
     }
+}
+
+// ===== Filetype specific+general combination tests (span leak regression) =====
+// 当 specific filetype 规则与 general filetype 规则同时命中时，general 规则匹配的
+// 文本（文档/表格/幻灯片）必须被消费，不得泄漏成 keyword；且 fileExtensions 应只
+// 包含 specific 规则的扩展名（general 扩展名被跳过避免过度具体化稀释）。
+
+void tst_ChineseNLP::fileType_specificAndGeneral_pptDocument()
+{
+    // "找下PPT文档" → filetype_ppt (ppt|pptx) + filetype_document_general (文档)
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下PPT文档"), intent);
+    QVERIFY2(setEquals(intent.fileExtensions(), QStringList { "ppt", "pptx" }),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+    QVERIFY2(intent.keywords().isEmpty(),
+             qPrintable(QStringLiteral("Keywords should be empty, got: ") + intent.keywords().join(',')));
+}
+
+void tst_ChineseNLP::fileType_specificAndGeneral_xlsSpreadsheet()
+{
+    // "找下xls表格" → filetype_excel (excel|xls|xlsx) + filetype_spreadsheet_general (表格)
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下xls表格"), intent);
+    QVERIFY2(setEquals(intent.fileExtensions(), QStringList { "xls", "xlsx" }),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+    QVERIFY2(intent.keywords().isEmpty(),
+             qPrintable(QStringLiteral("Keywords should be empty, got: ") + intent.keywords().join(',')));
+}
+
+void tst_ChineseNLP::fileType_specificAndGeneral_wordDocument()
+{
+    // "找下Word文档" → filetype_word (word|doc|docx) + filetype_document_general (文档)
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下Word文档"), intent);
+    QVERIFY2(setEquals(intent.fileExtensions(), QStringList { "doc", "docx" }),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+    QVERIFY2(intent.keywords().isEmpty(),
+             qPrintable(QStringLiteral("Keywords should be empty, got: ") + intent.keywords().join(',')));
+}
+
+void tst_ChineseNLP::fileType_specificAndGeneral_pdfDocument()
+{
+    // "找下PDF文档" → filetype_pdf (pdf) + filetype_document_general (文档)
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下PDF文档"), intent);
+    QVERIFY2(setEquals(intent.fileExtensions(), QStringList { "pdf" }),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+    QVERIFY2(intent.keywords().isEmpty(),
+             qPrintable(QStringLiteral("Keywords should be empty, got: ") + intent.keywords().join(',')));
+}
+
+void tst_ChineseNLP::fileType_specificAndGeneral_pptPresentation()
+{
+    // "找下PPT幻灯片" → filetype_ppt (ppt|pptx) + filetype_presentation_general (幻灯片)
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下PPT幻灯片"), intent);
+    QVERIFY2(setEquals(intent.fileExtensions(), QStringList { "ppt", "pptx" }),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+    QVERIFY2(intent.keywords().isEmpty(),
+             qPrintable(QStringLiteral("Keywords should be empty, got: ") + intent.keywords().join(',')));
+}
+
+void tst_ChineseNLP::fileType_fullExtensionMatch_pptx()
+{
+    // "找下pptx文档" → filetype_ppt (pptx|ppt) matches "pptx" fully + filetype_document_general (文档)
+    // Regression: alternation order must be long-prefix-first so "x" doesn't leak into keywords.
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下pptx文档"), intent);
+    QVERIFY2(setEquals(intent.fileExtensions(), QStringList { "ppt", "pptx" }),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+    QVERIFY2(intent.keywords().isEmpty(),
+             qPrintable(QStringLiteral("Keywords should be empty, got: ") + intent.keywords().join(',')));
+}
+
+void tst_ChineseNLP::fileType_fullExtensionMatch_docx()
+{
+    // "找下docx文档" → filetype_word (word|docx|doc) matches "docx" fully + filetype_document_general (文档)
+    // Regression: alternation order must be long-prefix-first so "x" doesn't leak into keywords.
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下docx文档"), intent);
+    QVERIFY2(setEquals(intent.fileExtensions(), QStringList { "doc", "docx" }),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+    QVERIFY2(intent.keywords().isEmpty(),
+             qPrintable(QStringLiteral("Keywords should be empty, got: ") + intent.keywords().join(',')));
+}
+
+void tst_ChineseNLP::fileType_fullExtensionMatch_xlsx()
+{
+    // "找下xlsx表格" → filetype_excel (excel|xlsx|xls) matches "xlsx" fully + filetype_spreadsheet_general (表格)
+    // Regression: alternation order must be long-prefix-first so "x" doesn't leak into keywords.
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("找下xlsx表格"), intent);
+    QVERIFY2(setEquals(intent.fileExtensions(), QStringList { "xls", "xlsx" }),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+    QVERIFY2(intent.keywords().isEmpty(),
+             qPrintable(QStringLiteral("Keywords should be empty, got: ") + intent.keywords().join(',')));
 }
 
 // ===== Combined Time+Type Tests =====

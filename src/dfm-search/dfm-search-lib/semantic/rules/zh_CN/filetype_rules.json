@@ -8,7 +8,7 @@
             "rules": [
                 {
                     "id": "filetype_word",
-                    "pattern": "word|doc|docx",
+                    "pattern": "word|docx|doc",
                     "description": "Word documents",
                     "enabled": true,
                     "priority": 200,
@@ -29,7 +29,7 @@
                 },
                 {
                     "id": "filetype_excel",
-                    "pattern": "excel|xls|xlsx",
+                    "pattern": "excel|xlsx|xls",
                     "description": "Excel spreadsheets",
                     "enabled": true,
                     "priority": 200,
@@ -40,7 +40,7 @@
                 },
                 {
                     "id": "filetype_ppt",
-                    "pattern": "ppt|pptx",
+                    "pattern": "pptx|ppt",
                     "description": "PowerPoint presentations",
                     "enabled": true,
                     "priority": 200,

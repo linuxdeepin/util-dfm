@@ -54,6 +54,24 @@ int countSemanticDimensions(const ParsedIntent &intent)
     if (!intent.fileExtensions().isEmpty()) ++count;      // fileType
     if (!intent.keywords().isEmpty()) ++count;            // keyword (unconsumed text)
     if (hasTargetRuleSpan(intent)) ++count;               // target 名词 (文件/文件名/文件夹)
+
+    // 当 specific filetype 与 general filetype 同时命中（如 "PPT文档"、"pdf文档"），
+    // general 类型词（文档/表格/幻灯片）充当目标名词，贡献额外维度。
+    // 单独的 general filetype（"文档"）或单独的 specific filetype（"PPT"）不触发，
+    // 仍为单维度，由 guardNonSemantic 拦下。
+    bool hasSpecificFt = false;
+    bool hasGeneralFt = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        const QString rid = span.ruleId();
+        if (rid.startsWith(QLatin1String("filetype_"))) {
+            if (rid.endsWith(QLatin1String("_general")))
+                hasGeneralFt = true;
+            else
+                hasSpecificFt = true;
+        }
+    }
+    if (hasSpecificFt && hasGeneralFt) ++count;
+
     return count;
 }
 
