@@ -181,28 +181,28 @@ void CliOptions::printHelp() const
     std::cout << "  # Filename search with file size filter (1MB to 100MB)" << std::endl;
     std::cout << "  dfm-searcher --size-min=1M --size-max=100M \"video\" /home/user" << std::endl;
     std::cout << std::endl;
-    std::cout << "Highlight Retrieval (on-demand):" << std::endl;
-    std::cout << "  dfm-searcher highlight --type=<content|ocr> <keyword> <path1> [path2 ...] [-j]" << std::endl;
-    std::cout << "  Fetch highlighted content snippets for specific files without running a full search." << std::endl;
+    std::cout << "Content Preview (on-demand):" << std::endl;
+    std::cout << "  dfm-searcher preview --type=<content|ocr> <keyword> <path1> [path2 ...] [-j]" << std::endl;
+    std::cout << "  Fetch content snippets for specific files without running a full search." << std::endl;
     std::cout << std::endl;
-    std::cout << "  # Fetch highlight for a single file" << std::endl;
-    std::cout << "  dfm-searcher highlight --type=content \"hello\" /home/user/doc.txt" << std::endl;
+    std::cout << "  # Fetch preview for a single file" << std::endl;
+    std::cout << "  dfm-searcher preview --type=content \"hello\" /home/user/doc.txt" << std::endl;
     std::cout << std::endl;
-    std::cout << "  # Batch fetch highlights with JSON output" << std::endl;
-    std::cout << "  dfm-searcher highlight --type=ocr \"screenshot\" img1.png img2.png -j" << std::endl;
+    std::cout << "  # Batch fetch previews with JSON output" << std::endl;
+    std::cout << "  dfm-searcher preview --type=ocr \"screenshot\" img1.png img2.png -j" << std::endl;
 }
 
 bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
 {
-    // Pre-scan for "highlight" subcommand
+    // Pre-scan for "preview" subcommand
     const QStringList rawArgs = app.arguments();
-    // Intercept -h/--help to show custom help (includes highlight subcommand docs)
+    // Intercept -h/--help to show custom help (includes preview subcommand docs)
     if (rawArgs.contains("-h") || rawArgs.contains("--help")) {
         printHelp();
         return false;
     }
-    if (rawArgs.size() >= 2 && rawArgs.at(1) == "highlight") {
-        config.subcommand = "highlight";
+    if (rawArgs.size() >= 2 && rawArgs.at(1) == "preview") {
+        config.subcommand = "preview";
     }
 
     m_parser.process(app);
@@ -218,16 +218,16 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
 
     QStringList positionalArgs = m_parser.positionalArguments();
 
-    // For highlight subcommand, the positional args are: keyword=<first arg> + paths=<remaining>
-    // "highlight" itself is consumed as first positional by QCommandLineParser
-    if (config.subcommand == "highlight") {
-        // Skip "highlight" keyword from positional args (it was parsed as the first positional)
+    // For preview subcommand, the positional args are: keyword=<first arg> + paths=<remaining>
+    // "preview" itself is consumed as first positional by QCommandLineParser
+    if (config.subcommand == "preview") {
+        // Skip "preview" keyword from positional args (it was parsed as the first positional)
         QStringList args = positionalArgs;
-        if (!args.isEmpty() && args.first() == "highlight") {
+        if (!args.isEmpty() && args.first() == "preview") {
             args.removeFirst();
         }
         if (args.isEmpty()) {
-            std::cerr << "Error: highlight requires <keyword> and at least one <path>" << std::endl;
+            std::cerr << "Error: preview requires <keyword> and at least one <path>" << std::endl;
             return false;
         }
 
@@ -235,14 +235,14 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
         // Remaining args are file paths
         config.searchPath = args.mid(1).join(',');   // Reuse searchPath to store comma-separated paths
 
-        // Validate search type for highlight
+        // Validate search type for preview
         QString typeStr = m_parser.value(m_typeOption);
         if (typeStr == "content") {
             config.searchType = SearchType::Content;
         } else if (typeStr == "ocr") {
             config.searchType = SearchType::Ocr;
         } else {
-            std::cerr << "Error: highlight requires --type=content or --type=ocr" << std::endl;
+            std::cerr << "Error: preview requires --type=content or --type=ocr" << std::endl;
             return false;
         }
 

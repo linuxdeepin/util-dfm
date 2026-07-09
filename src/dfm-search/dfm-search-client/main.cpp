@@ -174,8 +174,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Highlight subcommand: fetch highlighted content on demand
-    if (config.subcommand == "highlight") {
+    // Preview subcommand: fetch content preview on demand
+    if (config.subcommand == "preview") {
         DFMSEARCH::ContentRetriever retriever;
         DFMSEARCH::HighlightOptions hlOptions;
         hlOptions.setMaxPreviewLength(config.maxPreviewLength);
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
         if (config.jsonOutput) {
             // JSON output
             QJsonObject root;
-            root["type"] = "highlight";
+            root["type"] = "preview";
             root["searchType"] = (config.searchType == SearchType::Content) ? "content" : "ocr";
             root["keyword"] = config.keyword;
 

@@ -24,7 +24,7 @@ namespace dfmsearch {
 struct SearchCliConfig
 {
     // Subcommand: if non-empty, the first positional arg is treated as a subcommand
-    QString subcommand;   // "" (search), "highlight"
+    QString subcommand;   // "" (search), "preview"
 
     // Basic parameters
     QString keyword;
