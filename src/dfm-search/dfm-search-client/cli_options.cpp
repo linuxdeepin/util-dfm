@@ -9,6 +9,7 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <iostream>
+#include <cstdlib>
 
 using namespace dfmsearch;
 using namespace std;
@@ -49,7 +50,8 @@ CliOptions::CliOptions()
       m_timeLastYearOption(QStringList() << "time-last-year", "Filter files from last year"),
       m_timeRangeOption(QStringList() << "time-range", "Custom time range (start,end)", "range"),
       m_sizeMinOption(QStringList() << "size-min", "Minimum file size (e.g., 1K, 10M, 1G, 512)", "size"),
-      m_sizeMaxOption(QStringList() << "size-max", "Maximum file size (e.g., 1K, 10M, 1G, 512)", "size")
+      m_sizeMaxOption(QStringList() << "size-max", "Maximum file size (e.g., 1K, 10M, 1G, 512)", "size"),
+      m_versionOption(QStringList() << "version", "Show version information and exit")
 {
     setupOptions();
 }
@@ -58,6 +60,7 @@ void CliOptions::setupOptions()
 {
     m_parser.setApplicationDescription("DFM Search Client");
     m_parser.addHelpOption();
+    m_parser.addOption(m_versionOption);
 
     // Basic options
     m_parser.addOption(m_typeOption);
@@ -154,6 +157,7 @@ void CliOptions::printHelp() const
     std::cout << "  --json, -j                     Output results in JSON format" << std::endl;
     std::cout << "  --verbose, -v                  Enable verbose output with detailed result information" << std::endl;
     std::cout << "  --help                         Display this help" << std::endl;
+    std::cout << "  --version                      Show version information and exit" << std::endl;
     std::cout << std::endl;
     std::cout << "Examples:" << std::endl;
     std::cout << "  # Basic filename search" << std::endl;
@@ -197,6 +201,15 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
     }
 
     m_parser.process(app);
+
+    if (m_parser.isSet(m_versionOption)) {
+        QString name = QCoreApplication::applicationName().isEmpty()
+            ? QStringLiteral("dfm-searcher")
+            : QCoreApplication::applicationName();
+        std::cout << name.toStdString() << " "
+                  << QCoreApplication::applicationVersion().toStdString() << std::endl;
+        std::exit(0);
+    }
 
     QStringList positionalArgs = m_parser.positionalArguments();
 
