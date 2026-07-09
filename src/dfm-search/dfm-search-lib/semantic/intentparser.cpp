@@ -47,12 +47,15 @@ QStringList IntentParser::extractorNames() const
 
 void IntentParser::initDefaultExtractors()
 {
-    // Order matters: keyword MUST be last (depends on consumedSpans)
+    // Order matters: Location must run before FileType so that span-based
+    // overlap suppression in FileTypeExtractor can drop a filetype match that
+    // is fully contained within a location span (e.g. "视频" inside "视频目录").
+    // Keyword MUST be last (depends on consumedSpans).
+    addExtractor(std::make_unique<LocationExtractor>(m_engine));
     addExtractor(std::make_unique<TimeExtractor>(m_engine));
     addExtractor(std::make_unique<FileTypeExtractor>(m_engine));
     addExtractor(std::make_unique<SizeExtractor>(m_engine));
     addExtractor(std::make_unique<ActionExtractor>(m_engine));
-    addExtractor(std::make_unique<LocationExtractor>(m_engine));
     addExtractor(std::make_unique<TargetExtractor>(m_engine));
     addExtractor(std::make_unique<KeywordExtractor>(m_engine));
 }
