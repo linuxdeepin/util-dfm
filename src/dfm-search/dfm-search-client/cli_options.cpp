@@ -196,6 +196,11 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
 {
     // Pre-scan for "highlight" subcommand
     const QStringList rawArgs = app.arguments();
+    // Intercept -h/--help to show custom help (includes highlight subcommand docs)
+    if (rawArgs.contains("-h") || rawArgs.contains("--help")) {
+        printHelp();
+        return false;
+    }
     if (rawArgs.size() >= 2 && rawArgs.at(1) == "highlight") {
         config.subcommand = "highlight";
     }
