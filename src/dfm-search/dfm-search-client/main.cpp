@@ -191,7 +191,8 @@ int main(int argc, char *argv[])
             // JSON output
             QJsonObject root;
             root["type"] = "preview";
-            root["searchType"] = (config.searchType == SearchType::Content) ? "content" : "ocr";
+            root["searchType"] = (config.searchType == SearchType::Content) ? "content"
+                : (config.searchType == SearchType::Ocr) ? "ocr" : "semantic";
             root["keyword"] = config.keyword;
 
             QJsonArray results;
