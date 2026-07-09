@@ -187,6 +187,8 @@ int main(int argc, char *argv[])
         QStringList paths = config.searchPath.split(',', QString::SkipEmptyParts);
 #endif
 
+        bool noKeyword = config.keyword.isEmpty();
+
         if (config.jsonOutput) {
             // JSON output
             QJsonObject root;
@@ -199,7 +201,10 @@ int main(int argc, char *argv[])
             for (const QString &path : paths) {
                 QJsonObject item;
                 item["path"] = path;
-                item["contentMatch"] = retriever.fetchHighlight(path, config.keyword, config.searchType, hlOptions);
+                if (noKeyword)
+                    item["content"] = retriever.fetchContent(path, config.searchType);
+                else
+                    item["contentMatch"] = retriever.fetchHighlight(path, config.keyword, config.searchType, hlOptions);
                 results.append(item);
             }
 
@@ -212,12 +217,21 @@ int main(int argc, char *argv[])
             // Text output
             QTextStream out(stdout);
             for (const QString &path : paths) {
-                QString hl = retriever.fetchHighlight(path, config.keyword, config.searchType, hlOptions);
                 out << path << "\n";
-                if (!hl.isEmpty()) {
-                    out << "  " << hl << "\n";
+                if (noKeyword) {
+                    QString content = retriever.fetchContent(path, config.searchType);
+                    if (!content.isEmpty()) {
+                        out << "  " << content << "\n";
+                    } else {
+                        out << "  (no content)\n";
+                    }
                 } else {
-                    out << "  (no match)\n";
+                    QString hl = retriever.fetchHighlight(path, config.keyword, config.searchType, hlOptions);
+                    if (!hl.isEmpty()) {
+                        out << "  " << hl << "\n";
+                    } else {
+                        out << "  (no match)\n";
+                    }
                 }
                 out << Qt::endl;
             }
