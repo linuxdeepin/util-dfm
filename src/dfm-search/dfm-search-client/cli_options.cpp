@@ -182,14 +182,19 @@ void CliOptions::printHelp() const
     std::cout << "  dfm-searcher --size-min=1M --size-max=100M \"video\" /home/user" << std::endl;
     std::cout << std::endl;
     std::cout << "Content Preview (on-demand):" << std::endl;
-    std::cout << "  dfm-searcher preview <keyword> <path1> [path2 ...] [--type=<content|ocr>] [-j]" << std::endl;
+    std::cout << "  dfm-searcher preview [<keyword>] <path1> [path2 ...] [--type=<content|ocr>] [-j]" << std::endl;
     std::cout << "  Fetch content snippets for specific files without running a full search." << std::endl;
+    std::cout << "  With keyword: returns highlighted snippets matching the keyword." << std::endl;
+    std::cout << "  Without keyword: returns full stored content of each file." << std::endl;
     std::cout << "  Search type is auto-detected by file extension; use --type to force a specific index." << std::endl;
     std::cout << std::endl;
-    std::cout << "  # Fetch preview for a single file (auto-detected)" << std::endl;
+    std::cout << "  # Fetch highlighted snippet for a single file" << std::endl;
     std::cout << "  dfm-searcher preview \"hello\" /home/user/doc.txt" << std::endl;
     std::cout << std::endl;
-    std::cout << "  # Batch fetch previews with JSON output" << std::endl;
+    std::cout << "  # Fetch full content (no keyword)" << std::endl;
+    std::cout << "  dfm-searcher preview /home/user/doc.txt" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  # Batch fetch highlighted snippets with JSON output" << std::endl;
     std::cout << "  dfm-searcher preview \"screenshot\" img1.png img2.png -j" << std::endl;
     std::cout << std::endl;
     std::cout << "  # Force a specific search type" << std::endl;
@@ -222,7 +227,7 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
 
     QStringList positionalArgs = m_parser.positionalArguments();
 
-    // For preview subcommand, the positional args are: keyword=<first arg> + paths=<remaining>
+    // For preview subcommand, the positional args are: [<keyword>] <path1> [path2 ...]
     // "preview" itself is consumed as first positional by QCommandLineParser
     if (config.subcommand == "preview") {
         // Skip "preview" keyword from positional args (it was parsed as the first positional)
@@ -231,13 +236,23 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
             args.removeFirst();
         }
         if (args.isEmpty()) {
-            std::cerr << "Error: preview requires <keyword> and at least one <path>" << std::endl;
+            std::cerr << "Error: preview requires at least one <path>" << std::endl;
             return false;
         }
 
-        config.keyword = args.first();
-        // Remaining args are file paths
-        config.searchPath = args.mid(1).join(',');   // Reuse searchPath to store comma-separated paths
+        // If first arg is an existing file, treat all args as paths (no-keyword mode).
+        // Otherwise first arg is the keyword and the rest are paths.
+        if (QFileInfo::exists(args.first())) {
+            config.keyword.clear();
+            config.searchPath = args.join(',');
+        } else {
+            config.keyword = args.first();
+            config.searchPath = args.mid(1).join(',');
+            if (config.searchPath.isEmpty()) {
+                std::cerr << "Error: preview with keyword requires at least one <path>" << std::endl;
+                return false;
+            }
+        }
 
         // Search type: default Semantic (auto-detect by extension), optional override
         QString typeStr = m_parser.value(m_typeOption);
