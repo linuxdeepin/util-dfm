@@ -21,6 +21,11 @@ find_package(Qt${QT_VERSION_MAJOR}Core REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SRCS})
 
+if(NOT DEFINED VERSION)
+    set(VERSION "0.0.0")
+endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE VERSION="${VERSION}")
+
 include_directories(
     ${PROJECT_SOURCE_DIR}/../dfm-search-lib/include
 )

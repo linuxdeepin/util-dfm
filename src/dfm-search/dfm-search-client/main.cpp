@@ -25,6 +25,10 @@
 
 #include <iostream>
 
+#ifndef VERSION
+#define VERSION "unknown"
+#endif
+
 using namespace dfmsearch;
 
 /**
@@ -161,6 +165,7 @@ static SearchQuery createSearchQuery(const SearchCliConfig &config)
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
+    app.setApplicationVersion(QString::fromLatin1(VERSION));
 
     // Parse CLI arguments
     CliOptions cliOptions;

@@ -129,6 +129,7 @@ private:
     // File size range filtering options
     QCommandLineOption m_sizeMinOption;
     QCommandLineOption m_sizeMaxOption;
+    QCommandLineOption m_versionOption;
 };
 
 }   // namespace dfmsearch

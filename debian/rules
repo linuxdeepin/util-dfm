@@ -43,4 +43,5 @@ $(shell sed -e 's/@QT_SUFFIX@/$(QT_SUFFIX)/g' \
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
-	  -DHOST_MULTIARCH="$(DEB_HOST_MULTIARCH)"
+	  -DHOST_MULTIARCH="$(DEB_HOST_MULTIARCH)" \
+	  -DVERSION="$(DEB_VERSION_UPSTREAM)"
