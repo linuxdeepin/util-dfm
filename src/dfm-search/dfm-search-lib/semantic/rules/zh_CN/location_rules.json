@@ -8,7 +8,7 @@
             "rules": [
                 {
                     "id": "loc_desktop",
-                    "pattern": "桌面",
+                    "pattern": "桌面|屏幕上|电脑桌面",
                     "description": "Desktop directory",
                     "enabled": true,
                     "priority": 200,
@@ -19,7 +19,7 @@
                 },
                 {
                     "id": "loc_download",
-                    "pattern": "下载",
+                    "pattern": "下载|下载目录|下下来的|浏览器下载",
                     "description": "Downloads directory",
                     "enabled": true,
                     "priority": 200,
@@ -30,7 +30,7 @@
                 },
                 {
                     "id": "loc_documents_dir",
-                    "pattern": "文档目录|文档文件夹",
+                    "pattern": "文档里|文档下|文档中|我的文档|文档目录|文档文件夹",
                     "description": "Documents directory (must contain directory/folder word)",
                     "enabled": true,
                     "priority": 200,
@@ -41,7 +41,7 @@
                 },
                 {
                     "id": "loc_pictures_dir",
-                    "pattern": "图片目录|图片文件夹|照片目录|照片文件夹",
+                    "pattern": "图片里|图片下|图片中|图片目录|图片文件夹|照片目录|照片文件夹",
                     "description": "Pictures directory (must contain directory/folder word)",
                     "enabled": true,
                     "priority": 200,
@@ -52,7 +52,7 @@
                 },
                 {
                     "id": "loc_music_dir",
-                    "pattern": "音乐目录|音乐文件夹",
+                    "pattern": "音乐里|音乐下|音乐中|音乐目录|音乐文件夹",
                     "description": "Music directory (must contain directory/folder word)",
                     "enabled": true,
                     "priority": 200,
@@ -63,7 +63,7 @@
                 },
                 {
                     "id": "loc_videos_dir",
-                    "pattern": "视频目录|视频文件夹|电影目录|电影文件夹",
+                    "pattern": "视频里|视频下|视频中|视频目录|视频文件夹|电影目录|电影文件夹",
                     "description": "Videos directory (must contain directory/folder word)",
                     "enabled": true,
                     "priority": 200,

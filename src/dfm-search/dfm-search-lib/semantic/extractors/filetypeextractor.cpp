@@ -30,6 +30,24 @@ void FileTypeExtractor::extract(const QString &input, ParsedIntent &intent)
         const QRegularExpressionMatch &m = matches[i];
         const QVariantMap metadata = m_engine->ruleMetadata("filetype", ruleIds[i]);
 
+        // Skip a filetype match whose span is fully contained within an
+        // already-consumed span (e.g. "视频" consumed by the location rule
+        // "视频目录"). This resolves the location-vs-filetype ambiguity where
+        // the same word ("视频", "音乐", "文档", "图片") triggers both a
+        // location directory and a file type: the location interpretation wins,
+        // and a distinct filetype word elsewhere in the query survives.
+        bool contained = false;
+        for (const MatchSpan &existing : intent.consumedSpans()) {
+            if (m.capturedStart() >= existing.start()
+                    && m.capturedEnd() <= existing.end()) {
+                contained = true;
+                break;
+            }
+        }
+        if (contained) {
+            continue;
+        }
+
         // Always consume the matched span so the matched text doesn't leak into keywords
         MatchSpan span;
         span.setStart(m.capturedStart());

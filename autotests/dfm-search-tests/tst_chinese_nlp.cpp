@@ -235,6 +235,12 @@ private Q_SLOTS:
     void location_wechatConsumesTriggerWords();
     void location_imReceiveConsumesTriggerWords();
 
+    // Location vs filetype conflict resolution tests
+    void location_filetypeConflict_videosDirMusic();
+    void location_filetypeConflict_musicDirVideo();
+    void location_filetypeConflict_picturesDirDocument();
+    void location_filetypeConflict_documentsDirPicture();
+
     // End-to-end combined tests
     void combined_timeAndFiletype();
     void combined_timeAndFiletype_multi();
@@ -2231,6 +2237,83 @@ void tst_ChineseNLP::location_imReceiveConsumesTriggerWords()
     } else {
         QSKIP("Could not create fake WeChat dir for IM receive test");
     }
+}
+
+// ===== Location vs Filetype Conflict Resolution Tests =====
+//
+// When a word like "视频" appears in "视频目录", the location rule
+// "视频目录" and the filetype rule "视频" both match. The filetype
+// match span is fully contained within the location span, so it must
+// be suppressed — only a distinct filetype word elsewhere in the
+// query should survive.
+
+void tst_ChineseNLP::location_filetypeConflict_videosDirMusic()
+{
+    // "视频目录中的音乐" → location(Videos) + filetype(audio only)
+    // "视频" is contained in "视频目录" → filetype_video suppressed
+    // "音乐" is outside the location span → filetype_audio survives
+    const QString videosPath = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("视频目录中的音乐"), intent);
+    QCOMPARE(intent.searchDirectories().size(), 1);
+    QCOMPARE(intent.searchDirectories().first(), videosPath);
+    // Only audio extensions — video extensions must NOT be present
+    QVERIFY2(setEquals(intent.fileExtensions(), audioExpectedExts()),
+             qPrintable("Expected only audio extensions, got: "
+                        + intent.fileExtensions().join(", ")));
+    QVERIFY(intent.keywords().isEmpty());
+}
+
+void tst_ChineseNLP::location_filetypeConflict_musicDirVideo()
+{
+    // "音乐目录中的视频" → location(Music) + filetype(video only)
+    // "音乐" is contained in "音乐目录" → filetype_audio suppressed
+    // "视频" is outside the location span → filetype_video survives
+    const QString musicPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("音乐目录中的视频"), intent);
+    QCOMPARE(intent.searchDirectories().size(), 1);
+    QCOMPARE(intent.searchDirectories().first(), musicPath);
+    QVERIFY2(setEquals(intent.fileExtensions(), videoExpectedExts()),
+             qPrintable("Expected only video extensions, got: "
+                        + intent.fileExtensions().join(", ")));
+    QVERIFY(intent.keywords().isEmpty());
+}
+
+void tst_ChineseNLP::location_filetypeConflict_picturesDirDocument()
+{
+    // "图片目录中的文档" → location(Pictures) + filetype(document_general only)
+    // "图片" is contained in "图片目录" → filetype_image suppressed
+    // "文档" is outside the location span → filetype_document_general survives
+    const QString picsPath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("图片目录中的文档"), intent);
+    QCOMPARE(intent.searchDirectories().size(), 1);
+    QCOMPARE(intent.searchDirectories().first(), picsPath);
+    // Document extensions present, but NOT image extensions (e.g. "jpg")
+    QVERIFY(!intent.fileExtensions().isEmpty());
+    QVERIFY(!intent.fileExtensions().contains("jpg"));
+    QVERIFY(!intent.fileExtensions().contains("png"));
+    QVERIFY(intent.fileExtensions().contains("doc"));
+    QVERIFY(intent.fileExtensions().contains("pdf"));
+    QVERIFY(intent.keywords().isEmpty());
+}
+
+void tst_ChineseNLP::location_filetypeConflict_documentsDirPicture()
+{
+    // "文档目录中的图片" → location(Documents) + filetype(image only)
+    // "文档" is contained in "文档目录" → filetype_document_general suppressed
+    // "图片" is outside the location span → filetype_image survives
+    const QString docsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("文档目录中的图片"), intent);
+    QCOMPARE(intent.searchDirectories().size(), 1);
+    QCOMPARE(intent.searchDirectories().first(), docsPath);
+    // Only image extensions — document extensions must NOT be present
+    QVERIFY2(setEquals(intent.fileExtensions(), imageExpectedExts()),
+             qPrintable("Expected only image extensions, got: "
+                        + intent.fileExtensions().join(", ")));
+    QVERIFY(intent.keywords().isEmpty());
 }
 
 QObject *create_tst_ChineseNLP()
