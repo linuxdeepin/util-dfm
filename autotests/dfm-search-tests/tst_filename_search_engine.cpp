@@ -181,6 +181,7 @@ private Q_SLOTS:
     void search_simpleKeyword_matchesIndexedFilename();
     void search_booleanAnd_requiresAllTerms();
     void search_booleanOr_matchesAnyTerm();
+    void search_booleanOr_matchesAnyOfThreeTerms();
     void search_wildcard_matchesByPattern();
     void search_fileTypeFilterOnly_returnsAllMatchingTypes();
     void search_extensionFilterOnly_returnsAllMatchingSuffixes();
@@ -294,6 +295,42 @@ void tst_FileNameSearchEngine::search_booleanOr_matchesAnyTerm()
     QCOMPARE(paths.size(), 2);
     QVERIFY(paths.contains(rootDir + "/alpha.txt"));
     QVERIFY(paths.contains(rootDir + "/budget.xlsx"));
+}
+
+void tst_FileNameSearchEngine::search_booleanOr_matchesAnyOfThreeTerms()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString rootDir = tempDir.path() + "/docs";
+    const QString indexDir = tempDir.path() + "/filename-index";
+    QVERIFY(QDir().mkpath(rootDir));
+
+    createFileNameIndex(indexDir, {
+                                      { rootDir + "/alpha.txt", "alpha.txt", "doc", "txt" },
+                                      { rootDir + "/budget.xlsx", "budget.xlsx", "doc", "xlsx" },
+                                      { rootDir + "/travel.jpg", "travel.jpg", "pic", "jpg" },
+                                      { rootDir + "/summary.pdf", "summary.pdf", "doc", "pdf" },
+                              });
+
+    stub_ext::StubExt stub;
+    stub.set_lamda(DFMSEARCH::Global::fileNameIndexDirectory, [&indexDir]() {
+        return indexDir;
+    });
+
+    std::unique_ptr<SearchEngine> engine(SearchEngine::create(SearchType::FileName));
+    engine->setSearchOptions(createBaseOptions(rootDir));
+
+    const SearchResultExpected expected = engine->searchSync(
+            SearchQuery::createBooleanQuery({ "alpha", "budget", "travel" }, SearchQuery::BooleanOperator::OR));
+    QVERIFY(expected.hasValue());
+
+    const QStringList paths = resultPaths(expected);
+    QCOMPARE(paths.size(), 3);
+    QVERIFY(paths.contains(rootDir + "/alpha.txt"));
+    QVERIFY(paths.contains(rootDir + "/budget.xlsx"));
+    QVERIFY(paths.contains(rootDir + "/travel.jpg"));
+    QVERIFY(!paths.contains(rootDir + "/summary.pdf"));
 }
 
 void tst_FileNameSearchEngine::search_wildcard_matchesByPattern()
