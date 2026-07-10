@@ -40,6 +40,24 @@ namespace ContentHighlighter {
  */
 QString customHighlight(const QStringList &keywords, const QString &content, int maxLength, bool enableHtml, int positioningMaxLength = 30);
 
+/**
+ * @brief 精确预览：从 offset 位置截取内容，或从 offset 搜索 keyword 后从匹配位置截取
+ *
+ * 无 keyword: content.mid(offset, maxLength)
+ * 有 keyword: content.indexOf(keyword, offset) → 从匹配位置截取 maxLength
+ * 不做 simplified，不加省略号，不高亮
+ *
+ * @param content 原始文档内容
+ * @param offset  内容偏移值（默认0）
+ * @param maxLength 最大截取长度
+ * @param keyword  搜索关键词（可选）
+ * @param keywordOffset 输出 keyword 在全文中的匹配位置（-1 if 无 keyword 或未匹配）
+ * @return 截取的内容片段，找不到 keyword 或 offset 越界时返回空字符串
+ */
+QString previewSnippet(const QString &content, int offset, int maxLength,
+                       const QString &keyword = {},
+                       int *keywordOffset = nullptr);
+
 }   // namespace ContentHighlighter
 
 DFM_SEARCH_END_NS

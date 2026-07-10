@@ -15,6 +15,8 @@
 DFM_SEARCH_BEGIN_NS
 
 class HighlightOptionsPrivate;
+class PreviewOptionsPrivate;
+class PreviewResultPrivate;
 
 /**
  * @brief Lightweight options for highlight extraction (Pimpl-based, ABI-stable)
@@ -45,6 +47,63 @@ public:
 
 private:
     QSharedDataPointer<HighlightOptionsPrivate> d;
+};
+
+/**
+ * @brief Options for precise preview extraction (Pimpl-based, ABI-stable)
+ *
+ * Controls offset-based content reading: either a raw slice from offset
+ * (no keyword) or a keyword search starting from offset.
+ *
+ * Supports implicit sharing (COW) via QSharedDataPointer.
+ */
+class PreviewOptions
+{
+public:
+    PreviewOptions();
+    ~PreviewOptions();
+    PreviewOptions(const PreviewOptions &other);
+    PreviewOptions &operator=(const PreviewOptions &other);
+    PreviewOptions(PreviewOptions &&other) noexcept = default;
+    PreviewOptions &operator=(PreviewOptions &&other) noexcept = default;
+
+    int offset() const;
+    void setOffset(int offset);
+
+    int maxLength() const;
+    void setMaxLength(int length);
+
+    QString keyword() const;
+    void setKeyword(const QString &keyword);
+
+private:
+    QSharedDataPointer<PreviewOptionsPrivate> d;
+};
+
+/**
+ * @brief Result of a preview extraction (Pimpl-based, ABI-stable)
+ *
+ * Contains the extracted content snippet and the position of the keyword
+ * in the full document text (-1 if no keyword or not matched).
+ *
+ * Supports implicit sharing (COW) via QSharedDataPointer.
+ */
+class PreviewResult
+{
+public:
+    PreviewResult();
+    ~PreviewResult();
+    PreviewResult(const PreviewResult &other);
+    PreviewResult &operator=(const PreviewResult &other);
+    PreviewResult(PreviewResult &&other) noexcept = default;
+    PreviewResult &operator=(PreviewResult &&other) noexcept = default;
+
+    QString content() const;
+    int keywordOffset() const;
+
+private:
+    friend class ContentRetriever;
+    QSharedDataPointer<PreviewResultPrivate> d;
 };
 
 /**
@@ -128,6 +187,24 @@ public:
      */
     QMap<QString, QString> fetchContents(const QStringList &paths,
                                          SearchType type) const;
+
+    /**
+     * @brief Synchronously fetch a precise preview snippet for a single file
+     *
+     * Opens the Lucene index, locates the document by path, extracts stored
+     * text, and runs ContentHighlighter::previewSnippet to produce a raw
+     * content slice based on offset/maxLength/keyword.
+     *
+     * Unlike fetchHighlight, this does NOT simplify, add ellipsis, or
+     * highlight — it returns the exact content at the requested position.
+     *
+     * @param path    Absolute file path
+     * @param type    SearchType::Content or SearchType::Ocr
+     * @param options Preview configuration (offset, maxLength, keyword)
+     * @return PreviewResult with content snippet and keywordOffset
+     */
+    PreviewResult fetchPreview(const QString &path, SearchType type,
+                               const PreviewOptions &options = {}) const;
 
 private:
     struct Private;

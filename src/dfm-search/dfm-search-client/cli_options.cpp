@@ -27,6 +27,7 @@ CliOptions::CliOptions()
       m_fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions"),
       m_maxResultsOption(QStringList() << "max-results", "Maximum number of results (0 for unlimited)", "number", "0"),
       m_maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200"),
+      m_offsetOption(QStringList() << "offset", "Content offset: start reading from the n-th character (preview only)", "n", "0"),
       m_filenameOption(QStringList() << "filename", "Search by filename in content/ocr index", "keyword"),
       m_wildcardOption(QStringList() << "wildcard", "Enable wildcard search with * and ? patterns"),
       m_jsonOption(QStringList() << "json"
@@ -74,6 +75,7 @@ void CliOptions::setupOptions()
     m_parser.addOption(m_fileExtensionsOption);
     m_parser.addOption(m_maxResultsOption);
     m_parser.addOption(m_maxPreviewOption);
+    m_parser.addOption(m_offsetOption);
     m_parser.addOption(m_filenameOption);
     m_parser.addOption(m_wildcardOption);
     m_parser.addOption(m_jsonOption);
@@ -129,6 +131,7 @@ void CliOptions::printHelp() const
     std::cout << "  --file-extensions=<exts>       Filter by file extensions, comma separated" << std::endl;
     std::cout << "  --max-results=<number>         Maximum number of results (0 for unlimited)" << std::endl;
     std::cout << "  --max-preview=<length>         Max content preview length (for content/ocr search)" << std::endl;
+    std::cout << "  --offset=<n>                   Content offset: start reading from the n-th character (preview only, default 0)" << std::endl;
     std::cout << "  --filename=<keyword>           Search by filename in content/ocr index" << std::endl;
     std::cout << std::endl;
     std::cout << "Time Range Filter Options:" << std::endl;
@@ -183,10 +186,10 @@ void CliOptions::printHelp() const
     std::cout << "  dfm-searcher --size-min=1M --size-max=100M \"video\" /home/user" << std::endl;
     std::cout << std::endl;
     std::cout << "Content Preview (on-demand):" << std::endl;
-    std::cout << "  dfm-searcher preview [<keyword>] <path1> [path2 ...] [--type=<content|ocr>] [-j]" << std::endl;
+    std::cout << "  dfm-searcher preview [<keyword>] <path1> [path2 ...] [--type=<content|ocr>] [--offset=<n>] [--max-preview=<length>] [-j]" << std::endl;
     std::cout << "  Fetch content snippets for specific files without running a full search." << std::endl;
-    std::cout << "  With keyword: returns highlighted snippets matching the keyword." << std::endl;
-    std::cout << "  Without keyword: returns full stored content of each file." << std::endl;
+    std::cout << "  With keyword: returns snippet from the keyword match position (search starts at --offset)." << std::endl;
+    std::cout << "  Without keyword: returns exact content starting from --offset, up to --max-preview characters." << std::endl;
     std::cout << "  Search type is auto-detected by file extension; use --type to force a specific index." << std::endl;
     std::cout << std::endl;
     std::cout << "  # Fetch highlighted snippet for a single file" << std::endl;
@@ -194,6 +197,12 @@ void CliOptions::printHelp() const
     std::cout << std::endl;
     std::cout << "  # Fetch full content (no keyword)" << std::endl;
     std::cout << "  dfm-searcher preview /home/user/doc.txt" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  # Read content from offset 100, 50 chars max" << std::endl;
+    std::cout << "  dfm-searcher preview /home/user/doc.txt --offset=100 --max-preview=50 -j" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  # Search keyword from offset 150" << std::endl;
+    std::cout << "  dfm-searcher preview \"keyword\" /home/user/doc.txt --offset=150 -j" << std::endl;
     std::cout << std::endl;
     std::cout << "  # Batch fetch highlighted snippets with JSON output" << std::endl;
     std::cout << "  dfm-searcher preview \"screenshot\" img1.png img2.png -j" << std::endl;
@@ -271,6 +280,13 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
             int previewLength = m_parser.value(m_maxPreviewOption).toInt(&ok);
             if (ok && previewLength > 0) {
                 config.maxPreviewLength = previewLength;
+            }
+        }
+        if (m_parser.isSet(m_offsetOption)) {
+            bool ok;
+            int offsetVal = m_parser.value(m_offsetOption).toInt(&ok);
+            if (ok && offsetVal >= 0) {
+                config.offset = offsetVal;
             }
         }
         return true;
