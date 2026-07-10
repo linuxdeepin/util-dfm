@@ -453,6 +453,27 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
         }
     }
 
+    // Validate option compatibility with search type
+    if (config.searchType == SearchType::FileName) {
+        if (m_parser.isSet(m_filenameOption)) {
+            std::cerr << "Error: --filename is only valid for content/ocr search, not filename search" << std::endl;
+            return false;
+        }
+    } else {
+        if (m_parser.isSet(m_pinyinOption)) {
+            std::cerr << "Error: --pinyin is only valid for filename search" << std::endl;
+            return false;
+        }
+        if (m_parser.isSet(m_pinyinAcronymOption)) {
+            std::cerr << "Error: --pinyin-acronym is only valid for filename search" << std::endl;
+            return false;
+        }
+        if (m_parser.isSet(m_fileTypesOption)) {
+            std::cerr << "Error: --file-types is only valid for filename search" << std::endl;
+            return false;
+        }
+    }
+
     return true;
 }
 
