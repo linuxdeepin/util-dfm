@@ -48,6 +48,7 @@ struct SearchCliConfig
     int maxResults = 0;   // 0 表示不限制
     int maxPreviewLength = 200;
     int offset = 0;   // 内容偏移值，preview 子命令使用
+    bool maxPreviewSet = false;   // --max-preview 是否被显式设置（preview 子命令使用）
 
     // 文件名搜索选项
     QString filenameKeyword;

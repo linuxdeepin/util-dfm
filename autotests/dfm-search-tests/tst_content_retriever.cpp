@@ -97,6 +97,7 @@ private Q_SLOTS:
     void fetchPreview_withKeyword();
     void fetchPreview_keywordNotFound();
     void fetchPreview_offsetBeyondContent();
+    void fetchPreview_unlimitedNoKeyword();
     void previewSnippet_basic();
 };
 
@@ -329,6 +330,47 @@ void tst_ContentRetriever::fetchPreview_offsetBeyondContent()
     QCOMPARE(result.keywordOffset(), -1);
 }
 
+void tst_ContentRetriever::fetchPreview_unlimitedNoKeyword()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString contentIndexDir = tempDir.path() + "/content-index";
+    createIndex(contentIndexDir, SearchType::Content);
+
+    ContentRetriever retriever;
+    retriever.setIndexDirectory(SearchType::Content, contentIndexDir);
+
+    // No keyword + maxLength=0 (unlimited) → return all content from offset
+    // Content of doc-a.txt is "hello world from content index"
+    {
+        PreviewOptions options;
+        options.setKeyword(QString());
+        options.setOffset(0);
+        options.setMaxLength(0);
+
+        const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
+                                                             SearchType::Content,
+                                                             options);
+        QCOMPARE(result.content(), QString("hello world from content index"));
+        QCOMPARE(result.keywordOffset(), -1);
+    }
+
+    // With offset, unlimited still returns all remaining content
+    {
+        PreviewOptions options;
+        options.setKeyword(QString());
+        options.setOffset(6);   // skip "hello "
+        options.setMaxLength(0);
+
+        const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
+                                                             SearchType::Content,
+                                                             options);
+        QCOMPARE(result.content(), QString("world from content index"));
+        QCOMPARE(result.keywordOffset(), -1);
+    }
+}
+
 void tst_ContentRetriever::previewSnippet_basic()
 {
     using DFMSEARCH::ContentHighlighter::previewSnippet;
@@ -353,6 +395,16 @@ void tst_ContentRetriever::previewSnippet_basic()
 
     // Negative offset → empty
     QVERIFY(previewSnippet(content, -1, 10, QString(), &kwOff).isEmpty());
+
+    // maxLength <= 0 means unlimited — returns all content from offset
+    QCOMPARE(previewSnippet(content, 6, 0, QString(), &kwOff), QString("world from content index"));
+    QCOMPARE(kwOff, -1);
+    QCOMPARE(previewSnippet(content, 0, 0, QString(), &kwOff), content);
+    QCOMPARE(kwOff, -1);
+
+    // With keyword + maxLength=0 (unlimited) — returns from keyword match to end
+    QCOMPARE(previewSnippet(content, 0, 0, "world", &kwOff), QString("world from content index"));
+    QCOMPARE(kwOff, 6);
 }
 
 QObject *create_tst_ContentRetriever()

@@ -188,7 +188,13 @@ int main(int argc, char *argv[])
         DFMSEARCH::ContentRetriever retriever;
         DFMSEARCH::PreviewOptions previewOptions;
         previewOptions.setOffset(config.offset);
-        previewOptions.setMaxLength(config.maxPreviewLength);
+        // 无 keyword 且未显式设置 --max-preview：maxLength=0 表示无限制（返回全文）
+        // 有 keyword 或显式设置了 --max-preview：使用 maxPreviewLength 值
+        if (config.keyword.isEmpty() && !config.maxPreviewSet) {
+            previewOptions.setMaxLength(0);
+        } else {
+            previewOptions.setMaxLength(config.maxPreviewLength);
+        }
         previewOptions.setKeyword(config.keyword);
 
         // Paths are stored as comma-separated in config.searchPath
@@ -206,7 +212,7 @@ int main(int argc, char *argv[])
                 : (config.searchType == SearchType::Ocr) ? "ocr" : "semantic";
             root["keyword"] = config.keyword;
             root["offset"] = config.offset;
-            root["maxLength"] = config.maxPreviewLength;
+            root["maxLength"] = previewOptions.maxLength();
 
             QJsonArray results;
             for (const QString &path : paths) {
