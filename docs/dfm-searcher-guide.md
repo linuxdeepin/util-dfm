@@ -481,17 +481,18 @@ dfm-searcher --method=realtime --time-last=30d --size-min=10M --file-types=video
 
 ## 十三、基本用法
 
-### 37. 读取文件开头内容
+### 37. 读取文件全部内容
 
 ```bash
 dfm-searcher preview /home/user/notes.txt
 ```
 
-默认读取前 200 个字符。
+无 keyword 且未设 `--max-preview` 时，输出文档**全部内容**。
 
 ```
 /home/user/notes.txt
   2026年7月10日 工作计划：1.完成需求文档 2.代码评审 3.修复bug
+  今天重点完成代码评审部分，明天开始写自动化测试…
 ```
 
 ### 38. 读取文件内容（JSON 格式）
@@ -506,27 +507,33 @@ dfm-searcher preview /home/user/notes.txt -j
     "searchType": "semantic",
     "keyword": "",
     "offset": 0,
-    "maxLength": 200,
+    "maxLength": 0,
     "totalResults": 1,
     "results": [
         {
             "path": "/home/user/notes.txt",
-            "content": "2026年7月10日 工作计划：1.完成需求文档 2.代码评审 3.修复bug",
+            "content": "2026年7月10日 工作计划：1.完成需求文档 2.代码评审 3.修复bug\n今天重点完成代码评审部分，明天开始写自动化测试…",
             "keywordOffset": -1
         }
     ]
 }
 ```
 
+> `maxLength: 0` 表示无限制，返回全文。
+
 ---
 
 ## 十四、用 --offset 和 --max-preview 控制读取范围
 
-### 39. 从第 100 个字符开始读
+无 keyword 时，默认输出全文。加 `--offset` 可以从指定位置开始读，加 `--max-preview` 可以限制读取长度。
+
+### 39. 从第 100 个字符开始读（不限长度）
 
 ```bash
 dfm-searcher preview /home/user/notes.txt --offset=100
 ```
+
+从第 100 个字符开始，读到文件末尾。
 
 ### 40. 只读 50 个字符
 
@@ -828,7 +835,7 @@ dfm-searcher preview /home/user/doc.txt --offset=500 --max-preview=100 -j
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
 | `--offset=<n>` | `0` | 从文档第几个字符开始阅读/搜索 |
-| `--max-preview=<n>` | `200` | 本次最多读取的字符数 |
+| `--max-preview=<n>` | 无限制(无keyword) / `200`(有keyword) | 本次最多读取的字符数。设为 0 表示无限制 |
 | `--type=<content\|ocr>` | 自动 | 强制指定搜索类型 |
 | `-j` / `--json` | 关 | JSON 输出 |
 

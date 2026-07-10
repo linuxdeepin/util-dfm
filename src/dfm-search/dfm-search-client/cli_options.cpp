@@ -189,7 +189,7 @@ void CliOptions::printHelp() const
     std::cout << "  dfm-searcher preview [<keyword>] <path1> [path2 ...] [--type=<content|ocr>] [--offset=<n>] [--max-preview=<length>] [-j]" << std::endl;
     std::cout << "  Fetch content snippets for specific files without running a full search." << std::endl;
     std::cout << "  With keyword: returns snippet from the keyword match position (search starts at --offset)." << std::endl;
-    std::cout << "  Without keyword: returns exact content starting from --offset, up to --max-preview characters." << std::endl;
+    std::cout << "  Without keyword: returns exact content starting from --offset (full content if --max-preview is omitted)." << std::endl;
     std::cout << "  Search type is auto-detected by file extension; use --type to force a specific index." << std::endl;
     std::cout << std::endl;
     std::cout << "  # Fetch highlighted snippet for a single file" << std::endl;
@@ -281,6 +281,7 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
             if (ok && previewLength > 0) {
                 config.maxPreviewLength = previewLength;
             }
+            config.maxPreviewSet = true;
         }
         if (m_parser.isSet(m_offsetOption)) {
             bool ok;

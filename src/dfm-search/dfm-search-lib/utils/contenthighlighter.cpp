@@ -249,13 +249,13 @@ QString previewSnippet(const QString &content, int offset, int maxLength,
         *keywordOffset = -1;
     }
 
-    if (content.isEmpty() || maxLength <= 0 || offset < 0) {
+    if (content.isEmpty() || offset < 0) {
         return {};
     }
 
     if (keyword.isEmpty()) {
-        // 无 keyword：直接从 offset 截取 maxLength
-        return content.mid(offset, maxLength);
+        // 无 keyword：直接从 offset 截取
+        return maxLength > 0 ? content.mid(offset, maxLength) : content.mid(offset);
     }
 
     // 有 keyword：从 offset 开始搜索，找到后从匹配位置截取
@@ -268,7 +268,7 @@ QString previewSnippet(const QString &content, int offset, int maxLength,
         *keywordOffset = pos;
     }
 
-    return content.mid(pos, maxLength);
+    return maxLength > 0 ? content.mid(pos, maxLength) : content.mid(pos);
 }
 
 }   // namespace ContentHighlighter
