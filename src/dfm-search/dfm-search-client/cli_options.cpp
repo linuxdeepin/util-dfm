@@ -119,6 +119,7 @@ void CliOptions::printHelp() const
     std::cout << "Search Options:" << std::endl;
     std::cout << "  --method=<indexed|realtime>    Search method (default: indexed)" << std::endl;
     std::cout << "  --query=<simple|boolean|wildcard> Query type (default: simple)" << std::endl;
+    std::cout << "                                 boolean: Separate keywords with | for OR, & or , for AND" << std::endl;
     std::cout << "  --wildcard                     Enable wildcard search with * and ? patterns" << std::endl;
     std::cout << "  --case-sensitive               Enable case sensitivity" << std::endl;
     std::cout << "  --include-hidden               Include hidden files" << std::endl;

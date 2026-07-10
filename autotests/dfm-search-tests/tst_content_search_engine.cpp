@@ -150,6 +150,7 @@ private Q_SLOTS:
     void search_simpleContent_usesTemporaryIndex();
     void search_booleanAnd_matchesContentOnly();
     void search_booleanOr_matchesAnyContent();
+    void search_booleanOr_matchesAnyOfThreeContents();
     void search_filenameAndContentMixed_requiresBoth();
     void search_mixedAnd_excludesPureFilenameOnlyMatches();
     void search_simpleOcr_usesTemporaryIndex();
@@ -248,6 +249,42 @@ void tst_ContentSearchEngine::search_booleanOr_matchesAnyContent()
     QCOMPARE(paths.size(), 2);
     QVERIFY(paths.contains(rootDir + "/alpha.txt"));
     QVERIFY(paths.contains(rootDir + "/budget.txt"));
+}
+
+void tst_ContentSearchEngine::search_booleanOr_matchesAnyOfThreeContents()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString rootDir = tempDir.path() + "/docs";
+    const QString indexDir = tempDir.path() + "/content-index";
+    QVERIFY(QDir().mkpath(rootDir));
+
+    createContentIndex(indexDir, {
+                                     { rootDir + "/alpha.txt", "alpha.txt", "alpha planning", rootDir },
+                                     { rootDir + "/budget.txt", "budget.txt", "budget tracking", rootDir },
+                                     { rootDir + "/travel.txt", "travel.txt", "travel itinerary", rootDir },
+                                     { rootDir + "/other.txt", "other.txt", "miscellaneous notes", rootDir },
+                             });
+
+    stub_ext::StubExt stub;
+    stub.set_lamda(DFMSEARCH::Global::contentIndexDirectory, [&indexDir]() {
+        return indexDir;
+    });
+
+    std::unique_ptr<SearchEngine> engine(SearchEngine::create(SearchType::Content));
+    engine->setSearchOptions(createBaseOptions(rootDir, indexDir));
+
+    const SearchResultExpected expected = engine->searchSync(
+            SearchQuery::createBooleanQuery({ "alpha", "budget", "travel" }, SearchQuery::BooleanOperator::OR));
+    QVERIFY(expected.hasValue());
+
+    const QStringList paths = resultPaths(expected);
+    QCOMPARE(paths.size(), 3);
+    QVERIFY(paths.contains(rootDir + "/alpha.txt"));
+    QVERIFY(paths.contains(rootDir + "/budget.txt"));
+    QVERIFY(paths.contains(rootDir + "/travel.txt"));
+    QVERIFY(!paths.contains(rootDir + "/other.txt"));
 }
 
 void tst_ContentSearchEngine::search_filenameAndContentMixed_requiresBoth()

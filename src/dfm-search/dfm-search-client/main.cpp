@@ -150,14 +150,23 @@ static SearchQuery createSearchQuery(const SearchCliConfig &config)
     } else if (config.queryType == SearchQuery::Type::Wildcard) {
         return SearchFactory::createQuery(config.keyword, SearchQuery::Type::Wildcard);
     } else {
-        // Boolean 查询：按逗号分割关键字
+        // Boolean 查询：根据分隔符确定 AND/OR 逻辑
+        // '|' 分隔 → OR，'&' 分隔 → AND，',' 分隔 → AND（向后兼容）
+        QChar separator = ',';
+        SearchQuery::BooleanOperator op = SearchQuery::BooleanOperator::AND;
+        if (config.keyword.contains('|')) {
+            separator = '|';
+            op = SearchQuery::BooleanOperator::OR;
+        } else if (config.keyword.contains('&')) {
+            separator = '&';
+        }
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-        QStringList keywords = config.keyword.split(',', Qt::SkipEmptyParts);
+        QStringList keywords = config.keyword.split(separator, Qt::SkipEmptyParts);
 #else
-        QStringList keywords = config.keyword.split(',', QString::SkipEmptyParts);
+        QStringList keywords = config.keyword.split(separator, QString::SkipEmptyParts);
 #endif
         SearchQuery query = SearchFactory::createQuery(keywords, SearchQuery::Type::Boolean);
-        query.setBooleanOperator(SearchQuery::BooleanOperator::AND);
+        query.setBooleanOperator(op);
         return query;
     }
 }
