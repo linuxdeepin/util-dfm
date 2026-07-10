@@ -68,6 +68,9 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
         if (!config.filenameKeyword.isEmpty()) {
             contentOptions.setFilenameKeyword(config.filenameKeyword);
         }
+        if (!config.fileExtensions.isEmpty()) {
+            contentOptions.setFileExtensions(config.fileExtensions);
+        }
     } else if (config.searchType == SearchType::Ocr) {
         OcrTextOptionsAPI ocrTextOptions(options);
         ocrTextOptions.setMaxPreviewLength(config.maxPreviewLength);
@@ -76,6 +79,9 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
         ocrTextOptions.setFilenameOcrContentMixedAndSearchEnabled(true);
         if (!config.filenameKeyword.isEmpty()) {
             ocrTextOptions.setFilenameKeyword(config.filenameKeyword);
+        }
+        if (!config.fileExtensions.isEmpty()) {
+            ocrTextOptions.setFileExtensions(config.fileExtensions);
         }
     }
 
