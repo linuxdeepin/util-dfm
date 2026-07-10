@@ -8,6 +8,8 @@
 
 #include "utils/contenthighlighter.h"
 #include "utils/highlightoptions_p.h"
+#include "utils/previewoptions_p.h"
+#include "utils/previewresult_p.h"
 #include "utils/searchutility.h"
 
 #include <QDebug>
@@ -163,6 +165,72 @@ bool HighlightOptions::enableHtml() const
 void HighlightOptions::setEnableHtml(bool enable)
 {
     d->enableHtml = enable;
+}
+
+// ── PreviewOptions (Pimpl) ─────────────────────────────────────────────
+
+PreviewOptions::PreviewOptions()
+    : d(new PreviewOptionsPrivate)
+{
+}
+
+PreviewOptions::~PreviewOptions() = default;
+
+PreviewOptions::PreviewOptions(const PreviewOptions &other) = default;
+
+PreviewOptions &PreviewOptions::operator=(const PreviewOptions &other) = default;
+
+int PreviewOptions::offset() const
+{
+    return d->offset;
+}
+
+void PreviewOptions::setOffset(int offset)
+{
+    d->offset = offset;
+}
+
+int PreviewOptions::maxLength() const
+{
+    return d->maxLength;
+}
+
+void PreviewOptions::setMaxLength(int length)
+{
+    d->maxLength = length;
+}
+
+QString PreviewOptions::keyword() const
+{
+    return d->keyword;
+}
+
+void PreviewOptions::setKeyword(const QString &keyword)
+{
+    d->keyword = keyword;
+}
+
+// ── PreviewResult (Pimpl) ──────────────────────────────────────────────
+
+PreviewResult::PreviewResult()
+    : d(new PreviewResultPrivate)
+{
+}
+
+PreviewResult::~PreviewResult() = default;
+
+PreviewResult::PreviewResult(const PreviewResult &other) = default;
+
+PreviewResult &PreviewResult::operator=(const PreviewResult &other) = default;
+
+QString PreviewResult::content() const
+{
+    return d->content;
+}
+
+int PreviewResult::keywordOffset() const
+{
+    return d->keywordOffset;
 }
 
 // ── ContentRetriever ───────────────────────────────────────────────────
@@ -451,6 +519,57 @@ QMap<QString, QString> ContentRetriever::fetchContents(const QStringList &paths,
     }
 
     return results;
+}
+
+PreviewResult ContentRetriever::fetchPreview(const QString &path, SearchType type,
+                                             const PreviewOptions &options) const
+{
+    PreviewResult result;
+    if (path.isEmpty()) return result;
+
+    // Route SearchType::Semantic to Content or Ocr based on file extension
+    if (type == SearchType::Semantic) {
+        std::optional<SearchType> resolved = resolveSemanticType(path);
+        if (!resolved) {
+            qWarning() << "ContentRetriever: cannot route Semantic type for" << path
+                       << "- extension does not match doc or pic suffixes";
+            return result;
+        }
+        type = *resolved;
+    } else if (type != SearchType::Content && type != SearchType::Ocr) {
+        return result;
+    }
+
+    const QString indexDir = indexDirectory(type);
+
+    QMutexLocker locker(&d->mutex);
+    CachedIndexContext *ctx = d->ensureIndexContext(type, indexDir);
+    if (!ctx || !ctx->searcher) {
+        return result;
+    }
+
+    try {
+        const DocumentPtr doc = findDocumentByPath(ctx->searcher, path, type);
+        const QString content = storedContentFromDocument(doc, type);
+        if (content.isEmpty()) {
+            return result;
+        }
+
+        int keywordOffset = -1;
+        const QString snippet = ContentHighlighter::previewSnippet(
+                content, options.offset(), options.maxLength(),
+                options.keyword(), &keywordOffset);
+
+        result.d->content = snippet;
+        result.d->keywordOffset = keywordOffset;
+    } catch (const LuceneException &e) {
+        qWarning() << "ContentRetriever: error fetching preview for" << path
+                   << QString::fromStdWString(e.getError());
+    } catch (const std::exception &e) {
+        qWarning() << "ContentRetriever: std error for" << path << e.what();
+    }
+
+    return result;
 }
 
 DFM_SEARCH_END_NS

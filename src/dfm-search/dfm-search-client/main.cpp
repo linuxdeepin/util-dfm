@@ -186,8 +186,10 @@ int main(int argc, char *argv[])
     // Preview subcommand: fetch content preview on demand
     if (config.subcommand == "preview") {
         DFMSEARCH::ContentRetriever retriever;
-        DFMSEARCH::HighlightOptions hlOptions;
-        hlOptions.setMaxPreviewLength(config.maxPreviewLength);
+        DFMSEARCH::PreviewOptions previewOptions;
+        previewOptions.setOffset(config.offset);
+        previewOptions.setMaxLength(config.maxPreviewLength);
+        previewOptions.setKeyword(config.keyword);
 
         // Paths are stored as comma-separated in config.searchPath
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
@@ -196,8 +198,6 @@ int main(int argc, char *argv[])
         QStringList paths = config.searchPath.split(',', QString::SkipEmptyParts);
 #endif
 
-        bool noKeyword = config.keyword.isEmpty();
-
         if (config.jsonOutput) {
             // JSON output
             QJsonObject root;
@@ -205,15 +205,16 @@ int main(int argc, char *argv[])
             root["searchType"] = (config.searchType == SearchType::Content) ? "content"
                 : (config.searchType == SearchType::Ocr) ? "ocr" : "semantic";
             root["keyword"] = config.keyword;
+            root["offset"] = config.offset;
+            root["maxLength"] = config.maxPreviewLength;
 
             QJsonArray results;
             for (const QString &path : paths) {
                 QJsonObject item;
                 item["path"] = path;
-                if (noKeyword)
-                    item["content"] = retriever.fetchContent(path, config.searchType);
-                else
-                    item["contentMatch"] = retriever.fetchHighlight(path, config.keyword, config.searchType, hlOptions);
+                DFMSEARCH::PreviewResult result = retriever.fetchPreview(path, config.searchType, previewOptions);
+                item["content"] = result.content();
+                item["keywordOffset"] = result.keywordOffset();
                 results.append(item);
             }
 
@@ -227,20 +228,11 @@ int main(int argc, char *argv[])
             QTextStream out(stdout);
             for (const QString &path : paths) {
                 out << path << "\n";
-                if (noKeyword) {
-                    QString content = retriever.fetchContent(path, config.searchType);
-                    if (!content.isEmpty()) {
-                        out << "  " << content << "\n";
-                    } else {
-                        out << "  (no content)\n";
-                    }
+                DFMSEARCH::PreviewResult result = retriever.fetchPreview(path, config.searchType, previewOptions);
+                if (!result.content().isEmpty()) {
+                    out << "  " << result.content() << "\n";
                 } else {
-                    QString hl = retriever.fetchHighlight(path, config.keyword, config.searchType, hlOptions);
-                    if (!hl.isEmpty()) {
-                        out << "  " << hl << "\n";
-                    } else {
-                        out << "  (no match)\n";
-                    }
+                    out << "  (no content)\n";
                 }
                 out << Qt::endl;
             }

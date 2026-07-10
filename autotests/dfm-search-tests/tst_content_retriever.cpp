@@ -13,6 +13,8 @@
 #include <dfm-search/contentretriever.h>
 #include <dfm-search/field_names.h>
 
+#include "utils/contenthighlighter.h"
+
 #include <lucene++/Document.h>
 #include <lucene++/Field.h>
 #include <lucene++/FSDirectory.h>
@@ -91,6 +93,11 @@ private Q_SLOTS:
     void fetchContent_semanticRoutingFailsWhenNoDConfig();
     void fetchHighlight_semanticRoutingFailsWhenNoDConfig();
     void concurrentFetch_sharedRetriever();
+    void fetchPreview_noKeyword();
+    void fetchPreview_withKeyword();
+    void fetchPreview_keywordNotFound();
+    void fetchPreview_offsetBeyondContent();
+    void previewSnippet_basic();
 };
 
 void tst_ContentRetriever::fetchContent_single()
@@ -223,6 +230,129 @@ void tst_ContentRetriever::concurrentFetch_sharedRetriever()
     }
 
     QVERIFY(!failed.load());
+}
+
+void tst_ContentRetriever::fetchPreview_noKeyword()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString contentIndexDir = tempDir.path() + "/content-index";
+    createIndex(contentIndexDir, SearchType::Content);
+
+    ContentRetriever retriever;
+    retriever.setIndexDirectory(SearchType::Content, contentIndexDir);
+
+    PreviewOptions options;
+    options.setKeyword(QString());
+    options.setOffset(6);        // skip "hello "
+    options.setMaxLength(5);    // expect "world"
+
+    const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
+                                                         SearchType::Content,
+                                                         options);
+    QCOMPARE(result.content(), QString("world"));
+    QCOMPARE(result.keywordOffset(), -1);
+}
+
+void tst_ContentRetriever::fetchPreview_withKeyword()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString contentIndexDir = tempDir.path() + "/content-index";
+    createIndex(contentIndexDir, SearchType::Content);
+
+    ContentRetriever retriever;
+    retriever.setIndexDirectory(SearchType::Content, contentIndexDir);
+
+    // Content of doc-a.txt is "hello world from content index"
+    // "world" starts at position 6
+    PreviewOptions options;
+    options.setKeyword("world");
+    options.setOffset(0);
+    options.setMaxLength(10);
+
+    const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
+                                                         SearchType::Content,
+                                                         options);
+    QCOMPARE(result.content(), QString("world from"));
+    QCOMPARE(result.keywordOffset(), 6);
+}
+
+void tst_ContentRetriever::fetchPreview_keywordNotFound()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString contentIndexDir = tempDir.path() + "/content-index";
+    createIndex(contentIndexDir, SearchType::Content);
+
+    ContentRetriever retriever;
+    retriever.setIndexDirectory(SearchType::Content, contentIndexDir);
+
+    // Content of doc-a.txt is "hello world from content index" (30 chars)
+    // offset=300 is beyond the content, so keyword won't be found
+    PreviewOptions options;
+    options.setKeyword("world");
+    options.setOffset(300);
+    options.setMaxLength(10);
+
+    const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
+                                                         SearchType::Content,
+                                                         options);
+    QVERIFY(result.content().isEmpty());
+    QCOMPARE(result.keywordOffset(), -1);
+}
+
+void tst_ContentRetriever::fetchPreview_offsetBeyondContent()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString contentIndexDir = tempDir.path() + "/content-index";
+    createIndex(contentIndexDir, SearchType::Content);
+
+    ContentRetriever retriever;
+    retriever.setIndexDirectory(SearchType::Content, contentIndexDir);
+
+    // No keyword, offset beyond content length → empty content
+    PreviewOptions options;
+    options.setKeyword(QString());
+    options.setOffset(1000);
+    options.setMaxLength(50);
+
+    const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
+                                                         SearchType::Content,
+                                                         options);
+    QVERIFY(result.content().isEmpty());
+    QCOMPARE(result.keywordOffset(), -1);
+}
+
+void tst_ContentRetriever::previewSnippet_basic()
+{
+    using DFMSEARCH::ContentHighlighter::previewSnippet;
+
+    const QString content = QStringLiteral("hello world from content index");
+
+    // No keyword: simple offset + maxLength slice
+    int kwOff = 42;
+    QCOMPARE(previewSnippet(content, 6, 5, QString(), &kwOff), QString("world"));
+    QCOMPARE(kwOff, -1);
+
+    // With keyword: search from offset, return from match position
+    QCOMPARE(previewSnippet(content, 0, 10, "world", &kwOff), QString("world from"));
+    QCOMPARE(kwOff, 6);
+
+    // Keyword not found
+    QVERIFY(previewSnippet(content, 0, 10, "nonexistent", &kwOff).isEmpty());
+    QCOMPARE(kwOff, -1);
+
+    // Offset beyond content
+    QVERIFY(previewSnippet(content, 1000, 10, QString(), &kwOff).isEmpty());
+
+    // Negative offset → empty
+    QVERIFY(previewSnippet(content, -1, 10, QString(), &kwOff).isEmpty());
 }
 
 QObject *create_tst_ContentRetriever()

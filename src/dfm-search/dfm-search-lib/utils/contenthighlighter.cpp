@@ -242,6 +242,35 @@ QString customHighlight(const QStringList &keywords, const QString &content, int
     return resultSnippet;
 }
 
+QString previewSnippet(const QString &content, int offset, int maxLength,
+                       const QString &keyword, int *keywordOffset)
+{
+    if (keywordOffset) {
+        *keywordOffset = -1;
+    }
+
+    if (content.isEmpty() || maxLength <= 0 || offset < 0) {
+        return {};
+    }
+
+    if (keyword.isEmpty()) {
+        // 无 keyword：直接从 offset 截取 maxLength
+        return content.mid(offset, maxLength);
+    }
+
+    // 有 keyword：从 offset 开始搜索，找到后从匹配位置截取
+    int pos = content.indexOf(keyword, offset, Qt::CaseInsensitive);
+    if (pos == -1) {
+        return {};
+    }
+
+    if (keywordOffset) {
+        *keywordOffset = pos;
+    }
+
+    return content.mid(pos, maxLength);
+}
+
 }   // namespace ContentHighlighter
 
 DFM_SEARCH_END_NS
