@@ -25,6 +25,7 @@ CliOptions::CliOptions()
       m_pinyinAcronymOption(QStringList() << "pinyin-acronym", "Enable pinyin acronym search (for filename search)"),
       m_fileTypesOption(QStringList() << "file-types", "Filter by file types, comma separated", "types"),
       m_fileExtensionsOption(QStringList() << "file-extensions", "Filter by file extensions, comma separated", "extensions"),
+      m_excludeOption(QStringList() << "exclude", "Exclude directories from search, comma separated", "paths"),
       m_maxResultsOption(QStringList() << "max-results", "Maximum number of results (0 for unlimited)", "number", "0"),
       m_maxPreviewOption(QStringList() << "max-preview", "Max content preview length", "length", "200"),
       m_offsetOption(QStringList() << "offset", "Content offset: start reading from the n-th character (preview only)", "n", "0"),
@@ -73,6 +74,7 @@ void CliOptions::setupOptions()
     m_parser.addOption(m_pinyinAcronymOption);
     m_parser.addOption(m_fileTypesOption);
     m_parser.addOption(m_fileExtensionsOption);
+    m_parser.addOption(m_excludeOption);
     m_parser.addOption(m_maxResultsOption);
     m_parser.addOption(m_maxPreviewOption);
     m_parser.addOption(m_offsetOption);
@@ -129,6 +131,7 @@ void CliOptions::printHelp() const
     std::cout << "  --pinyin-acronym               Enable pinyin acronym search (for filename search)" << std::endl;
     std::cout << "  --file-types=<types>           Filter by file types, comma separated" << std::endl;
     std::cout << "  --file-extensions=<exts>       Filter by file extensions, comma separated" << std::endl;
+    std::cout << "  --exclude=<paths>              Exclude directories from search, comma separated" << std::endl;
     std::cout << "  --max-results=<number>         Maximum number of results (0 for unlimited)" << std::endl;
     std::cout << "  --max-preview=<length>         Max content preview length (for content/ocr search)" << std::endl;
     std::cout << "  --offset=<n>                   Content offset: start reading from the n-th character (preview only, default 0)" << std::endl;
@@ -345,6 +348,13 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
                 config.maxResults = maxResults;
             }
         }
+        if (m_parser.isSet(m_excludeOption)) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+            config.excludedPaths = m_parser.value(m_excludeOption).split(',', Qt::SkipEmptyParts);
+#else
+            config.excludedPaths = m_parser.value(m_excludeOption).split(',', QString::SkipEmptyParts);
+#endif
+        }
         return true;
     }
 
@@ -400,6 +410,14 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
         config.fileExtensions = m_parser.value(m_fileExtensionsOption).split(',', Qt::SkipEmptyParts);
 #else
         config.fileExtensions = m_parser.value(m_fileExtensionsOption).split(',', QString::SkipEmptyParts);
+#endif
+    }
+
+    if (m_parser.isSet(m_excludeOption)) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+        config.excludedPaths = m_parser.value(m_excludeOption).split(',', Qt::SkipEmptyParts);
+#else
+        config.excludedPaths = m_parser.value(m_excludeOption).split(',', QString::SkipEmptyParts);
 #endif
     }
 

@@ -45,6 +45,7 @@ struct SearchCliConfig
     // 过滤选项
     QStringList fileTypes;
     QStringList fileExtensions;
+    QStringList excludedPaths;   // 排除的搜索路径
     int maxResults = 0;   // 0 表示不限制
     int maxPreviewLength = 200;
     int offset = 0;   // 内容偏移值，preview 子命令使用
@@ -107,6 +108,7 @@ private:
     QCommandLineOption m_pinyinAcronymOption;
     QCommandLineOption m_fileTypesOption;
     QCommandLineOption m_fileExtensionsOption;
+    QCommandLineOption m_excludeOption;
     QCommandLineOption m_maxResultsOption;
     QCommandLineOption m_maxPreviewOption;
     QCommandLineOption m_offsetOption;

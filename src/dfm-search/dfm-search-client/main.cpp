@@ -43,6 +43,10 @@ static void configureSearchOptions(SearchOptions &options, const SearchCliConfig
     options.setMaxResults(config.maxResults);
     options.setDetailedResultsEnabled(config.verbose);   // 使用 verbose 选项控制详细输出
 
+    if (!config.excludedPaths.isEmpty()) {
+        options.setSearchExcludedPaths(config.excludedPaths);
+    }
+
     if (config.searchMethod == SearchMethod::Realtime) {
         options.setResultFoundEnabled(true);
     }
@@ -258,6 +262,9 @@ int main(int argc, char *argv[])
         semanticSearcher->setDetailedResultsEnabled(config.verbose);
         if (config.maxResults > 0) {
             semanticSearcher->setMaxResults(config.maxResults);
+        }
+        if (!config.excludedPaths.isEmpty()) {
+            semanticSearcher->setSearchExcludedPaths(config.excludedPaths);
         }
 
         OutputFormatter *formatter = createOutputFormatter(config, &app);

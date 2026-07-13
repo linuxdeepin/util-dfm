@@ -252,9 +252,31 @@ dfm-searcher --file-types=doc --file-extensions=docx,odt "report" /home/user
 
 ---
 
-## 八、时间范围过滤
+## 八、排除目录
 
-### 20. 最近 N 天
+### 20. 排除指定目录
+
+```bash
+# 排除 /tmp 和 /var 目录
+dfm-searcher --exclude=/tmp,/var "报告" /home/user
+```
+
+搜索时跳过 `/tmp` 和 `/var` 目录及其子目录，不搜索其中的文件。用逗号分隔多个排除路径。
+
+### 21. 排除缓存等无关目录
+
+```bash
+# 排除缓存和回收站目录，减少无关结果
+dfm-searcher --exclude=/home/user/.cache,/home/user/.local/share/Trash "报告" /home/user
+```
+
+排除缓存、临时文件等目录可以加快搜索速度、减少无关结果。该选项在搜索模式和语义模式下均可使用。
+
+---
+
+## 九、时间范围过滤
+
+### 22. 最近 N 天
 
 ```bash
 # 最近 3 天内修改的文件
@@ -275,7 +297,7 @@ dfm-searcher --time-last=2h "报告" /home/user
 | `M` | 月 | `--time-last=3M`（最近 3 个月） |
 | `y` | 年 | `--time-last=1y`（最近 1 年） |
 
-### 21. 预设时间范围
+### 23. 预设时间范围
 
 ```bash
 # 今天的文件
@@ -298,7 +320,7 @@ dfm-searcher --time-this-year "报告" /home/user
 
 `--time-today` / `--time-yesterday` / `--time-this-week` / `--time-last-week` / `--time-this-month` / `--time-last-month` / `--time-this-year` / `--time-last-year`
 
-### 22. 自定义时间范围
+### 24. 自定义时间范围
 
 ```bash
 # 按日期范围
@@ -308,7 +330,7 @@ dfm-searcher --time-range="2025-01-01,2025-12-31" "报告" /home/user
 dfm-searcher --time-range="2025-06-01 09:00,2025-06-30 18:00" "报告" /home/user
 ```
 
-### 23. 按创建时间 vs 修改时间
+### 25. 按创建时间 vs 修改时间
 
 ```bash
 # 默认按修改时间（modify）
@@ -318,7 +340,7 @@ dfm-searcher --time-last=7d "报告" /home/user
 dfm-searcher --time-field=birth --time-last=7d "报告" /home/user
 ```
 
-### 24. 时间 + 实时搜索组合
+### 26. 时间 + 实时搜索组合
 
 ```bash
 dfm-searcher --method=realtime --time-last=7d "报告" /home/user
@@ -326,9 +348,9 @@ dfm-searcher --method=realtime --time-last=7d "报告" /home/user
 
 ---
 
-## 九、文件大小过滤
+## 十、文件大小过滤
 
-### 25. 按大小范围过滤
+### 27. 按大小范围过滤
 
 ```bash
 # 1MB 到 100MB 之间的文件
@@ -345,7 +367,7 @@ dfm-searcher --size-min=1M --size-max=100M "视频" /home/user
 | `G` | GB | `--size-max=1G`（最多 1GB） |
 | `T` | TB | `--size-max=1T`（最多 1TB） |
 
-### 26. 只限最小或最大
+### 28. 只限最小或最大
 
 ```bash
 # 至少 10MB
@@ -357,9 +379,9 @@ dfm-searcher --size-max=1K "日志" /home/user
 
 ---
 
-## 十、语义搜索
+## 十一、语义搜索
 
-### 27. 用自然语言搜索
+### 29. 用自然语言搜索
 
 ```bash
 dfm-searcher -s "最近3天的图片" /home/user
@@ -367,7 +389,7 @@ dfm-searcher -s "最近3天的图片" /home/user
 
 语义搜索会自动解析你的自然语言描述，提取时间、类型、关键词等维度，转化为搜索条件。
 
-### 28. 语义搜索 + JSON
+### 30. 语义搜索 + JSON
 
 ```bash
 dfm-searcher -s -j "最近3天的图片" /home/user
@@ -375,7 +397,7 @@ dfm-searcher -s -j "最近3天的图片" /home/user
 
 JSON 输出会包含解析出的意图（intent）信息。
 
-### 29. 语义搜索不要求路径
+### 31. 语义搜索不要求路径
 
 ```bash
 dfm-searcher -s "包含会议纪要的文档"
@@ -383,7 +405,7 @@ dfm-searcher -s "包含会议纪要的文档"
 
 语义模式可以不指定搜索路径。
 
-### 30. 语义搜索示例集
+### 32. 语义搜索示例集
 
 ```bash
 # 查找最近图片
@@ -404,9 +426,9 @@ dfm-searcher -s -v "最近3天的图片" /home/user
 
 ---
 
-## 十一、输出格式
+## 十二、输出格式
 
-### 31. JSON 输出
+### 33. JSON 输出
 
 ```bash
 dfm-searcher -j "报告" /home/user
@@ -433,7 +455,7 @@ dfm-searcher -j "报告" /home/user
 }
 ```
 
-### 32. 详细输出（verbose）
+### 34. 详细输出（verbose）
 
 ```bash
 dfm-searcher -v --type=content "会议" /home/user/Documents
@@ -441,7 +463,7 @@ dfm-searcher -v --type=content "会议" /home/user/Documents
 
 `-v` 启用详细模式，结果中会包含文件大小、修改时间、高亮内容预览等额外信息。
 
-### 33. JSON + verbose 组合
+### 35. JSON + verbose 组合
 
 ```bash
 dfm-searcher -j -v --type=content "会议" /home/user/Documents
@@ -449,9 +471,9 @@ dfm-searcher -j -v --type=content "会议" /home/user/Documents
 
 ---
 
-## 十二、组合搜索
+## 十三、组合搜索
 
-### 34. 文件名 + 文件类型 + 时间
+### 36. 文件名 + 文件类型 + 时间
 
 ```bash
 dfm-searcher --file-types=doc --time-last=7d "报告" /home/user
@@ -459,7 +481,7 @@ dfm-searcher --file-types=doc --time-last=7d "报告" /home/user
 
 最近 7 天内的文档类型文件，文件名包含"报告"。
 
-### 35. 内容搜索 + 文件名过滤 + 大小过滤
+### 37. 内容搜索 + 文件名过滤 + 大小过滤
 
 ```bash
 dfm-searcher --type=content --filename="季度" --size-min=1M "财务" /home/user
@@ -467,7 +489,7 @@ dfm-searcher --type=content --filename="季度" --size-min=1M "财务" /home/use
 
 在内容包含"财务"且文件名包含"季度"、大小至少 1MB 的文件中搜索。
 
-### 36. 实时搜索 + 时间 + 大小 + 类型
+### 38. 实时搜索 + 时间 + 大小 + 类型
 
 ```bash
 dfm-searcher --method=realtime --time-last=30d --size-min=10M --file-types=video "监控" /home/user
@@ -479,9 +501,9 @@ dfm-searcher --method=realtime --time-last=30d --size-min=10M --file-types=video
 
 `preview` 子命令用来**直接读取**指定文件的内容片段，不需要运行完整搜索。
 
-## 十三、基本用法
+## 十四、基本用法
 
-### 37. 读取文件全部内容
+### 39. 读取文件全部内容
 
 ```bash
 dfm-searcher preview /home/user/notes.txt
@@ -495,7 +517,7 @@ dfm-searcher preview /home/user/notes.txt
   今天重点完成代码评审部分，明天开始写自动化测试…
 ```
 
-### 38. 读取文件内容（JSON 格式）
+### 40. 读取文件内容（JSON 格式）
 
 ```bash
 dfm-searcher preview /home/user/notes.txt -j
@@ -523,11 +545,11 @@ dfm-searcher preview /home/user/notes.txt -j
 
 ---
 
-## 十四、用 --offset 和 --max-preview 控制读取范围
+## 十五、用 --offset 和 --max-preview 控制读取范围
 
 无 keyword 时，默认输出全文。加 `--offset` 可以从指定位置开始读，加 `--max-preview` 可以限制读取长度。
 
-### 39. 从第 100 个字符开始读（不限长度）
+### 41. 从第 100 个字符开始读（不限长度）
 
 ```bash
 dfm-searcher preview /home/user/notes.txt --offset=100
@@ -535,19 +557,19 @@ dfm-searcher preview /home/user/notes.txt --offset=100
 
 从第 100 个字符开始，读到文件末尾。
 
-### 40. 只读 50 个字符
+### 42. 只读 50 个字符
 
 ```bash
 dfm-searcher preview /home/user/notes.txt --max-preview=50
 ```
 
-### 41. 从第 100 个字符开始，只读 50 个字符
+### 43. 从第 100 个字符开始，只读 50 个字符
 
 ```bash
 dfm-searcher preview /home/user/notes.txt --offset=100 --max-preview=50
 ```
 
-### 42. 翻页式读取
+### 44. 翻页式读取
 
 第一次读取：
 
@@ -569,7 +591,7 @@ dfm-searcher preview /home/user/notes.txt --offset=200 --max-preview=100 -j
 
 以此类推，每次读 100 个字符。
 
-### 43. offset 超过文件长度 → 返回空
+### 45. offset 超过文件长度 → 返回空
 
 ```bash
 dfm-searcher preview /home/user/notes.txt --offset=99999 -j
@@ -590,9 +612,9 @@ dfm-searcher preview /home/user/notes.txt --offset=99999 -j
 
 ---
 
-## 十五、用 keyword 搜索并预览
+## 十六、用 keyword 搜索并预览
 
-### 44. 搜索关键词并预览
+### 46. 搜索关键词并预览
 
 ```bash
 dfm-searcher preview "bug" /home/user/notes.txt
@@ -605,7 +627,7 @@ dfm-searcher preview "bug" /home/user/notes.txt
 
 内容从关键词所在位置开始，往后最多 200 个字符。
 
-### 45. 搜索关键词 + JSON
+### 47. 搜索关键词 + JSON
 
 ```bash
 dfm-searcher preview "bug" /home/user/notes.txt -j
@@ -629,7 +651,7 @@ dfm-searcher preview "bug" /home/user/notes.txt -j
 
 `keywordOffset: 156` 表示 "bug" 在全文第 156 个字符处。
 
-### 46. 从指定位置开始搜索关键词
+### 48. 从指定位置开始搜索关键词
 
 如果 "bug" 在文件里出现多次，用 `--offset` 跳过前面的出现：
 
@@ -638,7 +660,7 @@ dfm-searcher preview "bug" /home/user/notes.txt -j
 dfm-searcher preview "bug" /home/user/notes.txt --offset=200
 ```
 
-### 47. offset 后面没有关键词 → 返回空
+### 49. offset 后面没有关键词 → 返回空
 
 ```bash
 dfm-searcher preview "bug" /home/user/notes.txt --offset=500 -j
@@ -655,7 +677,7 @@ dfm-searcher preview "bug" /home/user/notes.txt --offset=500 -j
 }
 ```
 
-### 48. 搭配搜索结果使用
+### 50. 搭配搜索结果使用
 
 搜索返回 `keywordOffset`，可以用它作为 preview 的 `--offset`：
 
@@ -666,9 +688,9 @@ dfm-searcher preview "关键词" /home/user/doc.txt --offset=320 --max-preview=2
 
 ---
 
-## 十六、批量预览多个文件
+## 十七、批量预览多个文件
 
-### 49. 同时预览多个文件
+### 51. 同时预览多个文件
 
 ```bash
 dfm-searcher preview "报告" doc1.txt doc2.txt doc3.txt
@@ -683,7 +705,7 @@ dfm-searcher preview "报告" doc1.txt doc2.txt doc3.txt
   (no content)
 ```
 
-### 50. 批量预览 + JSON
+### 52. 批量预览 + JSON
 
 ```bash
 dfm-searcher preview "报告" doc1.txt doc2.txt doc3.txt -j
@@ -718,15 +740,15 @@ dfm-searcher preview "报告" doc1.txt doc2.txt doc3.txt -j
 
 ---
 
-## 十七、搜索类型
+## 十八、搜索类型
 
-### 51. 自动检测（默认）
+### 53. 自动检测（默认）
 
 不给 `--type`，程序根据文件扩展名自动判断：
 - `.txt` `.doc` `.md` 等 → 用内容索引（content）
 - `.png` `.jpg` 等 → 用 OCR 索引（ocr）
 
-### 52. 强制指定搜索类型
+### 54. 强制指定搜索类型
 
 ```bash
 # 强制用 OCR 索引
@@ -736,7 +758,7 @@ dfm-searcher preview --type=ocr "截图" photo.png
 dfm-searcher preview --type=content "会议" doc.txt
 ```
 
-### 53. 预览 OCR 图片中的文字
+### 55. 预览 OCR 图片中的文字
 
 ```bash
 dfm-searcher preview "登录" screenshot.png -j
@@ -759,21 +781,21 @@ dfm-searcher preview "登录" screenshot.png -j
 
 ---
 
-## 十八、无关键词，纯读取内容
+## 十九、无关键词，纯读取内容
 
-### 54. 读取文件前 200 个字符
+### 56. 读取文件前 200 个字符
 
 ```bash
 dfm-searcher preview /home/user/doc.txt
 ```
 
-### 55. 从第 500 个字符读取 100 个字符
+### 57. 从第 500 个字符读取 100 个字符
 
 ```bash
 dfm-searcher preview /home/user/doc.txt --offset=500 --max-preview=100
 ```
 
-### 56. 无关键词 + JSON
+### 58. 无关键词 + JSON
 
 ```bash
 dfm-searcher preview /home/user/doc.txt --offset=500 --max-preview=100 -j
@@ -815,6 +837,7 @@ dfm-searcher preview /home/user/doc.txt --offset=500 --max-preview=100 -j
 | `--pinyin-acronym` | 关 | 启用拼音首字母搜索 |
 | `--file-types=<types>` | 无 | 按文件类型过滤 |
 | `--file-extensions=<exts>` | 无 | 按扩展名过滤 |
+| `--exclude=<paths>` | 无 | 排除指定目录，逗号分隔 |
 | `--max-results=<n>` | `0`（不限） | 最大结果数 |
 | `--max-preview=<n>` | `200` | 内容预览长度 |
 | `--filename=<keyword>` | 无 | 在内容/OCR 搜索中按文件名过滤 |
