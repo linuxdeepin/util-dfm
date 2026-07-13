@@ -8,6 +8,7 @@
 #include "private/dopticaldiscmanager_p.h"
 #include "private/dxorrisoengine.h"
 #include "private/dudfburnengine.h"
+#include "private/dvdrwformatengine.h"
 #include "private/dsm3hash.h"
 
 #include <QDebug>
@@ -144,6 +145,36 @@ bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStri
 bool DOpticalDiscManager::erase()
 {
     bool ret { false };
+
+    // 查询介质类型
+    MediaType mediaType { MediaType::kNoMedia };
+    {
+        QScopedPointer<DOpticalDiscInfo> info { DOpticalDiscManager::createOpticalInfo(dptr->curDev) };
+        if (info)
+            mediaType = info->mediaType();
+    }
+
+    // DVD±RW 且 dvd+rw-format 可用时走新引擎
+    bool isDvdRw = (mediaType == MediaType::kDVD_PLUS_RW || mediaType == MediaType::kDVD_RW);
+    QString dvdRwFormat = QStandardPaths::findExecutable("dvd+rw-format");
+
+    if (isDvdRw && !dvdRwFormat.isEmpty()) {
+        QScopedPointer<DVDRwFormatEngine> engine { new DVDRwFormatEngine };
+        connect(
+                engine.data(), &DVDRwFormatEngine::jobStatusChanged, this,
+                [this](JobStatus status, int progress) {
+                    Q_EMIT jobStatusChanged(status, progress, {}, {});
+                },
+                Qt::DirectConnection);
+
+        ret = engine->doErase(dptr->curDev, mediaType);
+        return ret;
+    }
+
+    // 降级：走 xorriso 原路径
+    if (isDvdRw)
+        qWarning() << "[dfm-burn] dvd+rw-format not found, falling back to xorriso for DVD±RW erase";
+
     QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
     connect(
             engine.data(), &DXorrisoEngine::jobStatusChanged, this,
