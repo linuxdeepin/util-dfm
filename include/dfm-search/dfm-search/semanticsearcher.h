@@ -192,6 +192,17 @@ public:
      */
     int maxResults() const;
 
+    /**
+     * @brief Set directories to exclude from search
+     *
+     * When non-empty, these paths are forwarded to each sub-engine's
+     * SearchOptions so that files under the excluded directories are
+     * skipped during search. Must be called before search().
+     *
+     * @param paths List of directory paths to exclude
+     */
+    void setSearchExcludedPaths(const QStringList &paths);
+
 Q_SIGNALS:
     /**
      * @brief Emitted after the natural language input is parsed into an intent

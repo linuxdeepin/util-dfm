@@ -88,6 +88,7 @@ public:
     // Options forwarded from caller
     bool detailedResultsEnabled = false;
     int maxResults = 0;   // 0 = unlimited
+    QStringList excludedPaths;   // directories to exclude from search
 };
 
 DFM_SEARCH_END_NS

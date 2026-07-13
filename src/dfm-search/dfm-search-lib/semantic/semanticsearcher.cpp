@@ -232,6 +232,9 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStrin
         if (maxResults > 0) {
             opts.setMaxResults(maxResults);
         }
+        if (!excludedPaths.isEmpty()) {
+            opts.setSearchExcludedPaths(excludedPaths);
+        }
     };
 
     // Step 8: Launch engines based on plan
@@ -413,6 +416,11 @@ void SemanticSearcher::setMaxResults(int count)
 int SemanticSearcher::maxResults() const
 {
     return d_ptr->maxResults;
+}
+
+void SemanticSearcher::setSearchExcludedPaths(const QStringList &paths)
+{
+    d_ptr->excludedPaths = paths;
 }
 
 SearchResultExpected SemanticSearcher::searchSync(const QString &naturalLanguage)
