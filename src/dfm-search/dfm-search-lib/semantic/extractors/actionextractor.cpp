@@ -10,6 +10,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDebug>
+#include <QVariant>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -137,16 +138,29 @@ QStringList ActionExtractor::resolveImReceivedPaths() const
         }
 
         const QString xdgType = meta.value("xdg_type").toString();
-        const QString customSubdir = meta.value("custom_path").toString();
+        const QVariant customPathVar = meta.value("custom_path");
 
         QStringList resolved;
-        if (!customSubdir.isEmpty()) {
-            resolved = LocationExtractor::expandCustomPath(
-                    QDir::homePath(), customSubdir);
-        } else if (!xdgType.isEmpty()) {
-            const QString path = LocationExtractor::resolveXdgPath(xdgType);
-            if (!path.isEmpty()) {
-                resolved = { path };
+        if (customPathVar.userType() == QMetaType::QVariantList) {
+            for (const QVariant &pathVar : customPathVar.toList()) {
+                const QString relPath = pathVar.toString();
+                if (relPath.isEmpty()) continue;
+                const QStringList expanded = LocationExtractor::expandCustomPath(
+                        QDir::homePath(), relPath);
+                for (const QString &p : expanded) {
+                    if (!resolved.contains(p)) resolved.append(p);
+                }
+            }
+        } else {
+            const QString customSubdir = customPathVar.toString();
+            if (!customSubdir.isEmpty()) {
+                resolved = LocationExtractor::expandCustomPath(
+                        QDir::homePath(), customSubdir);
+            } else if (!xdgType.isEmpty()) {
+                const QString path = LocationExtractor::resolveXdgPath(xdgType);
+                if (!path.isEmpty()) {
+                    resolved = { path };
+                }
             }
         }
 

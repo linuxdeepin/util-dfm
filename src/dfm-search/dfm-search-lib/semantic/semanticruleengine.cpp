@@ -178,6 +178,18 @@ QVariantMap SemanticRuleEngine::ruleMetadata(const QString &group, const QString
     return {};
 }
 
+QVariantMap SemanticRuleEngine::ruleMetadataById(const QString &ruleId) const
+{
+    for (const RuleGroup &group : m_groups) {
+        for (const Rule &rule : group.rules) {
+            if (rule.id == ruleId) {
+                return rule.metadata;
+            }
+        }
+    }
+    return {};
+}
+
 bool SemanticRuleEngine::hasGroup(const QString &group) const
 {
     return m_groups.contains(group);

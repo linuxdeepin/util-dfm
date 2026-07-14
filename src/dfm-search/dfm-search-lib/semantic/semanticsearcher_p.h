@@ -62,6 +62,9 @@ public:
                                std::function<void(const SearchResultList &)> onFinished,
                                std::function<void(const SearchError &)> onError);
 
+    void onEngineFinished(const SearchResultList &results);
+    void onEngineError(const SearchError &error);
+
     SemanticSearcher *q = nullptr;
 
     // State
@@ -89,6 +92,7 @@ public:
     bool detailedResultsEnabled = false;
     int maxResults = 0;   // 0 = unlimited
     QStringList excludedPaths;   // directories to exclude from search
+    QStringList excludeNamePatterns;   // glob patterns to filter from results (e.g. *_thumb.jpg)
 };
 
 DFM_SEARCH_END_NS

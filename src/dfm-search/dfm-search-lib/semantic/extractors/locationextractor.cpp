@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QVariant>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -34,7 +35,7 @@ void LocationExtractor::extract(const QString &input, ParsedIntent &intent)
         const QVariantMap metadata = m_engine->ruleMetadata("location", ruleIds[i]);
 
         const QString xdgType = metadata.value("xdg_type").toString();
-        const QString customSubdir = metadata.value("custom_path").toString();
+        const QVariant customPathVar = metadata.value("custom_path");
         const bool includeHidden = metadata.value("include_hidden", false).toBool();
 
         // Always record the consumed span when a rule matches,
@@ -47,12 +48,24 @@ void LocationExtractor::extract(const QString &input, ParsedIntent &intent)
         intent.consumedSpans().append(span);
 
         QStringList resolvedPaths;
-        if (!customSubdir.isEmpty()) {
-            resolvedPaths = expandCustomPath(QDir::homePath(), customSubdir);
+        if (customPathVar.userType() == QMetaType::QVariantList) {
+            for (const QVariant &pathVar : customPathVar.toList()) {
+                const QString relPath = pathVar.toString();
+                if (relPath.isEmpty()) continue;
+                const QStringList expanded = expandCustomPath(QDir::homePath(), relPath);
+                for (const QString &p : expanded) {
+                    if (!resolvedPaths.contains(p)) resolvedPaths.append(p);
+                }
+            }
         } else {
-            const QString path = resolveXdgPath(xdgType);
-            if (!path.isEmpty()) {
-                resolvedPaths = { path };
+            const QString customSubdir = customPathVar.toString();
+            if (!customSubdir.isEmpty()) {
+                resolvedPaths = expandCustomPath(QDir::homePath(), customSubdir);
+            } else {
+                const QString path = resolveXdgPath(xdgType);
+                if (!path.isEmpty()) {
+                    resolvedPaths = { path };
+                }
             }
         }
         if (resolvedPaths.isEmpty()) {

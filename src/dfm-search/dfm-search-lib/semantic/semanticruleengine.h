@@ -87,6 +87,17 @@ public:
     QVariantMap ruleMetadata(const QString &group, const QString &ruleId) const;
 
     /**
+     * @brief Get a rule's metadata by rule ID, searching across all groups.
+     * @param ruleId The rule ID to look up
+     * @return The metadata map, or empty if not found
+     *
+     * Unlike ruleMetadata(group, ruleId), this searches all groups.
+     * Useful when the caller has a ruleId from consumedSpans but doesn't
+     * know which group it belongs to.
+     */
+    QVariantMap ruleMetadataById(const QString &ruleId) const;
+
+    /**
      * @brief Get all rule IDs in a group.
      */
     QStringList ruleIds(const QString &group) const;
