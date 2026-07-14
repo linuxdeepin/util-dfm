@@ -14,7 +14,11 @@
 #include <QDebug>
 #include <QDir>
 #include <QEventLoop>
+#include <QFileInfo>
 #include <QTimer>
+#include <QVariant>
+
+#include <algorithm>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -47,13 +51,13 @@ int countSemanticDimensions(const ParsedIntent &intent)
 {
     int count = 0;
     if (!intent.searchDirectories().isEmpty()) ++count;   // location
-    if (intent.hiddenOnly()) ++count;                     // hiddenOnly 属性
-    if (intent.recentOnly()) ++count;                     // recentOnly 属性
-    if (intent.timeConstraint().isValid()) ++count;       // time 约束
-    if (intent.sizeConstraint().isValid()) ++count;       // size 约束
-    if (!intent.fileExtensions().isEmpty()) ++count;      // fileType
-    if (!intent.keywords().isEmpty()) ++count;            // keyword (unconsumed text)
-    if (hasTargetRuleSpan(intent)) ++count;               // target 名词 (文件/文件名/文件夹)
+    if (intent.hiddenOnly()) ++count;   // hiddenOnly 属性
+    if (intent.recentOnly()) ++count;   // recentOnly 属性
+    if (intent.timeConstraint().isValid()) ++count;   // time 约束
+    if (intent.sizeConstraint().isValid()) ++count;   // size 约束
+    if (!intent.fileExtensions().isEmpty()) ++count;   // fileType
+    if (!intent.keywords().isEmpty()) ++count;   // keyword (unconsumed text)
+    if (hasTargetRuleSpan(intent)) ++count;   // target 名词 (文件/文件名/文件夹)
 
     // 当 specific filetype 与 general filetype 同时命中（如 "PPT文档"、"pdf文档"），
     // general 类型词（文档/表格/幻灯片）充当目标名词，贡献额外维度。
@@ -161,48 +165,22 @@ void SemanticSearcherData::doSearch(const QString &naturalLanguage, const QStrin
         dirs = QStringList { QDir::homePath() };
     }
 
+    excludeNamePatterns.clear();
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        const QVariantMap meta = ruleEngine->ruleMetadataById(span.ruleId());
+        const QVariant ep = meta.value("exclude_patterns");
+        if (ep.userType() == QMetaType::QVariantList) {
+            for (const auto &v : ep.toList()) {
+                const QString p = v.toString();
+                if (!p.isEmpty() && !excludeNamePatterns.contains(p))
+                    excludeNamePatterns.append(p);
+            }
+        }
+    }
+
     // Step 5: Set up signal/slot handlers
-    auto onFinished = [this](const SearchResultList &results) {
-        // Collect and deduplicate results from each engine's final result list
-        for (const SearchResult &r : results) {
-            if (!seenPaths.contains(r.path())) {
-                seenPaths.insert(r.path());
-                allResults.append(r);
-            }
-        }
-
-        if (pendingFinishCount.fetch_sub(1) == 1) {
-            // All engines finished
-            timeoutTimer->stop();
-
-            // Truncate final deduplicated results to maxResults
-            if (maxResults > 0 && allResults.size() > maxResults) {
-                allResults = allResults.mid(0, maxResults);
-            }
-
-            if (cancelled.load()) {
-                status.store(SearchStatus::Cancelled);
-                Q_EMIT q->statusChanged(SearchStatus::Cancelled);
-                Q_EMIT q->searchCancelled();
-            } else {
-                status.store(SearchStatus::Finished);
-                Q_EMIT q->statusChanged(SearchStatus::Finished);
-                Q_EMIT q->searchFinished(allResults);
-            }
-        }
-    };
-
-    // 引擎错误也必须触发计数归零检查，否则上层会一直阻塞到 60s 超时。
-    // 校验失败（如 KeywordIsEmpty）会让 GenericSearchEngine::search 在
-    // emit errorOccurred 后直接 return，不会 emit searchFinished ——
-    // 此时必须由 onError 兜底减计数，把错误视为引擎完成。
-    auto onError = [this, onFinished](const SearchError &error) {
-        qWarning() << "Search error:" << error.message();
-        // Don't propagate individual engine errors to caller
-        // The other engines may still produce valid results
-        // 但仍需减计数，否则 pendingFinishCount 永不到 0
-        onFinished({});
-    };
+    auto onFinished = [this](const SearchResultList &r) { onEngineFinished(r); };
+    auto onError = [this](const SearchError &e) { onEngineError(e); };
 
     // Step 6: Clean up any previous search engines
     pendingFinishCount.store(0);
@@ -305,6 +283,48 @@ void SemanticSearcherData::createAndLaunchEngine(
     engines.append(engine);
     pendingFinishCount.fetch_add(1);
     engine->search(query);
+}
+
+void SemanticSearcherData::onEngineFinished(const SearchResultList &results)
+{
+    for (const SearchResult &r : results) {
+        if (!excludeNamePatterns.isEmpty()) {
+            const QString fileName = QFileInfo(r.path()).fileName();
+            bool excluded = std::any_of(excludeNamePatterns.cbegin(), excludeNamePatterns.cend(),
+                                        [&fileName](const QString &pattern) {
+                                            return QDir::match(pattern, fileName);
+                                        });
+            if (excluded) continue;
+        }
+        if (!seenPaths.contains(r.path())) {
+            seenPaths.insert(r.path());
+            allResults.append(r);
+        }
+    }
+
+    if (pendingFinishCount.fetch_sub(1) == 1) {
+        timeoutTimer->stop();
+
+        if (maxResults > 0 && allResults.size() > maxResults) {
+            allResults = allResults.mid(0, maxResults);
+        }
+
+        if (cancelled.load()) {
+            status.store(SearchStatus::Cancelled);
+            Q_EMIT q->statusChanged(SearchStatus::Cancelled);
+            Q_EMIT q->searchCancelled();
+        } else {
+            status.store(SearchStatus::Finished);
+            Q_EMIT q->statusChanged(SearchStatus::Finished);
+            Q_EMIT q->searchFinished(allResults);
+        }
+    }
+}
+
+void SemanticSearcherData::onEngineError(const SearchError &error)
+{
+    qWarning() << "Search error:" << error.message();
+    onEngineFinished({});
 }
 
 void SemanticSearcherData::doCancel()

@@ -79,7 +79,11 @@
                     "enabled": true,
                     "priority": 180,
                     "metadata": {
-                        "custom_path": "Documents/xwechat_files/*/msg/file",
+                        "custom_path": [
+                            "Documents/xwechat_files/*/msg/file",
+                            "Documents/xwechat_files/*/msg/video"
+                        ],
+                        "exclude_patterns": ["*_thumb.jpg"],
                         "include_hidden": false,
                         "im_received": true
                     }
