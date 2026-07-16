@@ -27,6 +27,8 @@ target_link_libraries(dfm-search-test
 # Add size_parser source for testing (it's part of dfm-searcher client but we test it here)
 target_sources(dfm-search-test PRIVATE
     ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/size_parser.cpp
+    ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/time_parser.cpp
+    ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/cli_options.cpp
     ${CMAKE_SOURCE_DIR}/3rdparty/testutils/stub-ext/stub-shadow.cpp
 )
 
