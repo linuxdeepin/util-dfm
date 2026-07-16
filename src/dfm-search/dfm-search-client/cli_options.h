@@ -90,6 +90,13 @@ public:
      */
     void printHelp() const;
 
+    /**
+     * @brief 返回 --features 输出的静态特性列表（编译时确定，26 项）
+     *
+     * 提取为静态方法以便单元测试验证列表完整性，无需启动 CLI 进程。
+     */
+    static QStringList supportedFeatures();
+
 private:
     void setupOptions();
     bool validateConfig(SearchCliConfig &config);
@@ -135,6 +142,7 @@ private:
     QCommandLineOption m_sizeMinOption;
     QCommandLineOption m_sizeMaxOption;
     QCommandLineOption m_versionOption;
+    QCommandLineOption m_featuresOption;
 };
 
 }   // namespace dfmsearch

@@ -8,6 +8,9 @@
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <iostream>
 #include <cstdlib>
 
@@ -53,9 +56,28 @@ CliOptions::CliOptions()
       m_timeRangeOption(QStringList() << "time-range", "Custom time range (start,end)", "range"),
       m_sizeMinOption(QStringList() << "size-min", "Minimum file size (e.g., 1K, 10M, 1G, 512)", "size"),
       m_sizeMaxOption(QStringList() << "size-max", "Maximum file size (e.g., 1K, 10M, 1G, 512)", "size"),
-      m_versionOption(QStringList() << "version", "Show version information and exit")
+      m_versionOption(QStringList() << "version", "Show version information and exit"),
+      m_featuresOption(QStringList() << "features", "List supported features and exit")
 {
     setupOptions();
+}
+
+QStringList CliOptions::supportedFeatures()
+{
+    // 静态特性列表（编译时确定，26 项）
+    // Search types
+    return {
+        "filename", "content", "ocr", "recent", "semantic",
+        // Search methods
+        "indexed", "realtime",
+        // Query types
+        "simple", "boolean", "wildcard",
+        // Functional features
+        "preview", "pinyin", "pinyin-acronym", "case-sensitive",
+        "include-hidden", "file-types", "file-extensions", "exclude",
+        "time-filter", "size-filter", "max-results", "max-preview",
+        "offset", "filename-in-content", "json-output", "verbose"
+    };
 }
 
 void CliOptions::setupOptions()
@@ -63,6 +85,7 @@ void CliOptions::setupOptions()
     m_parser.setApplicationDescription("DFM Search Client");
     m_parser.addHelpOption();
     m_parser.addOption(m_versionOption);
+    m_parser.addOption(m_featuresOption);
 
     // Basic options
     m_parser.addOption(m_typeOption);
@@ -163,6 +186,7 @@ void CliOptions::printHelp() const
     std::cout << "Output Options:" << std::endl;
     std::cout << "  --json, -j                     Output results in JSON format" << std::endl;
     std::cout << "  --verbose, -v                  Enable verbose output with detailed result information" << std::endl;
+    std::cout << "  --features                     List supported features and exit" << std::endl;
     std::cout << "  --help                         Display this help" << std::endl;
     std::cout << "  --version                      Show version information and exit" << std::endl;
     std::cout << std::endl;
@@ -235,6 +259,29 @@ bool CliOptions::parse(QCoreApplication &app, SearchCliConfig &config)
             : QCoreApplication::applicationName();
         std::cout << name.toStdString() << " "
                   << QCoreApplication::applicationVersion().toStdString() << std::endl;
+        std::exit(0);
+    }
+
+    if (m_parser.isSet(m_featuresOption)) {
+        // 静态特性列表（编译时确定）
+        static const QStringList kFeatures = supportedFeatures();
+
+        if (m_parser.isSet(m_jsonOption)) {
+            // JSON output
+            QJsonObject root;
+            root["type"] = QStringLiteral("features");
+            QJsonArray featuresArray;
+            for (const QString &feature : kFeatures) {
+                featuresArray.append(feature);
+            }
+            root["features"] = featuresArray;
+            root["count"] = kFeatures.size();
+            QJsonDocument doc(root);
+            std::cout << doc.toJson(QJsonDocument::Indented).toStdString() << std::endl;
+        } else {
+            // Space-separated text output
+            std::cout << kFeatures.join(' ').toStdString() << std::endl;
+        }
         std::exit(0);
     }
 
