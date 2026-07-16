@@ -7,6 +7,8 @@
 #include <QStringList>
 #include <QString>
 #include <QSet>
+#include <QVariant>
+#include <optional>
 
 // SPDX-FileCopyrightText: 2025 - 2026 UnionTech Software Technology Co., Ltd.
 //
@@ -27,6 +29,18 @@ namespace SearchUtility {
  * @return List of extracted keywords
  */
 QStringList extractBooleanKeywords(const SearchQuery &query);
+
+/**
+ * @brief Parse a DConfig QVariant value into a QStringList
+ *
+ * DConfig values may arrive as a semicolon-separated string or as a JSON array
+ * (QVariant::List / QVariant::StringList). When the value is a list type,
+ * toString() returns an empty string, so toStringList() must be used instead.
+ *
+ * @param value The QVariant from DConfig::value()
+ * @return The parsed string list, or std::nullopt if the value is invalid or not convertible
+ */
+std::optional<QStringList> parseVariantToStringList(const QVariant &value);
 
 /**
  * @brief Get the list of supported file types for Deepin Anything
