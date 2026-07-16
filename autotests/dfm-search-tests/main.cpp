@@ -25,6 +25,7 @@ extern QObject *create_tst_ContentSearchEngine();
 extern QObject *create_tst_FileNameSearchEngine();
 extern QObject *create_tst_RecentSearchEngine();
 extern QObject *create_tst_CliOptions();
+extern QObject *create_tst_DConfigParsing();
 
 int main(int argc, char *argv[])
 {
@@ -110,6 +111,10 @@ int main(int argc, char *argv[])
     QObject *testObj19 = create_tst_CliOptions();
     result |= QTest::qExec(testObj19, argc, argv);
     delete testObj19;
+
+    QObject *testObj20 = create_tst_DConfigParsing();
+    result |= QTest::qExec(testObj20, argc, argv);
+    delete testObj20;
 
     return result;
 }

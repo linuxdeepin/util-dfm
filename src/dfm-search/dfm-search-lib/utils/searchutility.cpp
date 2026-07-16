@@ -118,18 +118,8 @@ static std::optional<QStringList> tryLoadStringListFromDConfigInternal(
 
     QVariant value = dconfigPtr->value(keyName);
 
-    if (!value.isValid()) {
-        qDebug() << "DConfig: Key '" << keyName << "' not found in appId:" << appId << "schemaId:" << schemaId;
-        return std::nullopt;   // Key not found
-    }
-
-    if (!value.canConvert<QStringList>()) {
-        qWarning() << "DConfig: Value for key '" << keyName << "' in appId:" << appId << "schemaId:" << schemaId
-                   << "cannot be converted to QStringList. Actual type:" << value.typeName();
-        return std::nullopt;   // Type mismatch
-    }
     // No need to delete dconfigPtr, dconfigParent will manage it when it goes out of scope.
-    return value.toString().split(';');
+    return SearchUtility::parseVariantToStringList(value);
 }
 
 // --- Specific Loader for "supportedFileExtensions" ---
@@ -885,6 +875,24 @@ QSet<QString> semanticPicExtensions()
 {
     static const QSet<QString> kExts = DFMSEARCH::Global::loadSemanticExtensionsFromDConfig("pic_file_suffix");
     return kExts;
+}
+
+std::optional<QStringList> parseVariantToStringList(const QVariant &value)
+{
+    if (!value.isValid()) {
+        return std::nullopt;
+    }
+
+    if (!value.canConvert<QStringList>()) {
+        return std::nullopt;
+    }
+
+    // DConfig value 可能是 JSON 数组（list 类型）或分号分隔字符串；
+    // 当为 JSON 数组时 toString() 返回空，必须用 toStringList()。
+    if (value.type() == QVariant::List || value.type() == QVariant::StringList) {
+        return value.toStringList();
+    }
+    return value.toString().split(';');
 }
 
 }   // namespace SearchUtility
