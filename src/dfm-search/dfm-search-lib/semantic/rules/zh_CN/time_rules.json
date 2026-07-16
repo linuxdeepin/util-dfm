@@ -8,7 +8,7 @@
             "rules": [
                 {
                     "id": "time_today",
-                    "pattern": "今天|今日|今日份",
+                    "pattern": "今天|今日份|今日",
                     "description": "Today",
                     "enabled": true,
                     "priority": 200,
