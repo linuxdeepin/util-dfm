@@ -6,6 +6,11 @@
 #include <QDate>
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
+#include <QHash>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSet>
 #include <QStandardPaths>
 #include <QTest>
@@ -28,38 +33,73 @@ static bool setEquals(const QStringList &a, const QStringList &b)
 
 namespace {
 
-// Keep these lists in sync with filetype_rules.json extensions.
+QHash<QString, QStringList> loadFiletypeExtensions()
+{
+    const QString rulesPath = QDir(rulesDir()).filePath(QStringLiteral("filetype_rules.json"));
+    QFile file(rulesPath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qFatal("Failed to open filetype rules: %s", qPrintable(rulesPath));
+    }
+
+    QJsonParseError parseError;
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+        qFatal("Failed to parse filetype rules %s: %s",
+               qPrintable(rulesPath), qPrintable(parseError.errorString()));
+    }
+
+    QHash<QString, QStringList> extensionsByRuleId;
+    const QJsonArray groups = doc.object().value(QStringLiteral("groups")).toArray();
+    for (const QJsonValue &groupValue : groups) {
+        const QJsonObject groupObj = groupValue.toObject();
+        if (groupObj.value(QStringLiteral("name")).toString() != QLatin1String("filetype")) {
+            continue;
+        }
+
+        const QJsonArray rules = groupObj.value(QStringLiteral("rules")).toArray();
+        for (const QJsonValue &ruleValue : rules) {
+            const QJsonObject ruleObj = ruleValue.toObject();
+            const QString ruleId = ruleObj.value(QStringLiteral("id")).toString();
+            const QJsonArray extensions = ruleObj.value(QStringLiteral("metadata"))
+                                              .toObject()
+                                              .value(QStringLiteral("extensions"))
+                                              .toArray();
+
+            QStringList values;
+            values.reserve(extensions.size());
+            for (const QJsonValue &extValue : extensions) {
+                values.append(extValue.toString());
+            }
+            extensionsByRuleId.insert(ruleId, values);
+        }
+    }
+
+    return extensionsByRuleId;
+}
+
+QStringList expectedExtsForRule(const char *ruleId)
+{
+    static const QHash<QString, QStringList> kExtensionsByRuleId = loadFiletypeExtensions();
+    const auto it = kExtensionsByRuleId.constFind(QLatin1String(ruleId));
+    if (it == kExtensionsByRuleId.constEnd()) {
+        qFatal("Missing filetype rule in test helper: %s", ruleId);
+    }
+    return it.value();
+}
+
 QStringList imageExpectedExts()
 {
-    return QStringList {
-        "ani", "avif", "avifs", "bmp", "bw", "dci", "eps", "epsf", "epsi", "exr", "gif",
-        "heic", "heif", "heis", "heix", "icns", "ico", "jpe", "jpeg", "jpg", "kra", "mng",
-        "ora", "pcx", "pic", "png", "psd", "raf", "ras", "raw", "rgb", "rgba", "sgi", "svg",
-        "svgz", "tga", "tif", "tiff", "wbmp", "webp", "wmf", "xcf", "cr2", "crw", "nef", "dng",
-        "arw", "orf", "rw2", "pef", "srw", "mrw", "x3f", "dcr", "kdc", "3fr", "nrw", "mef", "iiq",
-        "sr2", "erf", "mos", "rwl"
-    };
+    return expectedExtsForRule("filetype_image");
 }
 
 QStringList videoExpectedExts()
 {
-    return QStringList {
-        "3g2", "3gp", "3gp2", "3gpp", "amr", "amv", "asf", "asx", "avi", "bdmv", "bik", "d2v",
-        "divx", "drc", "dsa", "dsm", "dss", "dsv", "evo", "f4v", "flc", "fli", "flic", "flv",
-        "hdmov", "ifo", "ivf", "m1v", "m2p", "m2t", "m2ts", "m2v", "m4b", "m4p", "m4v", "mkv",
-        "mp2v", "mp4", "mp4v", "mpe", "mpeg", "mpg", "mpls", "mpv2", "mpv4", "mov", "mts", "ogm",
-        "ogv", "pss", "pva", "qt", "ram", "ratdvd", "rm", "rmm", "rmvb", "roq", "rpm", "smil", "smk",
-        "swf", "tp", "tpr", "vob", "vp6", "webm", "wm", "wmp", "wmv"
-    };
+    return expectedExtsForRule("filetype_video");
 }
 
 QStringList audioExpectedExts()
 {
-    return QStringList {
-        "aac", "ac3", "aif", "aifc", "aiff", "au", "cda", "dts", "fla", "flac", "it", "m1a",
-        "m2a", "m3u", "m4a", "mid", "midi", "mka", "mod", "mp2", "mp3", "mpa", "ogg", "opus",
-        "ra", "rmi", "spc", "snd", "umx", "voc", "wav", "wma", "xm", "ape"
-    };
+    return expectedExtsForRule("filetype_audio");
 }
 
 }   // namespace
@@ -570,12 +610,7 @@ void tst_ChineseNLP::fileType_general_document()
 {
     ParsedIntent intent;
     m_parser->parse(QStringLiteral("文档"), intent);
-    const QStringList expectedExts = { "rtf", "odt", "ods", "odp", "odg",
-                                       "docx", "xlsx", "et", "pptx", "ppsx",
-                                       "md", "xls", "xlsb", "doc", "dot", "wps",
-                                       "ppt", "pps", "txt", "pdf", "dps", "sh",
-                                       "json", "yaml", "ini", "bat", "sql", "uof",
-                                       "ofd", "pot" };
+    const QStringList expectedExts = expectedExtsForRule("filetype_document_general");
     QVERIFY(setEquals(intent.fileExtensions(), expectedExts));
 }
 
@@ -583,17 +618,16 @@ void tst_ChineseNLP::fileType_general_spreadsheet()
 {
     ParsedIntent intent;
     m_parser->parse(QStringLiteral("表格"), intent);
-    QVERIFY(intent.fileExtensions().contains("xls"));
-    QVERIFY(intent.fileExtensions().contains("xlsx"));
-    QVERIFY(intent.fileExtensions().contains("csv"));
+    const QStringList expectedExts = expectedExtsForRule("filetype_spreadsheet_general");
+    QVERIFY(setEquals(intent.fileExtensions(), expectedExts));
 }
 
 void tst_ChineseNLP::fileType_general_presentation()
 {
     ParsedIntent intent;
     m_parser->parse(QStringLiteral("幻灯片"), intent);
-    QVERIFY(intent.fileExtensions().contains("ppt"));
-    QVERIFY(intent.fileExtensions().contains("pptx"));
+    const QStringList expectedExts = expectedExtsForRule("filetype_presentation_general");
+    QVERIFY(setEquals(intent.fileExtensions(), expectedExts));
 }
 
 // ===== Keyword Tests =====
@@ -1064,12 +1098,7 @@ void tst_ChineseNLP::fileType_document_general_allSynonyms()
         QStringLiteral("文章"), QStringLiteral("方案"), QStringLiteral("文本"),
         QStringLiteral("资料"), QStringLiteral("笔记"), QStringLiteral("稿件")
     };
-    const QStringList expectedExts = { "rtf", "odt", "ods", "odp", "odg",
-                                       "docx", "xlsx", "et", "pptx", "ppsx",
-                                       "md", "xls", "xlsb", "doc", "dot", "wps",
-                                       "ppt", "pps", "txt", "pdf", "dps", "sh",
-                                       "json", "yaml", "ini", "bat", "sql", "uof",
-                                       "ofd", "pot" };
+    const QStringList expectedExts = expectedExtsForRule("filetype_document_general");
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
@@ -1087,15 +1116,13 @@ void tst_ChineseNLP::fileType_spreadsheet_general_allSynonyms()
         QStringLiteral("表格"), QStringLiteral("统计表"), QStringLiteral("报表"),
         QStringLiteral("名单"), QStringLiteral("数据表"), QStringLiteral("明细")
     };
+    const QStringList expectedExts = expectedExtsForRule("filetype_spreadsheet_general");
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
-        QVERIFY2(intent.fileExtensions().contains("xls"),
-                 qPrintable(QStringLiteral("Missing xls for: ") + input));
-        QVERIFY2(intent.fileExtensions().contains("xlsx"),
-                 qPrintable(QStringLiteral("Missing xlsx for: ") + input));
-        QVERIFY2(intent.fileExtensions().contains("csv"),
-                 qPrintable(QStringLiteral("Missing csv for: ") + input));
+        QVERIFY2(setEquals(intent.fileExtensions(), expectedExts),
+                 qPrintable(QStringLiteral("Failed for input: ") + input
+                            + QStringLiteral(" got: ") + intent.fileExtensions().join(",")));
     }
 }
 
@@ -1106,13 +1133,13 @@ void tst_ChineseNLP::filetype_presentation_general_allSynonyms()
         QStringLiteral("幻灯片"), QStringLiteral("演示文稿"), QStringLiteral("汇报"),
         QStringLiteral("课件"), QStringLiteral("宣讲")
     };
+    const QStringList expectedExts = expectedExtsForRule("filetype_presentation_general");
     for (const QString &input : inputs) {
         ParsedIntent intent;
         m_parser->parse(input, intent);
-        QVERIFY2(intent.fileExtensions().contains("ppt"),
-                 qPrintable(QStringLiteral("Missing ppt for: ") + input));
-        QVERIFY2(intent.fileExtensions().contains("pptx"),
-                 qPrintable(QStringLiteral("Missing pptx for: ") + input));
+        QVERIFY2(setEquals(intent.fileExtensions(), expectedExts),
+                 qPrintable(QStringLiteral("Failed for input: ") + input
+                            + QStringLiteral(" got: ") + intent.fileExtensions().join(",")));
     }
 }
 
@@ -2290,12 +2317,9 @@ void tst_ChineseNLP::location_filetypeConflict_picturesDirDocument()
     m_parser->parse(QStringLiteral("图片目录中的文档"), intent);
     QCOMPARE(intent.searchDirectories().size(), 1);
     QCOMPARE(intent.searchDirectories().first(), picsPath);
-    // Document extensions present, but NOT image extensions (e.g. "jpg")
-    QVERIFY(!intent.fileExtensions().isEmpty());
-    QVERIFY(!intent.fileExtensions().contains("jpg"));
-    QVERIFY(!intent.fileExtensions().contains("png"));
-    QVERIFY(intent.fileExtensions().contains("doc"));
-    QVERIFY(intent.fileExtensions().contains("pdf"));
+    QVERIFY2(setEquals(intent.fileExtensions(), expectedExtsForRule("filetype_document_general")),
+             qPrintable("Expected only document extensions, got: "
+                        + intent.fileExtensions().join(", ")));
     QVERIFY(intent.keywords().isEmpty());
 }
 

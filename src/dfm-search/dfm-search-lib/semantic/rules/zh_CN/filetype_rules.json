@@ -55,7 +55,7 @@
                     "enabled": true,
                     "priority": 100,
                     "metadata": {
-                        "extensions": ["rtf","odt","ods","odp","odg","docx","xlsx","et","pptx","ppsx","md","xls","xlsb","doc","dot","wps","ppt","pps","txt","pdf","dps","sh","json","yaml","ini","bat","sql","uof","ofd","pot"],
+                        "extensions": ["rtf","odt","ods","odp","odg","docx","xlsx","et","pptx","ppsx","md","xls","xlsb","doc","dot","wps","ppt","pps","txt","pdf","dps","sh","json","yaml","ini","bat","sql","uof","ofd","pot","docm","dotx","dotm","wpt","uot","uott","uot3","uott3","ott","eig","otl"],
                         "fileTypes": ["doc"],
                         "general": true
                     }
@@ -67,7 +67,7 @@
                     "enabled": true,
                     "priority": 100,
                     "metadata": {
-                        "extensions": ["xls", "xlsx", "csv", "ods", "et"],
+                        "extensions": ["xls", "xlsx", "csv", "ods", "et", "xlsm", "xlt", "xltx", "xltm", "ett", "uos", "uost", "uos3", "uost3", "ots", "tsv", "dbt"],
                         "fileTypes": ["doc"],
                         "general": true
                     }
@@ -79,7 +79,7 @@
                     "enabled": true,
                     "priority": 100,
                     "metadata": {
-                        "extensions": ["ppt", "pptx", "dps", "odp"],
+                        "extensions": ["ppt", "pptx", "dps", "odp", "pptm", "ppsm", "potx", "potm", "dpt", "uop", "uopt", "uop3", "uopt3", "otp"],
                         "general": true
                     }
                 },
