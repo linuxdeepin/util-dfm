@@ -6,6 +6,8 @@ set(SRCS
     main.cpp
     cli_options.cpp
     cli_options.h
+    preview_command.cpp
+    preview_command.h
     preview_output_utils.cpp
     preview_output_utils.h
     time_parser.cpp

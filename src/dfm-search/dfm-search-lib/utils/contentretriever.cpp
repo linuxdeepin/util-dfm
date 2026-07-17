@@ -223,6 +223,11 @@ PreviewResult::PreviewResult(const PreviewResult &other) = default;
 
 PreviewResult &PreviewResult::operator=(const PreviewResult &other) = default;
 
+PreviewStatus PreviewResult::status() const
+{
+    return d->status;
+}
+
 QString PreviewResult::content() const
 {
     return d->content;
@@ -530,7 +535,10 @@ PreviewResult ContentRetriever::fetchPreview(const QString &path, SearchType typ
                                              const PreviewOptions &options) const
 {
     PreviewResult result;
-    if (path.isEmpty()) return result;
+    if (path.isEmpty()) {
+        result.d->status = PreviewStatus::NotIndexed;
+        return result;
+    }
 
     // Route SearchType::Semantic to Content or Ocr based on file extension
     if (type == SearchType::Semantic) {
@@ -538,10 +546,12 @@ PreviewResult ContentRetriever::fetchPreview(const QString &path, SearchType typ
         if (!resolved) {
             qWarning() << "ContentRetriever: cannot route Semantic type for" << path
                        << "- extension does not match doc or pic suffixes";
+            result.d->status = PreviewStatus::NotIndexed;
             return result;
         }
         type = *resolved;
     } else if (type != SearchType::Content && type != SearchType::Ocr) {
+        result.d->status = PreviewStatus::NotIndexed;
         return result;
     }
 
@@ -550,15 +560,18 @@ PreviewResult ContentRetriever::fetchPreview(const QString &path, SearchType typ
     QMutexLocker locker(&d->mutex);
     CachedIndexContext *ctx = d->ensureIndexContext(type, indexDir);
     if (!ctx || !ctx->searcher) {
+        result.d->status = PreviewStatus::NotIndexed;
         return result;
     }
 
     try {
         const DocumentPtr doc = findDocumentByPath(ctx->searcher, path, type);
-        const QString content = storedContentFromDocument(doc, type);
-        if (content.isEmpty()) {
+        if (!doc) {
+            result.d->status = PreviewStatus::NotIndexed;
             return result;
         }
+
+        const QString content = storedContentFromDocument(doc, type);
 
         // Keep preview metadata in the same QString character unit as offset/keywordOffset.
         result.d->charCount = content.size();
@@ -572,8 +585,10 @@ PreviewResult ContentRetriever::fetchPreview(const QString &path, SearchType typ
     } catch (const LuceneException &e) {
         qWarning() << "ContentRetriever: error fetching preview for" << path
                    << QString::fromStdWString(e.getError());
+        result.d->status = PreviewStatus::NotIndexed;
     } catch (const std::exception &e) {
         qWarning() << "ContentRetriever: std error for" << path << e.what();
+        result.d->status = PreviewStatus::NotIndexed;
     }
 
     return result;

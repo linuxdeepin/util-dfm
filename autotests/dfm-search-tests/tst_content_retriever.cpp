@@ -96,6 +96,7 @@ private Q_SLOTS:
     void fetchPreview_noKeyword();
     void fetchPreview_withKeyword();
     void fetchPreview_keywordNotFound();
+    void fetchPreview_notIndexed();
     void fetchPreview_offsetBeyondContent();
     void fetchPreview_unlimitedNoKeyword();
     void previewSnippet_basic();
@@ -253,6 +254,7 @@ void tst_ContentRetriever::fetchPreview_noKeyword()
     const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
                                                          SearchType::Content,
                                                          options);
+    QVERIFY(result.status() == PreviewStatus::Success);
     QCOMPARE(result.content(), QString("world"));
     QCOMPARE(result.charCount(), QString("hello world from content index").size());
     QCOMPARE(result.keywordOffset(), -1);
@@ -279,6 +281,7 @@ void tst_ContentRetriever::fetchPreview_withKeyword()
     const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
                                                          SearchType::Content,
                                                          options);
+    QVERIFY(result.status() == PreviewStatus::Success);
     QCOMPARE(result.content(), QString("world from"));
     QCOMPARE(result.charCount(), QString("hello world from content index").size());
     QCOMPARE(result.keywordOffset(), 6);
@@ -305,9 +308,36 @@ void tst_ContentRetriever::fetchPreview_keywordNotFound()
     const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
                                                          SearchType::Content,
                                                          options);
+    QVERIFY(result.status() == PreviewStatus::Success);
     QVERIFY(result.content().isEmpty());
     QCOMPARE(result.charCount(), QString("hello world from content index").size());
     QCOMPARE(result.keywordOffset(), -1);
+}
+
+void tst_ContentRetriever::fetchPreview_notIndexed()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString contentIndexDir = tempDir.path() + "/content-index";
+    createIndex(contentIndexDir, SearchType::Content);
+
+    ContentRetriever retriever;
+    retriever.setIndexDirectory(SearchType::Content, contentIndexDir);
+
+    const PreviewResult missingPathResult = retriever.fetchPreview("/tmp/missing.txt",
+                                                                   SearchType::Content);
+    QVERIFY(missingPathResult.status() == PreviewStatus::NotIndexed);
+    QVERIFY(missingPathResult.content().isEmpty());
+    QCOMPARE(missingPathResult.charCount(), 0);
+    QCOMPARE(missingPathResult.keywordOffset(), -1);
+
+    const PreviewResult unsupportedSemanticResult = retriever.fetchPreview("/tmp/package.deb",
+                                                                           SearchType::Semantic);
+    QVERIFY(unsupportedSemanticResult.status() == PreviewStatus::NotIndexed);
+    QVERIFY(unsupportedSemanticResult.content().isEmpty());
+    QCOMPARE(unsupportedSemanticResult.charCount(), 0);
+    QCOMPARE(unsupportedSemanticResult.keywordOffset(), -1);
 }
 
 void tst_ContentRetriever::fetchPreview_offsetBeyondContent()
@@ -330,6 +360,7 @@ void tst_ContentRetriever::fetchPreview_offsetBeyondContent()
     const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
                                                          SearchType::Content,
                                                          options);
+    QVERIFY(result.status() == PreviewStatus::Success);
     QVERIFY(result.content().isEmpty());
     QCOMPARE(result.charCount(), QString("hello world from content index").size());
     QCOMPARE(result.keywordOffset(), -1);
@@ -357,6 +388,7 @@ void tst_ContentRetriever::fetchPreview_unlimitedNoKeyword()
         const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
                                                              SearchType::Content,
                                                              options);
+        QVERIFY(result.status() == PreviewStatus::Success);
         QCOMPARE(result.content(), QString("hello world from content index"));
         QCOMPARE(result.charCount(), QString("hello world from content index").size());
         QCOMPARE(result.keywordOffset(), -1);
@@ -372,6 +404,7 @@ void tst_ContentRetriever::fetchPreview_unlimitedNoKeyword()
         const PreviewResult result = retriever.fetchPreview("/tmp/doc-a.txt",
                                                              SearchType::Content,
                                                              options);
+        QVERIFY(result.status() == PreviewStatus::Success);
         QCOMPARE(result.content(), QString("world from content index"));
         QCOMPARE(result.charCount(), QString("hello world from content index").size());
         QCOMPARE(result.keywordOffset(), -1);
