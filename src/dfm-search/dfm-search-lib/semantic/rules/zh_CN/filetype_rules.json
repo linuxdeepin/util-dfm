@@ -62,7 +62,7 @@
                 },
                 {
                     "id": "filetype_spreadsheet_general",
-                    "pattern": "表格|统计表|报表|名单|数据表|明细",
+                    "pattern": "表格|统计表|报表|名单|数据表|数据|明细",
                     "description": "Generic spreadsheets (fallback)",
                     "enabled": true,
                     "priority": 100,

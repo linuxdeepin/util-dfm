@@ -96,7 +96,7 @@
                 },
                 {
                     "id": "time_last_year",
-                    "pattern": "去年|上一年",
+                    "pattern": "去年一整年|去年|上一年",
                     "description": "Last year",
                     "enabled": true,
                     "priority": 170,
@@ -157,7 +157,7 @@
                 },
                 {
                     "id": "time_exact_year_month",
-                    "pattern": "(?<year>\\d{2,4})[年\\./\\-](?<month>\\d{1,2})月?",
+                    "pattern": "(?<year>\\d{2,4})[年\\./\\-](?<month>\\d{1,2})月份?",
                     "description": "Exact year-month (e.g. 2025年12月, 2025-12)",
                     "enabled": true,
                     "priority": 140,
