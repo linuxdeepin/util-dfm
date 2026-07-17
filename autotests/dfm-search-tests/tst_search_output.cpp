@@ -31,6 +31,7 @@
 
 #include "output/json_output.h"
 #include "output/text_output.h"
+#include "preview_command.h"
 #include "preview_output_utils.h"
 
 using namespace DFMSEARCH;
@@ -122,6 +123,7 @@ class tst_SearchOutput : public QObject
 
 private Q_SLOTS:
     void previewOutputHelpers_includeCharCount();
+    void previewCommand_failsForUnindexedPath();
     void jsonOutput_contentAndFilenameCharCountContract();
     void jsonOutput_ocrAndSemanticCharCountContract();
     void textOutput_contentAndSemanticCharCountContract();
@@ -154,6 +156,31 @@ void tst_SearchOutput::previewOutputHelpers_includeCharCount()
     dfmsearch::writePreviewResultText(stream, "/tmp/doc-a.txt", result);
     QVERIFY(text.contains("Char count: 30"));
     QVERIFY(text.contains("world from"));
+}
+
+void tst_SearchOutput::previewCommand_failsForUnindexedPath()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString contentIndexDir = tempDir.path() + "/content-index";
+    createIndex(contentIndexDir, SearchType::Content);
+
+    ContentRetriever retriever;
+    retriever.setIndexDirectory(SearchType::Content, contentIndexDir);
+
+    SearchCliConfig config;
+    config.subcommand = "preview";
+    config.searchType = SearchType::Content;
+    config.searchPath = "/tmp/doc-a.txt,/tmp/missing.txt";
+    config.jsonOutput = true;
+
+    const PreviewCommandResult result = dfmsearch::runPreviewCommand(config, retriever);
+    QCOMPARE(result.exitCode, 1);
+    QVERIFY(result.stdoutText.isEmpty());
+    QVERIFY(result.stderrText.contains("Error: preview requires indexed content for:"));
+    QVERIFY(result.stderrText.contains("/tmp/missing.txt"));
+    QVERIFY(!result.stderrText.contains("/tmp/doc-a.txt"));
 }
 
 void tst_SearchOutput::jsonOutput_contentAndFilenameCharCountContract()

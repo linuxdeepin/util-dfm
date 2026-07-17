@@ -4,10 +4,6 @@
 
 #include <QCoreApplication>
 #include <QDebug>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QTextStream>
 
 #include <dfm-search/searchengine.h>
 #include <dfm-search/searchfactory.h>
@@ -20,7 +16,7 @@
 #include <dfm-search/contentretriever.h>
 
 #include "cli_options.h"
-#include "preview_output_utils.h"
+#include "preview_command.h"
 #include "output/text_output.h"
 #include "output/json_output.h"
 
@@ -197,54 +193,14 @@ int main(int argc, char *argv[])
     // Preview subcommand: fetch content preview on demand
     if (config.subcommand == "preview") {
         DFMSEARCH::ContentRetriever retriever;
-        DFMSEARCH::PreviewOptions previewOptions;
-        previewOptions.setOffset(config.offset);
-        // 无 keyword 且未显式设置 --max-preview：maxLength=0 表示无限制（返回全文）
-        // 有 keyword 或显式设置了 --max-preview：使用 maxPreviewLength 值
-        if (config.keyword.isEmpty() && !config.maxPreviewSet) {
-            previewOptions.setMaxLength(0);
-        } else {
-            previewOptions.setMaxLength(config.maxPreviewLength);
+        const PreviewCommandResult previewResult = runPreviewCommand(config, retriever);
+        if (!previewResult.stderrText.isEmpty()) {
+            std::cerr << previewResult.stderrText.toStdString();
         }
-        previewOptions.setKeyword(config.keyword);
-
-        // Paths are stored as comma-separated in config.searchPath
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-        QStringList paths = config.searchPath.split(',', Qt::SkipEmptyParts);
-#else
-        QStringList paths = config.searchPath.split(',', QString::SkipEmptyParts);
-#endif
-
-        if (config.jsonOutput) {
-            // JSON output
-            QJsonObject root;
-            root["type"] = "preview";
-            root["searchType"] = (config.searchType == SearchType::Content) ? "content"
-                : (config.searchType == SearchType::Ocr) ? "ocr" : "semantic";
-            root["keyword"] = config.keyword;
-            root["offset"] = config.offset;
-            root["maxLength"] = previewOptions.maxLength();
-
-            QJsonArray results;
-            for (const QString &path : paths) {
-                DFMSEARCH::PreviewResult result = retriever.fetchPreview(path, config.searchType, previewOptions);
-                results.append(previewResultToJson(path, result));
-            }
-
-            root["totalResults"] = results.size();
-            root["results"] = results;
-
-            QJsonDocument doc(root);
-            std::cout << doc.toJson(QJsonDocument::Indented).toStdString() << std::endl;
-        } else {
-            // Text output
-            QTextStream out(stdout);
-            for (const QString &path : paths) {
-                DFMSEARCH::PreviewResult result = retriever.fetchPreview(path, config.searchType, previewOptions);
-                writePreviewResultText(out, path, result);
-            }
+        if (!previewResult.stdoutText.isEmpty()) {
+            std::cout << previewResult.stdoutText.toStdString();
         }
-        return 0;
+        return previewResult.exitCode;
     }
 
     // Semantic search mode

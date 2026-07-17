@@ -80,11 +80,16 @@ private:
     QSharedDataPointer<PreviewOptionsPrivate> d;
 };
 
+enum class PreviewStatus {
+    Success = 0,
+    NotIndexed = 1,
+};
+
 /**
  * @brief Result of a preview extraction (Pimpl-based, ABI-stable)
  *
- * Contains the extracted content snippet and the position of the keyword
- * in the full document text (-1 if no keyword or not matched).
+ * Contains the extraction status, content snippet, and the position of the
+ * keyword in the full document text (-1 if no keyword or not matched).
  *
  * Supports implicit sharing (COW) via QSharedDataPointer.
  */
@@ -98,6 +103,7 @@ public:
     PreviewResult(PreviewResult &&other) noexcept = default;
     PreviewResult &operator=(PreviewResult &&other) noexcept = default;
 
+    PreviewStatus status() const;
     QString content() const;
     int charCount() const;
     int keywordOffset() const;
