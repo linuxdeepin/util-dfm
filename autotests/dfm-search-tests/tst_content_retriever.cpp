@@ -99,6 +99,7 @@ private Q_SLOTS:
     void fetchPreview_offsetBeyondContent();
     void fetchPreview_unlimitedNoKeyword();
     void previewSnippet_basic();
+    void plainSnippet_basic();
 };
 
 void tst_ContentRetriever::fetchContent_single()
@@ -405,6 +406,32 @@ void tst_ContentRetriever::previewSnippet_basic()
     // With keyword + maxLength=0 (unlimited) — returns from keyword match to end
     QCOMPARE(previewSnippet(content, 0, 0, "world", &kwOff), QString("world from content index"));
     QCOMPARE(kwOff, 6);
+}
+
+void tst_ContentRetriever::plainSnippet_basic()
+{
+    using DFMSEARCH::ContentHighlighter::PlainSnippetResult;
+    using DFMSEARCH::ContentHighlighter::plainSnippet;
+
+    const QString content = QStringLiteral("0123456789abcdefghijKEYWORDklmnopqrstuvwxyz");
+
+    {
+        const PlainSnippetResult result = plainSnippet({ "keyword" }, content, 20, 20);
+        QCOMPARE(result.content, QString("abcdefghijKEYWORDklm"));
+        QCOMPARE(result.snippetOffset, 10);
+    }
+
+    {
+        const PlainSnippetResult result = plainSnippet({ "keyword", "0123" }, content, 20, 20);
+        QCOMPARE(result.content, QString("0123456789abcdefghij"));
+        QCOMPARE(result.snippetOffset, 0);
+    }
+
+    {
+        const PlainSnippetResult result = plainSnippet({ "missing" }, content, 20, 20);
+        QVERIFY(result.content.isEmpty());
+        QCOMPARE(result.snippetOffset, -1);
+    }
 }
 
 QObject *create_tst_ContentRetriever()
