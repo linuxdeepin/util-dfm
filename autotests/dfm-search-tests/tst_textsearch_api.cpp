@@ -31,6 +31,7 @@ private Q_SLOTS:
     void textSearchResult_isHidden();
     void textSearchResult_modifyTimestamp();
     void textSearchResult_birthTimestamp();
+    void textSearchResult_plainSnippetAttributes();
 
     // ContentOptionsAPI tests
     void contentOptions_inheritance();
@@ -182,6 +183,20 @@ void tst_TextSearchAPI::textSearchResult_birthTimestamp()
 
     api.setBirthTimestamp(0);
     QCOMPARE(api.birthTimestamp(), 0);
+}
+
+void tst_TextSearchAPI::textSearchResult_plainSnippetAttributes()
+{
+    SearchResult result("/test/path");
+
+    QVERIFY(!result.hasCustomAttribute("plainContentMatch"));
+    QVERIFY(!result.hasCustomAttribute("snippetOffset"));
+
+    result.setCustomAttribute("plainContentMatch", QString("plain snippet"));
+    result.setCustomAttribute("snippetOffset", 42);
+
+    QCOMPARE(result.customAttribute("plainContentMatch").toString(), QString("plain snippet"));
+    QCOMPARE(result.customAttribute("snippetOffset").toInt(), 42);
 }
 
 // ==================== ContentOptionsAPI Tests ====================

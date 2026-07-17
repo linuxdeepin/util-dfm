@@ -15,6 +15,12 @@ DFM_SEARCH_BEGIN_NS
 
 namespace ContentHighlighter {
 
+struct PlainSnippetResult
+{
+    QString content;
+    int snippetOffset = -1;
+};
+
 /**
  * @brief Extracts and highlights the most relevant text snippet from content based on the provided keywords.
  *
@@ -39,6 +45,23 @@ namespace ContentHighlighter {
  * @return A snippet of content with matched keywords highlighted, or an empty string if no match is found.
  */
 QString customHighlight(const QStringList &keywords, const QString &content, int maxLength, bool enableHtml, int positioningMaxLength = 30);
+
+/**
+ * @brief Extracts a plain-text snippet for CLI verbose output.
+ *
+ * Unlike customHighlight(), this helper preserves the original content bytes
+ * in the returned snippet: it does not simplify whitespace, insert HTML tags,
+ * or prepend ellipsis. The snippet start is returned so callers can expose the
+ * offset in the original full text.
+ *
+ * @param keywords Search keywords used to anchor the snippet.
+ * @param content Original document content.
+ * @param maxLength Maximum length of the returned snippet. <= 0 means until EOF.
+ * @param positioningMaxLength Window used to position the first content match.
+ * @return PlainSnippetResult with snippet text and snippetOffset, or empty/-1 if no content match exists.
+ */
+PlainSnippetResult plainSnippet(const QStringList &keywords, const QString &content,
+                                int maxLength, int positioningMaxLength = 30);
 
 /**
  * @brief 精确预览：从 offset 位置截取内容，或从 offset 搜索 keyword 后从匹配位置截取

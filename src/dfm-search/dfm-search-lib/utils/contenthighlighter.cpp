@@ -29,6 +29,15 @@ struct KeywordMatch
     QString keyword;
 };
 
+int positioningBeforeLength(int maxLength, int positioningMaxLength)
+{
+    const int effectivePositioningLength = qMax(30, positioningMaxLength);
+    if (maxLength > 0) {
+        return qMin(effectivePositioningLength / 2, maxLength / 2);
+    }
+    return effectivePositioningLength / 2;
+}
+
 /**
  * @brief 检查给定位置是否是段落的开头
  * @param content 原始文本内容
@@ -153,6 +162,24 @@ KeywordMatch findFirstKeywordMatch(const QString &content, const QStringList &ke
     }
     return match;
 }
+
+KeywordMatch findEarliestKeywordMatch(const QString &content, const QStringList &keywords)
+{
+    KeywordMatch match = { -1, 0, QString() };
+    for (const QString &keyword : keywords) {
+        if (keyword.isEmpty()) {
+            continue;
+        }
+
+        const int pos = content.indexOf(keyword, 0, Qt::CaseInsensitive);
+        if (pos != -1 && (match.position == -1 || pos < match.position)) {
+            match.position = pos;
+            match.length = keyword.length();
+            match.keyword = keyword;
+        }
+    }
+    return match;
+}
 }   // namespace
 
 QString customHighlight(const QStringList &keywords, const QString &content, int maxLength, bool enableHtml, int positioningMaxLength)
@@ -240,6 +267,33 @@ QString customHighlight(const QStringList &keywords, const QString &content, int
     }
 
     return resultSnippet;
+}
+
+PlainSnippetResult plainSnippet(const QStringList &keywords, const QString &content,
+                                int maxLength, int positioningMaxLength)
+{
+    PlainSnippetResult result;
+    if (content.isEmpty() || keywords.isEmpty()) {
+        return result;
+    }
+
+    const KeywordMatch match = findEarliestKeywordMatch(content, keywords);
+    if (match.position == -1) {
+        return result;
+    }
+
+    int snippetStart = qMax(0, match.position - positioningBeforeLength(maxLength, positioningMaxLength));
+    if (maxLength > 0 && content.length() - snippetStart < maxLength) {
+        snippetStart = qMax(0, content.length() - maxLength);
+    }
+
+    const int snippetLength = maxLength > 0
+            ? qMin(maxLength, content.length() - snippetStart)
+            : content.length() - snippetStart;
+
+    result.content = content.mid(snippetStart, snippetLength);
+    result.snippetOffset = snippetStart;
+    return result;
 }
 
 QString previewSnippet(const QString &content, int offset, int maxLength,

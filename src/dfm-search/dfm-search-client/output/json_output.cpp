@@ -8,10 +8,33 @@
 #include <dfm-search/ocrtextsearchapi.h>
 
 #include <QJsonDocument>
+#include <QRegularExpression>
 #include <iostream>
 
 using namespace dfmsearch;
 using namespace std;
+
+namespace {
+
+QString plainContentMatch(const SearchResult &result)
+{
+    if (result.hasCustomAttribute("plainContentMatch")) {
+        return result.customAttribute("plainContentMatch").toString();
+    }
+
+    QString content = result.customAttribute("highlightedContent").toString();
+    static const QRegularExpression kHtmlTagPattern(QStringLiteral("<[^>]+>"));
+    return content.remove(kHtmlTagPattern);
+}
+
+int snippetOffset(const SearchResult &result)
+{
+    return result.hasCustomAttribute("snippetOffset")
+            ? result.customAttribute("snippetOffset").toInt()
+            : -1;
+}
+
+}   // namespace
 
 void JsonOutput::setSearchContext(const QString &keyword, const QString &searchPath,
                                   SearchType searchType, SearchMethod searchMethod)
@@ -204,7 +227,8 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
         obj["path"] = result.path();
 
         ContentResultAPI resultAPI(const_cast<SearchResult &>(result));
-        obj["contentMatch"] = resultAPI.highlightedContent();
+        obj["contentMatch"] = plainContentMatch(result);
+        obj["snippetOffset"] = snippetOffset(result);
 
         QString filename = resultAPI.filename();
         if (!filename.isEmpty()) {
@@ -245,7 +269,8 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
 
         OcrTextResultAPI resultAPI(const_cast<SearchResult &>(result));
 
-        obj["contentMatch"] = resultAPI.highlightedContent();
+        obj["contentMatch"] = plainContentMatch(result);
+        obj["snippetOffset"] = snippetOffset(result);
 
         QString ocrContent = resultAPI.ocrContent();
         if (!ocrContent.isEmpty()) {

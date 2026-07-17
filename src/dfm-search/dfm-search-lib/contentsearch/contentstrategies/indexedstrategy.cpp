@@ -405,14 +405,22 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
             SearchResult result(QString::fromStdWString(pathField));
             ContentResultAPI resultApi(result);
+            result.setCustomAttribute("plainContentMatch", QString());
+            result.setCustomAttribute("snippetOffset", -1);
 
             if (enableRetrieval) {
                 try {
                     Lucene::String contentField = doc->get(LuceneFieldNames::Content::kContents);
                     if (!contentField.empty()) {
                         const QString content = QString::fromStdWString(contentField);
+                        // Fix: keep a dedicated plain-text snippet for CLI verbose output
+                        // instead of reusing HTML-oriented highlightedContent.
+                        const ContentHighlighter::PlainSnippetResult plainSnippet = ContentHighlighter::plainSnippet(
+                                m_keywords, content, previewLen, previewLen);
                         const QString highlightedContent = ContentHighlighter::customHighlight(m_keywords, content, previewLen, enableHTML);
                         resultApi.setHighlightedContent(highlightedContent);
+                        result.setCustomAttribute("plainContentMatch", plainSnippet.content);
+                        result.setCustomAttribute("snippetOffset", plainSnippet.snippetOffset);
                     }
                 } catch (const Lucene::LuceneException &e) {
                     qWarning() << "Exception retrieving content field:" << QString::fromStdWString(e.getError());

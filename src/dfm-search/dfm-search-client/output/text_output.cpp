@@ -7,10 +7,34 @@
 #include <dfm-search/contentsearchapi.h>
 #include <dfm-search/ocrtextsearchapi.h>
 
+#include <QRegularExpression>
+
 #include <iostream>
 
 using namespace dfmsearch;
 using namespace std;
+
+namespace {
+
+QString plainContentMatch(const SearchResult &result)
+{
+    if (result.hasCustomAttribute("plainContentMatch")) {
+        return result.customAttribute("plainContentMatch").toString();
+    }
+
+    QString content = result.customAttribute("highlightedContent").toString();
+    static const QRegularExpression kHtmlTagPattern(QStringLiteral("<[^>]+>"));
+    return content.remove(kHtmlTagPattern);
+}
+
+int snippetOffset(const SearchResult &result)
+{
+    return result.hasCustomAttribute("snippetOffset")
+            ? result.customAttribute("snippetOffset").toInt()
+            : -1;
+}
+
+}   // namespace
 
 void TextOutput::setSearchContext(const QString &keyword, const QString &searchPath,
                                   SearchType searchType, SearchMethod searchMethod)
@@ -128,7 +152,8 @@ void TextOutput::printSearchResult(const SearchResult &result)
     } else if (m_searchType == SearchType::Content) {
         ContentResultAPI resultAPI(const_cast<SearchResult &>(result));
 
-        std::cout << "  Content match: " << resultAPI.highlightedContent().toStdString() << std::endl;
+        std::cout << "  Content match: " << plainContentMatch(result).toStdString() << std::endl;
+        std::cout << "  Snippet offset: " << snippetOffset(result) << std::endl;
 
         // 文件名
         QString filename = resultAPI.filename();
@@ -161,7 +186,8 @@ void TextOutput::printSearchResult(const SearchResult &result)
     } else if (m_searchType == SearchType::Ocr) {
         OcrTextResultAPI resultAPI(const_cast<SearchResult &>(result));
 
-        std::cout << "  Content match: " << resultAPI.highlightedContent().toStdString() << std::endl;
+        std::cout << "  Content match: " << plainContentMatch(result).toStdString() << std::endl;
+        std::cout << "  Snippet offset: " << snippetOffset(result) << std::endl;
 
         QString ocrContent = resultAPI.ocrContent();
         if (!ocrContent.isEmpty()) {
