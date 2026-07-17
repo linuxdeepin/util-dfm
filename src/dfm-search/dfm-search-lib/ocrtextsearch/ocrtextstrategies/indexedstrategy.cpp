@@ -419,6 +419,7 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                                 m_keywords, content, previewLen, previewLen);
                         // 设置原始 OCR 内容
                         resultApi.setOcrContent(content);
+                        resultApi.setCharCount(content.size());
                         // 设置高亮内容
                         const QString highlightedContent = ContentHighlighter::customHighlight(
                                 m_keywords, content, previewLen, enableHTML);

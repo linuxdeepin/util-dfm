@@ -19,6 +19,7 @@ public:
     PreviewResultPrivate(const PreviewResultPrivate &other) = default;
 
     QString content;         ///< Extracted content snippet
+    int charCount = 0;       ///< Full stored content length in QString character units
     int keywordOffset = -1;  ///< Position of keyword in full content (-1 if none/not matched)
 };
 

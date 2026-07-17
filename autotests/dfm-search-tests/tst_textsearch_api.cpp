@@ -31,6 +31,7 @@ private Q_SLOTS:
     void textSearchResult_isHidden();
     void textSearchResult_modifyTimestamp();
     void textSearchResult_birthTimestamp();
+    void textSearchResult_charCount();
     void textSearchResult_plainSnippetAttributes();
 
     // ContentOptionsAPI tests
@@ -183,6 +184,20 @@ void tst_TextSearchAPI::textSearchResult_birthTimestamp()
 
     api.setBirthTimestamp(0);
     QCOMPARE(api.birthTimestamp(), 0);
+}
+
+void tst_TextSearchAPI::textSearchResult_charCount()
+{
+    SearchResult result("/test/path");
+    TextSearchResultAPI api(result);
+
+    QCOMPARE(api.charCount(), 0);
+
+    api.setCharCount(128);
+    QCOMPARE(api.charCount(), 128);
+
+    api.setCharCount(0);
+    QCOMPARE(api.charCount(), 0);
 }
 
 void tst_TextSearchAPI::textSearchResult_plainSnippetAttributes()

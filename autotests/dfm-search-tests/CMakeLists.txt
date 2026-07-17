@@ -29,6 +29,10 @@ target_sources(dfm-search-test PRIVATE
     ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/size_parser.cpp
     ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/time_parser.cpp
     ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/cli_options.cpp
+    ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/preview_output_utils.cpp
+    ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/output/output_formatter.h
+    ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/output/text_output.cpp
+    ${CMAKE_SOURCE_DIR}/src/dfm-search/dfm-search-client/output/json_output.cpp
     ${CMAKE_SOURCE_DIR}/3rdparty/testutils/stub-ext/stub-shadow.cpp
 )
 
