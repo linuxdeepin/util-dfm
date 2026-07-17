@@ -254,6 +254,7 @@ void tst_ContentRetriever::fetchPreview_noKeyword()
                                                          SearchType::Content,
                                                          options);
     QCOMPARE(result.content(), QString("world"));
+    QCOMPARE(result.charCount(), QString("hello world from content index").size());
     QCOMPARE(result.keywordOffset(), -1);
 }
 
@@ -279,6 +280,7 @@ void tst_ContentRetriever::fetchPreview_withKeyword()
                                                          SearchType::Content,
                                                          options);
     QCOMPARE(result.content(), QString("world from"));
+    QCOMPARE(result.charCount(), QString("hello world from content index").size());
     QCOMPARE(result.keywordOffset(), 6);
 }
 
@@ -304,6 +306,7 @@ void tst_ContentRetriever::fetchPreview_keywordNotFound()
                                                          SearchType::Content,
                                                          options);
     QVERIFY(result.content().isEmpty());
+    QCOMPARE(result.charCount(), QString("hello world from content index").size());
     QCOMPARE(result.keywordOffset(), -1);
 }
 
@@ -328,6 +331,7 @@ void tst_ContentRetriever::fetchPreview_offsetBeyondContent()
                                                          SearchType::Content,
                                                          options);
     QVERIFY(result.content().isEmpty());
+    QCOMPARE(result.charCount(), QString("hello world from content index").size());
     QCOMPARE(result.keywordOffset(), -1);
 }
 
@@ -354,6 +358,7 @@ void tst_ContentRetriever::fetchPreview_unlimitedNoKeyword()
                                                              SearchType::Content,
                                                              options);
         QCOMPARE(result.content(), QString("hello world from content index"));
+        QCOMPARE(result.charCount(), QString("hello world from content index").size());
         QCOMPARE(result.keywordOffset(), -1);
     }
 
@@ -368,6 +373,7 @@ void tst_ContentRetriever::fetchPreview_unlimitedNoKeyword()
                                                              SearchType::Content,
                                                              options);
         QCOMPARE(result.content(), QString("world from content index"));
+        QCOMPARE(result.charCount(), QString("hello world from content index").size());
         QCOMPARE(result.keywordOffset(), -1);
     }
 }

@@ -419,6 +419,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
                                 m_keywords, content, previewLen, previewLen);
                         const QString highlightedContent = ContentHighlighter::customHighlight(m_keywords, content, previewLen, enableHTML);
                         resultApi.setHighlightedContent(highlightedContent);
+                        resultApi.setCharCount(content.size());
                         result.setCustomAttribute("plainContentMatch", plainSnippet.content);
                         result.setCustomAttribute("snippetOffset", plainSnippet.snippetOffset);
                     }

@@ -77,6 +77,16 @@ qint64 TextSearchResultAPI::fileSizeBytes() const
     return m_result.customAttribute("fileSizeBytes").toLongLong();
 }
 
+void TextSearchResultAPI::setCharCount(int count)
+{
+    m_result.setCustomAttribute("charCount", count);
+}
+
+int TextSearchResultAPI::charCount() const
+{
+    return m_result.customAttribute("charCount").toInt();
+}
+
 TextSearchResultAPI::TextSearchResultAPI(SearchResult &result)
     : m_result(result)
 {

@@ -159,6 +159,18 @@ public:
      */
     qint64 fileSizeBytes() const;
 
+    /**
+     * @brief Set the stored full-text character count
+     * @param count Character count in the same unit as preview offsets
+     */
+    void setCharCount(int count);
+
+    /**
+     * @brief Get the stored full-text character count
+     * @return Character count, 0 if not set
+     */
+    int charCount() const;
+
     // ==================== Extended Attributes ====================
 
     /**

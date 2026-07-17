@@ -228,6 +228,11 @@ QString PreviewResult::content() const
     return d->content;
 }
 
+int PreviewResult::charCount() const
+{
+    return d->charCount;
+}
+
 int PreviewResult::keywordOffset() const
 {
     return d->keywordOffset;
@@ -555,6 +560,8 @@ PreviewResult ContentRetriever::fetchPreview(const QString &path, SearchType typ
             return result;
         }
 
+        // Keep preview metadata in the same QString character unit as offset/keywordOffset.
+        result.d->charCount = content.size();
         int keywordOffset = -1;
         const QString snippet = ContentHighlighter::previewSnippet(
                 content, options.offset(), options.maxLength(),

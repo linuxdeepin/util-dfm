@@ -154,6 +154,9 @@ void TextOutput::printSearchResult(const SearchResult &result)
 
         std::cout << "  Content match: " << plainContentMatch(result).toStdString() << std::endl;
         std::cout << "  Snippet offset: " << snippetOffset(result) << std::endl;
+        if (resultAPI.charCount() > 0) {
+            std::cout << "  Char count: " << resultAPI.charCount() << std::endl;
+        }
 
         // 文件名
         QString filename = resultAPI.filename();
@@ -188,6 +191,9 @@ void TextOutput::printSearchResult(const SearchResult &result)
 
         std::cout << "  Content match: " << plainContentMatch(result).toStdString() << std::endl;
         std::cout << "  Snippet offset: " << snippetOffset(result) << std::endl;
+        if (resultAPI.charCount() > 0) {
+            std::cout << "  Char count: " << resultAPI.charCount() << std::endl;
+        }
 
         QString ocrContent = resultAPI.ocrContent();
         if (!ocrContent.isEmpty()) {

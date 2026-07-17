@@ -99,6 +99,7 @@ public:
     PreviewResult &operator=(PreviewResult &&other) noexcept = default;
 
     QString content() const;
+    int charCount() const;
     int keywordOffset() const;
 
 private:

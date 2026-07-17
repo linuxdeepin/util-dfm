@@ -20,6 +20,7 @@
 #include <dfm-search/contentretriever.h>
 
 #include "cli_options.h"
+#include "preview_output_utils.h"
 #include "output/text_output.h"
 #include "output/json_output.h"
 
@@ -226,12 +227,8 @@ int main(int argc, char *argv[])
 
             QJsonArray results;
             for (const QString &path : paths) {
-                QJsonObject item;
-                item["path"] = path;
                 DFMSEARCH::PreviewResult result = retriever.fetchPreview(path, config.searchType, previewOptions);
-                item["content"] = result.content();
-                item["keywordOffset"] = result.keywordOffset();
-                results.append(item);
+                results.append(previewResultToJson(path, result));
             }
 
             root["totalResults"] = results.size();
@@ -243,14 +240,8 @@ int main(int argc, char *argv[])
             // Text output
             QTextStream out(stdout);
             for (const QString &path : paths) {
-                out << path << "\n";
                 DFMSEARCH::PreviewResult result = retriever.fetchPreview(path, config.searchType, previewOptions);
-                if (!result.content().isEmpty()) {
-                    out << "  " << result.content() << "\n";
-                } else {
-                    out << "  (no content)\n";
-                }
-                out << Qt::endl;
+                writePreviewResultText(out, path, result);
             }
         }
         return 0;

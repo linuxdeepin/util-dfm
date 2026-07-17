@@ -230,6 +230,11 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
         obj["contentMatch"] = plainContentMatch(result);
         obj["snippetOffset"] = snippetOffset(result);
 
+        int charCount = resultAPI.charCount();
+        if (charCount > 0) {
+            obj["charCount"] = charCount;
+        }
+
         QString filename = resultAPI.filename();
         if (!filename.isEmpty()) {
             obj["filename"] = filename;
@@ -271,6 +276,11 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
 
         obj["contentMatch"] = plainContentMatch(result);
         obj["snippetOffset"] = snippetOffset(result);
+
+        int charCount = resultAPI.charCount();
+        if (charCount > 0) {
+            obj["charCount"] = charCount;
+        }
 
         QString ocrContent = resultAPI.ocrContent();
         if (!ocrContent.isEmpty()) {
