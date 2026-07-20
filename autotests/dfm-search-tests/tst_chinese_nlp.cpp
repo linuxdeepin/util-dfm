@@ -959,6 +959,20 @@ void tst_ChineseNLP::timeCustom_month()
     m_parser->parse(QStringLiteral("5月份的图片"), intent2);
     QCOMPARE(intent2.timeConstraint().kind(), TimeConstraintKind::Custom);
     QCOMPARE(intent2.timeConstraint().customStart().date().month(), 5);
+
+    // "七月" — Chinese numeral month should work too
+    ParsedIntent intent3;
+    m_parser->parse(QStringLiteral("七月的文件"), intent3);
+    QCOMPARE(intent3.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent3.timeConstraint().customStart().date().month(), 7);
+    QCOMPARE(intent3.timeConstraint().customEnd().date().month(), 7);
+
+    // "十二月" — leading-ten Chinese numeral month should work too
+    ParsedIntent intent4;
+    m_parser->parse(QStringLiteral("十二月的文件"), intent4);
+    QCOMPARE(intent4.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent4.timeConstraint().customStart().date().month(), 12);
+    QCOMPARE(intent4.timeConstraint().customEnd().date().month(), 12);
 }
 
 void tst_ChineseNLP::timeCustom_yearMonth()
@@ -988,6 +1002,22 @@ void tst_ChineseNLP::timeCustom_yearMonth()
     QCOMPARE(intent3.timeConstraint().customStart().date().year(), 2025);
     QCOMPARE(intent3.timeConstraint().customStart().date().month(), 12);
     QCOMPARE(intent3.timeConstraint().customStart().date().day(), 1);
+
+    // "2025年七月" — Chinese numeral month should also be parsed
+    ParsedIntent intent4;
+    m_parser->parse(QStringLiteral("2025年七月的文档"), intent4);
+    QCOMPARE(intent4.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent4.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent4.timeConstraint().customStart().date().month(), 7);
+    QCOMPARE(intent4.timeConstraint().customStart().date().day(), 1);
+
+    // "2025年十一月" — leading-ten Chinese numeral month in year-month form
+    ParsedIntent intent5;
+    m_parser->parse(QStringLiteral("2025年十一月的文档"), intent5);
+    QCOMPARE(intent5.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent5.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent5.timeConstraint().customStart().date().month(), 11);
+    QCOMPARE(intent5.timeConstraint().customStart().date().day(), 1);
 }
 
 void tst_ChineseNLP::timeCustom_yearMonth_separators()
@@ -1035,6 +1065,20 @@ void tst_ChineseNLP::timeCustom_dateSpoken()
     QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
     QCOMPARE(intent.timeConstraint().customStart().date().month(), 3);
     QCOMPARE(intent.timeConstraint().customStart().date().day(), 8);
+
+    // "七月八号" — Chinese numeral month/day should work too
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("七月八号的图片"), intent2);
+    QCOMPARE(intent2.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent2.timeConstraint().customStart().date().month(), 7);
+    QCOMPARE(intent2.timeConstraint().customStart().date().day(), 8);
+
+    // "十二月十五号" — leading-ten Chinese numeral month/day should work too
+    ParsedIntent intent3;
+    m_parser->parse(QStringLiteral("十二月十五号的图片"), intent3);
+    QCOMPARE(intent3.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent3.timeConstraint().customStart().date().month(), 12);
+    QCOMPARE(intent3.timeConstraint().customStart().date().day(), 15);
 }
 
 void tst_ChineseNLP::timeCustom_fullDate()
@@ -1060,6 +1104,14 @@ void tst_ChineseNLP::timeCustom_fullDate()
     QCOMPARE(intent2.timeConstraint().customStart().date().year(), 2025);
     QCOMPARE(intent2.timeConstraint().customStart().date().month(), 12);
     QCOMPARE(intent2.timeConstraint().customStart().date().day(), 30);
+
+    // "2025年七月三十日" — Chinese numeral month/day should work too
+    ParsedIntent intent3;
+    m_parser->parse(QStringLiteral("2025年七月三十日的文档"), intent3);
+    QCOMPARE(intent3.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent3.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent3.timeConstraint().customStart().date().month(), 7);
+    QCOMPARE(intent3.timeConstraint().customStart().date().day(), 30);
 }
 
 void tst_ChineseNLP::timeCustom_fullDate_separators()
@@ -1911,6 +1963,13 @@ void tst_ChineseNLP::timeDynamic_chineseNumerals()
     m_parser->parse(QStringLiteral("过去七天"), intent5);
     QCOMPARE(intent5.timeConstraint().kind(), TimeConstraintKind::Relative);
     QCOMPARE(intent5.timeConstraint().relativeValue(), 7);
+
+    // "最近十五天" — leading-ten Chinese numeral in dynamic relative time
+    ParsedIntent intent6;
+    m_parser->parse(QStringLiteral("最近十五天"), intent6);
+    QCOMPARE(intent6.timeConstraint().kind(), TimeConstraintKind::Relative);
+    QCOMPARE(intent6.timeConstraint().relativeValue(), 15);
+    QCOMPARE(intent6.timeConstraint().relativeUnit(), TimeUnit::Days);
 
     // Mixed: Arabic + Chinese should still work
     // "最近3天" already tested above
