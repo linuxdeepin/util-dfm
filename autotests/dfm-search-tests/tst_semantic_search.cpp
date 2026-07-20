@@ -306,15 +306,35 @@ void tst_TimeExtraction::customYearMonth()
     meta["type"] = "custom";
     meta["format"] = "year_month";
     QByteArray json = makeRuleJson("time", "time_exact_year_month",
-                                   "(?<year>\\d{4})-(?<month>\\d{1,2})", 150, meta);
+                                   "(?<year>\\d{2,4})[年\\./\\-](?<month>\\d{1,2})(?:月份?)?", 150, meta);
 
     RuleGroup group;
     QVERIFY(buildGroupFromJson(json, group));
 
-    auto match = group.rules[0].regex.match("2025-12");
-    QVERIFY(match.hasMatch());
-    QCOMPARE(match.captured("year"), QString("2025"));
-    QCOMPARE(match.captured("month"), QString("12"));
+    auto match1 = group.rules[0].regex.match("2025年12月");
+    QVERIFY(match1.hasMatch());
+    QCOMPARE(match1.captured("year"), QString("2025"));
+    QCOMPARE(match1.captured("month"), QString("12"));
+
+    auto match2 = group.rules[0].regex.match("2025年12");
+    QVERIFY(match2.hasMatch());
+    QCOMPARE(match2.captured("year"), QString("2025"));
+    QCOMPARE(match2.captured("month"), QString("12"));
+
+    auto match3 = group.rules[0].regex.match("2025年12月份");
+    QVERIFY(match3.hasMatch());
+    QCOMPARE(match3.captured("year"), QString("2025"));
+    QCOMPARE(match3.captured("month"), QString("12"));
+
+    auto match4 = group.rules[0].regex.match("2025-12");
+    QVERIFY(match4.hasMatch());
+    QCOMPARE(match4.captured("year"), QString("2025"));
+    QCOMPARE(match4.captured("month"), QString("12"));
+
+    auto match5 = group.rules[0].regex.match("25.12");
+    QVERIFY(match5.hasMatch());
+    QCOMPARE(match5.captured("year"), QString("25"));
+    QCOMPARE(match5.captured("month"), QString("12"));
 }
 
 void tst_TimeExtraction::customFullDate()
@@ -323,17 +343,35 @@ void tst_TimeExtraction::customFullDate()
     meta["type"] = "custom";
     meta["format"] = "full_date";
     QByteArray json = makeRuleJson("time", "time_exact_full_date",
-                                   "(?<year>\\d{4})-(?<month>\\d{1,2})-(?<day>\\d{1,2})",
+                                   "(?<year>\\d{2,4})[年\\./\\-](?<month>\\d{1,2})[月\\./\\-](?<day>\\d{1,2})[日号]?",
                                    140, meta);
 
     RuleGroup group;
     QVERIFY(buildGroupFromJson(json, group));
 
-    auto match = group.rules[0].regex.match("2025-03-15");
-    QVERIFY(match.hasMatch());
-    QCOMPARE(match.captured("year"), QString("2025"));
-    QCOMPARE(match.captured("month"), QString("03"));
-    QCOMPARE(match.captured("day"), QString("15"));
+    auto match1 = group.rules[0].regex.match("2025年12月5日");
+    QVERIFY(match1.hasMatch());
+    QCOMPARE(match1.captured("year"), QString("2025"));
+    QCOMPARE(match1.captured("month"), QString("12"));
+    QCOMPARE(match1.captured("day"), QString("5"));
+
+    auto match2 = group.rules[0].regex.match("2025年12月5");
+    QVERIFY(match2.hasMatch());
+    QCOMPARE(match2.captured("year"), QString("2025"));
+    QCOMPARE(match2.captured("month"), QString("12"));
+    QCOMPARE(match2.captured("day"), QString("5"));
+
+    auto match3 = group.rules[0].regex.match("2025-03-15");
+    QVERIFY(match3.hasMatch());
+    QCOMPARE(match3.captured("year"), QString("2025"));
+    QCOMPARE(match3.captured("month"), QString("03"));
+    QCOMPARE(match3.captured("day"), QString("15"));
+
+    auto match4 = group.rules[0].regex.match("2025/12/5");
+    QVERIFY(match4.hasMatch());
+    QCOMPARE(match4.captured("year"), QString("2025"));
+    QCOMPARE(match4.captured("month"), QString("12"));
+    QCOMPARE(match4.captured("day"), QString("5"));
 }
 
 void tst_TimeExtraction::noMatch()

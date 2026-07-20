@@ -29,6 +29,17 @@ void SizeExtractor::extract(const QString &input, ParsedIntent &intent)
         return;
     }
 
+    // Size extraction runs after time/filetype. If this size span is already
+    // fully consumed by an earlier, higher-confidence dimension such as a
+    // year-month time expression ("2025-5"), ignore it to avoid overwriting
+    // the intent with a bogus size constraint.
+    for (const MatchSpan &existing : intent.consumedSpans()) {
+        if (match.capturedStart() >= existing.start()
+                && match.capturedEnd() <= existing.end()) {
+            return;
+        }
+    }
+
     const QVariantMap metadata = m_engine->ruleMetadata("size", ruleId);
     const QString typeStr = metadata.value("type").toString();
     SizeConstraint sc;

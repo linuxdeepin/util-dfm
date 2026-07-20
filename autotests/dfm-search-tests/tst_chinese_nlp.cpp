@@ -204,6 +204,7 @@ private Q_SLOTS:
     void size_suffix_max();
     void size_suffix_combined();
     void size_suffix_chineseUnits();
+    void size_doesNotShadow_yearMonth();
 
     // Relative time tests
     void timeRelative_justNow();
@@ -971,6 +972,22 @@ void tst_ChineseNLP::timeCustom_yearMonth()
     QCOMPARE(intent.timeConstraint().customStart().date().day(), 1);
     QCOMPARE(intent.timeConstraint().customEnd().date().year(), 2025);
     QCOMPARE(intent.timeConstraint().customEnd().date().month(), 12);
+
+    // "2025年12" — trailing 月 is optional
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("2025年12创建的文件"), intent2);
+    QCOMPARE(intent2.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent2.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent2.timeConstraint().customStart().date().month(), 12);
+    QCOMPARE(intent2.timeConstraint().customStart().date().day(), 1);
+
+    // "2025年12月份" — support 月份 suffix too
+    ParsedIntent intent3;
+    m_parser->parse(QStringLiteral("2025年12月份创建的文件"), intent3);
+    QCOMPARE(intent3.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent3.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent3.timeConstraint().customStart().date().month(), 12);
+    QCOMPARE(intent3.timeConstraint().customStart().date().day(), 1);
 }
 
 void tst_ChineseNLP::timeCustom_yearMonth_separators()
@@ -1035,6 +1052,14 @@ void tst_ChineseNLP::timeCustom_fullDate()
     // Verify time boundaries
     QCOMPARE(intent.timeConstraint().customStart().time().hour(), 0);
     QCOMPARE(intent.timeConstraint().customEnd().time().hour(), 23);
+
+    // "2025年12月30" — trailing 日号 is optional
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("2025年12月30创建的文件"), intent2);
+    QCOMPARE(intent2.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent2.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent2.timeConstraint().customStart().date().month(), 12);
+    QCOMPARE(intent2.timeConstraint().customStart().date().day(), 30);
 }
 
 void tst_ChineseNLP::timeCustom_fullDate_separators()
@@ -1577,6 +1602,35 @@ void tst_ChineseNLP::size_suffix_chineseUnits()
     m_parser->parse(QStringLiteral("50千以内的图片"), intent2);
     QVERIFY(intent2.sizeConstraint().isValid());
     QCOMPARE(intent2.sizeConstraint().maxSize(), 51200LL);   // 50KB
+}
+
+void tst_ChineseNLP::size_doesNotShadow_yearMonth()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("2025-5的音乐"), intent);
+
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent.timeConstraint().customStart().date().month(), 5);
+    QVERIFY(!intent.sizeConstraint().isValid());
+    QVERIFY(setEquals(intent.fileExtensions(), audioExpectedExts()));
+
+    bool hasTimeYearMonth = false;
+    bool hasAudio = false;
+    bool hasSizeBetween = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("time_exact_year_month")) {
+            hasTimeYearMonth = true;
+        } else if (span.ruleId() == QLatin1String("filetype_audio")) {
+            hasAudio = true;
+        } else if (span.ruleId() == QLatin1String("size_dynamic_between")) {
+            hasSizeBetween = true;
+        }
+    }
+
+    QVERIFY(hasTimeYearMonth);
+    QVERIFY(hasAudio);
+    QVERIFY(!hasSizeBetween);
 }
 
 // ===== Relative Time Tests =====
