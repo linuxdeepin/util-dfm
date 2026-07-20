@@ -129,7 +129,7 @@
                 },
                 {
                     "id": "filetype_application",
-                    "pattern": "安装包|软件|应用|脚本|程序",
+                    "pattern": "安装包|软件|应用|脚本|程序|包",
                     "description": "Application packages",
                     "enabled": true,
                     "priority": 150,
