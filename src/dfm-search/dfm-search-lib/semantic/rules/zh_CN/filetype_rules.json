@@ -129,7 +129,7 @@
                 },
                 {
                     "id": "filetype_application",
-                    "pattern": "安装包|软件|应用|脚本|程序|包",
+                    "pattern": "安装包|软件|应用|脚本|程序|包(?!含)",
                     "description": "Application packages",
                     "enabled": true,
                     "priority": 150,
@@ -143,7 +143,7 @@
                     "pattern": "源文件|设计稿|矢量图|工程文件|psd|fig|sketch",
                     "description": "Design source files",
                     "enabled": true,
-                    "priority": 150,
+                    "priority": 160,
                     "metadata": {
                         "extensions": ["psd", "ai", "fig", "sketch"]
                     }

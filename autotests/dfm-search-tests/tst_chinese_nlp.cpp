@@ -168,6 +168,7 @@ private Q_SLOTS:
     void fileType_archive_allSynonyms();
     void fileType_application_allSynonyms();
     void fileType_design_source_allSynonyms();
+    void fileType_designSource_shadowsImageSubstring();
 
     // Filetype specific+general combination tests (span leak regression)
     void fileType_specificAndGeneral_pptDocument();
@@ -1287,10 +1288,9 @@ void tst_ChineseNLP::fileType_archive_allSynonyms()
 void tst_ChineseNLP::fileType_application_allSynonyms()
 {
     // Requirements: 安装包, 软件, 应用, 脚本, 程序, 包
-    // NOTE: "包" excluded from rules to avoid false positives with "表情包", "压缩包"
     const QStringList inputs = {
         QStringLiteral("安装包"), QStringLiteral("软件"), QStringLiteral("应用"),
-        QStringLiteral("脚本"), QStringLiteral("程序")
+        QStringLiteral("脚本"), QStringLiteral("程序"), QStringLiteral("包")
     };
     for (const QString &input : inputs) {
         ParsedIntent intent;
@@ -1318,6 +1318,28 @@ void tst_ChineseNLP::fileType_design_source_allSynonyms()
         QVERIFY2(intent.fileExtensions().contains("ai"),
                  qPrintable(QStringLiteral("Missing ai for: ") + input));
     }
+}
+
+void tst_ChineseNLP::fileType_designSource_shadowsImageSubstring()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("昨天创建的矢量图"), intent);
+
+    QVERIFY2(setEquals(intent.fileExtensions(), expectedExtsForRule("filetype_design_source")),
+             qPrintable(QStringLiteral("Extensions: ") + intent.fileExtensions().join(',')));
+
+    bool hasDesignSource = false;
+    bool hasImage = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("filetype_design_source")) {
+            hasDesignSource = true;
+        } else if (span.ruleId() == QLatin1String("filetype_image")) {
+            hasImage = true;
+        }
+    }
+
+    QVERIFY(hasDesignSource);
+    QVERIFY(!hasImage);
 }
 
 // ===== Filetype specific+general combination tests (span leak regression) =====

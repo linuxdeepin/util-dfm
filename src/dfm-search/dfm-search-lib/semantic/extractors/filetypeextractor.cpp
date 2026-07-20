@@ -48,7 +48,6 @@ void FileTypeExtractor::extract(const QString &input, ParsedIntent &intent)
             continue;
         }
 
-        // Always consume the matched span so the matched text doesn't leak into keywords
         MatchSpan span;
         span.setStart(m.capturedStart());
         span.setEnd(m.capturedEnd());
