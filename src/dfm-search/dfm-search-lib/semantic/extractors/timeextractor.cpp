@@ -270,10 +270,18 @@ int TimeExtractor::localeAwareToInt(const QString &input,
         return -1;
     }
 
-    // Two-character pattern: "XY" where Y is the tens unit (e.g., "十五" = 15)
+    // Leading tens-unit pattern: "十X" (e.g., "十一" = 11, "十五" = 15)
+    if (input.size() == 2 && input.left(1) == tensUnit) {
+        int suffix = digitMap.value(input.right(1), -1);
+        if (suffix >= 0) {
+            return 10 + suffix;
+        }
+    }
+
+    // Two-character pattern: "XY" where Y is the tens unit (e.g., "二十" = 20)
     if (input.size() == 2 && input.mid(1) == tensUnit) {
         int prefix = digitMap.value(input.left(1), -1);
-        if (prefix > 1) {
+        if (prefix > 0) {
             return prefix * 10;
         }
         // "十" alone = 10
