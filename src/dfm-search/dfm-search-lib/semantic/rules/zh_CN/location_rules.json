@@ -30,7 +30,7 @@
                 },
                 {
                     "id": "loc_documents_dir",
-                    "pattern": "文档里|文档下|文档中|我的文档|文档目录|文档文件夹",
+                    "pattern": "文档里|文档下|文档中|我的文档|文档目录|文档文件夹|文档库",
                     "description": "Documents directory (must contain directory/folder word)",
                     "enabled": true,
                     "priority": 200,
@@ -41,7 +41,7 @@
                 },
                 {
                     "id": "loc_pictures_dir",
-                    "pattern": "图片里|图片下|图片中|图片目录|图片文件夹|照片目录|照片文件夹",
+                    "pattern": "图片里|图片下|图片中|图片目录|图片文件夹|照片目录|照片文件夹|相册里|图片库",
                     "description": "Pictures directory (must contain directory/folder word)",
                     "enabled": true,
                     "priority": 200,
