@@ -118,7 +118,7 @@
                 },
                 {
                     "id": "filetype_archive",
-                    "pattern": "压缩包|归档|源码包|打包文件|zip|rar",
+                    "pattern": "压缩包|归档|源码包|打包文件",
                     "description": "Archive files",
                     "enabled": true,
                     "priority": 150,
@@ -140,7 +140,7 @@
                 },
                 {
                     "id": "filetype_design_source",
-                    "pattern": "源文件|设计稿|矢量图|工程文件|psd|fig|sketch",
+                    "pattern": "源文件|设计稿|矢量图|工程文件",
                     "description": "Design source files",
                     "enabled": true,
                     "priority": 160,
