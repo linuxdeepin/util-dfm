@@ -83,7 +83,7 @@
                             "Documents/xwechat_files/*/msg/file",
                             "Documents/xwechat_files/*/msg/video"
                         ],
-                        "exclude_patterns": ["*_thumb.jpg"],
+                        "exclude_patterns": ["*_thumb.jpg", "[0-9][0-9][0-9][0-9]-[0-9][0-9]"],
                         "include_hidden": false,
                         "im_received": true
                     }
