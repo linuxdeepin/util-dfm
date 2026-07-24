@@ -77,6 +77,17 @@ private:
     QList<RecentItem> filterByTimeRange(const QList<RecentItem> &items) const;
 
     /**
+     * @brief 按黑名单路径过滤。
+     *
+     * 排除 path 等于或位于黑名单目录下的最近使用项，
+     * 采用路径边界匹配（excludedPath 或 excludedPath + "/"），
+     * 避免 /home/uos/Downloads 误匹配 /home/uos/Downloads_backup。
+     * 与 FileNameRealTimeStrategy 的排除语义保持一致。
+     * 空列表时不过滤。
+     */
+    QList<RecentItem> filterByExcludedPaths(const QList<RecentItem> &items) const;
+
+    /**
      * @brief 将 RecentItem 转换为 SearchResult，填充详细属性。
      */
     SearchResult toSearchResult(const RecentItem &item) const;
