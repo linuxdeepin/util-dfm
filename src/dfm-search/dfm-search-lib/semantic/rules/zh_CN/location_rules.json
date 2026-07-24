@@ -74,7 +74,7 @@
                 },
                 {
                     "id": "loc_wechat_data",
-                    "pattern": "微信发给我的|微信发我的|微信接收的|微信群里的|微信群里|微信里|微信|vx|wechat",
+                    "pattern": "微信发给我的|微信发我的|微信接收的|微信群里的|微信群里|微信群|微信里|微信|vx|wechat",
                     "description": "WeChat received files directory — longer patterns first for maximal span consumption",
                     "enabled": true,
                     "priority": 180,
