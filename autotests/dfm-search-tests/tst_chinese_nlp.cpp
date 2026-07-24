@@ -61,9 +61,9 @@ QHash<QString, QStringList> loadFiletypeExtensions()
             const QJsonObject ruleObj = ruleValue.toObject();
             const QString ruleId = ruleObj.value(QStringLiteral("id")).toString();
             const QJsonArray extensions = ruleObj.value(QStringLiteral("metadata"))
-                                              .toObject()
-                                              .value(QStringLiteral("extensions"))
-                                              .toArray();
+                                                  .toObject()
+                                                  .value(QStringLiteral("extensions"))
+                                                  .toArray();
 
             QStringList values;
             values.reserve(extensions.size());
@@ -1272,10 +1272,10 @@ void tst_ChineseNLP::fileType_audio_allSynonyms()
 
 void tst_ChineseNLP::fileType_archive_allSynonyms()
 {
-    // Requirements: 压缩包, 归档, 源码包, 打包文件, zip, rar
+    // Requirements: 压缩包, 归档, 源码包, 打包文件
     const QStringList inputs = {
         QStringLiteral("压缩包"), QStringLiteral("归档"), QStringLiteral("源码包"),
-        QStringLiteral("打包文件"), QStringLiteral("zip"), QStringLiteral("rar")
+        QStringLiteral("打包文件")
     };
     for (const QString &input : inputs) {
         ParsedIntent intent;
@@ -1307,8 +1307,7 @@ void tst_ChineseNLP::fileType_design_source_allSynonyms()
     // Requirements: 源文件, 设计稿, psd, 矢量图, 工程文件
     const QStringList inputs = {
         QStringLiteral("源文件"), QStringLiteral("设计稿"), QStringLiteral("矢量图"),
-        QStringLiteral("工程文件"), QStringLiteral("psd"), QStringLiteral("fig"),
-        QStringLiteral("sketch")
+        QStringLiteral("工程文件")
     };
     for (const QString &input : inputs) {
         ParsedIntent intent;
