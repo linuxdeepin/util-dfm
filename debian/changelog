@@ -1,3 +1,11 @@
+util-dfm (1.4.2) unstable; urgency=medium
+
+  * chore: update GitHub actions workflow for cppcheck
+  * fix: update test synonyms for Chinese file types
+  * fix: filter excluded paths in recent search strategy
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Fri, 24 Jul 2026 13:16:10 +0800
+
 util-dfm (1.4.1) unstable; urgency=medium
 
   * fix: intercept -h/--help to show custom help with highlight subcommand
