@@ -45,6 +45,25 @@ QList<RecentItem> createTestItems()
     };
 }
 
+// 包含黑名单目录下文件的测试数据，用于验证黑名单路径过滤
+QList<RecentItem> createBlacklistTestItems()
+{
+    const qint64 now = QDateTime::currentDateTime().toSecsSinceEpoch();
+    const qint64 yesterday = QDateTime::currentDateTime().addDays(-1).toSecsSinceEpoch();
+
+    return {
+        // 黑名单目录 /home/uos/Downloads 下的文件（应被过滤）
+        {"/home/uos/Downloads/report.pdf", "file:///home/uos/Downloads/report.pdf", now},
+        {"/home/uos/Downloads/notes.txt", "file:///home/uos/Downloads/notes.txt", yesterday},
+        {"/home/uos/Downloads/sub/deep.xlsx", "file:///home/uos/Downloads/sub/deep.xlsx", now},
+        // 名称前缀相同但非黑名单子目录的文件（应保留——路径边界匹配）
+        {"/home/uos/Downloads_backup/archive.zip", "file:///home/uos/Downloads_backup/archive.zip", now},
+        // 非黑名单目录下的文件（应保留）
+        {"/home/uos/Documents/plan.docx", "file:///home/uos/Documents/plan.docx", yesterday},
+        {"/tmp/test/notes.txt", "file:///tmp/test/notes.txt", yesterday},
+    };
+}
+
 } // namespace
 
 // 可测试的 RecentSearchStrategy 子类，提供访问 fetchAddr 的接口
@@ -76,6 +95,10 @@ private Q_SLOTS:
     void search_detailedResults_containsExtendedAttributes();
     void search_maxResults_truncatesResultCount();
     void search_resultFoundEnabled_emitsSignalPerItem();
+    void search_excludedPathsFilter_removesBlacklistedItems();
+    void search_excludedPathsFilter_emptyKeepsAllItems();
+    void search_excludedPathsCombinedWithKeyword_appliesBoth();
+    void search_excludedPathsFilter_respectsPathBoundary();
 };
 
 void tst_RecentSearchEngine::initTestCase()
@@ -326,6 +349,121 @@ void tst_RecentSearchEngine::search_resultFoundEnabled_emitsSignalPerItem()
 
     QCOMPARE(foundSpy.count(), 3); // maxResults = 3，所以发射 3 次
     QCOMPARE(finishedSpy.count(), 1);
+}
+
+void tst_RecentSearchEngine::search_excludedPathsFilter_removesBlacklistedItems()
+{
+    SearchOptions opts;
+    opts.setSearchExcludedPaths({"/home/uos/Downloads"});
+    TestableRecentStrategy strategy(opts);
+    const auto testItems = createBlacklistTestItems();
+
+    stub_ext::StubExt stub;
+    stub.set_lamda(strategy.fetchAddr(), [testItems]() -> QList<RecentItem> {
+        return testItems;
+    });
+
+    QSignalSpy finishedSpy(&strategy, &BaseSearchStrategy::searchFinished);
+    SearchQuery query = SearchFactory::createQuery("");
+    strategy.search(query);
+
+    QCOMPARE(finishedSpy.count(), 1);
+    SearchResultList results = finishedSpy.takeFirst().at(0).value<SearchResultList>();
+    QStringList paths = resultPaths(results);
+
+    // 黑名单目录 /home/uos/Downloads 下的 3 个文件被过滤；
+    // /home/uos/Downloads_backup/archive.zip 因路径边界匹配而保留，共 3 个
+    QCOMPARE(paths.size(), 3);
+    QVERIFY(paths.contains("/home/uos/Documents/plan.docx"));
+    QVERIFY(paths.contains("/tmp/test/notes.txt"));
+    QVERIFY(paths.contains("/home/uos/Downloads_backup/archive.zip"));
+    QVERIFY(!paths.contains("/home/uos/Downloads/report.pdf"));
+    QVERIFY(!paths.contains("/home/uos/Downloads/notes.txt"));
+    QVERIFY(!paths.contains("/home/uos/Downloads/sub/deep.xlsx"));
+}
+
+void tst_RecentSearchEngine::search_excludedPathsFilter_emptyKeepsAllItems()
+{
+    SearchOptions opts;
+    // 不设置黑名单路径
+    TestableRecentStrategy strategy(opts);
+    const auto testItems = createBlacklistTestItems();
+
+    stub_ext::StubExt stub;
+    stub.set_lamda(strategy.fetchAddr(), [testItems]() -> QList<RecentItem> {
+        return testItems;
+    });
+
+    QSignalSpy finishedSpy(&strategy, &BaseSearchStrategy::searchFinished);
+    SearchQuery query = SearchFactory::createQuery("");
+    strategy.search(query);
+
+    QCOMPARE(finishedSpy.count(), 1);
+    SearchResultList results = finishedSpy.takeFirst().at(0).value<SearchResultList>();
+    // 无黑名单时全部保留
+    QCOMPARE(results.size(), testItems.size());
+}
+
+void tst_RecentSearchEngine::search_excludedPathsCombinedWithKeyword_appliesBoth()
+{
+    SearchOptions opts;
+    opts.setSearchExcludedPaths({"/home/uos/Downloads"});
+    TestableRecentStrategy strategy(opts);
+    const auto testItems = createBlacklistTestItems();
+
+    stub_ext::StubExt stub;
+    stub.set_lamda(strategy.fetchAddr(), [testItems]() -> QList<RecentItem> {
+        return testItems;
+    });
+
+    QSignalSpy finishedSpy(&strategy, &BaseSearchStrategy::searchFinished);
+    // 关键词 "notes" 命中 /home/uos/Downloads/notes.txt（被黑名单过滤）与 /tmp/test/notes.txt（保留）
+    SearchQuery query = SearchFactory::createQuery("notes");
+    strategy.search(query);
+
+    QCOMPARE(finishedSpy.count(), 1);
+    SearchResultList results = finishedSpy.takeFirst().at(0).value<SearchResultList>();
+    QStringList paths = resultPaths(results);
+
+    QCOMPARE(paths.size(), 1);
+    QVERIFY(paths.contains("/tmp/test/notes.txt"));
+    QVERIFY(!paths.contains("/home/uos/Downloads/notes.txt"));
+}
+
+void tst_RecentSearchEngine::search_excludedPathsFilter_respectsPathBoundary()
+{
+    // 验证路径边界匹配：黑名单 /home/uos/Downloads 不应误匹配 /home/uos/Downloads_backup
+    SearchOptions opts;
+    opts.setSearchExcludedPaths({"/home/uos/Downloads"});
+    TestableRecentStrategy strategy(opts);
+
+    const qint64 now = QDateTime::currentDateTime().toSecsSinceEpoch();
+    const QList<RecentItem> boundaryItems = {
+        // 黑名单目录下的文件（应过滤）
+        {"/home/uos/Downloads/file.txt", "file:///home/uos/Downloads/file.txt", now},
+        // 名称前缀相同但非子目录（应保留）
+        {"/home/uos/Downloads_backup/file.txt", "file:///home/uos/Downloads_backup/file.txt", now},
+        {"/home/uos/Downloads_archive/file.txt", "file:///home/uos/Downloads_archive/file.txt", now},
+    };
+
+    stub_ext::StubExt stub;
+    stub.set_lamda(strategy.fetchAddr(), [boundaryItems]() -> QList<RecentItem> {
+        return boundaryItems;
+    });
+
+    QSignalSpy finishedSpy(&strategy, &BaseSearchStrategy::searchFinished);
+    SearchQuery query = SearchFactory::createQuery("");
+    strategy.search(query);
+
+    QCOMPARE(finishedSpy.count(), 1);
+    SearchResultList results = finishedSpy.takeFirst().at(0).value<SearchResultList>();
+    QStringList paths = resultPaths(results);
+
+    // 仅 /home/uos/Downloads/file.txt 被过滤，_backup 和 _archive 因路径边界而保留
+    QCOMPARE(paths.size(), 2);
+    QVERIFY(paths.contains("/home/uos/Downloads_backup/file.txt"));
+    QVERIFY(paths.contains("/home/uos/Downloads_archive/file.txt"));
+    QVERIFY(!paths.contains("/home/uos/Downloads/file.txt"));
 }
 
 QObject *create_tst_RecentSearchEngine()

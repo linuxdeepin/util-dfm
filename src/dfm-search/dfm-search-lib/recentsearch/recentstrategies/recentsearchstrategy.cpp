@@ -12,8 +12,10 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QFileInfo>
+#include <QDir>
 #include <QDateTime>
 #include <QDebug>
+#include <algorithm>
 
 DFM_SEARCH_BEGIN_NS
 
@@ -136,6 +138,32 @@ QList<RecentItem> RecentSearchStrategy::filterByTimeRange(const QList<RecentItem
     return out;
 }
 
+QList<RecentItem> RecentSearchStrategy::filterByExcludedPaths(const QList<RecentItem> &items) const
+{
+    QStringList excludedPaths = m_options.searchExcludedPaths();
+    if (excludedPaths.isEmpty())
+        return items;
+
+    // 标准化路径：去除末尾斜杠、解析 "."/".."，确保路径边界匹配可靠。
+    for (auto &p : excludedPaths)
+        p = QDir::cleanPath(p);
+
+    QList<RecentItem> out;
+    for (const RecentItem &item : std::as_const(items)) {
+        const bool excluded = std::any_of(excludedPaths.cbegin(), excludedPaths.cend(),
+                                          [&item](const QString &excludedPath) {
+                                              // 路径边界匹配：仅排除 excludedPath 自身或其子路径，
+                                              // 避免 /home/uos/Downloads 误匹配 /home/uos/Downloads_backup。
+                                              return item.path == excludedPath
+                                                  || item.path.startsWith(excludedPath + QLatin1Char('/'));
+                                          });
+        if (!excluded) {
+            out.append(item);
+        }
+    }
+    return out;
+}
+
 // ── 结果构建 ───────────────────────────────────────────────────────
 
 SearchResult RecentSearchStrategy::toSearchResult(const RecentItem &item) const
@@ -180,7 +208,10 @@ void RecentSearchStrategy::search(const SearchQuery &query)
         return;
     }
 
-    // Step 2: 关键词过滤（仅 Simple 类型有 keyword；Boolean/Wildcard 暂不支持）
+    // Step 2: 黑名单路径过滤（尽早排除黑名单目录下的条目，减少后续过滤工作量）
+    items = filterByExcludedPaths(items);
+
+    // Step 3: 关键词过滤（仅 Simple 类型有 keyword；Boolean/Wildcard 暂不支持）
     QString keyword;
     if (query.type() == SearchQuery::Type::Simple) {
         keyword = query.keyword();
@@ -190,17 +221,17 @@ void RecentSearchStrategy::search(const SearchQuery &query)
     }
     items = filterByKeyword(items, keyword);
 
-    // Step 3: 扩展名过滤
+    // Step 4: 扩展名过滤
     FileNameOptionsAPI optApi(const_cast<SearchOptions &>(m_options));
     const QStringList exts = optApi.fileExtensions();
     items = filterByExtensions(items, exts);
 
-    // Step 4: 时间范围过滤（基于 modified 时间戳）
+    // Step 5: 时间范围过滤（基于 modified 时间戳）
     if (m_options.hasTimeRangeFilter()) {
         items = filterByTimeRange(items);
     }
 
-    // Step 5: 构建 SearchResult 并发射
+    // Step 6: 构建 SearchResult 并发射
     const bool resultFoundEnabled = m_options.resultFoundEnabled();
     const int maxResults = m_options.maxResults() > 0 ? m_options.maxResults() : INT_MAX;
 
