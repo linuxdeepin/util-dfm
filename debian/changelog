@@ -1,3 +1,34 @@
+util-dfm (1.4.1) unstable; urgency=medium
+
+  * fix: intercept -h/--help to show custom help with highlight subcommand
+  * refactor: rename highlight command to preview
+  * refactor: improve preview command UX and flexibility
+  * feat: enhance preview command with keyword-free mode
+  * test: add boolean OR search tests and improve query parsing
+  * feat: add precise content preview with offset support
+  * docs: add dfm-searcher guide documentation
+  * feat: return full content when no keyword and no --max-preview
+  * fix: validate CLI option compatibility with search type and apply file-extensions filter for content/ocr
+  * feat: add directory exclusion feature to search
+  * feat: add dvd+rw-format support for DVD RW erase
+  * feat: enhance semantic search with multiple paths and pattern filtering
+  * feat: add --features option to list supported search features
+  * fix: handle DConfig list values in search utility
+  * fix: adjust order of time recognition patterns
+  * fix(dfm-search): extend semantic filetype suffix coverage
+  * fix(search): return plain verbose snippets for text search
+  * feat: add character count support for search results
+  * feat: enhance preview command with indexed content validation
+  * fix: update Chinese semantic search pattern rules
+  * fix: improve Chinese date parsing and handling
+  * fix: enhance Chinese numeral time parsing
+  * fix: update Chinese filetype matching patterns
+  * fix: improve Chinese NLP filetype detection accuracy
+  * feat: update file type matching patterns
+  * fix: update Chinese location rule patterns
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Fri, 24 Jul 2026 09:49:33 +0800
+
 util-dfm (1.3.60) unstable; urgency=medium
 
   * fix(dfm-io): drain GLib deferred callbacks after g_file_enumerate_children
