@@ -23,6 +23,9 @@ public:
     QString name() const override;
 
 private:
+    void parsePresetYearMonth(const QRegularExpressionMatch &match, const QVariantMap &metadata, TimeConstraint &tc);
+    void parsePresetWeekDay(const QRegularExpressionMatch &match, const QVariantMap &metadata, TimeConstraint &tc);
+    void parsePresetMonthDay(const QRegularExpressionMatch &match, const QVariantMap &metadata, TimeConstraint &tc);
     void parseCustomTime(const QRegularExpressionMatch &match, const QVariantMap &metadata, TimeConstraint &tc);
     void parseRelativeTime(const QVariantMap &metadata, TimeConstraint &tc);
     void parseDynamicRelativeTime(const QRegularExpressionMatch &match, const QVariantMap &metadata, TimeConstraint &tc);

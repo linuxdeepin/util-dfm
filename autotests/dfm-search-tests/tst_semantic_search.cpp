@@ -205,6 +205,13 @@ private Q_SLOTS:
     void customYearMonth();
     void customFullDate();
     void noMatch();
+    // Compound preset time rules (preset year+month, preset week+day, preset month+day)
+    void presetLastYearMonth();
+    void presetThisYearMonth();
+    void presetThisWeekDay();
+    void presetLastWeekDay();
+    void presetThisMonthDay();
+    void presetLastMonthDay();
 };
 
 void tst_TimeExtraction::presetToday()
@@ -384,6 +391,201 @@ void tst_TimeExtraction::noMatch()
     RuleGroup group;
     QVERIFY(buildGroupFromJson(json, group));
     QVERIFY(!group.rules[0].regex.match("random text without match").hasMatch());
+}
+
+void tst_TimeExtraction::presetLastYearMonth()
+{
+    // "去年12月" matches time_last_year_month, priority 175 > time_last_year(170)
+    QVariantMap meta;
+    meta["type"] = "preset_year_month";
+    meta["preset"] = "last_year";
+    QMap<QString, QVariant> dig;
+    dig["零"] = 0; dig["一"] = 1; dig["二"] = 2; dig["三"] = 3;
+    dig["四"] = 4; dig["五"] = 5; dig["六"] = 6; dig["七"] = 7;
+    dig["八"] = 8; dig["九"] = 9; dig["十"] = 10;
+    meta["digit_map"] = dig;
+    meta["tens_unit"] = QString("十");
+    QByteArray json = makeRuleJson("time", "time_last_year_month",
+        "(?:去年|上一年)(?<month>(?:\\d{1,2}|[零一二两三四五六七八九十]{1,3}))月份?",
+        175, meta);
+
+    RuleGroup group;
+    QVERIFY(buildGroupFromJson(json, group));
+
+    // Arabic month
+    {
+        auto m = group.rules[0].regex.match("去年12月");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("month"), QString("12"));
+    }
+    // Arabic month + 份
+    {
+        auto m = group.rules[0].regex.match("去年3月份");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("month"), QString("3"));
+    }
+    // Chinese numeral month
+    {
+        auto m = group.rules[0].regex.match("去年十二月");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("month"), QString("十二"));
+    }
+    // Should NOT match: no month suffix
+    QVERIFY(!group.rules[0].regex.match("去年一整年").hasMatch());
+    QVERIFY(!group.rules[0].regex.match("去年的").hasMatch());
+}
+
+void tst_TimeExtraction::presetThisYearMonth()
+{
+    QVariantMap meta;
+    meta["type"] = "preset_year_month";
+    meta["preset"] = "this_year";
+    QMap<QString, QVariant> dig;
+    dig["零"] = 0; dig["一"] = 1; dig["二"] = 2; dig["三"] = 3;
+    dig["四"] = 4; dig["五"] = 5; dig["六"] = 6; dig["七"] = 7;
+    dig["八"] = 8; dig["九"] = 9; dig["十"] = 10;
+    meta["digit_map"] = dig;
+    meta["tens_unit"] = QString("十");
+    QByteArray json = makeRuleJson("time", "time_this_year_month",
+        "(?:今年|本年|这年)(?<month>(?:\\d{1,2}|[零一二两三四五六七八九十]{1,3}))月份?",
+        175, meta);
+
+    RuleGroup group;
+    QVERIFY(buildGroupFromJson(json, group));
+    {
+        auto m = group.rules[0].regex.match("今年3月");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("month"), QString("3"));
+    }
+    {
+        auto m = group.rules[0].regex.match("本年十二月");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("month"), QString("十二"));
+    }
+    // should not match plain year-only preset
+    QVERIFY(!group.rules[0].regex.match("今年").hasMatch());
+}
+
+void tst_TimeExtraction::presetThisWeekDay()
+{
+    QVariantMap meta;
+    meta["type"] = "preset_week_day";
+    meta["preset"] = "this_week";
+    QMap<QString, QVariant> wd;
+    wd["一"] = 1; wd["二"] = 2; wd["三"] = 3; wd["四"] = 4;
+    wd["五"] = 5; wd["六"] = 6; wd["日"] = 7; wd["天"] = 7;
+    meta["weekday_map"] = wd;
+    QByteArray json = makeRuleJson("time", "time_this_week_day",
+        "(?:本周|这周|这个星期|这一个星期)(?<weekday>[一二三四五六日天])",
+        175, meta);
+
+    RuleGroup group;
+    QVERIFY(buildGroupFromJson(json, group));
+
+    auto m1 = group.rules[0].regex.match("本周三");
+    QVERIFY(m1.hasMatch());
+    QCOMPARE(m1.captured("weekday"), QString("三"));
+
+    auto m2 = group.rules[0].regex.match("这周五");
+    QVERIFY(m2.hasMatch());
+    QCOMPARE(m2.captured("weekday"), QString("五"));
+
+    auto m3 = group.rules[0].regex.match("这个星期天");
+    QVERIFY(m3.hasMatch());
+    QCOMPARE(m3.captured("weekday"), QString("天"));
+
+    // Should NOT match plain week preset without weekday
+    QVERIFY(!group.rules[0].regex.match("本周").hasMatch());
+}
+
+void tst_TimeExtraction::presetLastWeekDay()
+{
+    QVariantMap meta;
+    meta["type"] = "preset_week_day";
+    meta["preset"] = "last_week";
+    QMap<QString, QVariant> wd;
+    wd["一"] = 1; wd["二"] = 2; wd["三"] = 3; wd["四"] = 4;
+    wd["五"] = 5; wd["六"] = 6; wd["日"] = 7; wd["天"] = 7;
+    meta["weekday_map"] = wd;
+    QByteArray json = makeRuleJson("time", "time_last_week_day",
+        "(?:上周|上个星期|上星期|上一个星期)(?<weekday>[一二三四五六日天])",
+        175, meta);
+
+    RuleGroup group;
+    QVERIFY(buildGroupFromJson(json, group));
+
+    auto m1 = group.rules[0].regex.match("上周一");
+    QVERIFY(m1.hasMatch());
+    QCOMPARE(m1.captured("weekday"), QString("一"));
+
+    auto m2 = group.rules[0].regex.match("上个星期五");
+    QVERIFY(m2.hasMatch());
+    QCOMPARE(m2.captured("weekday"), QString("五"));
+}
+
+void tst_TimeExtraction::presetThisMonthDay()
+{
+    QVariantMap meta;
+    meta["type"] = "preset_month_day";
+    meta["preset"] = "this_month";
+    QMap<QString, QVariant> dig;
+    dig["零"] = 0; dig["一"] = 1; dig["二"] = 2; dig["三"] = 3;
+    dig["四"] = 4; dig["五"] = 5; dig["六"] = 6; dig["七"] = 7;
+    dig["八"] = 8; dig["九"] = 9; dig["十"] = 10;
+    meta["digit_map"] = dig;
+    meta["tens_unit"] = QString("十");
+    QByteArray json = makeRuleJson("time", "time_this_month_day",
+        "(?:本月|这个月|当月)(?<day>(?:\\d{1,2}|[零一二两三四五六七八九十]{1,3}))[日号]",
+        175, meta);
+
+    RuleGroup group;
+    QVERIFY(buildGroupFromJson(json, group));
+    {
+        auto m = group.rules[0].regex.match("本月5号");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("day"), QString("5"));
+    }
+    {
+        auto m = group.rules[0].regex.match("当月十五日");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("day"), QString("十五"));
+    }
+    {
+        auto m = group.rules[0].regex.match("这个月31号");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("day"), QString("31"));
+    }
+    // should NOT match without day suffix
+    QVERIFY(!group.rules[0].regex.match("本月").hasMatch());
+}
+
+void tst_TimeExtraction::presetLastMonthDay()
+{
+    QVariantMap meta;
+    meta["type"] = "preset_month_day";
+    meta["preset"] = "last_month";
+    QMap<QString, QVariant> dig;
+    dig["零"] = 0; dig["一"] = 1; dig["二"] = 2; dig["三"] = 3;
+    dig["四"] = 4; dig["五"] = 5; dig["六"] = 6; dig["七"] = 7;
+    dig["八"] = 8; dig["九"] = 9; dig["十"] = 10;
+    meta["digit_map"] = dig;
+    meta["tens_unit"] = QString("十");
+    QByteArray json = makeRuleJson("time", "time_last_month_day",
+        "(?:上个月|上月)(?<day>(?:\\d{1,2}|[零一二两三四五六七八九十]{1,3}))[日号]",
+        175, meta);
+
+    RuleGroup group;
+    QVERIFY(buildGroupFromJson(json, group));
+    {
+        auto m = group.rules[0].regex.match("上个月15号");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("day"), QString("15"));
+    }
+    {
+        auto m = group.rules[0].regex.match("上月三号");
+        QVERIFY(m.hasMatch());
+        QCOMPARE(m.captured("day"), QString("三"));
+    }
 }
 
 // ===== tst_FileTypeExtraction =====
@@ -832,6 +1034,14 @@ private Q_SLOTS:
     void structuredKeywordRule();
     void locationOnlyRejected();
     void locationPlusDimensionAccepted();
+    // Compound preset time rules (preset year+month, week+weekday, month+day)
+    void compoundTimeLastYearMonth();
+    void compoundTimeThisYearMonth();
+    void compoundTimeThisWeekDay();
+    void compoundTimeLastWeekDay();
+    void compoundTimeThisMonthDay();
+    void compoundTimeLastMonthDay();
+    void compoundTimeNoKeywordLeak();
 
 private:
     SemanticRuleEngine *m_engine = nullptr;
@@ -1105,6 +1315,202 @@ void tst_IsSemanticQuery::locationPlusDimensionAccepted()
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "下载的文档"));         // location + fileExtensions
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "下载的pdf"));          // location + fileExtensions
     QVERIFY(checkIsSemanticQuery(m_engine, m_parser, "桌面的今天的文件"));   // location + time + target
+}
+
+void tst_IsSemanticQuery::compoundTimeLastYearMonth()
+{
+    if (!sourceRulesAvailable()) QSKIP("Rule files not found");
+
+    ParsedIntent intent;
+    m_parser->parse(QString::fromUtf8("去年12月创建的表格"), intent);
+
+    // The compound rule should have consumed “去年12月” as a single time span.
+    bool hasCompound = false;
+    for (const auto &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("time_last_year_month")) {
+            hasCompound = true;
+            break;
+        }
+    }
+    QVERIFY(hasCompound);
+
+    // Time constraint should be Custom (not Preset lastYear),
+    // and the month component should NOT leak into keywords.
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QVERIFY(!intent.keywords().contains(QString::fromUtf8("12月")));
+
+    // The Custom range should cover exactly December of last year.
+    const int thisYear = QDate::currentDate().year();
+    QCOMPARE(intent.timeConstraint().customStart().date(),
+              QDate(thisYear - 1, 12, 1));
+    QCOMPARE(intent.timeConstraint().customEnd().date(),
+              QDate(thisYear - 1, 12, 31));
+}
+
+void tst_IsSemanticQuery::compoundTimeThisYearMonth()
+{
+    if (!sourceRulesAvailable()) QSKIP("Rule files not found");
+
+    ParsedIntent intent;
+    m_parser->parse(QString::fromUtf8("今年3月修改的文档"), intent);
+
+    bool hasCompound = false;
+    for (const auto &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("time_this_year_month")) {
+            hasCompound = true;
+            break;
+        }
+    }
+    QVERIFY(hasCompound);
+
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QVERIFY(!intent.keywords().contains(QString::fromUtf8("3月")));
+
+    const int thisYear = QDate::currentDate().year();
+    QCOMPARE(intent.timeConstraint().customStart().date(),
+              QDate(thisYear, 3, 1));
+    QCOMPARE(intent.timeConstraint().customEnd().date(),
+              QDate(thisYear, 3, 31));
+}
+
+void tst_IsSemanticQuery::compoundTimeThisWeekDay()
+{
+    if (!sourceRulesAvailable()) QSKIP("Rule files not found");
+
+    ParsedIntent intent;
+    m_parser->parse(QString::fromUtf8("本周三的文件"), intent);
+
+    bool hasCompound = false;
+    for (const auto &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("time_this_week_day")) {
+            hasCompound = true;
+            break;
+        }
+    }
+    QVERIFY(hasCompound);
+
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QVERIFY(!intent.keywords().contains(QString::fromUtf8("三")));
+
+    // Verify the target date is this week's Wednesday.
+    const QDate today = QDate::currentDate();
+    const QDate mondayOfThisWeek = today.addDays(1 - today.dayOfWeek());
+    const QDate expectedDate = mondayOfThisWeek.addDays(3 - 1);   // Wed = 3
+    QCOMPARE(intent.timeConstraint().customStart().date(), expectedDate);
+    QCOMPARE(intent.timeConstraint().customEnd().date(), expectedDate);
+}
+
+void tst_IsSemanticQuery::compoundTimeLastWeekDay()
+{
+    if (!sourceRulesAvailable()) QSKIP("Rule files not found");
+
+    ParsedIntent intent;
+    m_parser->parse(QString::fromUtf8("上周五的文档"), intent);
+
+    bool hasCompound = false;
+    for (const auto &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("time_last_week_day")) {
+            hasCompound = true;
+            break;
+        }
+    }
+    QVERIFY(hasCompound);
+
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QVERIFY(!intent.keywords().contains(QString::fromUtf8("五")));
+
+    const QDate today = QDate::currentDate();
+    const QDate mondayOfThisWeek = today.addDays(1 - today.dayOfWeek());
+    const QDate expectedDate = mondayOfThisWeek.addDays(-7 + (5 - 1));   // last week Fri
+    QCOMPARE(intent.timeConstraint().customStart().date(), expectedDate);
+    QCOMPARE(intent.timeConstraint().customEnd().date(), expectedDate);
+}
+
+void tst_IsSemanticQuery::compoundTimeThisMonthDay()
+{
+    if (!sourceRulesAvailable()) QSKIP("Rule files not found");
+
+    ParsedIntent intent;
+    m_parser->parse(QString::fromUtf8("本月15号的文件"), intent);
+
+    bool hasCompound = false;
+    for (const auto &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("time_this_month_day")) {
+            hasCompound = true;
+            break;
+        }
+    }
+    QVERIFY(hasCompound);
+
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QVERIFY(!intent.keywords().contains(QString::fromUtf8("15号")));
+
+    const QDate today = QDate::currentDate();
+    const QDate expectedDate = QDate(today.year(), today.month(), 15);
+    QCOMPARE(intent.timeConstraint().customStart().date(), expectedDate);
+    QCOMPARE(intent.timeConstraint().customEnd().date(), expectedDate);
+}
+
+void tst_IsSemanticQuery::compoundTimeLastMonthDay()
+{
+    if (!sourceRulesAvailable()) QSKIP("Rule files not found");
+
+    ParsedIntent intent;
+    m_parser->parse(QString::fromUtf8("上个月8号的文档"), intent);
+
+    bool hasCompound = false;
+    for (const auto &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("time_last_month_day")) {
+            hasCompound = true;
+            break;
+        }
+    }
+    QVERIFY(hasCompound);
+
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QVERIFY(!intent.keywords().contains(QString::fromUtf8("8号")));
+
+    const QDate today = QDate::currentDate();
+    const QDate lastMonth = today.addMonths(-1);
+    const QDate expectedDate = QDate(lastMonth.year(), lastMonth.month(), 8);
+    QCOMPARE(intent.timeConstraint().customStart().date(), expectedDate);
+    QCOMPARE(intent.timeConstraint().customEnd().date(), expectedDate);
+}
+
+void tst_IsSemanticQuery::compoundTimeNoKeywordLeak()
+{
+    // The core regression test: compound time input should NOT leak
+    // the secondary time component (e.g. “12月”) into keywords.
+    if (!sourceRulesAvailable()) QSKIP("Rule files not found");
+
+    const QStringList inputs = {
+        QString::fromUtf8("去年12月创建的表格"),
+        QString::fromUtf8("今年3月修改的文档"),
+        QString::fromUtf8("本周三的文件"),
+        QString::fromUtf8("上周五的文档"),
+        QString::fromUtf8("本月15号的文件"),
+        QString::fromUtf8("上个月8号的文档"),
+    };
+
+    for (const QString &input : inputs) {
+        ParsedIntent intent;
+        m_parser->parse(input, intent);
+
+        // Extract only the numeric month/day substring that was previously leaking.
+        // For “去年12月创建的表格” the old code left “12月” in keywords.
+        QVERIFY2(!intent.keywords().contains(QString::fromUtf8("12月")),
+                 qUtf8Printable("12月 leaked into keywords for: " + input));
+        QVERIFY2(!intent.keywords().contains(QString::fromUtf8("3月")),
+                 qUtf8Printable("3月 leaked into keywords for: " + input));
+        QVERIFY2(!intent.keywords().contains(QString::fromUtf8("三")),
+                 qUtf8Printable("三 leaked into keywords for: " + input));
+        QVERIFY2(!intent.keywords().contains(QString::fromUtf8("五")),
+                 qUtf8Printable("五 leaked into keywords for: " + input));
+        QVERIFY2(!intent.keywords().contains(QString::fromUtf8("15号")),
+                 qUtf8Printable("15号 leaked into keywords for: " + input));
+        QVERIFY2(!intent.keywords().contains(QString::fromUtf8("8号")),
+                 qUtf8Printable("8号 leaked into keywords for: " + input));
+    }
 }
 
 // ===== tst_SearchTarget =====
