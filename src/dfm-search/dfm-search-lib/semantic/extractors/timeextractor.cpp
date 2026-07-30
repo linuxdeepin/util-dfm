@@ -55,6 +55,12 @@ void TimeExtractor::extract(const QString &input, ParsedIntent &intent)
         }
     } else if (typeStr == "custom") {
         parseCustomTime(match, metadata, tc);
+    } else if (typeStr == "preset_year_month") {
+        parsePresetYearMonth(match, metadata, tc);
+    } else if (typeStr == "preset_week_day") {
+        parsePresetWeekDay(match, metadata, tc);
+    } else if (typeStr == "preset_month_day") {
+        parsePresetMonthDay(match, metadata, tc);
     } else if (typeStr == "relative") {
         parseRelativeTime(metadata, tc);
     } else if (typeStr == "relative_dynamic") {
@@ -150,6 +156,98 @@ void TimeExtractor::parseCustomTime(const QRegularExpressionMatch &match,
         tc.setCustomStart(QDateTime(QDate(year, 1, 1), QTime(0, 0, 0)));
         tc.setCustomEnd(QDateTime(QDate(year, 12, 31), QTime(23, 59, 59)));
     }
+}
+
+void TimeExtractor::parsePresetYearMonth(const QRegularExpressionMatch &match,
+                                          const QVariantMap &metadata,
+                                          TimeConstraint &tc)
+{
+    const QMap<QString, int> digitMap = mapFromVariant(metadata.value("digit_map"));
+    const QString tensUnit = metadata.value("tens_unit").toString();
+
+    const QString monthStr = match.captured("month");
+    if (monthStr.isEmpty()) {
+        return;
+    }
+    const int month = localeAwareToInt(monthStr, digitMap, tensUnit);
+    if (month < 1 || month > 12) {
+        return;
+    }
+
+    const QDate today = QDate::currentDate();
+    int year = today.year();
+    if (metadata.value("preset").toString() == QLatin1String("last_year")) {
+        year -= 1;
+    }
+
+    QDate monthStart(year, month, 1);
+    QDate monthEnd(year, month, monthStart.daysInMonth());
+    tc.setKind(TimeConstraintKind::Custom);
+    tc.setCustomStart(QDateTime(monthStart, QTime(0, 0, 0)));
+    tc.setCustomEnd(QDateTime(monthEnd, QTime(23, 59, 59)));
+}
+
+void TimeExtractor::parsePresetWeekDay(const QRegularExpressionMatch &match,
+                                       const QVariantMap &metadata,
+                                       TimeConstraint &tc)
+{
+    const QMap<QString, int> weekdayMap = mapFromVariant(metadata.value("weekday_map"));
+
+    const QString weekdayStr = match.captured("weekday");
+    if (weekdayStr.isEmpty() || !weekdayMap.contains(weekdayStr)) {
+        return;
+    }
+    const int weekday = weekdayMap.value(weekdayStr);   // 1=Mon … 7=Sun
+
+    const QDate today = QDate::currentDate();
+    // Qt: Monday=1 … Sunday=7 — directly matches our weekday encoding.
+    const QDate mondayOfThisWeek = today.addDays(1 - today.dayOfWeek());
+    QDate targetDate;
+    if (metadata.value("preset").toString() == QLatin1String("last_week")) {
+        targetDate = mondayOfThisWeek.addDays(-7 + (weekday - 1));
+    } else {
+        targetDate = mondayOfThisWeek.addDays(weekday - 1);
+    }
+
+    if (!targetDate.isValid()) {
+        return;
+    }
+    tc.setKind(TimeConstraintKind::Custom);
+    tc.setCustomStart(QDateTime(targetDate, QTime(0, 0, 0)));
+    tc.setCustomEnd(QDateTime(targetDate, QTime(23, 59, 59)));
+}
+
+void TimeExtractor::parsePresetMonthDay(const QRegularExpressionMatch &match,
+                                        const QVariantMap &metadata,
+                                        TimeConstraint &tc)
+{
+    const QMap<QString, int> digitMap = mapFromVariant(metadata.value("digit_map"));
+    const QString tensUnit = metadata.value("tens_unit").toString();
+
+    const QString dayStr = match.captured("day");
+    if (dayStr.isEmpty()) {
+        return;
+    }
+    const int day = localeAwareToInt(dayStr, digitMap, tensUnit);
+    if (day < 1 || day > 31) {
+        return;
+    }
+
+    const QDate today = QDate::currentDate();
+    QDate targetDate;
+    if (metadata.value("preset").toString() == QLatin1String("last_month")) {
+        targetDate = today.addMonths(-1);
+    } else {
+        targetDate = today;
+    }
+    targetDate.setDate(targetDate.year(), targetDate.month(), day);
+
+    if (!targetDate.isValid()) {
+        return;
+    }
+    tc.setKind(TimeConstraintKind::Custom);
+    tc.setCustomStart(QDateTime(targetDate, QTime(0, 0, 0)));
+    tc.setCustomEnd(QDateTime(targetDate, QTime(23, 59, 59)));
 }
 
 void TimeExtractor::parseRelativeTime(const QVariantMap &metadata, TimeConstraint &tc)

@@ -106,6 +106,148 @@
                     }
                 },
                 {
+                    "id": "time_last_year_month",
+                    "pattern": "(?:去年|上一年)(?<month>(?:\\d{1,2}|[零一二两三四五六七八九十]{1,3}))月份?",
+                    "description": "Last year + month (e.g. 去年12月, 上一年三月)",
+                    "enabled": true,
+                    "priority": 175,
+                    "metadata": {
+                        "type": "preset_year_month",
+                        "preset": "last_year",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_this_year_month",
+                    "pattern": "(?:今年|本年|这年)(?<month>(?:\\d{1,2}|[零一二两三四五六七八九十]{1,3}))月份?",
+                    "description": "This year + month (e.g. 今年3月, 本年十二月)",
+                    "enabled": true,
+                    "priority": 175,
+                    "metadata": {
+                        "type": "preset_year_month",
+                        "preset": "this_year",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_this_week_day",
+                    "pattern": "(?:本周|这周|这个星期|这一个星期)(?<weekday>[一二三四五六日天])",
+                    "description": "This week + weekday (e.g. 本周三, 这周星期五)",
+                    "enabled": true,
+                    "priority": 195,
+                    "metadata": {
+                        "type": "preset_week_day",
+                        "preset": "this_week",
+                        "weekday_map": {
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "日": 7,
+                            "天": 7
+                        }
+                    }
+                },
+                {
+                    "id": "time_last_week_day",
+                    "pattern": "(?:上周|上个星期|上星期|上一个星期)(?<weekday>[一二三四五六日天])",
+                    "description": "Last week + weekday (e.g. 上周三, 上个星期五)",
+                    "enabled": true,
+                    "priority": 195,
+                    "metadata": {
+                        "type": "preset_week_day",
+                        "preset": "last_week",
+                        "weekday_map": {
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "日": 7,
+                            "天": 7
+                        }
+                    }
+                },
+                {
+                    "id": "time_this_month_day",
+                    "pattern": "(?:本月|这个月|当月)(?<day>(?:\\d{1,2}|[零一二两三四五六七八九十]{1,3}))[日号]",
+                    "description": "This month + day (e.g. 本月5号, 当月十五日)",
+                    "enabled": true,
+                    "priority": 185,
+                    "metadata": {
+                        "type": "preset_month_day",
+                        "preset": "this_month",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                },
+                {
+                    "id": "time_last_month_day",
+                    "pattern": "(?:上个月|上月)(?<day>(?:\\d{1,2}|[零一二两三四五六七八九十]{1,3}))[日号]",
+                    "description": "Last month + day (e.g. 上个月5号, 上月十五日)",
+                    "enabled": true,
+                    "priority": 185,
+                    "metadata": {
+                        "type": "preset_month_day",
+                        "preset": "last_month",
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
+                        "tens_unit": "十"
+                    }
+                },
+                {
                     "id": "time_exact_year",
                     "pattern": "(?<year>\\d{2,4})年",
                     "description": "Exact year (e.g. 2025年, 25年)",
@@ -265,7 +407,20 @@
                     "metadata": {
                         "type": "relative_dynamic",
                         "default_unit": "days",
-                        "digit_map": {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10},
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "两": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
                         "tens_unit": "十"
                     }
                 },
@@ -278,7 +433,20 @@
                     "metadata": {
                         "type": "relative_dynamic",
                         "default_unit": "hours",
-                        "digit_map": {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10},
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "两": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
                         "tens_unit": "十"
                     }
                 },
@@ -291,7 +459,20 @@
                     "metadata": {
                         "type": "relative_dynamic",
                         "default_unit": "weeks",
-                        "digit_map": {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10},
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "两": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
                         "tens_unit": "十"
                     }
                 },
@@ -304,7 +485,20 @@
                     "metadata": {
                         "type": "relative_dynamic",
                         "default_unit": "months",
-                        "digit_map": {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10},
+                        "digit_map": {
+                            "零": 0,
+                            "一": 1,
+                            "二": 2,
+                            "两": 2,
+                            "三": 3,
+                            "四": 4,
+                            "五": 5,
+                            "六": 6,
+                            "七": 7,
+                            "八": 8,
+                            "九": 9,
+                            "十": 10
+                        },
                         "tens_unit": "十"
                     }
                 },
