@@ -136,6 +136,8 @@ private Q_SLOTS:
     void timeCustom_month();
     void timeCustom_yearMonth();
     void timeCustom_yearMonth_separators();
+    void timeCustom_yearMonth_chineseYear();
+    void timeCustom_yearMonth_chineseYear_noResidualKeyword();
     void timeCustom_date();
     void timeCustom_dateSpoken();
     void timeCustom_fullDate();
@@ -1043,6 +1045,96 @@ void tst_ChineseNLP::timeCustom_yearMonth_separators()
     QCOMPARE(intent3.timeConstraint().kind(), TimeConstraintKind::Custom);
     QCOMPARE(intent3.timeConstraint().customStart().date().year(), 2025);
     QCOMPARE(intent3.timeConstraint().customStart().date().month(), 12);
+}
+
+// BUG-372165: Chinese-numeral year ("二五年"/"二零二五年"/"二〇二五年") must be
+// recognised by the year rules, not leaked into keywords / bound to the current year.
+void tst_ChineseNLP::timeCustom_yearMonth_chineseYear()
+{
+    // "二五年十二月" — 2-digit Chinese year + Chinese month → 2025-12
+    ParsedIntent intent1;
+    m_parser->parse(QStringLiteral("二五年十二月的文档"), intent1);
+    QCOMPARE(intent1.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent1.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent1.timeConstraint().customStart().date().month(), 12);
+    QCOMPARE(intent1.timeConstraint().customStart().date().day(), 1);
+    QCOMPARE(intent1.timeConstraint().customEnd().date().year(), 2025);
+    QCOMPARE(intent1.timeConstraint().customEnd().date().month(), 12);
+
+    // "二五年12月" — 2-digit Chinese year + Arabic month → 2025-12
+    ParsedIntent intent2;
+    m_parser->parse(QStringLiteral("二五年12月的文档"), intent2);
+    QCOMPARE(intent2.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent2.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent2.timeConstraint().customStart().date().month(), 12);
+
+    // "二零二五年十二月" — 4-digit Chinese year (with 零) + Chinese month → 2025-12
+    ParsedIntent intent3;
+    m_parser->parse(QStringLiteral("二零二五年十二月的文档"), intent3);
+    QCOMPARE(intent3.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent3.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent3.timeConstraint().customStart().date().month(), 12);
+
+    // "二〇二五年十二月" — 4-digit Chinese year (with 〇) + Chinese month → 2025-12
+    ParsedIntent intent4;
+    m_parser->parse(QStringLiteral("二〇二五年十二月的文档"), intent4);
+    QCOMPARE(intent4.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent4.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent4.timeConstraint().customStart().date().month(), 12);
+
+    // Regression: a bare Chinese-numeral year ("二零二五年") must be parsed as a year,
+    // spanning the whole year.
+    ParsedIntent intent5;
+    m_parser->parse(QStringLiteral("二零二五年的文档"), intent5);
+    QCOMPARE(intent5.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent5.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent5.timeConstraint().customStart().date().month(), 1);
+    QCOMPARE(intent5.timeConstraint().customEnd().date().year(), 2025);
+    QCOMPARE(intent5.timeConstraint().customEnd().date().month(), 12);
+
+    // Regression: "十二月的文件" must NOT be mis-parsed as a year-month; it stays a
+    // month of the current year (the year capture group requires >= 2 Chinese digits
+    // and cannot start with 十).
+    ParsedIntent intent6;
+    m_parser->parse(QStringLiteral("十二月的文件"), intent6);
+    QCOMPARE(intent6.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent6.timeConstraint().customStart().date().month(), 12);
+    QCOMPARE(intent6.timeConstraint().customStart().date().year(), QDate::currentDate().year());
+}
+
+// BUG-372165 scenario: the full叠加 query "二五年十二月创建的表格" must produce a
+// correct time constraint, the spreadsheet filetype, and NO residual keyword.
+void tst_ChineseNLP::timeCustom_yearMonth_chineseYear_noResidualKeyword()
+{
+    ParsedIntent intent;
+    m_parser->parse(QStringLiteral("二五年十二月创建的表格"), intent);
+
+    // Correct time constraint: the whole month of 2025-12, not the current year.
+    QCOMPARE(intent.timeConstraint().kind(), TimeConstraintKind::Custom);
+    QCOMPARE(intent.timeConstraint().customStart().date().year(), 2025);
+    QCOMPARE(intent.timeConstraint().customStart().date().month(), 12);
+    QCOMPARE(intent.timeConstraint().customEnd().date().year(), 2025);
+    QCOMPARE(intent.timeConstraint().customEnd().date().month(), 12);
+
+    // Spreadsheet filetype consumed.
+    QVERIFY(intent.fileExtensions().contains("xls"));
+    QVERIFY(intent.fileExtensions().contains("xlsx"));
+    QVERIFY(intent.fileExtensions().contains("csv"));
+
+    // The Chinese-numeral year must be fully consumed by a time rule, not leaked
+    // into keywords (which was the root cause of empty search results).
+    QVERIFY2(intent.keywords().isEmpty(),
+             "Chinese-numeral year must not leak into keywords");
+
+    // The consumed span must be the year-month rule, covering the whole "二五年十二月".
+    bool hasYearMonth = false;
+    for (const MatchSpan &span : intent.consumedSpans()) {
+        if (span.ruleId() == QLatin1String("time_exact_year_month")) {
+            hasYearMonth = true;
+            break;
+        }
+    }
+    QVERIFY(hasYearMonth);
 }
 
 void tst_ChineseNLP::timeCustom_date()

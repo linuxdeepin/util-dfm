@@ -397,6 +397,27 @@ int TimeExtractor::localeAwareToInt(const QString &input,
         }
     }
 
+    // Digit-by-digit Chinese numeral string (e.g., "二五" = 25, "二零二五" = 2025,
+    // "二〇二五" = 2025). Used for year written in Chinese numerals position-by-position.
+    // Each character must map to a single digit 0-9 — this excludes "十" (10) and "两",
+    // which are not used in digit-by-digit year notation. This branch runs after the
+    // "十"-based branches above, so "十一"/"二十"/"十二" are already handled.
+    bool allSingleDigits = true;
+    for (const QChar &ch : input) {
+        auto it = digitMap.constFind(ch);
+        if (it == digitMap.constEnd() || it.value() > 9) {
+            allSingleDigits = false;
+            break;
+        }
+    }
+    if (allSingleDigits && input.size() >= 2) {
+        int value = 0;
+        for (const QChar &ch : input) {
+            value = value * 10 + digitMap.value(ch);
+        }
+        return value;
+    }
+
     return -1;
 }
 
