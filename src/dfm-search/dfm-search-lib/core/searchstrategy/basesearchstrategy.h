@@ -5,6 +5,7 @@
 #define BASESEARCHSTRATEGY_H
 
 #include <QObject>
+#include <atomic>
 #include <dfm-search/searchquery.h>
 #include <dfm-search/searchoptions.h>
 #include <dfm-search/searchresult.h>
@@ -53,6 +54,25 @@ public:
      */
     virtual void cancel() = 0;
 
+    /**
+     * @brief 注入引擎级取消标志指针（必须注入，否则取消无效）
+     *
+     * 策略只读取引擎的 atomic flag：主线程调 GenericSearchEngine::cancel()
+     * 设 true，工作线程即时响应。flag 必须非空，由 SearchWorker::doSearch
+     * 创建策略后立即注入。
+     *
+     * 注意：不使用 Q_ASSERT，因为它在 Release 构建中会被移除。
+     * 若传入空指针，保持 m_cancelledRef 为 nullptr 并打印警告。
+     */
+    void setCancelledFlag(std::atomic<bool> *flag)
+    {
+        if (!flag) {
+            qWarning("BaseSearchStrategy::setCancelledFlag: flag is null, cancellation will be ignored");
+            return;
+        }
+        m_cancelledRef = flag;
+    }
+
 Q_SIGNALS:
     /**
      * @brief 找到搜索结果信号
@@ -72,7 +92,7 @@ Q_SIGNALS:
 protected:
     SearchOptions m_options;
     SearchResultList m_results;
-    std::atomic<bool> m_cancelled { false };
+    std::atomic<bool> *m_cancelledRef { nullptr };
 };
 
 DFM_SEARCH_END_NS

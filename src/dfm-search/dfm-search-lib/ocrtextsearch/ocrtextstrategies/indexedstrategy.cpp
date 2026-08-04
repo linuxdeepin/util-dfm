@@ -48,7 +48,6 @@ void OcrTextIndexedStrategy::initializeIndexing()
 
 void OcrTextIndexedStrategy::search(const SearchQuery &query)
 {
-    m_cancelled.store(false);
     m_results.clear();
 
     try {
@@ -366,7 +365,7 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     m_results.reserve(m_results.size() + static_cast<int>(docsSize));
 
     for (int32_t i = 0; i < docsSize; ++i) {
-        if (m_cancelled.load()) {
+        if (m_cancelledRef && m_cancelledRef->load()) {
             qInfo() << "OCR text search cancelled";
             break;
         }
@@ -510,8 +509,18 @@ void OcrTextIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
 
 void OcrTextIndexedStrategy::performOcrTextSearch(const SearchQuery &query)
 {
+    // 防御性空指针拦截：正常流程 m_cancelledRef 由引擎注入，非空；
+    // 若注入失败（setCancelledFlag 拒绝空指针），此处拦截避免底层
+    // SearchCancellationGuard / CancellableCollector 解引用 nullptr 导致 SIGSEGV。
+    if (!m_cancelledRef) {
+        qWarning("OcrTextIndexedStrategy::performOcrTextSearch: cancellation flag is null, aborting search");
+        emit errorOccurred(SearchError(OcrTextSearchErrorCode::OcrTextIndexException));
+        emit searchFinished(m_results);
+        return;
+    }
+
     // RAII guard: automatically manage cancellation flag lifecycle
-    SearchCancellationGuard guard(&m_cancelled);
+    SearchCancellationGuard guard(m_cancelledRef);
 
     try {
         // Get index directory
@@ -551,7 +560,7 @@ void OcrTextIndexedStrategy::performOcrTextSearch(const SearchQuery &query)
         Collection<ScoreDocPtr> scoreDocs;
         try {
             // Create cancellable collector
-            boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(&m_cancelled, maxResults);
+            boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(m_cancelledRef, maxResults);
 
             // Execute search with custom collector
             qInfo() << "OCR text search execution start:" << query.keyword();
@@ -563,7 +572,7 @@ void OcrTextIndexedStrategy::performOcrTextSearch(const SearchQuery &query)
                     << "Total hits:" << collector->getTotalHits()
                     << "Collected:" << scoreDocs.size()
                     << "Keyword:" << query.keyword()
-                    << "Cancelled" << m_cancelled.load();
+                    << "Cancelled" << (m_cancelledRef ? m_cancelledRef->load() : false);
         } catch (const SearchCancelledException &e) {
             qInfo() << "OCR text search cancelled during execution";
             emit searchFinished(m_results);
@@ -595,7 +604,8 @@ void OcrTextIndexedStrategy::performOcrTextSearch(const SearchQuery &query)
 
 void OcrTextIndexedStrategy::cancel()
 {
-    m_cancelled.store(true);
+    if (m_cancelledRef)
+        m_cancelledRef->store(true);
 }
 
 DFM_SEARCH_END_NS
