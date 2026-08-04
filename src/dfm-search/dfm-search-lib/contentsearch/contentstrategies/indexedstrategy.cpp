@@ -52,7 +52,6 @@ void ContentIndexedStrategy::initializeIndexing()
 
 void ContentIndexedStrategy::search(const SearchQuery &query)
 {
-    m_cancelled.store(false);
     m_results.clear();
 
     try {
@@ -256,7 +255,7 @@ void ContentIndexedStrategy::processSearchResults(const Lucene::IndexSearcherPtr
     bool enableRetrieval = optAPI.isFullTextRetrievalEnabled();
 
     for (int32_t i = 0; i < docsSize; ++i) {
-        if (m_cancelled.load()) {
+        if (m_cancelledRef && m_cancelledRef->load()) {
             qInfo() << "Content search cancelled";
             break;
         }
@@ -414,7 +413,10 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
 {
     // RAII 守护类：自动管理取消标志的生命周期
     // 构造时设置标志，析构时自动清理（即使发生异常）
-    SearchCancellationGuard guard(&m_cancelled);
+    // 若 m_cancelledRef 为空（非正常调用链），使用局部 dummy 标志避免空指针解引用
+    std::atomic<bool> dummyCancelled { false };
+    std::atomic<bool> *cancelledFlag = m_cancelledRef ? m_cancelledRef : &dummyCancelled;
+    SearchCancellationGuard guard(cancelledFlag);
 
     try {
         // 获取索引目录
@@ -458,7 +460,7 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
         Collection<ScoreDocPtr> scoreDocs;
         try {
             // 创建可取消的收集器
-            boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(&m_cancelled, maxResults);
+            boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(m_cancelledRef, maxResults);
 
             // 执行搜索，使用自定义收集器
             qInfo() << "Content search execution start:" << query.keyword();
@@ -470,7 +472,7 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
                     << "Total hits:" << collector->getTotalHits()
                     << "Collected:" << scoreDocs.size()
                     << "Keyword:" << query.keyword()
-                    << "Cancelled" << m_cancelled.load();
+                    << "Cancelled" << (m_cancelledRef ? m_cancelledRef->load() : false);
         } catch (const SearchCancelledException &e) {
             qInfo() << "Content search cancelled during execution";
             emit searchFinished(m_results);
@@ -503,7 +505,8 @@ void ContentIndexedStrategy::performContentSearch(const SearchQuery &query)
 
 void ContentIndexedStrategy::cancel()
 {
-    m_cancelled.store(true);
+    if (m_cancelledRef)
+        m_cancelledRef->store(true);
 }
 
 DFM_SEARCH_END_NS
