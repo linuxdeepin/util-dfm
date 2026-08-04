@@ -227,7 +227,6 @@ void FileNameIndexedStrategy::initializeIndexing()
 
 void FileNameIndexedStrategy::search(const SearchQuery &query)
 {
-    m_cancelled.store(false);
     m_results.clear();
 
     if (!QFileInfo::exists(m_indexDir)) {
@@ -438,7 +437,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query)
     Collection<ScoreDocPtr> scoreDocs;
     try {
         // 创建可取消的收集器
-        boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(&m_cancelled, maxResults);
+        boost::shared_ptr<CancellableCollector> collector = newLucene<CancellableCollector>(m_cancelledRef, maxResults);
 
         // 执行搜索，使用自定义收集器
         searcher->search(luceneQuery, collector);
@@ -462,7 +461,7 @@ void FileNameIndexedStrategy::executeIndexQuery(const IndexQuery &query)
 
     // 实时处理搜索结果
     for (int i = 0; i < docsSize; i++) {
-        if (m_cancelled.load()) {
+        if (m_cancelledRef && m_cancelledRef->load()) {
             qInfo() << "Filename search cancelled";
             break;
         }
@@ -796,7 +795,8 @@ BooleanQueryPtr FileNameIndexedStrategy::buildBooleanTermsQuery(const IndexQuery
 
 void FileNameIndexedStrategy::cancel()
 {
-    m_cancelled.store(true);
+    if (m_cancelledRef)
+        m_cancelledRef->store(true);
 }
 
 DFM_SEARCH_END_NS

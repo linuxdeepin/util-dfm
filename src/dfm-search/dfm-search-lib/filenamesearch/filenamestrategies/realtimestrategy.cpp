@@ -25,7 +25,6 @@ FileNameRealTimeStrategy::~FileNameRealTimeStrategy() = default;
 
 void FileNameRealTimeStrategy::search(const SearchQuery &query)
 {
-    m_cancelled.store(false);
     m_results.clear();
 
     // 从搜索选项获取参数
@@ -66,7 +65,7 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
     int count = 0;
     QSet<QString> visitedDirs;   // 防止符号链接循环
 
-    while (!directoryStack.isEmpty() && count < maxResults && !m_cancelled.load()) {
+    while (!directoryStack.isEmpty() && count < maxResults && !(m_cancelledRef && m_cancelledRef->load())) {
         // 取出一个目录进行处理
         QString currentDir = directoryStack.pop();
 
@@ -103,7 +102,7 @@ void FileNameRealTimeStrategy::search(const SearchQuery &query)
 
         // 处理当前目录中的每个条目
         for (const QFileInfo &info : std::as_const(entries)) {
-            if (m_cancelled.load() || count >= maxResults) {
+            if ((m_cancelledRef && m_cancelledRef->load()) || count >= maxResults) {
                 break;
             }
 
@@ -314,7 +313,8 @@ bool FileNameRealTimeStrategy::matchWildcard(const QString &fileName, const QStr
 
 void FileNameRealTimeStrategy::cancel()
 {
-    m_cancelled.store(true);
+    if (m_cancelledRef)
+        m_cancelledRef->store(true);
 }
 
 DFM_SEARCH_END_NS

@@ -194,7 +194,6 @@ SearchResult RecentSearchStrategy::toSearchResult(const RecentItem &item) const
 
 void RecentSearchStrategy::search(const SearchQuery &query)
 {
-    m_cancelled.store(false);
     m_results.clear();
 
     QElapsedTimer timer;
@@ -203,7 +202,7 @@ void RecentSearchStrategy::search(const SearchQuery &query)
     // Step 1: 从 DBus 拉取全部最近使用记录
     QList<RecentItem> items = fetchRecentItems();
 
-    if (m_cancelled.load()) {
+    if (m_cancelledRef && m_cancelledRef->load()) {
         emit searchFinished(m_results);
         return;
     }
@@ -237,7 +236,7 @@ void RecentSearchStrategy::search(const SearchQuery &query)
 
     int count = 0;
     for (const RecentItem &item : std::as_const(items)) {
-        if (m_cancelled.load() || count >= maxResults) {
+        if ((m_cancelledRef && m_cancelledRef->load()) || count >= maxResults) {
             break;
         }
 
@@ -255,7 +254,8 @@ void RecentSearchStrategy::search(const SearchQuery &query)
 
 void RecentSearchStrategy::cancel()
 {
-    m_cancelled.store(true);
+    if (m_cancelledRef)
+        m_cancelledRef->store(true);
 }
 
 DFM_SEARCH_END_NS
