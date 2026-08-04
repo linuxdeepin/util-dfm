@@ -93,11 +93,6 @@ Q_SIGNALS:
                       const DFMSEARCH::SearchOptions &options,
                       DFMSEARCH::SearchType searchType);
 
-    /**
-     * @brief Internal signal to request worker thread to cancel search
-     */
-    void requestCancel();
-
 protected:
     /**
      * @brief Set up the strategy factory for this search engine

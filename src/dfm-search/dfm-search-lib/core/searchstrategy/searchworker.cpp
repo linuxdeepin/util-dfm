@@ -43,6 +43,14 @@ void SearchWorker::doSearch(const SearchQuery &query,
         return;
     }
 
+    // 注入引擎级取消标志，使策略能即时响应取消
+    if (!m_engineCancelled) {
+        qWarning("SearchWorker::doSearch: m_engineCancelled is null, aborting search");
+        emit errorOccurred(SearchError(SearchErrorCode::InternalError));
+        return;
+    }
+    m_strategy->setCancelledFlag(m_engineCancelled);
+
     // 连接信号
     connect(m_strategy.get(), &BaseSearchStrategy::resultFound,
             this, &SearchWorker::resultFound);
@@ -53,13 +61,6 @@ void SearchWorker::doSearch(const SearchQuery &query,
 
     // 执行搜索
     m_strategy->search(query);
-}
-
-void SearchWorker::cancelSearch()
-{
-    if (m_strategy) {
-        m_strategy->cancel();
-    }
 }
 
 DFM_SEARCH_END_NS

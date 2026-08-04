@@ -52,8 +52,6 @@ void GenericSearchEngine::init()
     // 连接控制信号（主线程 -> 工作线程）
     connect(this, &GenericSearchEngine::requestSearch,
             m_worker, &SearchWorker::doSearch);
-    connect(this, &GenericSearchEngine::requestCancel,
-            m_worker, &SearchWorker::cancelSearch, Qt::DirectConnection);
 
     // 连接结果信号（工作线程 -> 主线程）
     connect(m_worker, &SearchWorker::resultFound,
@@ -65,6 +63,9 @@ void GenericSearchEngine::init()
 
     // 设置策略工厂
     setupStrategyFactory();
+
+    // 将引擎级取消标志注入 worker，使策略能即时读取取消状态
+    m_worker->setEngineCancelledFlag(&m_cancelled);
 
     // 启动工作线程
     m_workerThread.start();
@@ -144,10 +145,8 @@ SearchResultExpected GenericSearchEngine::searchSync(const SearchQuery &query)
 
 void GenericSearchEngine::cancel()
 {
+    // 设置取消标志，工作线程通过注入的 flag 即时响应
     m_cancelled.store(true);
-
-    // 发射信号请求工作线程取消搜索
-    emit requestCancel();
 
     // 停止批处理定时器
     m_batchTimer.stop();
@@ -218,6 +217,8 @@ void GenericSearchEngine::handleErrorOccurred(const DFMSEARCH::SearchError &erro
 
 SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
 {
+    // 重置取消标志，避免上次搜索的取消状态残留（与异步 search() 一致）
+    m_cancelled.store(false);
     // 重置同步搜索状态
     m_results.clear();
     m_lastError = SearchError(SearchErrorCode::Success);
@@ -244,7 +245,8 @@ SearchResultExpected GenericSearchEngine::doSyncSearch(const SearchQuery &query)
 
     // 检查是否超时
     if (!timeoutTimer.isActive()) {
-        emit requestCancel();
+        // 超时：设置取消标志通知工作线程停止
+        m_cancelled.store(true);
         return DUnexpected<DFMSEARCH::SearchError> { SearchError(SearchErrorCode::SearchTimeout) };
     }
 
