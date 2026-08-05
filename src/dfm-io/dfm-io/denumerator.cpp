@@ -463,7 +463,7 @@ QUrl DEnumeratorPrivate::buildUrl(const QUrl &url, const char *fileName)
     // 这是合法的 trash 文件名而非恶意路径，故不应对其做路径遍历拦截。
     const QString scheme = url.scheme();
     if (scheme.isEmpty() || scheme == QLatin1String("file")) {
-        if (fileNameBa.contains('/') || fileNameBa.contains('\\') || fileNameBa == "." || fileNameBa == "..") {
+        if (fileNameBa.contains("../") || fileNameBa.contains("..\\") || fileNameBa.startsWith("..")) {
             return QUrl();
         }
     }
