@@ -455,10 +455,17 @@ QUrl DEnumeratorPrivate::buildUrl(const QUrl &url, const char *fileName)
         return QUrl();
     }
 
-    // 拦截路径遍历攻击，防止恶意文件名越权
     QByteArray fileNameBa(fileName);
-    if (fileNameBa.contains('/') || fileNameBa.contains('\\') || fileNameBa == "." || fileNameBa == "..") {
-        return QUrl();
+
+    // 路径遍历检查仅对本地文件系统 (file:/// 或无 scheme) 生效
+    // gio 的 trash:/// 后端对非用户主目录挂载点的回收站文件，使用反斜杠分隔的扁平路径
+    // 作为 GFileInfo 的 standard::name（例如 "\media\user\dev\.Trash-1000\files\x"），
+    // 这是合法的 trash 文件名而非恶意路径，故不应对其做路径遍历拦截。
+    const QString scheme = url.scheme();
+    if (scheme.isEmpty() || scheme == QLatin1String("file")) {
+        if (fileNameBa.contains('/') || fileNameBa.contains('\\') || fileNameBa == "." || fileNameBa == "..") {
+            return QUrl();
+        }
     }
 
     QByteArray path;
