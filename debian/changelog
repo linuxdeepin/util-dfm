@@ -1,3 +1,16 @@
+util-dfm (1.4.3) unstable; urgency=medium
+
+  * fix: add missing WeChat group term in Chinese rules
+  * fix(dfm-search): exclude WeChat monthly archive dirs from search results
+  * feat: add compound preset time rules for semantic search
+  * fix(dfm-search): support Chinese-numeral years in semantic time parsing
+  * fix: restrict path traversal check to file scheme in DEnumerator buildUrl
+  * fix: narrow path traversal check pattern in DEnumerator buildUrl
+  * chore: Sync by https://github.com/linuxdeepin/.github/commit/826bedc64f009f4d9ebb5fba0ffe1637f1f02667
+  * fix(dfm-search): eliminate cross-thread race on m_strategy causing heap corruption
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Thu, 06 Aug 2026 10:22:13 +0800
+
 util-dfm (1.4.2) unstable; urgency=medium
 
   * chore: update GitHub actions workflow for cppcheck
