@@ -1,3 +1,9 @@
+util-dfm (1.3.72) unstable; urgency=medium
+
+  * fix: include share name in SMB keyring credentials
+
+ -- Zhang Sheng <zhangsheng@uniontech.com>  Fri, 28 Aug 2026 14:21:23 +0800
+
 util-dfm (1.3.71) unstable; urgency=medium
 
   * fix: restrict path traversal check to file scheme in DEnumerator buildUrl
