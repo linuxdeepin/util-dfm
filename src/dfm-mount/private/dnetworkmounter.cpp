@@ -43,6 +43,7 @@ static constexpr char kSchemaUser[] { "user" };
 static constexpr char kSchemaProtocol[] { "protocol" };
 static constexpr char kSchemaDomain[] { "domain" };
 static constexpr char kSchemaServer[] { "server" };
+static constexpr char kSchemaObject[] { "object" };
 
 static constexpr char kLoginUser[] { "user" };
 static constexpr char kLoginDomain[] { "domain" };
@@ -114,10 +115,12 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
     QUrl u(address);
     QString protocol = u.scheme();
     QString host = u.host();
+    QString share = u.path().remove("/");
 
     GHashTable_autoptr query = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
     g_hash_table_insert(query, strdup(kSchemaServer), strdup(host.toStdString().c_str()));
     g_hash_table_insert(query, strdup(kSchemaProtocol), strdup(protocol.toStdString().c_str()));
+    g_hash_table_insert(query, strdup(kSchemaObject), strdup(share.toStdString().c_str()));
 
     QList<QVariantMap> passwds;
     GError_autoptr err { nullptr };
@@ -164,10 +167,11 @@ QList<QVariantMap> DNetworkMounter::loginPasswd(const QString &address)
         std::string domain = passwd.value(kSchemaDomain).toString().toStdString();
 
         GError_autoptr err { nullptr };
+        std::string object = passwd.value(kSchemaObject).toString().toStdString();
         g_autofree char *pwd = secret_password_lookup_sync(
                 smbSchema(), nullptr, &err, kSchemaServer, server.c_str(), kSchemaProtocol,
                 protocol.c_str(), kSchemaUser, user.c_str(), kSchemaDomain, domain.c_str(),
-                nullptr);
+                kSchemaObject, object.c_str(), nullptr);
         if (err)
             qDebug() << "query password failed: " << passwd << err->message;
         else {
@@ -182,6 +186,7 @@ void DNetworkMounter::savePasswd(const QString &address, const MountPassInfo &in
     QUrl u(address);
     QString protocol = u.scheme();
     QString server = u.host();
+    QString share = u.path().remove("/");
     const char *collection = info.savePasswd == NetworkMountPasswdSaveMode::kSaveBeforeLogout
             ? SECRET_COLLECTION_SESSION
             : SECRET_COLLECTION_DEFAULT;
@@ -196,7 +201,8 @@ void DNetworkMounter::savePasswd(const QString &address, const MountPassInfo &in
                                    info.domain.toStdString().c_str(), kSchemaProtocol,
                                    protocol.toStdString().c_str(), kSchemaServer,
                                    server.toStdString().c_str(), kSchemaUser,
-                                   info.userName.toStdString().c_str(), nullptr);
+                                   info.userName.toStdString().c_str(), kSchemaObject,
+                                   share.toStdString().c_str(), nullptr);
         if (err)
             qWarning() << "save passwd failed: " << err->message;
     }
@@ -211,6 +217,7 @@ SecretSchema *DNetworkMounter::smbSchema()
     sche.attributes[1] = { kSchemaDomain, SECRET_SCHEMA_ATTRIBUTE_STRING };
     sche.attributes[2] = { kSchemaServer, SECRET_SCHEMA_ATTRIBUTE_STRING };
     sche.attributes[3] = { kSchemaProtocol, SECRET_SCHEMA_ATTRIBUTE_STRING };
+    sche.attributes[4] = { kSchemaObject, SECRET_SCHEMA_ATTRIBUTE_STRING };
     return &sche;
 }
 
