@@ -1,3 +1,9 @@
+util-dfm (1.4.4) unstable; urgency=medium
+
+  * fix: include share name in SMB keyring credentials
+
+ -- Liu Zhangjian <liuzhangjian@uniontech.com>  Mon, 07 Sep 2026 11:04:11 +0800
+
 util-dfm (1.4.3) unstable; urgency=medium
 
   * fix: add missing WeChat group term in Chinese rules
