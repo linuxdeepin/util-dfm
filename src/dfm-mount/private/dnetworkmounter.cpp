@@ -433,6 +433,15 @@ void DNetworkMounter::mountByGvfs(const QString &address, GetMountPassInfo getPa
 void DNetworkMounter::mountByGvfsAskQuestion(GMountOperation *self, const char *message,
                                              const char **choices, gpointer userData)
 {
+    /* gio 的 GMountOperation 默认类处理器(RUN_LAST)会在本实例处理器返回后，
+     * 通过 idle 异步回复 G_MOUNT_OPERATION_UNHANDLED；若该 idle 残留至下一次
+     * ask_password 派发期间才触发，会以 handled=FALSE 提前完成挂载操作的应答，
+     * gvfs 便会报 "Password dialog cancelled"（首次登录 sftp 弹出主机密钥确认框后，
+     * 界面繁忙导致 idle 被饿死时高概率触发的竞态）。
+     * 与 gio/gvfs 自身实现(gmountsource.c op_ask_question)一致，此处必须停止信号
+     * 发射以阻止默认处理器调度该 idle；下方所有路径均会显式 reply。
+     */
+    g_signal_stop_emission_by_name(self, "ask-question");
     auto helper = reinterpret_cast<AskQuestionHelper *>(userData);
     if (!helper || !helper->callback) {
         if (helper)
@@ -460,6 +469,10 @@ void DNetworkMounter::mountByGvfsAskPasswd(GMountOperation *self, gchar *message
                                            gchar *defaultUser, gchar *defaultDomain,
                                            GAskPasswordFlags flags, gpointer userData)
 {
+    /* 同 mountByGvfsAskQuestion：阻止 gio 默认类处理器调度 UNHANDLED idle，
+     * 防止其在本对话框的嵌套事件循环中提前完成挂载操作的应答。
+     */
+    g_signal_stop_emission_by_name(self, "ask-password");
     auto helper = reinterpret_cast<AskPasswdHelper *>(userData);
     if (!helper || !helper->callback) {
         if (helper)
