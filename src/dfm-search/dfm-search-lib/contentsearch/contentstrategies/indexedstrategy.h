@@ -6,7 +6,11 @@
 
 #include "basestrategy.h"
 
+#include <QMutex>
+
 #include <lucene++/LuceneHeaders.h>
+#include <lucene++/FSDirectory.h>
+#include <lucene++/IndexReader.h>
 #include <lucene++/QueryParser.h>
 #include <lucene++/BooleanQuery.h>
 #include <lucene++/QueryWrapperFilter.h>
@@ -60,9 +64,15 @@ private:
     void processSearchResults(const Lucene::IndexSearcherPtr &searcher,
                               const Lucene::Collection<Lucene::ScoreDocPtr> &scoreDocs);
 
+    // 获取/创建 IndexReader；带 commit.lock 同步 + 版本缓存
+    Lucene::IndexReaderPtr getOrCreateReader(const Lucene::FSDirectoryPtr &directory);
+
     QString m_indexDir;
     Lucene::QueryPtr m_currentQuery;   // 存储当前查询
     QStringList m_keywords;
+    QMutex m_readerMutex;   // 保护 m_cachedReader 的并发访问
+    Lucene::IndexReaderPtr m_cachedReader;   // 复用的 reader，由 m_readerMutex 守护
+    Lucene::FSDirectoryPtr m_cachedDirectory;   // 缓存的 FSDirectory，避免每次搜索重建
 };
 
 DFM_SEARCH_END_NS

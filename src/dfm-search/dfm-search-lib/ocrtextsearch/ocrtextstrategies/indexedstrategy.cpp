@@ -13,6 +13,7 @@
 #include <lucene++/BooleanQuery.h>
 #include <lucene++/QueryWrapperFilter.h>
 #include <lucene++/WildcardQuery.h>
+#include <lucene++/NativeFSLockFactory.h>
 
 #include <dfm-search/field_names.h>
 #include <dfm-search/timerangefilter.h>
@@ -23,6 +24,7 @@
 #include "utils/contenthighlighter.h"
 #include "utils/lucenequeryutils.h"
 #include "utils/searchutility.h"
+#include "utils/lucenecommitlockguard.h"
 #include "utils/lucene_cancellation_compat.h"
 #include "utils/timerangeutils.h"
 
@@ -418,16 +420,28 @@ void OcrTextIndexedStrategy::performOcrTextSearch(const SearchQuery &query)
     SearchCancellationGuard guard(cancelledFlag);
 
     try {
-        // Get index directory
-        FSDirectoryPtr directory = FSDirectory::open(m_indexDir.toStdWString());
+        // 获取索引目录；显式传入 NativeFSLockFactory，
+        // 让本进程的 commit.lock 与写端（另一个进程的 IndexWriter）
+        // 共用同一把 fcntl 锁，从而同步 writer 的 commit 窗口。
+        {
+            QMutexLocker locker(&m_readerMutex);
+            if (!m_cachedDirectory) {
+                m_cachedDirectory = FSDirectory::open(
+                        m_indexDir.toStdWString(),
+                        newLucene<NativeFSLockFactory>(m_indexDir.toStdWString()));
+            }
+        }
+        FSDirectoryPtr directory = m_cachedDirectory;
         if (!directory) {
             qWarning() << "Failed to open OCR text index directory:" << m_indexDir;
             emit errorOccurred(SearchError(OcrTextSearchErrorCode::OcrTextIndexNotFound));
             return;
         }
 
-        // Get index reader
-        IndexReaderPtr reader = IndexReader::open(directory, true);
+        // 获取索引读取器（带 commit.lock 同步 + 版本缓存）。
+        // IndexReader::open() 必须运行在 commit.lock 持有期间，
+        // 否则可能读到 writer commit() 中间状态而触发段解析错误。
+        IndexReaderPtr reader = getOrCreateReader(directory);
         if (!reader || reader->numDocs() == 0) {
             qWarning() << "OCR text index is empty or cannot be opened";
             emit errorOccurred(SearchError(OcrTextSearchErrorCode::OcrTextIndexNotFound));
@@ -504,6 +518,86 @@ void OcrTextIndexedStrategy::cancel()
 {
     if (m_cancelledRef)
         m_cancelledRef->store(true);
+}
+
+Lucene::IndexReaderPtr OcrTextIndexedStrategy::getOrCreateReader(const Lucene::FSDirectoryPtr &directory)
+{
+    // Fast path: cached reader 仍反映最新 commit。
+    // 注意：fast path 不持 commit.lock，因为 IndexReader 在 open() 期间
+    // 已经固定了 segments 引用的所有段文件 fd；后续 writer commit() 只会
+    // 创建新 segments_N + 新段文件，老 reader 持有的 fd 不会被 writer 触碰，
+    // 所以 read-only 操作与并发 commit 安全共存。
+    // isCurrent() 内部仅读 segments_N 的版本号，不读取段数据，代价极低。
+    {
+        QMutexLocker locker(&m_readerMutex);
+        if (m_cachedReader) {
+            try {
+                if (m_cachedReader->isCurrent()) {
+                    return m_cachedReader;
+                }
+            } catch (const Lucene::LuceneException &e) {
+                qWarning() << "IndexReader::isCurrent() failed:" << QString::fromStdWString(e.getError());
+            } catch (const std::exception &e) {
+                qWarning() << "IndexReader::isCurrent() std exception:" << e.what();
+            }
+        }
+    }
+    // Mutex released; concurrent searches can proceed.
+
+    // Slow path: acquire commit.lock before any open/reopen so we don't observe
+    // an in-flight commit().  open() reads segments_N and segment files; if a
+    // commit is in progress, the resulting reader can reference torn segment
+    // data and later corrupt the heap inside weight->scorer().
+    LuceneCommitLockGuard commitLock(directory, /*timeoutMs=*/1000, /*maxAttempts=*/3);
+    if (!commitLock.acquired()) {
+        qWarning() << "Cannot acquire commit.lock, abort OCR text search this round";
+        return nullptr;
+    }
+
+    // Double-check: another thread may have already reopened while we
+    // were waiting for commit.lock.
+    IndexReaderPtr cachedSnapshot;
+    {
+        QMutexLocker locker(&m_readerMutex);
+        cachedSnapshot = m_cachedReader;
+        if (cachedSnapshot) {
+            try {
+                if (cachedSnapshot->isCurrent()) {
+                    return cachedSnapshot;
+                }
+            } catch (...) {
+                // isCurrent() failed; proceed with reopen below
+            }
+        }
+    }
+
+    IndexReaderPtr result;
+    try {
+        if (cachedSnapshot) {
+            result = cachedSnapshot->reopen(true);
+            if (!result) {
+                result = IndexReader::open(directory, true);
+            }
+        } else {
+            result = IndexReader::open(directory, true);
+        }
+    } catch (const Lucene::LuceneException &e) {
+        qWarning() << "IndexReader open/reopen failed:" << QString::fromStdWString(e.getError());
+        QMutexLocker locker(&m_readerMutex);
+        m_cachedReader.reset();
+        return nullptr;
+    } catch (const std::exception &e) {
+        qWarning() << "IndexReader open/reopen std exception:" << e.what();
+        QMutexLocker locker(&m_readerMutex);
+        m_cachedReader.reset();
+        return nullptr;
+    }
+
+    if (result) {
+        QMutexLocker locker(&m_readerMutex);
+        m_cachedReader = result;
+    }
+    return result;
 }
 
 DFM_SEARCH_END_NS
