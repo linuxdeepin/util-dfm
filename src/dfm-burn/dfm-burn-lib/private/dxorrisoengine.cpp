@@ -496,6 +496,13 @@ bool DXorrisoEngine::doBurn(const QPair<QString, QString> files, int speed, QStr
     if (JOBFAILED_IF(this, r, xorriso))
         return false;
 
+    // blank as needed — initialize PMA/TOC for rewritable media (e.g. CD-RW)
+    r = XORRISO_OPT(xorriso, [this]() {
+        return Xorriso_option_blank(xorriso, PCHAR("as_needed"), 0);
+    });
+    if (JOBFAILED_IF(this, r, xorriso))
+        return false;
+
     // commit
     r = XORRISO_OPT(xorriso, [this]() {
         return Xorriso_option_commit(xorriso, 0);
