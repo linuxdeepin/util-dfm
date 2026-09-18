@@ -180,4 +180,26 @@ qint64 FileNameResultAPI::fileSizeBytes() const
     return m_result.customAttribute("fileSizeBytes").toLongLong();
 }
 
+// ==================== Pinyin (filename index) ====================
+
+QString FileNameResultAPI::pinyin() const
+{
+    return m_result.customAttribute("pinyin").toString();
+}
+
+void FileNameResultAPI::setPinyin(const QString &pinyin)
+{
+    m_result.setCustomAttribute("pinyin", pinyin);
+}
+
+QString FileNameResultAPI::pinyinAcronym() const
+{
+    return m_result.customAttribute("pinyinAcronym").toString();
+}
+
+void FileNameResultAPI::setPinyinAcronym(const QString &acronym)
+{
+    m_result.setCustomAttribute("pinyinAcronym", acronym);
+}
+
 DFM_SEARCH_END_NS

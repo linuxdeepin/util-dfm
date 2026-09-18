@@ -8,6 +8,7 @@
 #include <QString>
 #include <QSet>
 #include <QVariant>
+#include <QByteArray>
 #include <optional>
 
 // SPDX-FileCopyrightText: 2025 - 2026 UnionTech Software Technology Co., Ltd.
@@ -21,6 +22,36 @@ DFM_SEARCH_BEGIN_NS
 /**
  * @brief The SearchUtility namespace provides utility functions for search operations
  */
+namespace Global {
+
+/**
+ * @brief Map filename index status JSON content (index_status.json) to the legacy status string
+ *
+ * Mapping (keeps legacy semantics):
+ * - std::nullopt : JSON missing/invalid
+ * - "scanning"   : createInProgress or updateInProgress is set (full build / recovery /
+ *                  rebuild update in progress, index not trustworthy), or no successful
+ *                  task has ever completed (empty lastUpdateTime)
+ * - "updating"   : backlogExceeded is set (large event backlog in progress, index
+ *                  severely lagged — replicates legacy "updating" semantics)
+ * - "monitoring" : lastUpdateTime present and no in-progress/backlog flags (index
+ *                  searchable, ordinary incremental updates may still be running)
+ */
+std::optional<QString> fileNameIndexStatusFromJson(const QByteArray &jsonContent);
+
+/**
+ * @brief Check whether index_status.json content marks the filename index ready for search
+ *
+ * Five conditions: valid JSON && lastUpdateTime non-empty && !createInProgress
+ * && !updateInProgress && !backlogExceeded. The dirty/clean state is not checked:
+ * ordinary incremental updates keep the index searchable, while recovery/rebuild
+ * updates and large event backlogs do set their respective flags and must degrade
+ * search to realtime traversal.
+ */
+bool fileNameIndexReadyForSearchFromJson(const QByteArray &jsonContent);
+
+}   // namespace Global
+
 namespace SearchUtility {
 
 /**

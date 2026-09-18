@@ -136,6 +136,16 @@ void TextOutput::printSearchResult(const SearchResult &result)
         // 隐藏状态
         std::cout << "  Hidden: " << (resultAPI.isHidden() ? "Yes" : "No") << std::endl;
 
+        // 拼音（文件名索引字段，非拼音索引为空）
+        QString pinyin = resultAPI.pinyin();
+        if (!pinyin.isEmpty()) {
+            std::cout << "  Pinyin: " << pinyin.toStdString() << std::endl;
+        }
+        QString pinyinAcronym = resultAPI.pinyinAcronym();
+        if (!pinyinAcronym.isEmpty()) {
+            std::cout << "  Pinyin acronym: " << pinyinAcronym.toStdString() << std::endl;
+        }
+
         // 修改时间（同时输出时间戳和时间字符串）
         qint64 modifyTs = resultAPI.modifyTimestamp();
         if (modifyTs > 0) {

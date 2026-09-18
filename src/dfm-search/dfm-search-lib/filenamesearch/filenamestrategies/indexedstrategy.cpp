@@ -553,6 +553,10 @@ SearchResult FileNameIndexedStrategy::processDetailedSearchResult(
         }
     }
 
+    // 拼音与拼音首字母
+    api.setPinyin(QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kPinyin)));
+    api.setPinyinAcronym(QString::fromStdWString(doc->get(LuceneFieldNames::FileName::kPinyinAcronym)));
+
     return result;
 }
 

@@ -202,6 +202,16 @@ QJsonValue JsonOutput::resultToJson(const SearchResult &result)
 
         obj["isHidden"] = resultAPI.isHidden();
 
+        // 拼音（文件名索引字段，非拼音索引为空）
+        QString pinyin = resultAPI.pinyin();
+        if (!pinyin.isEmpty()) {
+            obj["pinyin"] = pinyin;
+        }
+        QString pinyinAcronym = resultAPI.pinyinAcronym();
+        if (!pinyinAcronym.isEmpty()) {
+            obj["pinyinAcronym"] = pinyinAcronym;
+        }
+
         // 修改时间（包含时间戳和时间字符串）
         qint64 modifyTs = resultAPI.modifyTimestamp();
         if (modifyTs > 0) {
