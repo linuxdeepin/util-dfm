@@ -251,6 +251,32 @@ public:
      */
     qint64 fileSizeBytes() const;
 
+    // ==================== Pinyin (filename index) ====================
+
+    /**
+     * @brief Get the pinyin (full spelling) of the file name
+     * @return Pinyin string, empty if not stored in the index
+     */
+    QString pinyin() const;
+
+    /**
+     * @brief Set the pinyin (full spelling) of the file name
+     * @param pinyin The pinyin string
+     */
+    void setPinyin(const QString &pinyin);
+
+    /**
+     * @brief Get the pinyin acronym (initials) of the file name
+     * @return Pinyin acronym string, empty if not stored in the index
+     */
+    QString pinyinAcronym() const;
+
+    /**
+     * @brief Set the pinyin acronym (initials) of the file name
+     * @param acronym The pinyin acronym string
+     */
+    void setPinyinAcronym(const QString &acronym);
+
 private:
     SearchResult &m_result;
 };

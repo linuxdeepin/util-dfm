@@ -738,30 +738,89 @@ bool isFileNameIndexDirectoryAvailable()
     }
 }
 
+namespace {
+
+struct FileNameIndexStatusFields {
+    bool parsed { false };
+    bool createInProgress { false };
+    bool updateInProgress { false };
+    bool backlogExceeded { false };
+    QString lastUpdateTime;
+};
+
+FileNameIndexStatusFields parseFileNameIndexStatusJson(const QByteArray &jsonContent)
+{
+    FileNameIndexStatusFields fields;
+
+    QJsonParseError jsonError;
+    const QJsonDocument doc = QJsonDocument::fromJson(jsonContent, &jsonError);
+    if (jsonError.error != QJsonParseError::NoError || !doc.isObject())
+        return fields;
+
+    const QJsonObject root = doc.object();
+    fields.parsed = true;
+    fields.createInProgress = root.value("createInProgress").toBool(false);
+    fields.updateInProgress = root.value("updateInProgress").toBool(false);
+    fields.backlogExceeded = root.value("backlogExceeded").toBool(false);
+    fields.lastUpdateTime = root.value("lastUpdateTime").toString();
+    return fields;
+}
+
+QByteArray readFileNameIndexStatusFile()
+{
+    const QString &statusFilePath = QDir(fileNameIndexDirectory()).filePath("index_status.json");
+    QFile statusFile(statusFilePath);
+    if (!statusFile.exists() || !statusFile.open(QIODevice::ReadOnly | QIODevice::Text))
+        return {};
+    return statusFile.readAll();
+}
+
+}   // namespace
+
+std::optional<QString> fileNameIndexStatusFromJson(const QByteArray &jsonContent)
+{
+    const FileNameIndexStatusFields fields = parseFileNameIndexStatusJson(jsonContent);
+    if (!fields.parsed)
+        return std::nullopt;
+
+    // 检查优先级：createInProgress > updateInProgress > backlogExceeded > state
+    // 全量创建/版本重建/断点续建中：索引滞后不可信
+    if (fields.createInProgress || fields.updateInProgress)
+        return QStringLiteral("scanning");
+
+    // 大规模事件积压处理中（复刻旧 updating 语义）：索引严重滞后，降级 Realtime
+    if (fields.backlogExceeded)
+        return QStringLiteral("updating");
+
+    // lastUpdateTime 只在任务成功后写入；普通增量（dirty）期间索引仍可搜索
+    if (!fields.lastUpdateTime.isEmpty())
+        return QStringLiteral("monitoring");
+
+    // 从未成功完成过任务
+    return QStringLiteral("scanning");
+}
+
+bool fileNameIndexReadyForSearchFromJson(const QByteArray &jsonContent)
+{
+    const FileNameIndexStatusFields fields = parseFileNameIndexStatusJson(jsonContent);
+    return fields.parsed
+            && !fields.createInProgress
+            && !fields.updateInProgress
+            && !fields.backlogExceeded
+            && !fields.lastUpdateTime.isEmpty();
+}
+
 bool isFileNameIndexReadyForSearch()
 {
-    // First check if the index physically exists
+    // 1. 索引物理存在
     if (!isFileNameIndexDirectoryAvailable()) {
         qDebug() << "Index directory does not exist physically.";
         return false;
     }
 
-    // Then check the status to ensure it's in monitoring state
-    std::optional<QString> currentStatus = fileNameIndexStatus();
-    if (!currentStatus) {
-        qWarning() << "Failed to get file name index status.";
-        return false;
-    }
-
-    const QStringList &validStatus = { "monitoring" };
-    const QString &status = currentStatus.value();
-    if (!validStatus.contains(status)) {
-        qDebug() << "Index status is '" << status
-                 << "', expected or 'monitoring'. Index not ready for search.";
-        return false;
-    }
-
-    return true;
+    // 2. lastUpdateTime 非空  3. !createInProgress  4. !updateInProgress  5. !backlogExceeded
+    // 不检查 dirty/clean state（普通增量期间索引仍可搜索）
+    return fileNameIndexReadyForSearchFromJson(readFileNameIndexStatusFile());
 }
 
 std::optional<QString> fileNameIndexStatus()
@@ -771,54 +830,18 @@ std::optional<QString> fileNameIndexStatus()
         return std::nullopt;
     }
 
-    const QString &statusFilePath = QDir(fileNameIndexDirectory()).filePath("status.json");
-    QFile statusFile(statusFilePath);
-
-    // 检查文件是否存在和可读
-    if (!statusFile.exists()) {
-        qWarning() << "Status file does not exist:" << statusFilePath;
-        return std::nullopt;
-    }
-    if (!statusFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Failed to open status file:" << statusFile.errorString();
-        return std::nullopt;
-    }
-
-    // 读取和解析JSON
-    QJsonParseError jsonError;
-    const QJsonDocument doc = QJsonDocument::fromJson(statusFile.readAll(), &jsonError);
-    statusFile.close();
-
-    if (jsonError.error != QJsonParseError::NoError) {
-        qWarning() << "JSON parse error:" << jsonError.errorString()
-                   << "at offset:" << jsonError.offset;
-        return std::nullopt;
-    }
-
-    // 检查JSON结构
-    if (!doc.isObject()) {
-        qWarning() << "Invalid JSON format: root is not an object";
-        return std::nullopt;
-    }
-
-    const QJsonObject root = doc.object();
-    if (!root.contains("status") || !root["status"].isString()) {
-        qWarning() << "Missing or invalid 'status' field";
-        return std::nullopt;
-    }
-
-    // 返回小写状态
-    return root["status"].toString().toLower();
+    return fileNameIndexStatusFromJson(readFileNameIndexStatusFile());
 }
 
 QString fileNameIndexDirectory()
 {
-    return QString("/run/user/%1/deepin-anything-server").arg(getuid());
+    return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
+        + "/deepin/dde-file-manager/filename-index";
 }
 
 int fileNameIndexVersion()
 {
-    return readIndexVersion(fileNameIndexDirectory(), "status.json");
+    return readIndexVersion(fileNameIndexDirectory(), "index_status.json");
 }
 
 int contentIndexVersion()

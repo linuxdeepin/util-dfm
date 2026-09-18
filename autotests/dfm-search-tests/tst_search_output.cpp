@@ -127,6 +127,8 @@ private Q_SLOTS:
     void jsonOutput_contentAndFilenameCharCountContract();
     void jsonOutput_ocrAndSemanticCharCountContract();
     void textOutput_contentAndSemanticCharCountContract();
+    void jsonOutput_filenamePinyinContract();
+    void textOutput_filenamePinyinContract();
 };
 
 void tst_SearchOutput::previewOutputHelpers_includeCharCount()
@@ -296,6 +298,70 @@ void tst_SearchOutput::textOutput_contentAndSemanticCharCountContract()
         semanticOutput.outputSearchFinished({ semanticResult });
     });
     QVERIFY(semanticText.contains("charCount: 30"));
+}
+
+void tst_SearchOutput::jsonOutput_filenamePinyinContract()
+{
+    SearchOptions options;
+    options.setDetailedResultsEnabled(true);
+
+    SearchResult result("/tmp/baogao.txt");
+    FileNameResultAPI api(result);
+    api.setFilename(QString::fromUtf8("报告.txt"));
+    api.setPinyin("baogao");
+    api.setPinyinAcronym("bg");
+
+    dfmsearch::JsonOutput output(false);
+    output.setSearchOptions(options);
+    output.setSearchContext("bg", "/tmp", SearchType::FileName, SearchMethod::Indexed);
+    const QString jsonText = captureStdout([&]() {
+        output.outputSearchStarted();
+        output.outputSearchFinished({ result });
+    });
+    const QJsonObject root = QJsonDocument::fromJson(jsonText.toUtf8()).object();
+    const QJsonObject item = root.value("results").toArray().first().toObject();
+    QCOMPARE(item.value("pinyin").toString(), QString("baogao"));
+    QCOMPARE(item.value("pinyinAcronym").toString(), QString("bg"));
+
+    // 无拼音字段的结果不应输出空键
+    SearchResult plainResult("/tmp/readme.txt");
+    FileNameResultAPI plainApi(plainResult);
+    plainApi.setFilename("readme.txt");
+
+    dfmsearch::JsonOutput plainOutput(false);
+    plainOutput.setSearchOptions(options);
+    plainOutput.setSearchContext("readme", "/tmp", SearchType::FileName, SearchMethod::Indexed);
+    const QString plainText = captureStdout([&]() {
+        plainOutput.outputSearchStarted();
+        plainOutput.outputSearchFinished({ plainResult });
+    });
+    const QJsonObject plainRoot = QJsonDocument::fromJson(plainText.toUtf8()).object();
+    const QJsonObject plainItem = plainRoot.value("results").toArray().first().toObject();
+    QVERIFY(!plainItem.contains("pinyin"));
+    QVERIFY(!plainItem.contains("pinyinAcronym"));
+}
+
+void tst_SearchOutput::textOutput_filenamePinyinContract()
+{
+    SearchOptions options;
+    options.setDetailedResultsEnabled(true);
+
+    SearchResult result("/tmp/baogao.txt");
+    FileNameResultAPI api(result);
+    api.setFilename(QString::fromUtf8("报告.txt"));
+    api.setFileType("doc");
+    api.setPinyin("baogao");
+    api.setPinyinAcronym("bg");
+
+    dfmsearch::TextOutput output;
+    output.setSearchOptions(options);
+    output.setVerbose(true);
+    output.setSearchContext("bg", "/tmp", SearchType::FileName, SearchMethod::Indexed);
+    const QString text = captureStdout([&]() {
+        output.outputSearchFinished({ result });
+    });
+    QVERIFY(text.contains("Pinyin: baogao"));
+    QVERIFY(text.contains("Pinyin acronym: bg"));
 }
 
 QObject *create_tst_SearchOutput()

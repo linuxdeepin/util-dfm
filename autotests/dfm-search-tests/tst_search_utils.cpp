@@ -16,6 +16,7 @@
 #include <dfm-search/dsearch_global.h>
 #include <dfm-search-lib/utils/filenameblacklistmatcher.h>
 #include <dfm-search-lib/utils/lucenequeryutils.h>
+#include <dfm-search-lib/utils/searchutility.h>
 
 using namespace DFMSEARCH;
 
@@ -30,6 +31,7 @@ private Q_SLOTS:
     void testPinyin();
     void testPinyinAcronym();
     void testAnythingStatus();
+    void testFileNameIndexStatusMapping();
     void testFileNameBlacklistMatcher();
     void testNGramSearchQuery();
 
@@ -238,15 +240,16 @@ void tst_SearchUtils::testAnythingStatus()
     // 测试状态获取
     auto status = Global::fileNameIndexStatus();
 
-    // 结果验证
-    QVERIFY2(status.has_value(), "Could not retrieve status (file missing/permission error?)");
+    if (!status.has_value()) {
+        QWARN("filename index status unavailable (no local index) - skipping runtime check");
+        return;
+    }
 
-    // 定义有效状态列表（小写）
+    // 新状态映射返回 "scanning"/"updating"/"monitoring"（"loading"/"closed" 不再出现）
     static const QSet<QString> validStatuses {
-        "loading",
         "scanning",
-        "monitoring",
-        "closed"
+        "updating",
+        "monitoring"
     };
 
     // 状态有效性检查
@@ -259,6 +262,89 @@ void tst_SearchUtils::testAnythingStatus()
 
     // 成功输出
     qInfo() << "Test Passed. Current anything status:" << currentStatus;
+}
+
+void tst_SearchUtils::testFileNameIndexStatusMapping()
+{
+    struct Case {
+        QString name;
+        QByteArray json;
+        std::optional<QString> expectedStatus;
+        bool expectedReady;
+    };
+
+    const QList<Case> cases = {
+        // 首次创建中（Create 启动时 removeIndexStatusFile，最小字段）
+        { "create-in-progress",
+          R"({"createInProgress": true})",
+          QStringLiteral("scanning"), false },
+        // 中断后继续创建（版本重建，无 lastUpdateTime）
+        { "create-resumed",
+          R"({"createInProgress": true, "version": 1})",
+          QStringLiteral("scanning"), false },
+        // dirty 重启后的恢复 Update 中（索引滞后不可信 → 降级）
+        { "recovery-update",
+          R"({"state": "dirty", "createInProgress": false, "updateInProgress": true, "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("scanning"), false },
+        // 运行中 needsRebuild 触发的 rebuild Update 中（新路径文件未索引 → 降级）
+        { "rebuild-update",
+          R"({"state": "dirty", "updateInProgress": true, "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("scanning"), false },
+        // Update 失败/中断后标志保持（持续降级直到恢复成功）
+        { "update-failed-persisted",
+          R"({"state": "dirty", "updateInProgress": true, "needsRebuild": true, "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("scanning"), false },
+        // 大规模事件积压处理中（backlogExceeded → "updating" → 降级 Realtime）
+        { "backlog-exceeded",
+          R"({"state": "dirty", "backlogExceeded": true, "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("updating"), false },
+        // 崩溃时正在积压（dirty + backlog 残留，启动时保持 → 持续降级直到恢复完成）
+        { "backlog-crash-residue",
+          R"({"state": "dirty", "backlogExceeded": true, "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("updating"), false },
+        // 积压处理完成（backlogExceeded 清除 → 恢复索引搜索）
+        { "backlog-resolved",
+          R"({"state": "clean", "backlogExceeded": false, "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("monitoring"), true },
+        // 普通事件增量（dirty 但无恢复/积压标志，索引可用）
+        { "incremental-dirty",
+          R"({"state": "dirty", "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("monitoring"), true },
+        // 恢复/重建/积压处理完成
+        { "clean",
+          R"({"state": "clean", "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("monitoring"), true },
+        // 从未成功完成过任务（无 lastUpdateTime、无进行中标志）
+        { "never-completed",
+          R"({"state": "dirty"})",
+          QStringLiteral("scanning"), false },
+        // 双标志同时置位（createInProgress 优先级最高）
+        { "both-flags",
+          R"({"createInProgress": true, "updateInProgress": true, "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("scanning"), false },
+        // backlog + update 同时置位（updateInProgress 优先级高于 backlogExceeded）
+        { "update-plus-backlog",
+          R"({"updateInProgress": true, "backlogExceeded": true, "lastUpdateTime": "2026-09-18T10:00:00"})",
+          QStringLiteral("scanning"), false },
+        // JSON 无效
+        { "invalid-json",
+          "not-json",
+          std::nullopt, false },
+        // 空内容
+        { "empty-content",
+          "",
+          std::nullopt, false },
+    };
+
+    for (const Case &c : cases) {
+        const auto actualStatus = Global::fileNameIndexStatusFromJson(c.json);
+        QVERIFY2(actualStatus == c.expectedStatus,
+                 qPrintable(QString("case '%1': status mismatch, got %2")
+                                .arg(c.name,
+                                     actualStatus.has_value() ? actualStatus.value() : QStringLiteral("nullopt"))));
+        QVERIFY2(Global::fileNameIndexReadyForSearchFromJson(c.json) == c.expectedReady,
+                 qPrintable(QString("case '%1': ready mismatch").arg(c.name)));
+    }
 }
 
 void tst_SearchUtils::doFileNameBlacklistMatchTest(const QString &caseName,
