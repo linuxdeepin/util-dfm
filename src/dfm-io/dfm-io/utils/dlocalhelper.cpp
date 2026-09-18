@@ -1093,8 +1093,11 @@ GFile *DLocalHelper::createGFile(const QUrl &uri)
     QString path = uri.userInfo().isEmpty() || !uri.userInfo().startsWith("originPath::") ?
                 QString() : uri.userInfo().replace("originPath::", "");
 
+    QString uriStr = uri.toString();
+    uriStr.replace("%5C", "\\");
+
     GFile *gfile = path.isEmpty() ?
-                g_file_new_for_uri(uri.toString().toLocal8Bit().data()) :
+                g_file_new_for_uri(uriStr.toLocal8Bit().data()) :
                 g_file_new_for_path(path.toLatin1().data());
     return gfile;
 }

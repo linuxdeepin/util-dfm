@@ -89,8 +89,7 @@ void DEnumeratorPrivate::clean()
 
 bool DEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DEnumeratorPrivate> me)
 {
-    const QString &uriPath = url.toString();
-    g_autoptr(GFile) gfile = g_file_new_for_uri(uriPath.toLocal8Bit().data());
+    g_autoptr(GFile) gfile = DLocalHelper::createGFile(url);
 
     g_autoptr(GError) gerror = nullptr;
     checkAndResetCancel();
@@ -116,7 +115,7 @@ bool DEnumeratorPrivate::createEnumerator(const QUrl &url, QPointer<DEnumeratorP
         if (gerror)
             setErrorFromGError(gerror);
         ret = false;
-        qWarning() << "create enumerator failed, url: " << uriPath << " error: " << error.errorMsg() << gerror->message;
+        qWarning() << "create enumerator failed, url: " << url << " error: " << error.errorMsg() << gerror->message;
     } else {
         stackEnumerator.push_back(genumerator);
     }
