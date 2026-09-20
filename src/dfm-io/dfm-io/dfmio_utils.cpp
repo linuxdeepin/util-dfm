@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 - 2023 UnionTech Software Technology Co., Ltd.
+// SPDX-FileCopyrightText: 2021 - 2026 UnionTech Software Technology Co., Ltd.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -228,9 +228,13 @@ QUrl DFMUtils::bindUrlTransform(const QUrl &url)
         return tmp;
     }
 
-    auto path = BackslashPathToNormal(url.path());
-    path = bindPathTransform(path, false);
-    path = normalPathToBackslash(path);
+    auto normalPath = BackslashPathToNormal(url.path());
+    auto transformedPath = bindPathTransform(normalPath, false);
+
+    if (transformedPath == normalPath)
+        return url;
+
+    auto path = normalPathToBackslash(transformedPath);
     tmp.setPath(path);
     return tmp;
 }
@@ -248,6 +252,8 @@ QString DFMUtils::BackslashPathToNormal(const QString &trash)
 QString DFMUtils::normalPathToBackslash(const QString &normal)
 {
     QString trash = normal;
+    while (trash.startsWith("/"))
+        trash = trash.mid(1);
     trash = trash.replace("/", "\\");
     trash.push_front("/");
     return trash;
