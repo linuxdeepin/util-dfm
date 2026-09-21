@@ -64,3 +64,6 @@ AGENTS.md
 .agents
 .codex
 
+# dfm-search 测试脚本报告
+tests/dfm-search/scripts/reports/
+
