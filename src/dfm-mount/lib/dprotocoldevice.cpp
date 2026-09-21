@@ -15,8 +15,16 @@
 #include <QPointer>
 #include <QElapsedTimer>
 #include <QRegularExpression>
+#include <QUrl>
 
 #include <functional>
+
+#include <sys/socket.h>
+#include <netdb.h>
+#include <poll.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 
 DFM_MOUNT_USE_NS
 
@@ -31,7 +39,66 @@ struct CallbackProxyWithData
     CallbackProxy caller;
     QPointer<DProtocolDevice> data;
     DProtocolDevicePrivate *d { nullptr };
+
+    GCancellable *unmountCancellable { nullptr };
+    bool ownsCancellable { false };
+    bool unmountTimedOut { false };
+    bool forceUnmountIssued { false };
+    QScopedPointer<QTimer> unmountTimer;
 };
+
+bool isNetworkScheme(const QString &deviceId)
+{
+    static const QStringList schemes { "sftp", "ftp", "smb", "afp", "dav", "davs" };
+    QUrl url(deviceId);
+    return schemes.contains(url.scheme(), Qt::CaseInsensitive);
+}
+
+bool isHostReachable(const QString &deviceId)
+{
+    QUrl url(deviceId);
+    QString host = url.host();
+    if (host.isEmpty())
+        return true;
+
+    int port = url.port(22);
+
+    struct addrinfo hints = {};
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    struct addrinfo *result = nullptr;
+    if (getaddrinfo(host.toUtf8().constData(), QString::number(port).toUtf8().constData(), &hints, &result) != 0 || !result)
+        return true;
+
+    bool connected = false;
+    for (struct addrinfo *rp = result; rp != nullptr && !connected; rp = rp->ai_next) {
+        int fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (fd < 0)
+            continue;
+
+        int oldflags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, oldflags | O_NONBLOCK);
+
+        if (connect(fd, rp->ai_addr, rp->ai_addrlen) == 0) {
+            connected = true;
+        } else if (errno == EINPROGRESS) {
+            struct pollfd pfd;
+            pfd.fd = fd;
+            pfd.events = POLLOUT;
+            if (poll(&pfd, 1, 2000) > 0) {
+                int soError = 0;
+                socklen_t soLen = sizeof(soError);
+                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &soError, &soLen) == 0 && soError == 0)
+                    connected = true;
+            }
+        }
+        close(fd);
+    }
+
+    freeaddrinfo(result);
+    return connected;
+}
 }
 
 DProtocolDevice::DProtocolDevice(const QString &id, GVolumeMonitor *monitor, QObject *parent)
@@ -348,19 +415,39 @@ void DProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperate
                 operation = reinterpret_cast<GMountOperation *>((opts.value(ParamMountOperation).value<void *>()));
 
             GMountUnmountFlags flag;
-            if (opts.contains(ParamForce) && opts.value(ParamForce).toBool())
+            if (opts.contains(ParamForce) && opts.value(ParamForce).toBool()) {
                 flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_FORCE;
-            else
+            } else if (isNetworkScheme(deviceId) && !isHostReachable(deviceId)) {
+                flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_FORCE;
+            } else {
                 flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_NONE;
-
-            //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
-            //        QMutexLocker locker(&mutexForMount);
-            //        qInfo() << "mutexForMount locked" << __FUNCTION__;
+            }
 
             CallbackProxyWithData *proxy = new CallbackProxyWithData(cb);
             proxy->data = qobject_cast<DProtocolDevice *>(q);
             proxy->d = this;
-            g_mount_unmount_with_operation(mountHandler, flag, operation, cancellable, unmountWithCallback, proxy);
+
+            if (cancellable) {
+                proxy->unmountCancellable = cancellable;
+                proxy->ownsCancellable = false;
+            } else {
+                proxy->unmountCancellable = g_cancellable_new();
+                proxy->ownsCancellable = true;
+            }
+
+            proxy->forceUnmountIssued = (flag == GMountUnmountFlags::G_MOUNT_UNMOUNT_FORCE);
+            int timeoutMs = proxy->forceUnmountIssued ? 3000 : 5000;
+            proxy->unmountTimer.reset(new QTimer());
+            proxy->unmountTimer->setSingleShot(true);
+            proxy->unmountTimer->setInterval(timeoutMs);
+            QObject::connect(proxy->unmountTimer.data(), &QTimer::timeout, [proxy]() {
+                proxy->unmountTimedOut = true;
+                if (proxy->unmountCancellable)
+                    g_cancellable_cancel(proxy->unmountCancellable);
+            });
+            proxy->unmountTimer->start();
+
+            g_mount_unmount_with_operation(mountHandler, flag, operation, proxy->unmountCancellable, unmountWithCallback, proxy);
         }
     }
 }
@@ -612,15 +699,44 @@ void DProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncResul
     }
 
     auto proxy = static_cast<CallbackProxyWithData *>(cbProxy);
-    if (proxy) {
-        if (proxy->data) {
-            proxy->d->mountHandler = nullptr;
-        }
-        if (proxy->caller.cb) {
-            proxy->caller.cb(ret, derr);
-        }
-        delete proxy;
+    if (!proxy)
+        return;
+
+    if (proxy->unmountTimer)
+        proxy->unmountTimer->stop();
+
+    if (proxy->unmountTimedOut && !proxy->forceUnmountIssued && proxy->d && proxy->d->mountHandler) {
+        proxy->forceUnmountIssued = true;
+        proxy->unmountTimedOut = false;
+
+        if (proxy->ownsCancellable && proxy->unmountCancellable)
+            g_object_unref(proxy->unmountCancellable);
+        proxy->unmountCancellable = g_cancellable_new();
+        proxy->ownsCancellable = true;
+
+        proxy->unmountTimer->setInterval(3000);
+        proxy->unmountTimer->start();
+
+        g_mount_unmount_with_operation(proxy->d->mountHandler, GMountUnmountFlags::G_MOUNT_UNMOUNT_FORCE,
+                                       nullptr, proxy->unmountCancellable, unmountWithCallback, proxy);
+        return;
     }
+
+    if (proxy->unmountTimedOut && proxy->forceUnmountIssued) {
+        ret = false;
+        derr = Utils::genOperateErrorInfo(DeviceError::kUserErrorTimedOut);
+    }
+
+    if (proxy->ownsCancellable && proxy->unmountCancellable)
+        g_object_unref(proxy->unmountCancellable);
+
+    if (proxy->data) {
+        proxy->d->mountHandler = nullptr;
+    }
+    if (proxy->caller.cb) {
+        proxy->caller.cb(ret, derr);
+    }
+    delete proxy;
 }
 
 ASyncToSyncHelper::ASyncToSyncHelper(int timeout)
