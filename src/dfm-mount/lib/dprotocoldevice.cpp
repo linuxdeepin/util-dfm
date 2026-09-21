@@ -21,6 +21,8 @@
 DFM_MOUNT_USE_NS
 
 namespace {
+static constexpr int kUnmountAsyncTimeoutMs { 5000 };
+
 struct CallbackProxyWithData
 {
     CallbackProxyWithData() = delete;
@@ -31,6 +33,12 @@ struct CallbackProxyWithData
     CallbackProxy caller;
     QPointer<DProtocolDevice> data;
     DProtocolDevicePrivate *d { nullptr };
+
+    QScopedPointer<QTimer> unmountTimer;
+    GCancellable *unmountCancellable { nullptr };
+    bool ownsCancellable { false };
+    bool unmountTimedOut { false };
+    bool forceUnmountIssued { false };
 };
 }
 
@@ -347,19 +355,36 @@ void DProtocolDevicePrivate::unmountAsync(const QVariantMap &opts, DeviceOperate
             if (opts.contains(ParamMountOperation))
                 operation = reinterpret_cast<GMountOperation *>((opts.value(ParamMountOperation).value<void *>()));
 
+            bool ownsCancellable = false;
+            if (!cancellable) {
+                cancellable = g_cancellable_new();
+                ownsCancellable = true;
+            }
+
             GMountUnmountFlags flag;
             if (opts.contains(ParamForce) && opts.value(ParamForce).toBool())
                 flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_FORCE;
             else
                 flag = GMountUnmountFlags::G_MOUNT_UNMOUNT_NONE;
 
-            //        qInfo() << "mutexForMount prelock" << __FUNCTION__;
-            //        QMutexLocker locker(&mutexForMount);
-            //        qInfo() << "mutexForMount locked" << __FUNCTION__;
-
             CallbackProxyWithData *proxy = new CallbackProxyWithData(cb);
             proxy->data = qobject_cast<DProtocolDevice *>(q);
             proxy->d = this;
+            proxy->unmountCancellable = cancellable;
+            proxy->ownsCancellable = ownsCancellable;
+
+            if (flag == G_MOUNT_UNMOUNT_NONE) {
+                proxy->unmountTimer.reset(new QTimer());
+                proxy->unmountTimer->setInterval(kUnmountAsyncTimeoutMs);
+                proxy->unmountTimer->setSingleShot(true);
+                QObject::connect(proxy->unmountTimer.data(), &QTimer::timeout, [proxy]() {
+                    proxy->unmountTimedOut = true;
+                    if (proxy->unmountCancellable)
+                        g_cancellable_cancel(proxy->unmountCancellable);
+                });
+                proxy->unmountTimer->start();
+            }
+
             g_mount_unmount_with_operation(mountHandler, flag, operation, cancellable, unmountWithCallback, proxy);
         }
     }
@@ -613,12 +638,27 @@ void DProtocolDevicePrivate::unmountWithCallback(GObject *sourceObj, GAsyncResul
 
     auto proxy = static_cast<CallbackProxyWithData *>(cbProxy);
     if (proxy) {
+        if (proxy->unmountTimedOut && !proxy->forceUnmountIssued && !ret && proxy->data) {
+            proxy->forceUnmountIssued = true;
+            g_mount_unmount_with_operation(mnt, G_MOUNT_UNMOUNT_FORCE,
+                                           nullptr, nullptr,
+                                           unmountWithCallback, proxy);
+            return;
+        }
+
+        if (proxy->unmountTimer)
+            proxy->unmountTimer->stop();
+
         if (proxy->data) {
             proxy->d->mountHandler = nullptr;
         }
         if (proxy->caller.cb) {
             proxy->caller.cb(ret, derr);
         }
+
+        if (proxy->ownsCancellable && proxy->unmountCancellable)
+            g_object_unref(proxy->unmountCancellable);
+
         delete proxy;
     }
 }
