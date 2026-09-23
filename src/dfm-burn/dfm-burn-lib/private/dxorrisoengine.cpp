@@ -296,6 +296,12 @@ bool DXorrisoEngine::doErase()
         r = XORRISO_OPT(xorriso, [this]() {
             return Xorriso_option_blank(xorriso, PCHAR("full"), 1);
         });
+    } else if (mediaTypeProperty() == MediaType::kDVD_RW) {
+        // DVD-RW should be erased via growisofs (see DOpticalDiscManager::erase).
+        // xorriso's "as_needed" mode does not reliably blank DVD-RW media.
+        qWarning() << "[dfm-burn] DVD-RW should be erased with growisofs, not xorriso";
+        Q_EMIT jobStatusChanged(JobStatus::kFailed, -1, "");
+        return false;
     } else {
         r = XORRISO_OPT(xorriso, [this]() {
             return Xorriso_option_blank(xorriso, PCHAR("as_needed"), 0);

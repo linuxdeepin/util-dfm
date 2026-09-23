@@ -12,6 +12,8 @@
 #include <QDebug>
 #include <QUrl>
 #include <QPointer>
+#include <QProcess>
+#include <QRegularExpression>
 
 DFM_BURN_USE_NS
 
@@ -104,21 +106,81 @@ bool DOpticalDiscManager::commit(const BurnOptions &opts, int speed, const QStri
 bool DOpticalDiscManager::erase()
 {
     bool ret { false };
-    QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
-    connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
-            [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
-                if (ptr)
-                    Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
-            },
-            Qt::DirectConnection);
 
-    if (!engine->acquireDevice(dptr->curDev))
-        qWarning() << "[dfm-burn] Cannot acquire device";
+    // Determine media type to dispatch the appropriate erasure tool.
+    // DVD-RW requires growisofs for a complete erase; xorriso's "as_needed"
+    // mode leaves residual filesystem structures on certain drive+media combos.
+    MediaType mediaType { MediaType::kNoMedia };
+    {
+        QScopedPointer<DOpticalDiscInfo> info { DOpticalDiscManager::createOpticalInfo(dptr->curDev) };
+        if (info)
+            mediaType = info->mediaType();
+    }
 
-    ret = engine->doErase();
+    if (mediaType == MediaType::kDVD_RW) {
+        ret = eraseWithGrowisofs();
+    } else {
+        QScopedPointer<DXorrisoEngine> engine { new DXorrisoEngine };
+        connect(engine.data(), &DXorrisoEngine::jobStatusChanged, this,
+                [this, ptr = QPointer(engine.data())](JobStatus status, int progress, QString speed) {
+                    if (ptr)
+                        Q_EMIT jobStatusChanged(status, progress, speed, ptr->takeInfoMessages());
+                },
+                Qt::DirectConnection);
 
-    engine->releaseDevice();
+        if (!engine->acquireDevice(dptr->curDev))
+            qWarning() << "[dfm-burn] Cannot acquire device";
+
+        ret = engine->doErase();
+
+        engine->releaseDevice();
+    }
+
     return ret;
+}
+
+bool DOpticalDiscManager::eraseWithGrowisofs()
+{
+    Q_EMIT jobStatusChanged(JobStatus::kRunning, 0, {}, {});
+
+    QProcess growisofs;
+    growisofs.setProcessChannelMode(QProcess::MergedChannels);
+
+    // growisofs -Z <device>=/dev/zero overwrites the entire disc with zeros,
+    // performing a complete erase that reliably clears DVD-RW media.
+    growisofs.start("growisofs", { "-Z", dptr->curDev + "=/dev/zero" });
+
+    if (!growisofs.waitForStarted()) {
+        dptr->errorMsg = "[dfm-burn] Failed to start growisofs for DVD-RW erase";
+        Q_EMIT jobStatusChanged(JobStatus::kFailed, -1, {}, { dptr->errorMsg });
+        return false;
+    }
+
+    // Parse progress output (e.g. "  10.0% done (223670/2236704 KiB)").
+    QRegularExpression re(R"((\d+\.\d+)%\s*done)");
+    while (growisofs.state() != QProcess::NotRunning) {
+        if (!growisofs.waitForReadyRead(30000))
+            break;
+        QByteArray output = growisofs.readAllStandardOutput();
+        auto match = re.match(QString::fromLocal8Bit(output));
+        if (match.hasMatch()) {
+            int percentage = static_cast<int>(match.captured(1).toDouble());
+            Q_EMIT jobStatusChanged(JobStatus::kRunning, percentage, {}, {});
+        }
+    }
+
+    growisofs.waitForFinished(-1);
+
+    if (growisofs.exitCode() != 0) {
+        QString errMsg = QString("[dfm-burn] growisofs DVD-RW erase failed: %1")
+                                 .arg(QString::fromLocal8Bit(growisofs.readAllStandardOutput()).trimmed());
+        dptr->errorMsg = errMsg;
+        Q_EMIT jobStatusChanged(JobStatus::kFailed, -1, {}, { errMsg });
+        return false;
+    }
+
+    Q_EMIT jobStatusChanged(JobStatus::kFinished, 0, {}, {});
+    return true;
 }
 
 bool DOpticalDiscManager::checkmedia(double *qgood, double *qslow, double *qbad)
