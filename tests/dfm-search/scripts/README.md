@@ -8,6 +8,7 @@
 tests/dfm-search/scripts/
 ├── test_filename_search.sh   # 文件名搜索测试脚本（21 个用例）
 ├── test_content_search.sh    # 文件内容搜索测试脚本（13 个用例）
+├── test_vfsmonitor.sh       # vfsmonitor 文件监视器有效性测试脚本（15 个用例）
 ├── common.sh                 # 公共函数库
 └── README.md                 # 本文件
 ```
@@ -29,6 +30,9 @@ tests/dfm-search/scripts/
 # 运行文件名搜索测试
 ./test_filename_search.sh
 
+# 运行 vfsmonitor 文件监视器有效性测试
+./test_vfsmonitor.sh
+
 # 运行文件内容搜索测试
 ./test_content_search.sh
 
@@ -41,6 +45,9 @@ INDEX_WAIT_TIMEOUT_CONTENT=60 ./test_content_search.sh
 
 # 调整轮询间隔（秒）
 INDEX_POLL_INTERVAL=3 ./test_filename_search.sh
+
+# 调整 VM-13 批量测试文件数（默认 100）
+VM_BATCH_COUNT=200 ./test_vfsmonitor.sh
 
 # 指定报告输出目录（默认 <脚本目录>/reports）
 TEST_REPORT_DIR=/tmp/my-reports ./test_filename_search.sh
@@ -107,6 +114,28 @@ TEST_REPORT_DIR=/tmp/my-reports ./test_filename_search.sh
 | 用例 | 限制 | 说明 |
 |------|------|------|
 | FT-10b/c、CT-05b/c | `--case-sensitive` 不生效 | 索引层做了大小写归一化，标志被接受但结果仍大小写不敏感（实测大写关键词返回 0 结果）。脚本运行时自动探测：若服务将来支持该能力，会自动恢复执行断言 |
+
+### vfsmonitor 文件监视器有效性测试（VM-01 ~ VM-15）
+
+通过文件系统操作后用 dfm-searcher 搜索验证索引是否实时更新，间接验证 vfsmonitor 文件监视器有效性。与 FT/CT 系列的区别：测试目标为监视器是否驱动索引实时更新，验证方向为双向（旧状态消失 AND 新状态出现）。
+
+| 用例 | 说明 |
+|------|------|
+| VM-01 | 文件创建后索引更新 |
+| VM-02 | 文件删除后索引更新 |
+| VM-03 | 文件重命名后索引更新（双向验证） |
+| VM-04 | 文件移动后索引更新（双向验证） |
+| VM-05 | 目录创建后索引更新 |
+| VM-06 | 目录删除后索引更新 |
+| VM-07 | 目录移动后索引更新（双向验证） |
+| VM-08 | 符号链接创建后索引更新（服务不支持时 SKIP） |
+| VM-09 | 文件内容新增后内容索引更新 |
+| VM-10 | 文件内容修改后内容索引更新（双向验证） |
+| VM-11 | 文件内容清空后内容索引更新 |
+| VM-12 | 文件删除后内容索引更新 |
+| VM-13 | 批量文件创建后索引更新（VM_BATCH_COUNT 可调，默认 100） |
+| VM-14 | 重复写入同一文件后内容索引更新 |
+| VM-15 | 大文件写入后内容索引更新 |
 
 ## 退出码
 
