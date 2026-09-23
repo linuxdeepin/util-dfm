@@ -15,12 +15,23 @@
 #   - 文件增删改移后搜索
 #   - 目录搜索、扩展名过滤
 #   - 实时搜索
+#   - 目录重命名/删除、跨索引边界移动、类型过滤（--file-types）
+#   - 隐藏目录、特殊字符文件名、快速建删抵消
+#   - 大突发创建完整性（reader thread/事件队列回归）
+#   - 服务重启后索引持久化（需 ENABLE_SERVICE_RESTART_TEST=1）
+#   - 符号链接条目（file/dir/dangling link 可搜、dir link 内容不跟随）
+#   - --file-types 全类型映射（video/audio/archive/app）
+#   - 扩展名边界（无后缀、多重点缀、大写扩展名）
+#   - 纯数字与单字符文件名
 #
 # 用法: ./test_filename_search.sh
 # 环境变量:
 #   DFM_SEARCHER             — dfm-searcher 可执行文件路径（默认: dfm-searcher）
 #   INDEX_WAIT_TIMEOUT_FILENAME — 文件名索引等待超时秒数（默认: 30）
 #   INDEX_POLL_INTERVAL      — 索引轮询间隔秒数（默认: 2）
+#   BURST_FILE_COUNT         — 大突发用例文件数（默认: 3000）
+#   BURST_INDEX_WAIT_TIMEOUT_FILENAME — 大突发索引等待超时秒数（默认: 120）
+#   ENABLE_SERVICE_RESTART_TEST — 置 1 启用服务重启持久化用例（会重启索引服务）
 # =============================================================================
 
 set -euo pipefail
@@ -433,6 +444,426 @@ fi
 # 清理压力测试文件
 rm -rf "$STRESS_DIR"
 echo "Cleaned up stress test files."
+
+# ---------- FT-22: 目录重命名后搜索 ----------
+# 覆盖索引服务的目录移动处理路径（MoveProcessor 目录补偿/路径重写）：
+# 目录改名后内部文件的索引路径必须同步更新，且旧路径消失。
+echo ""
+echo "--- FT-22: Search after directory rename ---"
+mkdir -p "$TEST_DIR/dirmove"
+echo "content" > "$TEST_DIR/dirmove/inner_report.txt"
+
+if wait_for_index "filename" "inner_report" "$TEST_DIR" "inner_report.txt"; then
+    mv "$TEST_DIR/dirmove" "$TEST_DIR/dirmove_renamed"
+
+    local_elapsed=0
+    renamed_ok=false
+    while [[ $local_elapsed -lt $FILENAME_INDEX_TIMEOUT ]]; do
+        result=$(run_searcher "filename" "inner_report" "$TEST_DIR") || true
+        if json_contains "$result" "$TEST_DIR/dirmove_renamed/inner_report.txt"; then
+            renamed_ok=true
+            break
+        fi
+        sleep "$INDEX_POLL_INTERVAL"
+        local_elapsed=$((local_elapsed + INDEX_POLL_INTERVAL))
+    done
+
+    TEST_TOTAL=$((TEST_TOTAL + 1))
+    if $renamed_ok; then
+        pass "FT-22a: File inside renamed dir found under new path"
+    else
+        fail "FT-22a: File inside renamed dir not found under new path" "Directory move may not update inner entries"
+    fi
+
+    result=$(run_searcher "filename" "inner_report" "$TEST_DIR") || true
+    assert_not_found "FT-22b: Old dir path removed from index" "$result" "$TEST_DIR/dirmove/inner_report.txt"
+else
+    skip "FT-22: Search after directory rename" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-23: 跨索引边界移动 ----------
+# a) 移出到索引范围外（/tmp）：RENAME_TO 解析落在监控外 → 应按删除处理；
+# b) 从索引范围外移入：无配对 RENAME_FROM → 应按创建处理。
+echo ""
+echo "--- FT-23: Move across index boundary ---"
+echo "content" > "$TEST_DIR/outbound_file.txt"
+if wait_for_index "filename" "outbound_file" "$TEST_DIR" "outbound_file.txt"; then
+    OUT_TMP="/tmp/dfmsearch_outbound_$$.txt"
+    mv "$TEST_DIR/outbound_file.txt" "$OUT_TMP"
+
+    local_elapsed=0
+    gone_ok=false
+    while [[ $local_elapsed -lt $FILENAME_INDEX_TIMEOUT ]]; do
+        result=$(run_searcher "filename" "outbound_file" "$TEST_DIR") || true
+        if ! json_contains "$result" "outbound_file.txt"; then
+            gone_ok=true
+            break
+        fi
+        sleep "$INDEX_POLL_INTERVAL"
+        local_elapsed=$((local_elapsed + INDEX_POLL_INTERVAL))
+    done
+
+    TEST_TOTAL=$((TEST_TOTAL + 1))
+    if $gone_ok; then
+        pass "FT-23a: File moved out of index roots disappears from index"
+    else
+        fail "FT-23a: File moved out of index roots still in index" "Rename destination outside roots should be treated as deletion"
+    fi
+    rm -f "$OUT_TMP"
+else
+    skip "FT-23a: Move out of index roots" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+IN_TMP="/tmp/dfmsearch_inbound_$$.txt"
+echo "content" > "$IN_TMP"
+mv "$IN_TMP" "$TEST_DIR/inbound_file.txt"
+
+if wait_for_index "filename" "inbound_file" "$TEST_DIR" "inbound_file.txt"; then
+    result=$(run_searcher "filename" "inbound_file" "$TEST_DIR") || true
+    assert_found "FT-23b: File moved into index roots is found" "$result" "inbound_file.txt"
+else
+    skip "FT-23b: Move into index roots" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-24: 文件类型过滤 (--file-types) ----------
+# filetypemapper 后缀→类型映射（pic/doc/audio/video/archive/app）是索引服务
+# 新增能力，dfm-searcher 通过 --file-types 传递。
+echo ""
+echo "--- FT-24: File type filter (--file-types) ---"
+mkdir -p "$TEST_DIR/filetypes"
+echo "content" > "$TEST_DIR/filetypes/typed_photo.png"
+echo "content" > "$TEST_DIR/filetypes/typed_picture.jpg"
+echo "content" > "$TEST_DIR/filetypes/typed_doc.txt"
+echo "content" > "$TEST_DIR/filetypes/typed_song.mp3"
+
+if wait_for_index "filename" "typed_song" "$TEST_DIR" "typed_song.mp3"; then
+    result=$(run_searcher "filename" "typed" "$TEST_DIR" "--file-types=pic") || true
+    assert_found "FT-24a: file-types=pic finds .png" "$result" "typed_photo.png"
+    assert_found "FT-24b: file-types=pic finds .jpg" "$result" "typed_picture.jpg"
+    assert_not_found "FT-24c: file-types=pic excludes .txt" "$result" "typed_doc.txt"
+    assert_not_found "FT-24d: file-types=pic excludes .mp3" "$result" "typed_song.mp3"
+else
+    skip "FT-24: File type filter" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-25: 特殊字符文件名 ----------
+echo ""
+echo "--- FT-25: Special characters in filename ---"
+mkdir -p "$TEST_DIR/special"
+echo "content" > "$TEST_DIR/special/hello world.txt"
+echo "content" > "$TEST_DIR/special/emoji😀file.txt"
+echo "content" > "$TEST_DIR/special/中文_数字123.txt"
+
+if wait_for_index "filename" "world" "$TEST_DIR" "hello world.txt"; then
+    result=$(run_searcher "filename" "world" "$TEST_DIR") || true
+    assert_found "FT-25a: Filename with spaces is searchable" "$result" "hello world.txt"
+
+    result=$(run_searcher "filename" "emoji" "$TEST_DIR") || true
+    assert_found "FT-25b: Filename with emoji is searchable" "$result" "emoji😀file.txt"
+
+    result=$(run_searcher "filename" "123" "$TEST_DIR") || true
+    assert_found "FT-25c: Chinese+digits+underscore filename is searchable" "$result" "中文_数字123.txt"
+else
+    skip "FT-25: Special characters in filename" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-26: 隐藏目录搜索 ----------
+# FT-11 只覆盖隐藏文件；此处验证隐藏目录内的文件：
+# 默认排除，--include-hidden 可见（前提是服务已将其入索引）。
+echo ""
+echo "--- FT-26: Hidden directory search ---"
+mkdir -p "$TEST_DIR/.hidden_dir"
+echo "content" > "$TEST_DIR/.hidden_dir/inside_hidden.txt"
+
+if wait_for_index "filename" "inside_hidden" "$TEST_DIR" "inside_hidden.txt" "--include-hidden"; then
+    result=$(run_searcher "filename" "inside_hidden" "$TEST_DIR") || true
+    assert_not_found "FT-26a: Default excludes files in hidden dirs" "$result" "inside_hidden.txt"
+
+    result=$(run_searcher "filename" "inside_hidden" "$TEST_DIR" "--include-hidden") || true
+    assert_found "FT-26b: --include-hidden finds files in hidden dirs" "$result" "inside_hidden.txt"
+else
+    skip "FT-26: Hidden directory search" "Hidden dir content not indexed within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-27: 删除目录后搜索 ----------
+echo ""
+echo "--- FT-27: Search after directory deletion ---"
+mkdir -p "$TEST_DIR/deldir"
+echo "content" > "$TEST_DIR/deldir/inside_deldir.txt"
+
+if wait_for_index "filename" "inside_deldir" "$TEST_DIR" "inside_deldir.txt"; then
+    rm -rf "$TEST_DIR/deldir"
+
+    local_elapsed=0
+    deleted_ok=false
+    while [[ $local_elapsed -lt $FILENAME_INDEX_TIMEOUT ]]; do
+        result=$(run_searcher "filename" "inside_deldir" "$TEST_DIR") || true
+        if ! json_contains "$result" "inside_deldir.txt"; then
+            deleted_ok=true
+            break
+        fi
+        sleep "$INDEX_POLL_INTERVAL"
+        local_elapsed=$((local_elapsed + INDEX_POLL_INTERVAL))
+    done
+
+    TEST_TOTAL=$((TEST_TOTAL + 1))
+    if $deleted_ok; then
+        pass "FT-27: Deleted directory's files removed from index"
+    else
+        fail "FT-27: Deleted directory's files still in index" "Directory deletion may not cascade"
+    fi
+else
+    skip "FT-27: Search after directory deletion" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-28: 大突发创建完整性 ----------
+# 回归 reader thread + 事件队列修复：快速 touch 空文件（无内容写入）制造
+# 高速率事件突发，验证事件管线无丢失。FT-21 的 1000 文件 + 逐个 echo
+# 速率不足以触发旧版"慢客户端被踢"问题。
+echo ""
+echo "--- FT-28: Burst creation integrity ---"
+BURST_COUNT="${BURST_FILE_COUNT:-3000}"
+BURST_TIMEOUT="${BURST_INDEX_WAIT_TIMEOUT_FILENAME:-120}"
+BURST_DIR="$TEST_DIR/burst_filename"
+mkdir -p "$BURST_DIR"
+
+count_burst_files() {
+    if command -v jq &>/dev/null; then
+        echo "$1" | jq -r '[.results[]? | select(test("burst_fn_[0-9]+\\.txt$"))] | unique | length' 2>/dev/null || echo 0
+    else
+        echo "$1" | grep -oE 'burst_fn_[0-9]+\.txt' | sort -u | wc -l
+    fi
+}
+
+echo "Creating $BURST_COUNT empty files as fast as possible (no content writes)..."
+for i in $(seq 1 "$BURST_COUNT"); do
+    printf -v idx "%04d" "$i"
+    : > "$BURST_DIR/burst_fn_${idx}.txt"
+done
+
+echo "Waiting for index (timeout: ${BURST_TIMEOUT}s)..."
+elapsed=0
+result=""
+found_count=0
+while [[ $elapsed -lt $BURST_TIMEOUT ]]; do
+    result=$(run_searcher "filename" "burst_fn" "$BURST_DIR" "--max-results=$((BURST_COUNT + 100))") || true
+    found_count=$(count_burst_files "$result")
+    if [[ "$found_count" -eq "$BURST_COUNT" ]]; then
+        break
+    fi
+    sleep "$INDEX_POLL_INTERVAL"
+    elapsed=$((elapsed + INDEX_POLL_INTERVAL))
+done
+
+TEST_TOTAL=$((TEST_TOTAL + 1))
+if [[ "$found_count" -eq "$BURST_COUNT" ]]; then
+    pass "FT-28: All $BURST_COUNT burst files indexed without loss"
+else
+    fail "FT-28: Burst integrity — $found_count/$BURST_COUNT files found" "$((BURST_COUNT - found_count)) files lost by event pipeline"
+fi
+
+if [[ "$found_count" -eq "$BURST_COUNT" ]]; then
+    for sample_idx in 0001 0500 1000 2000 2999; do
+        [[ "$sample_idx" -le "$BURST_COUNT" ]] || continue
+        sample_result=$(run_searcher "filename" "burst_fn_${sample_idx}" "$BURST_DIR") || true
+        assert_found "FT-28: Spot check burst_fn_${sample_idx}" "$sample_result" "burst_fn_${sample_idx}.txt"
+    done
+fi
+
+rm -rf "$BURST_DIR"
+echo "Cleaned up burst test files."
+
+# ---------- FT-29: 快速创建后删除（create+delete 抵消） ----------
+# 无论 create 事件是否已入索引，最终状态必须是"不在索引中"：
+# 未入索引 → collector 内 create+delete 抵消；已入索引 → delete 事件移除。
+echo ""
+echo "--- FT-29: Rapid create-then-delete ---"
+echo "content" > "$TEST_DIR/quick_del_file.txt"
+rm -f "$TEST_DIR/quick_del_file.txt"
+
+local_elapsed=0
+clean_ok=false
+while [[ $local_elapsed -lt $FILENAME_INDEX_TIMEOUT ]]; do
+    result=$(run_searcher "filename" "quick_del_file" "$TEST_DIR") || true
+    if ! json_contains "$result" "quick_del_file.txt"; then
+        clean_ok=true
+        break
+    fi
+    sleep "$INDEX_POLL_INTERVAL"
+    local_elapsed=$((local_elapsed + INDEX_POLL_INTERVAL))
+done
+
+TEST_TOTAL=$((TEST_TOTAL + 1))
+if $clean_ok; then
+    pass "FT-29: Rapidly created-and-deleted file absent from index"
+else
+    fail "FT-29: Rapidly created-and-deleted file still in index" "create+delete should cancel out or be removed"
+fi
+
+# ---------- FT-30: 服务重启后索引持久化 ----------
+# 索引数据（Lucene 目录 + index_status.json）持久化在磁盘上，重启索引服务
+# 后无需重建即可命中存量文件。侵入性用例（会重启服务），默认跳过。
+echo ""
+echo "--- FT-30: Index persistence across service restart ---"
+INDEX_SERVICE_UNIT="deepin-service-plugin@org.deepin.Filemanager.TextIndex.service"
+
+if [[ "${ENABLE_SERVICE_RESTART_TEST:-0}" != "1" ]]; then
+    skip "FT-30: Index persistence across restart" "Opt-in only: set ENABLE_SERVICE_RESTART_TEST=1"
+elif ! command -v systemctl &>/dev/null || ! systemctl --user cat "$INDEX_SERVICE_UNIT" &>/dev/null; then
+    skip "FT-30: Index persistence across restart" "Service unit not found: $INDEX_SERVICE_UNIT"
+else
+    echo "content" > "$TEST_DIR/persist_survivor.txt"
+    if ! wait_for_index "filename" "persist_survivor" "$TEST_DIR" "persist_survivor.txt"; then
+        skip "FT-30: Index persistence across restart" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+    else
+        echo "Restarting $INDEX_SERVICE_UNIT ..."
+        systemctl --user restart "$INDEX_SERVICE_UNIT"
+
+        PERSIST_TIMEOUT="${STRESS_FILENAME_INDEX_TIMEOUT}"
+        elapsed=0
+        persistence_ok=false
+        while [[ $elapsed -lt $PERSIST_TIMEOUT ]]; do
+            result=$(run_searcher "filename" "persist_survivor" "$TEST_DIR") || true
+            if json_contains "$result" "persist_survivor.txt"; then
+                persistence_ok=true
+                break
+            fi
+            sleep "$INDEX_POLL_INTERVAL"
+            elapsed=$((elapsed + INDEX_POLL_INTERVAL))
+        done
+
+        TEST_TOTAL=$((TEST_TOTAL + 1))
+        if $persistence_ok; then
+            pass "FT-30: Index survives service restart (no rebuild needed)"
+        else
+            fail "FT-30: Index lost after service restart" "Persisted index not queryable within ${PERSIST_TIMEOUT}s"
+        fi
+    fi
+fi
+
+# ---------- FT-31: 符号链接条目搜索 ----------
+# 设计契约：link 条目本身入索引（file link / dir link / dangling link，按链接
+# 自身路径可搜），但绝不跟随——dir link 内部内容不经链接路径入索引，真实目标
+# 内容仍按真实路径可搜。
+echo ""
+echo "--- FT-31: Symlink entries search ---"
+echo "content" > "$TEST_DIR/link_target_file.txt"
+mkdir -p "$TEST_DIR/link_target_dir"
+echo "content" > "$TEST_DIR/link_target_dir/inner_real_file.txt"
+
+if wait_for_index "filename" "link_target_file" "$TEST_DIR" "link_target_file.txt"; then
+    ln -s "$TEST_DIR/link_target_file.txt" "$TEST_DIR/link_entry_file.txt"
+    ln -s "$TEST_DIR/link_target_dir" "$TEST_DIR/link_entry_dir"
+    ln -s "$TEST_DIR/no_such_target_file.txt" "$TEST_DIR/link_entry_dangling.txt"
+
+    if wait_for_index "filename" "link_entry_dangling" "$TEST_DIR" "link_entry_dangling.txt"; then
+        result=$(run_searcher "filename" "link_entry" "$TEST_DIR") || true
+        assert_found "FT-31a: File symlink searchable by its own name" "$result" "link_entry_file.txt"
+        assert_found "FT-31b: Directory symlink searchable by its own name" "$result" "link_entry_dir"
+        assert_found "FT-31c: Dangling symlink searchable by its own name" "$result" "link_entry_dangling.txt"
+    else
+        skip "FT-31a/b/c: Symlink entries search" "Symlink entries not indexed within ${FILENAME_INDEX_TIMEOUT}s"
+    fi
+
+    if wait_for_index "filename" "inner_real_file" "$TEST_DIR" "$TEST_DIR/link_target_dir/inner_real_file.txt"; then
+        result=$(run_searcher "filename" "inner_real_file" "$TEST_DIR") || true
+        assert_found "FT-31d: Real target content searchable under real path" \
+                     "$result" "$TEST_DIR/link_target_dir/inner_real_file.txt"
+        assert_not_found "FT-31e: Dir link contents not indexed through link path" \
+                         "$result" "$TEST_DIR/link_entry_dir/"
+    else
+        skip "FT-31d/e: Dir link follow check" "Real target content not indexed within ${FILENAME_INDEX_TIMEOUT}s"
+    fi
+else
+    skip "FT-31: Symlink entries search" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-32: --file-types 全类型映射 ----------
+# FileTypeMapper 按 anything dconfig 后缀表映射（app/archive/audio/doc/pic/video），
+# FT-24 已覆盖 pic；此处覆盖 video/audio/archive/app。
+echo ""
+echo "--- FT-32: File type filter across categories ---"
+mkdir -p "$TEST_DIR/alltypes"
+echo "content" > "$TEST_DIR/alltypes/cat_video.mp4"
+echo "content" > "$TEST_DIR/alltypes/cat_audio.mp3"
+echo "content" > "$TEST_DIR/alltypes/cat_archive.zip"
+echo "content" > "$TEST_DIR/alltypes/cat_app.desktop"
+echo "content" > "$TEST_DIR/alltypes/cat_doc.txt"
+
+if wait_for_index "filename" "cat_app" "$TEST_DIR" "cat_app.desktop"; then
+    result=$(run_searcher "filename" "cat_" "$TEST_DIR" "--file-types=video") || true
+    assert_found "FT-32a: file-types=video finds .mp4" "$result" "cat_video.mp4"
+    assert_not_found "FT-32a: file-types=video excludes .mp3" "$result" "cat_audio.mp3"
+
+    result=$(run_searcher "filename" "cat_" "$TEST_DIR" "--file-types=audio") || true
+    assert_found "FT-32b: file-types=audio finds .mp3" "$result" "cat_audio.mp3"
+    assert_not_found "FT-32b: file-types=audio excludes .mp4" "$result" "cat_video.mp4"
+
+    result=$(run_searcher "filename" "cat_" "$TEST_DIR" "--file-types=archive") || true
+    assert_found "FT-32c: file-types=archive finds .zip" "$result" "cat_archive.zip"
+
+    result=$(run_searcher "filename" "cat_" "$TEST_DIR" "--file-types=app") || true
+    assert_found "FT-32d: file-types=app finds .desktop" "$result" "cat_app.desktop"
+    assert_not_found "FT-32d: file-types=app excludes .txt" "$result" "cat_doc.txt"
+else
+    skip "FT-32: File type filter across categories" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-33: 无扩展名与多重点缀文件名 ----------
+echo ""
+echo "--- FT-33: No-extension and multi-dot filenames ---"
+mkdir -p "$TEST_DIR/extedge"
+echo "content" > "$TEST_DIR/extedge/Makefile"
+echo "content" > "$TEST_DIR/extedge/backup.tar.gz"
+echo "content" > "$TEST_DIR/extedge/notes.zip"
+
+if wait_for_index "filename" "Makefile" "$TEST_DIR" "Makefile"; then
+    result=$(run_searcher "filename" "Makefile" "$TEST_DIR") || true
+    assert_found "FT-33a: Extension-less file searchable" "$result" "Makefile"
+
+    result=$(run_searcher "filename" "backup" "$TEST_DIR" "--file-extensions=gz") || true
+    assert_found "FT-33b: Multi-dot archive matched by last extension" "$result" "backup.tar.gz"
+    assert_not_found "FT-33b: file-extensions=gz excludes .zip" "$result" "notes.zip"
+else
+    skip "FT-33: No-extension and multi-dot filenames" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-34: 大写扩展名 ----------
+# 索引侧 file_ext 小写存储，查询侧 --file-extensions 值 toLower
+# （indexedstrategy），大写扩展名文件应可按小写过滤命中。
+echo ""
+echo "--- FT-34: Uppercase extensions ---"
+mkdir -p "$TEST_DIR/upext"
+echo "content" > "$TEST_DIR/upext/document.TXT"
+echo "content" > "$TEST_DIR/upext/photo.PNG"
+
+if wait_for_index "filename" "document" "$TEST_DIR" "document.TXT"; then
+    result=$(run_searcher "filename" "document" "$TEST_DIR" "--file-extensions=txt") || true
+    assert_found "FT-34a: --file-extensions=txt matches .TXT" "$result" "document.TXT"
+
+    result=$(run_searcher "filename" "photo" "$TEST_DIR" "--file-types=pic") || true
+    assert_found "FT-34b: --file-types=pic matches .PNG" "$result" "photo.PNG"
+else
+    skip "FT-34: Uppercase extensions" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-35: 纯数字与单字符文件名 ----------
+# NGram(1,2) 分词边界：单字符与纯数字文件名应可搜。
+echo ""
+echo "--- FT-35: Numeric-only and single-char filenames ---"
+mkdir -p "$TEST_DIR/numname"
+echo "content" > "$TEST_DIR/numname/12345.txt"
+echo "content" > "$TEST_DIR/numname/a.txt"
+
+if wait_for_index "filename" "12345" "$TEST_DIR" "12345.txt"; then
+    result=$(run_searcher "filename" "12345" "$TEST_DIR") || true
+    assert_found "FT-35a: Numeric-only filename searchable" "$result" "12345.txt"
+
+    result=$(run_searcher "filename" "a" "$TEST_DIR/numname") || true
+    assert_found "FT-35b: Single-char filename searchable" "$result" "a.txt"
+else
+    skip "FT-35: Numeric-only and single-char filenames" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
 
 # =============================================================================
 # 输出汇总
