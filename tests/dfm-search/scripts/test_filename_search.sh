@@ -19,6 +19,10 @@
 #   - 隐藏目录、特殊字符文件名、快速建删抵消
 #   - 大突发创建完整性（reader thread/事件队列回归）
 #   - 服务重启后索引持久化（需 ENABLE_SERVICE_RESTART_TEST=1）
+#   - 符号链接条目（file/dir/dangling link 可搜、dir link 内容不跟随）
+#   - --file-types 全类型映射（video/audio/archive/app）
+#   - 扩展名边界（无后缀、多重点缀、大写扩展名）
+#   - 纯数字与单字符文件名
 #
 # 用法: ./test_filename_search.sh
 # 环境变量:
@@ -735,6 +739,130 @@ else
             fail "FT-30: Index lost after service restart" "Persisted index not queryable within ${PERSIST_TIMEOUT}s"
         fi
     fi
+fi
+
+# ---------- FT-31: 符号链接条目搜索 ----------
+# 设计契约：link 条目本身入索引（file link / dir link / dangling link，按链接
+# 自身路径可搜），但绝不跟随——dir link 内部内容不经链接路径入索引，真实目标
+# 内容仍按真实路径可搜。
+echo ""
+echo "--- FT-31: Symlink entries search ---"
+echo "content" > "$TEST_DIR/link_target_file.txt"
+mkdir -p "$TEST_DIR/link_target_dir"
+echo "content" > "$TEST_DIR/link_target_dir/inner_real_file.txt"
+
+if wait_for_index "filename" "link_target_file" "$TEST_DIR" "link_target_file.txt"; then
+    ln -s "$TEST_DIR/link_target_file.txt" "$TEST_DIR/link_entry_file.txt"
+    ln -s "$TEST_DIR/link_target_dir" "$TEST_DIR/link_entry_dir"
+    ln -s "$TEST_DIR/no_such_target_file.txt" "$TEST_DIR/link_entry_dangling.txt"
+
+    if wait_for_index "filename" "link_entry_dangling" "$TEST_DIR" "link_entry_dangling.txt"; then
+        result=$(run_searcher "filename" "link_entry" "$TEST_DIR") || true
+        assert_found "FT-31a: File symlink searchable by its own name" "$result" "link_entry_file.txt"
+        assert_found "FT-31b: Directory symlink searchable by its own name" "$result" "link_entry_dir"
+        assert_found "FT-31c: Dangling symlink searchable by its own name" "$result" "link_entry_dangling.txt"
+    else
+        skip "FT-31a/b/c: Symlink entries search" "Symlink entries not indexed within ${FILENAME_INDEX_TIMEOUT}s"
+    fi
+
+    if wait_for_index "filename" "inner_real_file" "$TEST_DIR" "$TEST_DIR/link_target_dir/inner_real_file.txt"; then
+        result=$(run_searcher "filename" "inner_real_file" "$TEST_DIR") || true
+        assert_found "FT-31d: Real target content searchable under real path" \
+                     "$result" "$TEST_DIR/link_target_dir/inner_real_file.txt"
+        assert_not_found "FT-31e: Dir link contents not indexed through link path" \
+                         "$result" "$TEST_DIR/link_entry_dir/"
+    else
+        skip "FT-31d/e: Dir link follow check" "Real target content not indexed within ${FILENAME_INDEX_TIMEOUT}s"
+    fi
+else
+    skip "FT-31: Symlink entries search" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-32: --file-types 全类型映射 ----------
+# FileTypeMapper 按 anything dconfig 后缀表映射（app/archive/audio/doc/pic/video），
+# FT-24 已覆盖 pic；此处覆盖 video/audio/archive/app。
+echo ""
+echo "--- FT-32: File type filter across categories ---"
+mkdir -p "$TEST_DIR/alltypes"
+echo "content" > "$TEST_DIR/alltypes/cat_video.mp4"
+echo "content" > "$TEST_DIR/alltypes/cat_audio.mp3"
+echo "content" > "$TEST_DIR/alltypes/cat_archive.zip"
+echo "content" > "$TEST_DIR/alltypes/cat_app.desktop"
+echo "content" > "$TEST_DIR/alltypes/cat_doc.txt"
+
+if wait_for_index "filename" "cat_app" "$TEST_DIR" "cat_app.desktop"; then
+    result=$(run_searcher "filename" "cat_" "$TEST_DIR" "--file-types=video") || true
+    assert_found "FT-32a: file-types=video finds .mp4" "$result" "cat_video.mp4"
+    assert_not_found "FT-32a: file-types=video excludes .mp3" "$result" "cat_audio.mp3"
+
+    result=$(run_searcher "filename" "cat_" "$TEST_DIR" "--file-types=audio") || true
+    assert_found "FT-32b: file-types=audio finds .mp3" "$result" "cat_audio.mp3"
+    assert_not_found "FT-32b: file-types=audio excludes .mp4" "$result" "cat_video.mp4"
+
+    result=$(run_searcher "filename" "cat_" "$TEST_DIR" "--file-types=archive") || true
+    assert_found "FT-32c: file-types=archive finds .zip" "$result" "cat_archive.zip"
+
+    result=$(run_searcher "filename" "cat_" "$TEST_DIR" "--file-types=app") || true
+    assert_found "FT-32d: file-types=app finds .desktop" "$result" "cat_app.desktop"
+    assert_not_found "FT-32d: file-types=app excludes .txt" "$result" "cat_doc.txt"
+else
+    skip "FT-32: File type filter across categories" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-33: 无扩展名与多重点缀文件名 ----------
+echo ""
+echo "--- FT-33: No-extension and multi-dot filenames ---"
+mkdir -p "$TEST_DIR/extedge"
+echo "content" > "$TEST_DIR/extedge/Makefile"
+echo "content" > "$TEST_DIR/extedge/backup.tar.gz"
+echo "content" > "$TEST_DIR/extedge/notes.zip"
+
+if wait_for_index "filename" "Makefile" "$TEST_DIR" "Makefile"; then
+    result=$(run_searcher "filename" "Makefile" "$TEST_DIR") || true
+    assert_found "FT-33a: Extension-less file searchable" "$result" "Makefile"
+
+    result=$(run_searcher "filename" "backup" "$TEST_DIR" "--file-extensions=gz") || true
+    assert_found "FT-33b: Multi-dot archive matched by last extension" "$result" "backup.tar.gz"
+    assert_not_found "FT-33b: file-extensions=gz excludes .zip" "$result" "notes.zip"
+else
+    skip "FT-33: No-extension and multi-dot filenames" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-34: 大写扩展名 ----------
+# 索引侧 file_ext 小写存储，查询侧 --file-extensions 值 toLower
+# （indexedstrategy），大写扩展名文件应可按小写过滤命中。
+echo ""
+echo "--- FT-34: Uppercase extensions ---"
+mkdir -p "$TEST_DIR/upext"
+echo "content" > "$TEST_DIR/upext/document.TXT"
+echo "content" > "$TEST_DIR/upext/photo.PNG"
+
+if wait_for_index "filename" "document" "$TEST_DIR" "document.TXT"; then
+    result=$(run_searcher "filename" "document" "$TEST_DIR" "--file-extensions=txt") || true
+    assert_found "FT-34a: --file-extensions=txt matches .TXT" "$result" "document.TXT"
+
+    result=$(run_searcher "filename" "photo" "$TEST_DIR" "--file-types=pic") || true
+    assert_found "FT-34b: --file-types=pic matches .PNG" "$result" "photo.PNG"
+else
+    skip "FT-34: Uppercase extensions" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
+fi
+
+# ---------- FT-35: 纯数字与单字符文件名 ----------
+# NGram(1,2) 分词边界：单字符与纯数字文件名应可搜。
+echo ""
+echo "--- FT-35: Numeric-only and single-char filenames ---"
+mkdir -p "$TEST_DIR/numname"
+echo "content" > "$TEST_DIR/numname/12345.txt"
+echo "content" > "$TEST_DIR/numname/a.txt"
+
+if wait_for_index "filename" "12345" "$TEST_DIR" "12345.txt"; then
+    result=$(run_searcher "filename" "12345" "$TEST_DIR") || true
+    assert_found "FT-35a: Numeric-only filename searchable" "$result" "12345.txt"
+
+    result=$(run_searcher "filename" "a" "$TEST_DIR/numname") || true
+    assert_found "FT-35b: Single-char filename searchable" "$result" "a.txt"
+else
+    skip "FT-35: Numeric-only and single-char filenames" "Index not ready within ${FILENAME_INDEX_TIMEOUT}s"
 fi
 
 # =============================================================================
