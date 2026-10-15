@@ -1284,14 +1284,17 @@ QString DLocalHelper::resolveSymlink(const QUrl &url)
 {
     QSet<QString> visited;
     QString target = DLocalHelper::symlinkTarget(url);
+    if (DFMUtils::isGvfsFile(QUrl::fromLocalFile(target)))
+        return target;   // Remote target: stop resolving, further readlink/stat would block on network I/O
     while (!target.isEmpty()) {
         if (visited.contains(target))
             return QString();   // Cycle detected: return empty
         visited.insert(target);
-        QUrl newUrl = QUrl::fromLocalFile(target);
-        QString nextTarget = DLocalHelper::symlinkTarget(newUrl);
+        QString nextTarget = DLocalHelper::symlinkTarget(QUrl::fromLocalFile(target));
         if (nextTarget.isEmpty())
             break;
+        if (DFMUtils::isGvfsFile(QUrl::fromLocalFile(nextTarget)))
+            return nextTarget;   // Remote target: stop resolving, further readlink/stat would block on network I/O
         target = nextTarget;
     }
     return target;

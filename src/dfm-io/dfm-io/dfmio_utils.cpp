@@ -350,7 +350,7 @@ bool DFMUtils::isGvfsFile(const QUrl &url)
         return false;
 
     const QString &path = url.toLocalFile();
-    static const QString *gvfsMatch = new QString{ "(^/run/user/\\d+/gvfs/|^/root/.gvfs/|^/media/[\\s\\S]*/smbmounts)" };
+    static const QString *gvfsMatch = new QString{ "(^/run/user/\\d+/gvfs/|^/root/.gvfs/|^/(?:run/)?media/[\\s\\S]*/smbmounts)" };
     // TODO(xust) /media/$USER/smbmounts might be changed in the future.
     QRegularExpression re { *gvfsMatch };
     QRegularExpressionMatch match { re.match(path) };
