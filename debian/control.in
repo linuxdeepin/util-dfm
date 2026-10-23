@@ -76,7 +76,8 @@ Section: libdevel
 Multi-Arch: same
 Depends:
  ${shlibs:Depends},
- ${misc:Depends}
+ ${misc:Depends},
+ dvd+rw-tools
 Recommends:
  libudfburn
 Description: A library about burning CD.
