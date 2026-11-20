@@ -8,8 +8,81 @@
 #include "private/dwatcher_p.h"
 
 #include <QDebug>
+#include <QHash>
+#include <QList>
+#include <QMutex>
+#include <QMutexLocker>
+
+#include <sys/stat.h>
 
 USING_IO_NAMESPACE
+
+namespace {
+
+// 同一inode经不同路径（多挂载点/bind）监视时，GLib的inotify后端按inode共享
+// 内核watch描述符：任一监视器cancel会误删共享订阅，使其它路径的存活监视器永久失聪，
+// 且残留的path桶会让后续新建监视器挂到死订阅上。注册表按(st_dev, st_ino)对活跃监视器
+// 计数：仍有同inode其它活跃者时，停止方只寄存GFileMonitor而不cancel；最后一个活跃者
+// 停止时才统一cancel并析构全部寄存的监视器，此时GLib状态自净。
+// key编码将st_dev截断为32位：不同文件系统key冲突只会让监视器延迟清理，不会误删订阅。
+class MonitorKeepAliveRegistry
+{
+public:
+    static MonitorKeepAliveRegistry &instance()
+    {
+        static MonitorKeepAliveRegistry registry;
+        return registry;
+    }
+
+    void addActive(quint64 key)
+    {
+        if (key == 0)
+            return;
+        QMutexLocker locker(&mutex);
+        ++refCounts[key];
+    }
+
+    // 停止时调用：同inode仍有其它活跃监视器时寄存monitor（不cancel）并返回true；
+    // 否则清除计数，并通过doomed交还该inode全部寄存的监视器，由调用方在锁外cancel析构
+    bool retainOrPark(quint64 key, GFileMonitor *monitor, QList<GFileMonitor *> *doomed)
+    {
+        doomed->clear();
+        if (key == 0)
+            return false;
+        QMutexLocker locker(&mutex);
+        const int remaining = refCounts.value(key) - 1;
+        if (remaining > 0) {
+            refCounts[key] = remaining;
+            parked[key].append(monitor);
+            return true;
+        }
+        refCounts.remove(key);
+        *doomed = parked.value(key);
+        parked.remove(key);
+        return false;
+    }
+
+private:
+    QMutex mutex;
+    QHash<quint64, int> refCounts;
+    QHash<quint64, QList<GFileMonitor *>> parked;
+};
+
+// 从监视目标GFile取(st_dev, st_ino)编码key；非本地路径或stat失败返回0（走直接cancel）
+quint64 inodeKeyOf(GFile *gfile)
+{
+    if (!gfile)
+        return 0;
+    g_autofree gchar *path = g_file_get_path(gfile);
+    if (!path)
+        return 0;
+    struct stat st;
+    if (::stat(path, &st) != 0)
+        return 0;
+    return (quint64(st.st_dev) << 32) | quint32(st.st_ino);
+}
+
+}   // namespace
 
 /************************************************
  * DWatcherPrivate
@@ -42,7 +115,6 @@ GFileMonitor *DWatcherPrivate::createMonitor(GFile *gfile, DWatcher::WatchType t
     } else {
         gmonitor = g_file_monitor_file(gfile, flags, cancel, &gerror);
     }
-
 
     if (!gmonitor) {
         setErrorFromGError(gerror);
@@ -104,7 +176,7 @@ void DWatcherPrivate::watchCallback(GFileMonitor *monitor, GFile *child, GFile *
         watcher->fileRenamed(childUrl, otherUrl);
         break;
 
-    //case G_FILE_MONITOR_EVENT_MOVED:
+    // case G_FILE_MONITOR_EVENT_MOVED:
     default:
         g_assert_not_reached();
         break;
@@ -200,21 +272,40 @@ bool DWatcher::start(int timeRate)
 
     g_signal_connect(d->gmonitor, "changed", G_CALLBACK(&DWatcherPrivate::watchCallback), this);
 
+    // key在start时缓存：stop时目标可能已被删除重建（inode变化），重stat会减错计数
+    d->inodeKey = inodeKeyOf(d->gfile);
+    MonitorKeepAliveRegistry::instance().addActive(d->inodeKey);
+
     return true;
 }
 
 bool DWatcher::stop()
 {
     if (d->gmonitor) {
-        g_file_monitor_cancel(d->gmonitor);
-        g_object_unref(d->gmonitor);
-        d->gmonitor = nullptr;
+        QList<GFileMonitor *> doomed;
+        if (MonitorKeepAliveRegistry::instance().retainOrPark(d->inodeKey, d->gmonitor, &doomed)) {
+            // 同inode仍有其它路径在监视：不cancel（会误删GLib共享订阅使存活者永久失聪），
+            // 仅断开changed回调静默本对象，监视器交由注册表持有
+            g_signal_handlers_disconnect_by_data(d->gmonitor, this);
+            d->gmonitor = nullptr;
+        } else {
+            g_file_monitor_cancel(d->gmonitor);
+            g_object_unref(d->gmonitor);
+            d->gmonitor = nullptr;
+            for (GFileMonitor *monitor : doomed) {
+                g_file_monitor_cancel(monitor);
+                g_object_unref(monitor);
+            }
+            doomed.clear();
+        }
     }
 
     if (d->gfile) {
         g_object_unref(d->gfile);
         d->gfile = nullptr;
     }
+
+    d->inodeKey = 0;
 
     return true;
 }

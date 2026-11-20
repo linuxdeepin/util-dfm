@@ -32,6 +32,7 @@ public:
     DWatcher *q { nullptr };
     GFileMonitor *gmonitor { nullptr };
     GFile *gfile { nullptr };
+    quint64 inodeKey { 0 };   // start时缓存的(st_dev, st_ino)，保证stop与start对同一inode计数
 
     int timeRate { 200 };
     DWatcher::WatchType type = DWatcher::WatchType::kAuto;
