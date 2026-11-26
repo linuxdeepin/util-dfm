@@ -19,6 +19,8 @@
 
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 DFM_MOUNT_USE_NS
 
@@ -331,9 +333,23 @@ void DNetworkMounter::mountByDaemon(const QString &address, GetMountPassInfo get
     QString mpt;
     QString addr(QUrl::fromPercentEncoding(address.toLower().toLocal8Bit()));
     if (isMounted(addr, mpt)) {
-        if (mountResult)
-            mountResult(false, Utils::genOperateErrorInfo(DeviceError::kGIOErrorAlreadyMounted), mpt);
-        return;
+        // Check if the mount point is actually accessible. A stale mount (e.g.
+        // server-side share cancelled) still appears in /proc/mounts but stat()
+        // returns ENOTCONN or ESTALE. In that case unmount and fall through to
+        // a real mount instead of returning the stale mount point.
+        struct stat st;
+        if (stat(mpt.toLocal8Bit().constData(), &st) != 0
+            && (errno == ENOTCONN || errno == ESTALE)) {
+            qWarning() << "stale mount detected at" << mpt << "errno:" << errno
+                       << "cleaning up and re-mounting";
+            unmountNetworkDev(mpt);
+            mpt.clear();
+            // fall through to actual mount
+        } else {
+            if (mountResult)
+                mountResult(false, Utils::genOperateErrorInfo(DeviceError::kGIOErrorAlreadyMounted), mpt);
+            return;
+        }
     }
 
     auto logins = loginPasswd(addr);
